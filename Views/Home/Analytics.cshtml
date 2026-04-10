@@ -1,0 +1,1139 @@
+@model IT_Form.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Strategic Analytics";
+    var isIT = User.HasClaim("UserTitle", "IT");
+    var isHR = User.HasClaim("UserTitle", "HR");
+    var statsPeriodLabel = ViewData["StatsPeriodLabel"]?.ToString() ?? "Selected Period";
+    var activeTab = Context.Request.Query["tab"].ToString();
+    if (string.IsNullOrEmpty(activeTab)) activeTab = isHR ? "hr" : "it";
+    if (activeTab == "hr" && !isHR) activeTab = "it";
+    if (activeTab == "it" && !isIT) activeTab = "hr";
+
+    string Ser(object o) => System.Text.Json.JsonSerializer.Serialize(o);
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="h3 mb-1 fw-bold text-dark">
+            <i class="bi bi-graph-up-arrow me-2 text-primary" aria-hidden="true"></i>Strategic Analytics &amp; Insights
+        </h2>
+        <span class="text-muted">Data-driven intelligence for @Model.SelectedYear.</span>
+    </div>
+    <div class="d-flex align-items-center bg-white border rounded-pill px-3 py-1 shadow-sm">
+        <i class="bi bi-calendar-event text-primary me-2" aria-hidden="true"></i>
+        <label class="small fw-bold text-muted me-2 mb-0">Year:</label>
+        <select class="form-select form-select-sm border-0 fw-bold" style="width:auto;background:transparent;cursor:pointer;"
+            onchange="window.location.href='/Home/Analytics?tab=@activeTab&year='+this.value">
+            @foreach (var yr in Model.AvailableYears)
+            {
+                @if (yr == Model.SelectedYear)
+                {
+                    <option value="@yr" selected>@yr</option>
+                }
+                else
+                {
+                    <option value="@yr">@yr</option>
+                }
+
+            }
+        </select>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm d-inline-flex border">
+    @if (isHR)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(activeTab == "hr" ? "active fw-bold" : "text-muted")" href="?tab=hr&year=@Model.SelectedYear">
+                <i class="bi bi-people me-2" aria-hidden="true"></i>HR Intelligence
+            </a>
+        </li>
+    }
+    @if (isIT)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(activeTab == "it" ? "active fw-bold" : "text-muted")" href="?tab=it&year=@Model.SelectedYear">
+                <i class="bi bi-server me-2" aria-hidden="true"></i>IT Infrastructure
+            </a>
+        </li>
+    }
+</ul>
+
+@* ═══════════════════════════════════════════════════════ HR TAB ═══ *@
+@if (activeTab == "hr")
+{
+    @* ─── KPI Cards Row 1 ─── *@
+    <div class="row g-3 mb-4 animate-fade-in">
+        @{
+            var netGrowth = Model.MonthlyNetGrowth.Sum();
+            var totalHires = Model.MonthlyTrendOnboarding.Sum();
+        }
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #4f46e5!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Net Workforce Growth</p>
+                    <h2 class="fw-bolder mb-0">@(netGrowth >= 0 ? "+" : "")@netGrowth</h2>
+                    <span class="text-muted small">Hires minus Exits (@Model.SelectedYear)</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #10b981!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Total New Hires</p>
+                    <h2 class="fw-bolder mb-0">@totalHires</h2>
+                    <span class="text-muted small">Onboardings in @Model.SelectedYear</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #ef4444!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Total Exits</p>
+                    <h2 class="fw-bolder mb-0">@Model.TotalExitsYear</h2>
+                    <span class="text-muted small">Offboardings in @Model.SelectedYear</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #f59e0b!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Avg Onboarding Lead Time</p>
+                    <h2 class="fw-bolder mb-0">@Model.AvgOnboardingDays <small class="fs-6 text-muted">days</small></h2>
+                    <span class="text-muted small">Request → Completion</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── KPI Cards Row 2 ─── *@
+    <div class="row g-3 mb-4 animate-fade-in delay-100">
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #0ea5e9!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Avg Offboarding Lead Time</p>
+                    <h2 class="fw-bolder mb-0">@Model.AvgOffboardingDays <small class="fs-6 text-muted">days</small></h2>
+                    <span class="text-muted small">Request → Completion</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #dc3545!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Onboarding Reject Rate</p>
+                    <h2 class="fw-bolder mb-0">@Model.OnboardingRejectRate<small class="fs-6 text-muted">%</small></h2>
+                    <span class="text-muted small">Forms Rejected / Total</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #8b5cf6!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Avg Employee Tenure</p>
+                    <h2 class="fw-bolder mb-0">@(Model.AvgTenureDays > 0 ? Math.Round(Model.AvgTenureDays / 30, 1).ToString() : "–") <small class="fs-6 text-muted">mo</small></h2>
+                    <span class="text-muted small">JoinDate → LastDayOfWork</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #f97316!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Pending Employee Signatures</p>
+                    <h2 class="fw-bolder mb-0">@Model.PendingEmployeeSignCount</h2>
+                    <span class="text-muted small">On (@Model.PendingEmployeeSignOnboardingCount on, @Model.PendingEmployeeSignOffboardingCount off)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── Row: Hiring/Exit Trend + Top Roles ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-200">
+        <div class="col-lg-8">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-activity me-2 text-primary" aria-hidden="true"></i>Hiring vs. Exits Trend (@Model.SelectedYear)</h6>
+                    <button class="btn btn-sm btn-outline-primary rounded-circle shadow-none border-0" onclick="expandChart('growthChart', 'Hiring vs. Exits Trend (@Model.SelectedYear)')" title="Expand Chart"><i class="bi bi-arrows-angle-expand" aria-hidden="true"></i></button>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1" style="height:320px">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card glass-card border-0 shadow h-100">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-award me-2 text-primary" aria-hidden="true"></i>Top Hired Roles</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1">
+                    @if (Model.TopDesignations.Any())
+                    {
+                        @foreach (var role in Model.TopDesignations)
+                        {
+                            var pct = (double)role.Value / Model.TopDesignations.Values.Max() * 100;
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small fw-bold text-truncate me-2" style="max-width:170px" title="@role.Key">@role.Key</span>
+                                    <span class="badge bg-primary rounded-pill">@role.Value</span>
+                                </div>
+                                <div class="progress" style="height:6px; border-radius:10px;">
+                                    <div class="progress-bar rounded-pill" style="width:@pct%"></div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted small text-center pt-4">No designation data for @Model.SelectedYear.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── Row: Status Distribution Donuts ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-300">
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 text-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-success" aria-hidden="true"></i>Onboarding Status Distribution (@Model.SelectedYear)</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center" style="height:300px">
+                    <canvas id="onStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 text-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-danger" aria-hidden="true"></i>Offboarding Status Distribution (@Model.SelectedYear)</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center" style="height:300px">
+                    <canvas id="offStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── Row: Department Breakdown + Branch Breakdown ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-400">
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-building me-2 text-primary" aria-hidden="true"></i>Department — Hires vs. Exits</h6>
+                    <button class="btn btn-sm btn-outline-primary rounded-circle shadow-none border-0" onclick="expandChart('deptChart', 'Department — Hires vs. Exits')" title="Expand Chart"><i class="bi bi-arrows-angle-expand" aria-hidden="true"></i></button>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1" style="height:480px">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-geo-alt me-2 text-primary" aria-hidden="true"></i>Branch / Company — Hires vs. Exits</h6>
+                    <button class="btn btn-sm btn-outline-primary rounded-circle shadow-none border-0" onclick="expandChart('branchChart', 'Branch / Company — Hires vs. Exits')" title="Expand Chart"><i class="bi bi-arrows-angle-expand" aria-hidden="true"></i></button>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1" style="height:480px">
+                    <canvas id="branchChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── Summary Table ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-500">
+        <div class="col-12">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2 text-primary" aria-hidden="true"></i>Department Headcount Summary (@Model.SelectedYear)</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-hover align-middle">
+                            <thead class="text-muted small text-uppercase" style="border-bottom:2px solid var(--border)">
+                                <tr>
+                                    <th>Department</th>
+                                    <th class="text-center">Hires</th>
+                                    <th class="text-center">Exits</th>
+                                    <th class="text-center">Net</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var allDepts = Model.DepartmentOnboardingBreakdown.Keys
+                                        .Union(Model.DepartmentOffboardingBreakdown.Keys)
+                                        .OrderBy(d => d).ToList();
+                                }
+                                @foreach (var dept in allDepts)
+                                {
+                                    var hires = Model.DepartmentOnboardingBreakdown.GetValueOrDefault(dept, 0);
+                                    var exits = Model.DepartmentOffboardingBreakdown.GetValueOrDefault(dept, 0);
+                                    var net = hires - exits;
+                                    <tr>
+                                        <td class="fw-bold">@dept</td>
+                                        <td class="text-center"><span class="badge bg-success">@hires</span></td>
+                                        <td class="text-center"><span class="badge bg-danger">@exits</span></td>
+                                        <td class="text-center">
+                                            <span class="badge @(net >= 0 ? "bg-primary" : "bg-warning text-dark")">@(net >= 0 ? "+" : "")@net</span>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!allDepts.Any())
+                                {
+                                    <tr><td colspan="4" class="text-center text-muted py-4">No department data for @Model.SelectedYear.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ═══════════════════════════════════════════════════════ IT TAB ═══ *@
+else if (activeTab == "it")
+{
+    @* ─── KPI Cards Row 1 ─── *@
+    <div class="row g-3 mb-4 animate-fade-in">
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #4f46e5!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Total IT Inventory</p>
+                    <h2 class="fw-bolder mb-0">@Model.TotalAssets</h2>
+                    <span class="text-muted small">Managed Hardware Units</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #10b981!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">License Utilization</p>
+                    <h2 class="fw-bolder mb-0">@Model.AssignedSoftwareLicenses <small class="fs-6 text-muted">/ @Model.TotalSoftwareLicenses</small></h2>
+                    <span class="text-muted small">Assigned Seats / Total Seats</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #ef4444!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Expired Warranties</p>
+                    <h2 class="fw-bolder mb-0 @(Model.ExpiredWarrantyCount > 0 ? "text-danger-emphasis" : "")">@Model.ExpiredWarrantyCount</h2>
+                    <span class="text-muted small">Already Past Warranty Date</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #f59e0b!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Upcoming Expiry ≤30d</p>
+                    <h2 class="fw-bolder mb-0 @(Model.ExpiringWithin30Days > 0 ? "text-warning" : "")">@Model.ExpiringWithin30Days</h2>
+                    <span class="text-muted small">Immediate Renewal Window</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── KPI Cards Row 2 ─── *@
+    <div class="row g-3 mb-4 animate-fade-in delay-100">
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #0ea5e9!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Active System Users</p>
+                    <h2 class="fw-bolder mb-0">@Model.TotalActiveUsers</h2>
+                    <span class="text-muted small">Enabled Portal Accounts</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #8b5cf6!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Pending IT Approval</p>
+                    <h2 class="fw-bolder mb-0 @(Model.PendingITApprovalCount > 0 ? "text-warning" : "")">@Model.PendingITApprovalCount</h2>
+                    <span class="text-muted small">Requests Awaiting IT Sign</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #dc3545!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Rejected This Month</p>
+                    <h2 class="fw-bolder mb-0 @(Model.RejectedThisMonth > 0 ? "text-danger-emphasis" : "")">@Model.RejectedThisMonth</h2>
+                    <span class="text-muted small">On + Off Rejections MTD</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card border-0 shadow-sm h-100" style="border-top:4px solid #f97316!important">
+                <div class="card-body p-3">
+                    <p class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing:.5px">Maintenance Jobs (@Model.SelectedYear)</p>
+                    <h2 class="fw-bolder mb-0">@Model.MaintenanceCountYear</h2>
+                    <span class="text-muted small">Hardware Serviced</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card glass-card border-0 shadow-sm mb-4 animate-fade-in delay-150" style="border-left: 4px solid #dc3545!important;">
+        <div class="card-body d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div>
+                <p class="text-muted small fw-bold text-uppercase mb-1" style="letter-spacing:.5px">Command Audit Watch</p>
+                <h5 class="fw-bolder mb-1">@Model.FailedCommandCount failed command audits</h5>
+                <span class="text-muted small">@Model.FailedCommandCountPeriod recorded @statsPeriodLabel.ToLowerInvariant() out of @Model.TotalCommandAuditEntries command-level audit entries.</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-danger rounded-pill px-3"
+                   asp-controller="AuditLog" asp-action="Index" asp-route-entity="Command" asp-route-isSuccess="false">
+                    Failed Commands
+                </a>
+                <a class="btn btn-outline-secondary rounded-pill px-3"
+                   asp-controller="AuditLog" asp-action="Index" asp-route-entity="Command">
+                    All Command Audits
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @* ─── Row: Asset Status + SW License Distribution ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-200">
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 text-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-primary" aria-hidden="true"></i>Asset Status Distribution</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center" style="height:300px">
+                    <canvas id="assetDistChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 text-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-key me-2 text-primary" aria-hidden="true"></i>Software License — Active vs. Available</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center" style="height:300px">
+                    <canvas id="swDistChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── Row: Fleet Composition + OS Compliance ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-300">
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2 text-primary" aria-hidden="true"></i>Fleet Composition (Category)</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1" style="height:300px">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-windows me-2 text-primary" aria-hidden="true"></i>OS Compliance — Windows Distribution</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1" style="height:300px">
+                    <canvas id="osChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    @* ─── Software License Optimization Table ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-500">
+        <div class="col-12">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps me-2 text-primary" aria-hidden="true"></i>Software License Optimization Tracking</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-hover align-middle mb-0">
+                            <thead class="text-muted small text-uppercase" style="border-bottom:2px solid var(--border)">
+                                <tr>
+                                    <th>Software Name</th>
+                                    <th class="text-center">Total Seats</th>
+                                    <th class="text-center">Assigned</th>
+                                    <th class="text-center">Available</th>
+                                    <th class="text-center">Utilization</th>
+                                    <th style="width:25%">Usage Bar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.LicenseUtilization)
+                                {
+                                    var badgeColor = item.Percent > 90 ? "danger" : (item.Percent > 70 ? "warning text-dark" : "success");
+                                    <tr>
+                                        <td class="fw-bold">@item.SoftwareName</td>
+                                        <td class="text-center">@item.Total</td>
+                                        <td class="text-center">@item.Used</td>
+                                        <td class="text-center">@(item.Total - item.Used)</td>
+                                        <td class="text-center"><span class="badge bg-@badgeColor">@item.Percent%</span></td>
+                                        <td>
+                                            <div class="progress" style="height:8px; border-radius:10px;">
+                                                <div class="progress-bar rounded-pill bg-@(item.Percent > 90 ? "danger" : "primary")" style="width:@item.Percent%"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!Model.LicenseUtilization.Any())
+                                {
+                                    <tr><td colspan="6" class="text-center py-4 text-muted small">No software license data available.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ─── System Health Summary Table ─── *@
+    <div class="row g-4 mb-4 animate-fade-in delay-500">
+        <div class="col-12">
+            <div class="card glass-card border-0 shadow">
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-success" aria-hidden="true"></i>IT System Health Summary</h6>
+                </div>
+                <div class="card-body px-4 pb-4 pt-1">
+                    <div class="row g-3">
+                        @{
+                            var health = new[] {
+                                new { Label="Total Hardware Assets", Value=Model.TotalAssets.ToString(), Icon="bi-pc-display", Color="primary" },
+                                new { Label="Total Software Products", Value=Model.TotalLicenses.ToString(), Icon="bi-app-indicator", Color="success" },
+                                new { Label="Active Portal Users", Value=Model.TotalActiveUsers.ToString(), Icon="bi-person-check", Color="info" },
+                                new { Label="Audit Log Entries", Value=Model.TotalAuditLogEntries.ToString(), Icon="bi-journal-check", Color="secondary" },
+                                new { Label="Command Audit Entries", Value=Model.TotalCommandAuditEntries.ToString(), Icon="bi-diagram-3", Color="dark" },
+                                new { Label="Failed Command Audits", Value=Model.FailedCommandCount.ToString(), Icon="bi-exclamation-octagon", Color="danger" },
+                                new { Label="Pending IT Approval", Value=Model.PendingITApprovalCount.ToString(), Icon="bi-hourglass-split", Color="warning" },
+                                new { Label="Rejected This Month", Value=Model.RejectedThisMonth.ToString(), Icon="bi-x-circle", Color="danger" },
+                                new { Label="Expired Warranties", Value=Model.ExpiredWarrantyCount.ToString(), Icon="bi-shield-exclamation", Color="danger" },
+                                new { Label="Warranty Expiring 31-90d", Value=Model.ExpiringWithin90Days.ToString(), Icon="bi-shield-slash", Color="warning" },
+                                new { Label="Maintenance Jobs (@Model.SelectedYear)", Value=Model.MaintenanceCountYear.ToString(), Icon="bi-tools", Color="primary" },
+                                new { Label="Assigned Licenses", Value=Model.AssignedSoftwareLicenses.ToString(), Icon="bi-key-fill", Color="success" },
+                                new { Label="Available Licenses", Value=(Model.TotalSoftwareLicenses - Model.AssignedSoftwareLicenses).ToString(), Icon="bi-key", Color="secondary" },
+                                new { Label="License Types Tracked", Value=Model.LicenseUtilization.Count.ToString(), Icon="bi-list-check", Color="info" },
+                            };
+                        }
+                        @foreach (var item in health)
+                        {
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="d-flex align-items-center gap-3 p-3 rounded-4" style="background: var(--bg-card); border: 1px solid var(--border);">
+                                    <div class="p-2 rounded-circle bg-@item.Color bg-opacity-10 text-@item.Color">
+                                        <i class="bi @item.Icon fs-5" aria-hidden="true"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-5">@item.Value</div>
+                                        <div class="text-muted" style="font-size:.75rem">@item.Label</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Chart Expand Modal -->
+<div class="modal fade" id="chartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95vw;">
+        <div class="modal-content glass-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px);">
+            <div class="modal-header border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title fw-bold text-dark" id="chartModalTitle">Chart Detail</h5>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3 shadow-none" onclick="downloadChartImage()"><i class="bi bi-download me-2" aria-hidden="true"></i>Download Image</button>
+                    <button type="button" class="btn-close shadow-none ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-4 w-100">
+                <!-- Nav Tabs -->
+                <ul class="nav nav-pills mb-3" id="chartDetailTabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill px-4 fw-bold" id="visual-tab" data-bs-toggle="pill" data-bs-target="#visual-view" type="button" role="tab"><i class="bi bi-graph-up me-2" aria-hidden="true"></i>Visualization</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-4 fw-bold" id="data-tab" data-bs-toggle="pill" data-bs-target="#data-view" type="button" role="tab"><i class="bi bi-table me-2" aria-hidden="true"></i>Raw Data Array</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-4 fw-bold" id="insights-tab" data-bs-toggle="pill" data-bs-target="#insights-view" type="button" role="tab"><i class="bi bi-lightbulb me-2 text-warning" aria-hidden="true"></i>Key AI Insights</button>
+                  </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="chartDetailTabsContent">
+                  <div class="tab-pane fade show active" id="visual-view" role="tabpanel">
+                      <div id="chartModalBody" style="height: 80vh; width: 100%; position: relative;">
+                          <!-- Canvas moves here dynamically -->
+                      </div>
+                  </div>
+                  <div class="tab-pane fade" id="data-view" role="tabpanel">
+                      <div class="table-responsive border rounded" style="height: 75vh; overflow-y: auto;">
+                          <table class="table table-hover align-middle bg-white mb-0" id="chartDataTable">
+                              <thead class="table-light sticky-top" style="z-index: 10;">
+                                  <tr id="chartDataHead"></tr>
+                              </thead>
+                              <tbody id="chartDataBody"></tbody>
+                          </table>
+                      </div>
+                  </div>
+                  <div class="tab-pane fade" id="insights-view" role="tabpanel">
+                      <div class="p-4 bg-light rounded" style="height: 75vh; overflow-y: auto;" id="chartInsightsBody">
+                          <!-- Insights generated dynamically -->
+                      </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script>
+        // Expand Chart Fullscreen Architecture
+        let originalChartParent = null;
+        let expandedChartCanvas = null;
+
+        window.expandChart = function(canvasId, title) {
+            expandedChartCanvas = document.getElementById(canvasId);
+            if (!expandedChartCanvas) return;
+            
+            document.getElementById('chartModalTitle').innerHTML = '<i class="bi bi-arrows-fullscreen me-2 text-primary" aria-hidden="true"></i>' + title;
+            originalChartParent = expandedChartCanvas.parentElement;
+            
+            const modalBody = document.getElementById('chartModalBody');
+            modalBody.appendChild(expandedChartCanvas);
+
+            // Dynamically Generate Table & Insights
+            generateDataTable(expandedChartCanvas);
+            generateInsights(expandedChartCanvas, title);
+            
+            // Switch to Visual tab by default
+            const triggerEl = document.querySelector('#chartDetailTabs #visual-tab');
+            if (triggerEl) {
+                const tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
+            
+            const modalEl = document.getElementById('chartModal');
+            let myModal = bootstrap.Modal.getInstance(modalEl);
+            if (!myModal) myModal = new bootstrap.Modal(modalEl);
+            myModal.show();
+
+            // RESIZE HOOK: Ensure Chart.js recognizes the new container dimensions
+            setTimeout(() => {
+                const chart = Chart.getChart(expandedChartCanvas);
+                if (chart) {
+                    chart.resize();
+                    chart.update('active'); // Force re-render with animation
+                }
+            }, 300); // 300ms coincides with modal transition
+        };
+
+        window.generateDataTable = function(canvas) {
+            const chart = Chart.getChart(canvas);
+            if (!chart || !chart.data) return;
+            
+            const labels = chart.data.labels || [];
+            const datasets = chart.data.datasets || [];
+            
+            const thead = document.getElementById('chartDataHead');
+            const tbody = document.getElementById('chartDataBody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            
+            // Build Header
+            let thHTML = `<th>Category Elements (${labels.length})</th>`;
+            datasets.forEach(ds => {
+                thHTML += `<th class="text-center">${ds.label || 'Value'}</th>`;
+            });
+            thead.innerHTML = thHTML;
+            
+            // Build Rows
+            let rowsHTML = '';
+            for(let i = 0; i < labels.length; i++) {
+                let row = `<tr><td class="fw-bold text-muted">${labels[i]}</td>`;
+                datasets.forEach(ds => {
+                    let val = (ds.data && ds.data[i] !== undefined) ? ds.data[i] : '-';
+                    row += `<td class="text-center fw-bold fs-6">${val}</td>`;
+                });
+                row += `</tr>`;
+                rowsHTML += row;
+            }
+            tbody.innerHTML = rowsHTML;
+        };
+
+        window.generateInsights = function(canvas, title) {
+            const chart = Chart.getChart(canvas);
+            const container = document.getElementById('chartInsightsBody');
+            if (!chart || !chart.data || !container) return;
+            
+            const labels = chart.data.labels || [];
+            const datasets = chart.data.datasets || [];
+            if (datasets.length < 2) {
+                container.innerHTML = '<div class="alert alert-info border-0 shadow-sm"><i class="bi bi-info-circle me-2" aria-hidden="true"></i>Not enough data dimensions to generate advanced HR insights for this chart.</div>';
+                return;
+            }
+
+            let hiresData = datasets[0].data || [];
+            let exitsData = datasets[1].data || [];
+            
+            let totalHires = 0;
+            let totalExits = 0;
+            let maxHires = { val: -1, idx: -1 };
+            let maxExits = { val: -1, idx: -1 };
+            let maxTurnover = { val: -1, idx: -1 };
+
+            for(let i=0; i<labels.length; i++) {
+                let h = hiresData[i] || 0;
+                let e = exitsData[i] || 0;
+                totalHires += h;
+                totalExits += e;
+                if (h > maxHires.val) { maxHires.val = h; maxHires.idx = i; }
+                if (e > maxExits.val) { maxExits.val = e; maxExits.idx = i; }
+                if ((h+e) > maxTurnover.val) { maxTurnover.val = h+e; maxTurnover.idx = i; }
+            }
+
+            let html = `<h4 class="fw-bold mb-4 text-dark"><i class="bi bi-robot me-2 text-primary" aria-hidden="true"></i>Automated HR Insights</h4>`;
+            html += `<p class="text-muted mb-4">Calculated diagnostic context for: <strong>${title}</strong></p>`;
+            
+            html += `<div class="row g-4 mb-4">`;
+            
+            // Total Activity Card
+            html += `
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100 bg-white">
+                    <div class="card-body">
+                        <h6 class="text-muted fw-bold mb-2 text-uppercase" style="font-size:0.75rem">Total Processed Volume</h6>
+                        <h2 class="mb-0 text-dark fw-bold">${totalHires + totalExits}</h2>
+                        <div class="mt-2 small">
+                            <span class="text-success fw-bold"><i class="bi bi-arrow-down-left" aria-hidden="true"></i> ${totalHires} Hires</span> <span class="text-muted mx-1">&bull;</span> 
+                            <span class="text-danger fw-bold"><i class="bi bi-arrow-up-right" aria-hidden="true"></i> ${totalExits} Exits</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+            // Net Growth
+            let net = totalHires - totalExits;
+            let netColor = net >= 0 ? 'text-success' : 'text-danger';
+            let netVerb = net >= 0 ? 'Positive Growth' : 'Negative Growth';
+            html += `
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100 bg-white">
+                    <div class="card-body">
+                        <h6 class="text-muted fw-bold mb-2 text-uppercase" style="font-size:0.75rem">Net Headcount Target</h6>
+                        <h2 class="mb-0 fw-bold ${netColor}">${net > 0 ? '+'+net : net}</h2>
+                        <div class="mt-2 text-muted fw-bold" style="font-size:0.8rem">${netVerb} across scope</div>
+                    </div>
+                </div>
+            </div>`;
+
+            // Highest Turnover Entity
+            if (maxTurnover.idx >= 0) {
+                html += `
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100 bg-white">
+                        <div class="card-body">
+                            <h6 class="text-muted fw-bold mb-2 text-uppercase" style="font-size:0.75rem">Highest Turnover Node</h6>
+                            <h4 class="mb-1 text-primary text-truncate fw-bold" title="${labels[maxTurnover.idx]}">${labels[maxTurnover.idx]}</h4>
+                            <div class="mt-1 small text-muted fw-bold">${maxTurnover.val} total transitions</div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            html += `</div>`;
+
+            // Actionable Recommendations
+            html += `<h5 class="fw-bold mt-5 mb-3 text-dark">Targeted HR Objectives</h5>`;
+            html += `<ul class="list-group list-group-flush shadow-sm rounded border-0">`;
+            
+            if (maxExits.idx >= 0 && maxExits.val > 0) {
+                html += `<li class="list-group-item bg-white p-4 border-0 border-bottom"><i class="bi bi-exclamation-triangle-fill text-warning me-3 fs-5" aria-hidden="true"></i><strong>Retention Risk Assessment:</strong> Conduct stay-interviews or review competitive compensation for the <strong class="text-dark">${labels[maxExits.idx]}</strong> sector, which leads the organization in highest exits (${maxExits.val}).</li>`;
+            }
+            if (maxHires.idx >= 0 && maxHires.val > 0) {
+                 html += `<li class="list-group-item bg-white p-4 border-0 border-bottom"><i class="bi bi-lightning-charge-fill text-success me-3 fs-5" aria-hidden="true"></i><strong>Growth Logistics:</strong> Ensure sufficient hardware procurement margins and expedited onboarding tracking for <strong class="text-dark">${labels[maxHires.idx]}</strong> due to leading hiring velocity (${maxHires.val}).</li>`;
+            }
+            if (net < 0) {
+                 html += `<li class="list-group-item bg-white p-4 border-0"><i class="bi bi-graph-down text-danger me-3 fs-5" aria-hidden="true"></i><strong>Headcount Deficit Warning:</strong> The underlying dataset indicates a bleeding net headcount (<strong class="text-danger">${net}</strong>). Re-evaluate talent acquisition pipelines to stabilize organizational workloads.</li>`;
+            } else if (net > 0) {
+                 html += `<li class="list-group-item bg-white p-4 border-0"><i class="bi bi-shield-check text-primary me-3 fs-5" aria-hidden="true"></i><strong>Positive Scalability:</strong> Net growth is healthy (<strong class="text-success">+${net}</strong>). Focus HR initiatives on cultural integration, training budgets, and long-term retention strategies.</li>`;
+            } else {
+                 html += `<li class="list-group-item bg-white p-4 border-0"><i class="bi bi-dash-circle text-muted me-3 fs-5" aria-hidden="true"></i><strong>Stagnation:</strong> Net growth is exactly neutral. Monitor turnover replacements precisely to prevent operational gaps.</li>`;
+            }
+
+            html += `</ul>`;
+            container.innerHTML = html;
+        };
+
+        window.downloadChartImage = function() {
+            if (!expandedChartCanvas) return;
+            const url = expandedChartCanvas.toDataURL('image/png', 1.0);
+            const a = document.createElement('a');
+            a.href = url;
+            const titleText = document.getElementById('chartModalTitle').innerText.trim() || 'Chart_Snapshot';
+            a.download = titleText + '_HighRes.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        // When closed, restore Canvas to original Grid layout and force Chart.js resize
+        document.getElementById('chartModal').addEventListener('hidden.bs.modal', function () {
+            if (originalChartParent && expandedChartCanvas) {
+                originalChartParent.appendChild(expandedChartCanvas);
+                const chartInstance = Chart.getChart(expandedChartCanvas);
+                if (chartInstance) chartInstance.resize();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Register DataLabels globally but disable by default
+            Chart.register(ChartDataLabels);
+            Chart.defaults.plugins.datalabels.display = false;
+
+            // Premium Palette
+            const palette = ['#1A52A3','#FCD116','#10b981','#f43f5e','#8b5cf6','#0ea5e9','#f59e0b','#14b8a6','#84cc16','#ec4899'];
+
+            // Global defaults for Premium look
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#9ca3af';
+
+            const commonTooltipOptions = {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                titleColor: '#fff',
+                bodyColor: 'rgba(255, 255, 255, 0.8)',
+                cornerRadius: 8,
+                padding: 12,
+                boxPadding: 4,
+                usePointStyle: true,
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1
+            };
+
+            function doughnut(id, data, opts = {}) {
+                if (!data) data = {};
+                const ctx = document.getElementById(id);
+                if (!ctx) return;
+                
+                if (!Object.keys(data).length) {
+                    ctx.style.display = 'none';
+                    const msg = document.createElement('div');
+                    msg.className = 'text-muted small w-100 h-100 d-flex align-items-center justify-content-center';
+                    msg.innerText = 'No data available';
+                    ctx.parentElement.appendChild(msg);
+                    return;
+                }
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(data),
+                        datasets: [{ 
+                            data: Object.values(data), 
+                            backgroundColor: palette, 
+                            borderWidth: 2, 
+                            borderColor: 'transparent', 
+                            hoverOffset: 6 
+                        }]
+                    },
+                    options: {
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '78%',
+                        layout: { padding: 8 },
+                        plugins: { 
+                            tooltip: commonTooltipOptions,
+                            legend: { 
+                                position: opts.legend || 'bottom', 
+                                labels: { usePointStyle: true, padding: 16, boxWidth: 8, font: { weight: '500' } } 
+                            } 
+                        }
+                    }
+                });
+            }
+
+            function hBar(id, data, color = '#1A52A3') {
+                if (!data) data = {};
+                const ctx = document.getElementById(id);
+                if (!ctx) return;
+                
+                if (!Object.keys(data).length) {
+                    ctx.style.display = 'none';
+                    const msg = document.createElement('div');
+                    msg.className = 'text-muted small w-100 h-100 d-flex align-items-center justify-content-center';
+                    msg.innerText = 'No data available';
+                    ctx.parentElement.appendChild(msg);
+                    return;
+                }
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(data),
+                        datasets: [{ 
+                            label: 'Units', 
+                            data: Object.values(data), 
+                            backgroundColor: color, 
+                            borderRadius: 6, 
+                            borderSkipped: false,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: commonTooltipOptions
+                        },
+                        scales: { 
+                            x: { beginAtZero: true, grid: { display: false, drawBorder: false }, ticks: { stepSize: 1 } }, 
+                            y: { 
+                                grid: { display: false, drawBorder: false }, 
+                                border: { display: false },
+                                ticks: {
+                                    callback: function(value) {
+                                        let text = this.getLabelForValue(value) || '';
+                                        if (text.length > 20 && text.includes(' ')) {
+                                            let words = text.split(' ');
+                                            let lines = [];
+                                            let currentLine = '';
+                                            words.forEach(word => {
+                                                if ((currentLine + word).length > 20) {
+                                                    lines.push(currentLine.trim());
+                                                    currentLine = word + ' ';
+                                                } else {
+                                                    currentLine += word + ' ';
+                                                }
+                                            });
+                                            lines.push(currentLine.trim());
+                                            return lines;
+                                        }
+                                        return text;
+                                    }
+                                }
+                            } 
+                        }
+                    }
+                });
+            }
+
+            function vBar(id, data, color = '#1A52A3') {
+                if (!data) data = {};
+                const ctx = document.getElementById(id);
+                if (!ctx) return;
+
+                if (!Object.keys(data).length) {
+                    ctx.style.display = 'none';
+                    const msg = document.createElement('div');
+                    msg.className = 'text-muted small w-100 h-100 d-flex align-items-center justify-content-center';
+                    msg.innerText = 'No data available';
+                    ctx.parentElement.appendChild(msg);
+                    return;
+                }
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(data),
+                        datasets: [{ 
+                            label: 'Units', 
+                            data: Object.values(data), 
+                            backgroundColor: color, 
+                            borderRadius: 6, 
+                            borderSkipped: false,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: commonTooltipOptions
+                        },
+                        scales: { 
+                            y: { beginAtZero: true, grid: { color: 'rgba(200,200,200,0.05)', drawBorder: false }, ticks: { stepSize: 1 }, border: { display: false } }, 
+                            x: { grid: { display: false, drawBorder: false }, border: { display: false } } 
+                        }
+                    }
+                });
+            }
+
+        @if (activeTab == "hr")
+        {
+            <text>
+            // Hiring vs Exits Trend (grouped bar + net line)
+            const growthCtx = document.getElementById('growthChart');
+            if (growthCtx) {
+                new Chart(growthCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: @Html.Raw(Ser(Model.MonthlyTrendLabels)),
+                        datasets: [
+                            { label: 'Hires',  data: @Html.Raw(Ser(Model.MonthlyTrendOnboarding)),  backgroundColor: palette[2], borderRadius: 6, barPercentage: 0.6, categoryPercentage: 0.8 },
+                            { label: 'Exits',  data: @Html.Raw(Ser(Model.MonthlyTrendOffboarding)), backgroundColor: palette[3], borderRadius: 6, barPercentage: 0.6, categoryPercentage: 0.8 },
+                            { type: 'line', label: 'Net Growth', data: @Html.Raw(Ser(Model.MonthlyNetGrowth)),
+                              borderColor: palette[0], backgroundColor: 'transparent', tension: 0.4, pointRadius: 4, pointBackgroundColor: palette[0] }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                            tooltip: commonTooltipOptions
+                        },
+                        scales: { 
+                            x: { 
+                                grid: { display: false, drawBorder: false }, 
+                                border: { display: false }, 
+                                ticks: { 
+                                    maxRotation: 0, minRotation: 0, autoSkip: false,
+                                    callback: function(value) {
+                                        let text = this.getLabelForValue(value) || '';
+                                        if (text.includes(' ')) {
+                                            return text.split(' ');
+                                        }
+                                        return text;
+                                    }
+                                } 
+                            }, 
+                            y: { beginAtZero: true, grid: { color: 'rgba(200,200,200,0.05)', drawBorder: false }, ticks: { stepSize: 1 }, border: { display: false } } 
+                        }
+                    }
+                });
+            }
+
+            // Onboarding Status Distribution
+            doughnut('onStatusChart', @Html.Raw(Ser(Model.OnboardingStatusDistribution)), { legend: 'bottom' });
+
+            // Offboarding Status Distribution
+            doughnut('offStatusChart', @Html.Raw(Ser(Model.OffboardingStatusDistribution)), { legend: 'bottom' });
+
+            // Department grouped bar
+            const deptCtx = document.getElementById('deptChart');
+            if (deptCtx) {
+                const onDept  = @Html.Raw(Ser(Model.DepartmentOnboardingBreakdown));
+                const offDept = @Html.Raw(Ser(Model.DepartmentOffboardingBreakdown));
+                let depts   = [...new Set([...Object.keys(onDept), ...Object.keys(offDept)])];
+                
+                // UX UPGRADE: Sort by Volume Descending for "Waterfall" effect
+                depts.sort((a, b) => {
+                    const totalA = (onDept[a] || 0) + (offDept[a] || 0);
+                    const totalB = (onDept[b] || 0) + (offDept[b] || 0);
+                    return totalB - totalA;
+                });
+
+                new Chart(deptCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: depts,
+                        datasets: [
+                            { 
+                                label: 'Hires', data: depts.map(d => onDept[d] || 0),  backgroundColor: palette[2], borderRadius: 6, barPercentage: 0.6, categoryPercentage: 0.8,
+                                datalabels: { display: function(ctx) { return ctx.dataset.data[ctx.dataIndex] > 0; }, align: 'end', anchor: 'end', color: palette[2], font: { weight: 'bold' } }
+                            },
+                            { 
+                                label: 'Exits', data: depts.map(d => offDept[d] || 0), backgroundColor: palette[3], borderRadius: 6, barPercentage: 0.6, categoryPercentage: 0.8,
+                                datalabels: { display: function(ctx) { return ctx.dataset.data[ctx.dataIndex] > 0; }, align: 'end', anchor: 'end', color: palette[3], font: { weight: 'bold' } }
+                            }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        layout: { padding: { left: 20, right: 20 } },
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+                            tooltip: commonTooltipOptions
+                        },
+                        scales: { 
+                            y: { 
+                                grid: { display: false, drawBorder: false }, 
+                                border: { display: false }, 
+                                ticks: { 
+                                    autoSkip: false
+                                } 
+                            }, 
+                            x: { beginAtZero: true, grid: { color: 'rgba(200,200,200,0.05)', drawBorder: false }, ticks: { stepSize: 1, maxRotation: 0, minRotation: 0 }, border: { display: false } } 
+                        }
+                    }
+                });
+            }
+
+            // Branch grouped bar
+            const branchCtx = document.getElementById('branchChart');
+            if (branchCtx) {
+                const onBranch  = @Html.Raw(Ser(Model.BranchOnboardingBreakdown));
+                const offBranch = @Html.Raw(Ser(Model.BranchOffboardingBreakdown));
+                let branches  = [...new Set([...Object.keys(onBranch), ...Object.keys(offBranch)])];
+                
+                // UX UPGRADE: Sort by Volume Descending for "Waterfall" effect
+                branches.sort((a, b) => {
+                    const totalA = (onBranch[a] || 0) + (offBranch[a] || 0);
+                    const totalB = (onBranch[b] || 0) + (offBranch[b] || 0);
+                    return totalB - totalA;
+                });
+
+                new Chart(branchCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: branches,
+                        datasets: [
+                            { 
+                                label: 'Hires', data: branches.map(b => onBranch[b] || 0),  backgroundColor: palette[2], borderRadius: 6, barPercentage: 0.6, categoryPercentage: 0.8,
+                                datalabels: { display: function(ctx) { return ctx.dataset.data[ctx.dataIndex] > 0; }, align: 'end', anchor: 'end', color: palette[2], font: { weight: 'bold' } }
+                            },
+                            { 
+                                label: 'Exits', data: branches.map(b => offBranch[b] || 0), backgroundColor: palette[3], borderRadius: 6, barPercentage: 0.6, categoryPercentage: 0.8,
+                                datalabels: { display: function(ctx) { return ctx.dataset.data[ctx.dataIndex] > 0; }, align: 'end', anchor: 'end', color: palette[3], font: { weight: 'bold' } }
+                            }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        layout: { padding: { left: 20, right: 20 } },
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+                            tooltip: commonTooltipOptions
+                        },
+                        scales: { 
+                            y: { 
+                                grid: { display: false, drawBorder: false }, 
+                                border: { display: false }, 
+                                ticks: { 
+                                    autoSkip: false
+                                } 
+                            }, 
+                            x: { beginAtZero: true, grid: { color: 'rgba(200,200,200,0.05)', drawBorder: false }, ticks: { stepSize: 1, maxRotation: 0, minRotation: 0 }, border: { display: false } } 
+                        }
+                    }
+                });
+            }
+            </text>
+        }
+        else if (activeTab == "it")
+        {
+            <text>
+            doughnut('assetDistChart', @Html.Raw(Ser(Model.AssetStatusBreakdown)), { legend: 'bottom' });
+            doughnut('swDistChart',    @Html.Raw(Ser(Model.SoftwareLicenseBreakdown)), { legend: 'bottom' });
+            hBar('typeChart',    @Html.Raw(Ser(Model.AssetTypeDistribution)),        palette[0]);
+            hBar('osChart',      @Html.Raw(Ser(Model.WindowsVersionDistribution)),   palette[2]);
+            </text>
+        }
+        });
+    </script>
+}
+
+

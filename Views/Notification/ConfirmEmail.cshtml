@@ -1,0 +1,233 @@
+@model IT_Form.Models.EmailConfirmationViewModel
+
+@{
+    ViewData["Title"] = "Confirm Email Details";
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <a href="@Model.ReturnUrl" class="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" title="Cancel and Return" aria-label="Cancel and Return">
+                                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                            </a>
+                            <h3 class="mb-0 text-primary fw-bold">Review & Send Email</h3>
+                        </div>
+                        @if (Model.HasAttachment && Model.RequestId.HasValue && !string.IsNullOrEmpty(Model.EmailType))
+                        {
+                            <a href="/Notification/PreviewAttachment?id=@Model.RequestId&type=@Model.EmailType" target="_blank" class="btn btn-outline-primary btn-sm  d-flex align-items-center gap-1 px-3 shadow-sm">
+                                <i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i> Preview Attachment
+                            </a>
+                        }
+                    </div>
+                    <p class="text-muted mb-0 mt-3 ms-1" style="font-size: 0.9em;">
+                        Verify the recipients and content below before submitting. You may select saved contacts or type addresses manually (press Enter to add).
+                    </p>
+                </div>
+                
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="SendConfirmedEmail" id="confirmEmailForm" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        <input type="hidden" asp-for="BodyHtml" />
+                        <input type="hidden" asp-for="RequestId" />
+                        <input type="hidden" asp-for="EmailType" />
+                        <input type="hidden" asp-for="HasAttachment" />
+                        <input type="hidden" asp-for="SignatureImage" />
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert" aria-live="assertive"></div>
+
+                        <div class="mb-4">
+                            <label asp-for="To" class="form-label fw-semibold text-secondary">To <span class="text-danger">*</span></label>
+                            <select asp-for="To" class="form-select email-select2" multiple="multiple" data-placeholder="Select or type email addresses...">
+                                @if (Model.To != null)
+                                {
+                                    foreach (var email in Model.To)
+                                    {
+                                        <option value="@email.Trim()" selected="selected">@email.Trim()</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="To" class="text-danger small mt-1" role="alert" aria-live="polite"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Cc" class="form-label fw-semibold text-secondary">Cc</label>
+                            <select asp-for="Cc" class="form-select email-select2" multiple="multiple" data-placeholder="Select or type Cc addresses...">
+                                @if (Model.Cc != null)
+                                {
+                                    foreach (var email in Model.Cc)
+                                    {
+                                        <option value="@email.Trim()" selected="selected">@email.Trim()</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="Cc" class="text-danger small mt-1" role="alert" aria-live="polite"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Subject" class="form-label fw-semibold text-secondary">Subject <span class="text-danger">*</span></label>
+                            <input asp-for="Subject" class="form-control bg-light" required />
+                            <span asp-validation-for="Subject" class="text-danger small mt-1" role="alert" aria-live="polite"></span>
+                        </div>
+
+                        <div class="mb-5 accordion" id="previewAccordion">
+                            <div class="accordion-item border-0 bg-transparent">
+                                <h2 class="accordion-header" id="headingPreview">
+                                    <button class="accordion-button collapsed rounded-3 shadow-sm bg-light fw-semibold text-secondary border" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePreview" aria-expanded="false" aria-controls="collapsePreview">
+                                        <i class="bi bi-eye me-2" aria-hidden="true"></i> View Message Preview
+                                    </button>
+                                </h2>
+                                <div id="collapsePreview" class="accordion-collapse collapse mt-3" aria-labelledby="headingPreview" data-bs-parent="#previewAccordion">
+                                    <div class="p-3 p-md-5 bg-dark-subtle rounded-3 border overflow-auto" style="max-height: 500px;" role="region" aria-label="Message Preview Content">
+                                        <!-- Realistic Email Inbox Mockup -->
+                                            <div class="email-preview-container p-0">
+                                                @if (!string.IsNullOrEmpty(Model.BodyHtml))
+                                                {
+                                                    var previewHtml = Model.BodyHtml;
+                                                    if (!string.IsNullOrEmpty(Model.SignatureImage))
+                                                    {
+                                                        // Ensure the replacement happens correctly regardless of quotes
+                                                        previewHtml = previewHtml.Replace("src='cid:signature'", $"src='{Model.SignatureImage}'");
+                                                        previewHtml = previewHtml.Replace("src=\"cid:signature\"", $"src=\"{Model.SignatureImage}\"");
+                                                    }
+                                                    @Html.Raw(previewHtml)
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <div class="d-flex justify-content-end gap-3 border-top pt-4">
+                            <a href="@Model.ReturnUrl" class="btn btn-outline-secondary px-4 py-2  fw-medium">Cancel</a>
+                            <button type="submit" id="sendBtn" class="btn btn-primary px-5 py-2  fw-bold shadow-sm d-flex align-items-center gap-2">
+                                <span id="sendIcon"><i class="bi bi-send-fill" aria-hidden="true"></i></span>
+                                <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                <span id="sendText">Send Email</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <!-- Select2 CSS & JS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Initialize Select2 with Tagging and AJAX for fetching Email Contacts
+            $('.email-select2').select2({
+                theme: 'bootstrap-5',
+                tags: true, // Allow manual input
+                tokenSeparators: [',', ';', ' '],
+                ajax: {
+                    url: '/EmailContact/SearchContacts',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            term: params.term // search term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data // id and text are returned by the API
+                        };
+                    },
+                    cache: true
+                },
+                createTag: function (params) {
+                    var term = $.trim(params.term);
+                    // Extremely basic email regex validation for typing
+                    // Modified to be more permissive to allow bulk pasting (handling will occur in tokenSeparators/paste event)
+                    if (term === '') {
+                        return null;
+                    }
+                    if (term.includes(',') || term.includes(';')) {
+                        return null; // Let tokenSeparators handle parsing
+                    }
+                    var emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                    if (!emailRegex.test(term)) {
+                        return null; // Prevents "fake" emails from being rendered as a valid tag visually
+                    }
+                    return {
+                        id: term,
+                        text: term,
+                        newTag: true 
+                    }
+                }
+            });
+
+            // Handle bulk pasting of emails separated by commas or semicolons
+            $('.email-select2').on('paste', function(e) {
+                e.preventDefault();
+                var pastedData = e.originalEvent.clipboardData.getData('text');
+                
+                if (pastedData) {
+                    var emails = pastedData.split(/[;, ]/).map(function(item) {
+                        return $.trim(item);
+                    }).filter(function(item) {
+                        return item.length > 0;
+                    });
+                    
+                    var selectEl = $(this);
+                    emails.forEach(function(email) {
+                        // Very basic verification to avoid empty tags
+                        if(email.includes('@@')) {
+                            if (!selectEl.find("option[value='" + email + "']").length) {
+                                var newOption = new Option(email, email, true, true);
+                                selectEl.append(newOption);
+                            } else {
+                                selectEl.val(selectEl.val().concat(email));
+                            }
+                        }
+                    });
+                    selectEl.trigger('change');
+                }
+            });
+
+            // Prevent Double Submissions & Show Loading State
+            $('#confirmEmailForm').on('submit', function() {
+                if ($(this).valid()) {
+                    var btn = $('#sendBtn');
+                    btn.prop('disabled', true);
+                    $('#sendIcon').addClass('d-none');
+                    $('#spinner').removeClass('d-none');
+                    $('#sendText').text('Sending...');
+                }
+            });
+            
+            // Re-enable in case user navigates back via bfcache
+            $(window).bind("pageshow", function(event) {
+                if (event.originalEvent.persisted) {
+                    $('#sendBtn').prop('disabled', false);
+                    $('#sendIcon').removeClass('d-none');
+                    $('#spinner').addClass('d-none');
+                    $('#sendText').text('Send Email');
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: calc(1.5em + 1rem + 2px);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #f8f9fa;
+        }
+    </style>
+}

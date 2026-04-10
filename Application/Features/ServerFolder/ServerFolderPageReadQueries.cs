@@ -1,0 +1,218 @@
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Support;
+using IT_Form.Data;
+using IT_Form.Helpers;
+using Mapster;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace IT_Form.Application.Features.ServerFolder
+{
+    public sealed record GetServerFolderIndexPageQuery() : IRequest<ProcessResult<List<ServerFolderIndexListItem>>>;
+    public sealed record GetServerFolderCreatePageQuery(ServerFolderEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<ServerFolderEditorPageViewModel>>;
+    public sealed record GetServerFolderEditPageQuery(int Id, ServerFolderEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<ServerFolderEditorPageViewModel>>;
+    public sealed record GetServerFolderMembersPageQuery(int Id, int? OnboardingRequestId = null) : IRequest<ProcessResult<ServerFolderMembersPageViewModel>>;
+
+    public sealed class GetServerFolderIndexPageQueryHandler : IRequestHandler<GetServerFolderIndexPageQuery, ProcessResult<List<ServerFolderIndexListItem>>>
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
+
+        public GetServerFolderIndexPageQueryHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        {
+            _context = context;
+            _currentUserAccessor = currentUserAccessor;
+        }
+
+        public async Task<ProcessResult<List<ServerFolderIndexListItem>>> Handle(GetServerFolderIndexPageQuery request, CancellationToken cancellationToken)
+        {
+            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var accessibleCompanyIds = scopedCompanies.Count > 0
+                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                : null;
+
+            var serverFoldersQuery = _context.ServerFolders
+                .AsNoTracking()
+                .OrderBy(folder => folder.FolderName)
+                .AsQueryable();
+
+            if (accessibleCompanyIds is { Count: > 0 })
+            {
+                serverFoldersQuery = serverFoldersQuery.Where(folder =>
+                    folder.ServerFolderCompanies.Any(link => accessibleCompanyIds.Contains(link.CompanyId)));
+            }
+
+            var serverFolders = await serverFoldersQuery
+                .ProjectToType<ServerFolderIndexListItem>()
+                .ToListAsync(cancellationToken);
+
+            return ProcessResult<List<ServerFolderIndexListItem>>.Success(serverFolders);
+        }
+    }
+
+    public sealed class GetServerFolderCreatePageQueryHandler : IRequestHandler<GetServerFolderCreatePageQuery, ProcessResult<ServerFolderEditorPageViewModel>>
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
+
+        public GetServerFolderCreatePageQueryHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        {
+            _context = context;
+            _currentUserAccessor = currentUserAccessor;
+        }
+
+        public async Task<ProcessResult<ServerFolderEditorPageViewModel>> Handle(GetServerFolderCreatePageQuery request, CancellationToken cancellationToken)
+        {
+            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var accessibleCompanyIds = scopedCompanies.Count > 0
+                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken, activeOnly: true)
+                : null;
+
+            if (request.SelectedCompanyIds != null &&
+                accessibleCompanyIds is { Count: > 0 } &&
+                !request.SelectedCompanyIds.All(accessibleCompanyIds.Contains))
+            {
+                return ProcessResult<ServerFolderEditorPageViewModel>.Forbidden();
+            }
+
+            var model = request.Model?.Adapt<ServerFolderEditorPageViewModel>() ?? new ServerFolderEditorPageViewModel();
+            model.SelectedCompanyIds = request.SelectedCompanyIds?.ToList() ?? [];
+            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            return ProcessResult<ServerFolderEditorPageViewModel>.Success(model);
+        }
+    }
+
+    public sealed class GetServerFolderEditPageQueryHandler : IRequestHandler<GetServerFolderEditPageQuery, ProcessResult<ServerFolderEditorPageViewModel>>
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
+
+        public GetServerFolderEditPageQueryHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        {
+            _context = context;
+            _currentUserAccessor = currentUserAccessor;
+        }
+
+        public async Task<ProcessResult<ServerFolderEditorPageViewModel>> Handle(GetServerFolderEditPageQuery request, CancellationToken cancellationToken)
+        {
+            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var accessibleCompanyIds = scopedCompanies.Count > 0
+                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                : null;
+
+            ServerFolderEditorPageViewModel? model;
+            if (request.Model != null)
+            {
+                model = request.Model.Adapt<ServerFolderEditorPageViewModel>();
+            }
+            else
+            {
+                model = await _context.ServerFolders
+                    .AsNoTracking()
+                    .Where(folder => folder.Id == request.Id)
+                    .ProjectToType<ServerFolderEditorPageViewModel>()
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+
+            if (model == null)
+            {
+                return ProcessResult<ServerFolderEditorPageViewModel>.NotFound();
+            }
+
+            if (accessibleCompanyIds is { Count: > 0 } && !model.SelectedCompanyIds.All(accessibleCompanyIds.Contains))
+            {
+                return ProcessResult<ServerFolderEditorPageViewModel>.Forbidden();
+            }
+
+            if (request.SelectedCompanyIds != null)
+            {
+                if (accessibleCompanyIds is { Count: > 0 } && !request.SelectedCompanyIds.All(accessibleCompanyIds.Contains))
+                {
+                    return ProcessResult<ServerFolderEditorPageViewModel>.Forbidden();
+                }
+
+                model.SelectedCompanyIds = request.SelectedCompanyIds.ToList();
+            }
+
+            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            return ProcessResult<ServerFolderEditorPageViewModel>.Success(model);
+        }
+    }
+
+    public sealed class GetServerFolderMembersPageQueryHandler : IRequestHandler<GetServerFolderMembersPageQuery, ProcessResult<ServerFolderMembersPageViewModel>>
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
+
+        public GetServerFolderMembersPageQueryHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        {
+            _context = context;
+            _currentUserAccessor = currentUserAccessor;
+        }
+
+        public async Task<ProcessResult<ServerFolderMembersPageViewModel>> Handle(GetServerFolderMembersPageQuery request, CancellationToken cancellationToken)
+        {
+            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var accessibleCompanyIds = scopedCompanies.Count > 0
+                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                : null;
+
+            var folder = await _context.ServerFolders
+                .AsNoTracking()
+                .Where(serverFolder => serverFolder.Id == request.Id)
+                .Select(serverFolder => new
+                {
+                    serverFolder.Id,
+                    serverFolder.FolderName,
+                    CompanyIds = serverFolder.ServerFolderCompanies.Select(link => link.CompanyId).ToList()
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (folder == null)
+                return ProcessResult<ServerFolderMembersPageViewModel>.NotFound();
+
+            if (accessibleCompanyIds is { Count: > 0 } && !folder.CompanyIds.All(accessibleCompanyIds.Contains))
+            {
+                return ProcessResult<ServerFolderMembersPageViewModel>.Forbidden();
+            }
+
+            var membersQuery = _context.FolderPermissions
+                .AsNoTracking()
+                .Where(f => f.FolderName == folder.FolderName && (f.CanRead || f.CanModify))
+                .AsQueryable();
+
+            if (scopedCompanies.Count > 0)
+            {
+                var accessibleOnboardingRequestIds = CompanyScopeHelper
+                    .ApplyOnboardingCompanyScope(_context.OnboardingRequests.AsNoTracking(), scopedCompanies)
+                    .Select(onboarding => onboarding.Id);
+
+                membersQuery = membersQuery.Where(permission =>
+                    permission.OnboardingRequestId.HasValue &&
+                    accessibleOnboardingRequestIds.Contains(permission.OnboardingRequestId.Value));
+            }
+
+            var members = await membersQuery
+                .OrderBy(permission => permission.OnboardingRequest!.FullName)
+                .ProjectToType<ServerFolderMemberListItem>()
+                .ToListAsync(cancellationToken);
+
+            var currentEmployees = await PageQueryLookupSupport.LoadCurrentEmployeesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            var currentEmployeeDisplayName = request.OnboardingRequestId.HasValue &&
+                                             currentEmployees.Any(employee => employee.Id == request.OnboardingRequestId.Value)
+                ? await PageQueryLookupSupport.LoadCurrentEmployeeDisplayNameAsync(_context, request.OnboardingRequestId, cancellationToken)
+                : null;
+
+            return ProcessResult<ServerFolderMembersPageViewModel>.Success(new ServerFolderMembersPageViewModel
+            {
+                FolderId = folder.Id,
+                FolderName = folder.FolderName,
+                CurrentEmployeeId = request.OnboardingRequestId,
+                CurrentEmployeeDisplayName = currentEmployeeDisplayName,
+                CurrentEmployees = currentEmployees,
+                Members = members
+            });
+        }
+    }
+}

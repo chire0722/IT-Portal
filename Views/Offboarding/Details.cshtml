@@ -1,0 +1,1003 @@
+﻿@model IT_Form.ViewModels.OffboardingDetailsPageViewModel
+@using IT_Form.Models.Enums
+
+@{
+    ViewData["Title"] = "Offboarding Details";
+    bool isITUser = User.HasClaim("UserTitle", "IT");
+    bool isHRUser = User.HasClaim("UserTitle", "HR");
+    bool isManagerUser = User.HasClaim("UserTitle", "Manager") || User.HasClaim("UserTitle", "HOD");
+    var managerEmails = Model.MyManagerEmails;
+    var currentUserId = Model.CurrentUserId;
+    
+    // Authorization: HOD matches if AssignedHodId matches current user ID, 
+    // OR if AssignedHodId is null and the current user's email matches the form's HODEmail (legacy)
+    bool isAssignedManager = isManagerUser && (
+        (Model.AssignedHodId != null && Model.AssignedHodId == currentUserId) ||
+        (Model.AssignedHodId == null && managerEmails.Contains(Model.HODEmail ?? ""))
+    );
+    bool hasHRSig = !string.IsNullOrEmpty(Model.HRSignature);
+    bool hasManagerSig = !string.IsNullOrEmpty(Model.HODSignature);
+    bool hasITSig = !string.IsNullOrEmpty(Model.ITAdminSignature);
+
+    var detailBadgeClass = Model.Status switch
+    {
+        RequestStatus.Completed => "badge-completed",
+        RequestStatus.PendingEmployeeSign => "badge-employeesign",
+        RequestStatus.Draft => "badge-draft",
+        RequestStatus.PendingITApproval => "badge-pending",
+        RequestStatus.PendingHODApproval => "badge-hod",
+        RequestStatus.PendingApproval => "badge-hod",
+        RequestStatus.Rejected => "badge-rejected",
+        _ => "badge-pending"
+    };
+}
+
+<div class="details-hero animate-in mt-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            @if (!string.IsNullOrEmpty(Model.CompanyLogoPath))
+            {
+                <div class="flex-shrink-0">
+                    <img src="/@Model.CompanyLogoPath" alt="Company Logo" style="height: 32px; object-fit: contain;" />
+                </div>
+            }
+            <h2 class="fw-bolder mb-0 fs-4">
+                <span class="text-gradient">@Model.FullName</span>
+                <span class="badge @detailBadgeClass ms-2 fs-6" style="vertical-align: middle;">
+                    @(Model.Status == RequestStatus.PendingITApproval ? "Pending IT Approval" : 
+                      (Model.Status == RequestStatus.PendingHODApproval || Model.Status == RequestStatus.PendingApproval) ? "Awaiting HOD Approval" : 
+                      Model.Status.ToString())
+                </span>
+            </h2>
+        </div>
+
+        <div class="details-action-bar ms-auto d-flex gap-2">
+            <a asp-action="GeneratePdf" asp-route-id="@Model.Id" class="btn details-action details-action--pdf">
+                <span class="details-action__icon">
+                    <i class="fas fa-file-pdf"></i>
+                </span>
+                <span>Download PDF</span>
+            </a>
+
+            @if (Model.Status != RequestStatus.Completed && Model.Status != RequestStatus.PendingEmployeeSign && isITUser)
+            {
+                <a asp-action="ITSetup" asp-route-id="@Model.Id" class="btn details-action details-action--primary">
+                    <span class="details-action__icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </span>
+                    <span>IT Setup</span>
+                </a>
+            }
+
+            @if (isHRUser && hasHRSig && !hasManagerSig && !hasITSig)
+            {
+                <button type="button" class="btn details-action details-action--danger" data-bs-toggle="modal" data-bs-target="#deleteFormModal">
+                    <span class="details-action__icon">
+                        <i class="bi bi-trash"></i>
+                    </span>
+                    <span>Delete Form</span>
+                </button>
+            }
+
+            @if (Model.Status == RequestStatus.Rejected)
+            {
+                <a asp-controller="Notification" asp-action="ComposeRejectionEmail" asp-route-id="@Model.Id" asp-route-type="Offboarding" class="btn details-action details-action--danger">
+                    <span class="details-action__icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </span>
+                    <span>Send Rejection Email</span>
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Notification" asp-action="ComposeOffboardingEmail" asp-route-id="@Model.Id" class="btn details-action details-action--success">
+                    <span class="details-action__icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </span>
+                    <span>Open in Outlook</span>
+                </a>
+            }
+
+            <a asp-action="Index" class="btn details-action details-action--neutral">
+                <span class="details-action__icon">
+                    <i class="fas fa-arrow-left"></i>
+                </span>
+                <span>Back</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-2 d-flex align-items-center gap-4">
+        <p class="text-muted mb-0 small"><strong>Req #@Model.Id</strong></p>
+        @if (Model.Status != RequestStatus.Completed && Model.Status != RequestStatus.Rejected && Model.Status != RequestStatus.Approved)
+        {
+            var deadline = Model.SlaDeadline;
+            if (deadline != default)
+            {
+                var isOverdue = DateTime.UtcNow > deadline;
+                <p class="mb-0 small @(isOverdue ? "text-danger fw-bold" : "text-primary")">
+                    <i class="bi bi-clock-history me-1"></i>Due: @deadline.AddHours(8).ToString("dd/MM/yyyy HH:mm")
+                    @if (isOverdue)
+                    {
+                        <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">Overdue</span>
+                    }
+                </p>
+            }
+        }
+        <p class="mb-0 small fw-bold" style="color: #d9534f;">
+            <i class="bi bi-calendar-event me-1"></i>Last Day: @Model.LastDayOfWork.ToString("dd/MM/yyyy")
+        </p>
+    </div>
+</div>
+
+@if (Model.Status == IT_Form.Models.Enums.RequestStatus.Rejected)
+{
+                                    <div class="rejection-banner animate-in">
+                                        <div class="d-flex align-items-start gap-3">
+                                            <i class="bi bi-x-circle-fill text-danger fs-3" aria-hidden="true"></i>
+                                            <div>
+                                                <h5 class="text-danger mb-1 fw-bold">Request Rejected</h5>
+                                                <p class="mb-0" style="color: var(--text-primary);">
+                                                    <strong>Reason:</strong> @Model.RejectionReason
+                                                </p>
+                @if (!string.IsNullOrEmpty(Model.RejectedByUserId))
+                {
+                                                                                    <small style="color: var(--text-muted);">Rejected by @Model.RejectedByUserId</small>
+                }
+                                            </div>
+                                        </div>
+                                    </div>
+}
+
+<div class="row g-4">
+    <!-- Employee Info -->
+    <div class="col-lg-4">
+        <div class="card animate-in h-100">
+            <div class="card-header">
+                <i class="bi bi-person-badge me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Employee Details
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0" style="border: none;">
+                    <tr>
+                        <td style="color: var(--text-muted); width: 40%;">ID / IC</td>
+                        <td><strong>@(Model.EmployeeID ?? "-")</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Department</td>
+                        <td>
+                            <strong>@Model.Department</strong>
+                            @if (Model.Department == "Others" && !string.IsNullOrEmpty(Model.OtherDepartmentDetails))
+                            {
+                                <span class="text-info small">(@Model.OtherDepartmentDetails)</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Company</td>
+                        <td>
+                            <strong>@(Model.Branch ?? "-")</strong>
+                            @if (Model.Branch == "Others" && !string.IsNullOrEmpty(Model.OtherBranchDetails))
+                            {
+                                <span class="text-info small">(@Model.OtherBranchDetails)</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Email</td>
+                        <td>@(Model.EmailAddress ?? Model.OnboardingRequest?.EmailAddress ?? "-")</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Manager</td>
+                        <td>@Model.ManagerDisplayName</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Last Day</td>
+                        <td class="text-danger fw-bold">@Model.LastDayOfWork.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                    @if (Model.OnboardingRequestId.HasValue)
+                    {
+                                                <tr>
+                                                    <td style="color: var(--text-muted);">Onboarding</td>
+                                                    <td>
+                                                        <a asp-controller="Onboarding" asp-action="Details" asp-route-id="@Model.OnboardingRequestId" class="btn btn-sm btn-outline-info p-0 px-2">Req #@Model.OnboardingRequestId</a>
+                                                    </td>
+                                                </tr>
+                    }
+                </table>
+
+                @if (!string.IsNullOrEmpty(Model.ResignationLetterPath) && !isITUser)
+                {
+                                                <div class="mt-4 border-top pt-3">
+                                                    <h6 class="text-muted small fw-bold mb-2"><i class="fas fa-file-pdf me-2 text-danger" aria-hidden="true"></i>Resignation Letter</h6>
+                                                    <a href="@Model.ResignationLetterPath" target="_blank" class="btn btn-outline-danger btn-sm w-100">
+                                                        <i class="fas fa-download me-2" aria-hidden="true"></i>View / Download Letter
+                                                    </a>
+                                                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- IT Access & Accounts Checklist (IT Admin Only) -->
+    @if (isITUser)
+    {
+                        <div class="col-lg-4">
+                            <div class="card animate-in h-100" style="animation-delay: 0.1s;">
+                                <div class="card-header">
+                                    <i class="bi bi-person-x me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Accounts & Access
+                                </div>
+                                <div class="card-body">
+                                    <!-- Contextual Info Display -->
+                    @if (Model.OnboardingRequest != null)
+                    {
+                                                                    <div class="alert alert-secondary py-2 small mb-3 border-0 shadow-sm" style="background: var(--bg-body);">
+                                                                        <strong><i class="fas fa-info-circle me-1 text-primary" aria-hidden="true"></i> Assigned Software & Access:</strong>
+                                                                        <ul class="mb-0 mt-1 ps-3 text-muted">
+                                @if (Model.OnboardingRequest.MailboxAccount)
+                                {
+                                                                                                    <li>M365 License</li>
+                                }
+                                @if (Model.OnboardingRequest.HasAdobe)
+                                {
+                                                                                                    <li>Adobe</li>
+                                }
+                                @if (Model.OnboardingRequest.HasMSProject)
+                                {
+                                                                                                    <li>MS Project</li>
+                                }
+                                @if (Model.OnboardingRequest.HasAutoDesk)
+                                {
+                                                                                                    <li>AutoDesk</li>
+                                }
+                                @if (Model.OnboardingRequest.HasGStarCAD)
+                                {
+                                                                                                    <li>G-Star CAD</li>
+                                }
+                                @if (Model.OnboardingRequest.HasFortiClientVPN)
+                                {
+                                                                                                    <li>FortiClient VPN</li>
+                                }
+                                @if (Model.OnboardingRequest.HasSQLAccounting)
+                                {
+                                                                                                    <li>SQL Accounting</li>
+                                }
+                                @if (Model.OnboardingRequest.HasMSVisio)
+                                {
+                                                                                                    <li>MS Visio</li>
+                                }
+                                @if (Model.OnboardingRequest.HasAutoCAD)
+                                {
+                                                                                                    <li>AutoCAD</li>
+                                }
+                                @if (Model.OnboardingRequest.HasSketchUp)
+                                {
+                                                                                                    <li>SketchUp</li>
+                                }
+                                @if (Model.OnboardingRequest.HasMSOffice) { <li>MS Office</li> }
+                                @if (Model.OnboardingRequest.HasGoogleChrome) { <li>Google Chrome</li> }
+                                @if (Model.OnboardingRequest.HasMSTeams) { <li>MS Teams</li> }
+                                @if (Model.OnboardingRequest.HasAntivirus) { <li>Antivirus Endpoint</li> }
+                                @if (Model.OnboardingRequest.HasDWGTrueView) { <li>DWG TrueView</li> }
+                                @if (Model.OnboardingRequest.HasIFlexiHRMS) { <li>i-Flexi HRMS</li> }
+                                @if (Model.OnboardingRequest.HasEShare) { <li>EShare</li> }
+                                @if (Model.OnboardingRequest.HasOS) { <li>Operating System</li> }
+                                @if (Model.OnboardingRequest.HasOtherSoftware && !string.IsNullOrEmpty(Model.OnboardingRequest.OtherSoftwareDetails))
+                                {
+                                                                                                            <li>Other: @Model.OnboardingRequest.OtherSoftwareDetails</li>
+                                }
+                                @if (Model.OnboardingRequest.PrecastGroup || Model.OnboardingRequest.OtherGroup || Model.OnboardingRequest.MailboxLogistic || Model.OnboardingRequest.MailboxInfo || Model.OnboardingRequest.MailboxAdmin || Model.OnboardingRequest.MailboxIntern || Model.OnboardingRequest.MailboxIT || Model.OnboardingRequest.MailboxSupervisor || Model.OnboardingRequest.MailboxStore)
+                                {
+                                                                                                            <li>Email Groups: 
+                                                                                                                @if (Model.OnboardingRequest.PrecastGroup) { <span class="badge bg-light text-dark border me-1">Precast</span> }
+                                                                                                                @if (Model.OnboardingRequest.MailboxLogistic) { <span class="badge bg-light text-dark border me-1">Logistic</span> }
+                                                                                                                @if (Model.OnboardingRequest.MailboxInfo) { <span class="badge bg-light text-dark border me-1">Info</span> }
+                                                                                                                @if (Model.OnboardingRequest.MailboxAdmin) { <span class="badge bg-light text-dark border me-1">Admin</span> }
+                                                                                                                @if (Model.OnboardingRequest.MailboxIntern) { <span class="badge bg-light text-dark border me-1">Intern</span> }
+                                                                                                                @if (Model.OnboardingRequest.MailboxIT) { <span class="badge bg-light text-dark border me-1">IT</span> }
+                                                                                                                @if (Model.OnboardingRequest.MailboxSupervisor) { <span class="badge bg-light text-dark border me-1">Supervisor</span> }
+                                                                                                                @if (Model.OnboardingRequest.MailboxStore) { <span class="badge bg-light text-dark border me-1">Store</span> }
+                                                                                                                @if (Model.OnboardingRequest.OtherGroup) { <span class="text-primary italic">@Model.OnboardingRequest.OtherGroupDetails</span> }
+                                                                                                            </li>
+                                }
+                                @if (Model.OnboardingRequest.FolderPermissions.Any() || Model.OnboardingRequest.HasOtherFolder)
+                                {
+                                    var folderList = Model.OnboardingRequest.FolderPermissions.Select(f => f.FolderName).ToList();
+                                    if (Model.OnboardingRequest.HasOtherFolder && !string.IsNullOrEmpty(Model.OnboardingRequest.OtherFolderDetails))
+                                        folderList.Add($"Other: {Model.OnboardingRequest.OtherFolderDetails}");
+                                                                                                            <li>Folders: @string.Join(", ", folderList)</li>
+                                }
+                                                                        </ul>
+                                                                    </div>
+                    }
+
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Active Directory Disabled
+                            @if (Model.AccountDisabledAD)
+                            {
+                                                                                <i class="bi bi-check-square-fill text-success fs-4" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                                                                <i class="bi bi-square fs-4 text-muted" aria-hidden="true"></i>
+                            }
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            M365 License Revoked
+                            @if (Model.M365LicenseRevoked)
+                            {
+                                                                                <i class="bi bi-check-square-fill text-success fs-4" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                                                                <i class="bi bi-square fs-4 text-muted" aria-hidden="true"></i>
+                            }
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Software Licenses Revoked
+                            @if (Model.SoftwareLicensesRevoked)
+                            {
+                                                                                <i class="bi bi-check-square-fill text-success fs-4" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                                                                <i class="bi bi-square fs-4 text-muted" aria-hidden="true"></i>
+                            }
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Email Auto-Forwarded
+                            @if (Model.EmailForwarded)
+                            {
+                                                                                <i class="bi bi-check-square-fill text-success fs-4" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                                                                <i class="bi bi-square fs-4 text-muted" aria-hidden="true"></i>
+                            }
+                                        </li>
+                                    </ul>
+                    @if (Model.EmailForwarded && !string.IsNullOrEmpty(Model.ForwardToEmail))
+                    {
+                                                                            <div class="alert alert-info py-2 mt-2 mb-0">
+                                                                                <small><strong>Forward to:</strong> @Model.ForwardToEmail</small>
+                                                                            </div>
+                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hardware Return Checklist (IT Admin Only) -->
+                        <div class="col-lg-4">
+                            <div class="card animate-in h-100" style="animation-delay: 0.2s;">
+                                <div class="card-header">
+                                    <i class="bi bi-laptop me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Hardware Return
+                                </div>
+                                <div class="card-body">
+                                    <!-- Contextual Info Display -->
+                    @if (Model.OnboardingRequest != null && Model.OnboardingRequest.IssuedAssets.Any())
+                    {
+                                                                    <div class="alert alert-secondary py-2 small mb-3 border-0 shadow-sm" style="background: var(--bg-body);">
+                                                                        <strong><i class="fas fa-desktop me-1 text-info" aria-hidden="true"></i> Specifically Assigned Hardware:</strong>
+                                                                        <ul class="mb-0 mt-1 ps-3 text-muted">
+                                @foreach (var asset in Model.OnboardingRequest.IssuedAssets)
+                                {
+                                                                                                            var isReturned = asset.ITAsset != null && asset.ITAsset.Status != IT_Form.Models.Enums.AssetStatus.Issued;
+                                                                                                            <li>
+                                                                                                                @asset.AssetType.ToString() - @(asset.AssetTag ?? "No Tag") <span class="text-secondary" style="font-size: 0.8rem;">(@(asset.Description ?? "N/A"))</span>
+                                                                                                                @if(isReturned) { <span class="badge bg-success ms-1">Returned</span> }
+                                                                                                            </li>
+                                }
+                                                                        </ul>
+                                                                    </div>
+                    }
+                    else if (Model.OnboardingRequest != null)
+                    {
+                                                                    <div class="alert alert-secondary py-2 small mb-3 border-0 shadow-sm text-muted fst-italic" style="background: var(--bg-body);">
+                                                                        No specific hardware linked during Onboarding.
+                                                                    </div>
+                    }
+
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Laptop / PC Returned
+                            @if (Model.LaptopReturned)
+                            {
+                                                                                <i class="bi bi-check-square-fill text-success fs-4" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                                                                <i class="bi bi-square fs-4 text-muted" aria-hidden="true"></i>
+                            }
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Accessories Returned
+                            @if (Model.AccessoriesReturned)
+                            {
+                                                                                <i class="bi bi-check-square-fill text-success fs-4" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                                                                <i class="bi bi-square fs-4 text-muted" aria-hidden="true"></i>
+                            }
+                                        </li>
+                                    </ul>
+                    @if (!string.IsNullOrEmpty(Model.HardwareNotes))
+                    {
+                                                                            <div class="mt-3">
+                                                                                <strong>Notes:</strong>
+                                                                                <p class="text-muted small mb-0">@Model.HardwareNotes</p>
+                                                                            </div>
+                    }
+                    @if (Model.IsHardwareDamaged)
+                    {
+                        @if (Model.MissingItemFines.HasValue && Model.MissingItemFines.Value > 0)
+                        {
+                                                                                <div class="alert alert-warning py-2 mt-3 mb-0 shadow-sm border-0">
+                                                                                    <strong>Fine Applied: </strong> RM @Model.MissingItemFines.Value.ToString("0.00")
+                                @if (!string.IsNullOrEmpty(Model.FinesRemarks))
+                                {
+                                                                                            <br />
+                                                                                            <small class="text-muted">@Model.FinesRemarks</small>
+                                }
+                                                                                </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.HardwareDamageImagePath))
+                        {
+                                                                                <div class="mt-3">
+                                                                                    <strong>Damage Image:</strong>
+                                                                                    <div class="mt-1">
+                                                                                        <a href="@Model.HardwareDamageImagePath" target="_blank">
+                                                                                            <img src="@Model.HardwareDamageImagePath" class="img-thumbnail" style="max-height: 150px;" alt="Hardware Damage Image" />
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </div>
+                        }
+                    }
+                                </div>
+                            </div>
+                        </div>
+    }
+</div>
+
+<!-- Assets to Return -->
+@if (Model.OnboardingRequest != null && Model.OnboardingRequest.IssuedAssets != null && Model.OnboardingRequest.IssuedAssets.Any())
+{
+    <div class="card animate-in mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-laptop me-2" style="color: var(--primary-light);" aria-hidden="true"></i>IT Assets to Return</span>
+            <span class="badge bg-warning text-dark">@Model.OnboardingRequest.IssuedAssets.Count Item(s)</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 15%;">Asset Type</th>
+                            <th style="width: 20%;">Asset Tag</th>
+                            <th style="width: 20%;">Brand / Model</th>
+                            <th style="width: 20%;">Serial Number</th>
+                            <th style="width: 20%; text-align: center;">Return Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.OnboardingRequest.IssuedAssets.Count; i++)
+                        {
+                            var ia = Model.OnboardingRequest.IssuedAssets[i];
+                            bool isReturnedAsset = ia.ITAsset != null && ia.ITAsset.Status == IT_Form.Models.Enums.AssetStatus.Available;
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td><span class="badge bg-secondary">@ia.AssetType</span></td>
+                                <td><strong>@(ia.AssetTag ?? ia.ITAsset?.AssetTag ?? "—")</strong></td>
+                                <td>@(ia.BrandModel ?? ia.ITAsset?.Model ?? "—")</td>
+                                <td><code>@(ia.SerialNumber ?? ia.ITAsset?.SerialNumber ?? "—")</code></td>
+                                <td class="text-center">
+                                    @if (isReturnedAsset)
+                                    {
+                                        <span class="badge bg-success"><i class="fas fa-check me-1" aria-hidden="true"></i>Returned</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger"><i class="fas fa-clock me-1" aria-hidden="true"></i>Pending Return</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Software Licenses to Revoke -->
+@if (Model.OnboardingRequest != null && Model.OnboardingRequest.IssuedSoftware != null && Model.OnboardingRequest.IssuedSoftware.Any())
+{
+    <div class="card animate-in mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-key me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Software Licenses to Revoke</span>
+            <span class="badge bg-danger">@Model.OnboardingRequest.IssuedSoftware.Count License(s)</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th>Software Name</th>
+                            <th style="width: 20%; text-align: center;">Revoke Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.OnboardingRequest.IssuedSoftware.Count; i++)
+                        {
+                            var sw = Model.OnboardingRequest.IssuedSoftware[i];
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td>
+                                    <i class="fas fa-cube me-2 text-muted" aria-hidden="true"></i>
+                                    <strong>@sw.SoftwareName</strong>
+                                </td>
+                                <td class="text-center">
+                                    @if (Model.SoftwareLicensesRevoked)
+                                    {
+                                        <span class="badge bg-success"><i class="fas fa-check me-1" aria-hidden="true"></i>Revoked</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1" aria-hidden="true"></i>Pending Revoke</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Clearance Items -->
+<div class="card animate-in mt-4">
+    <div class="card-header">
+        <i class="bi bi-clipboard-check me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Clearance Items
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th>Particulars</th>
+                    <th style="width: 15%; text-align: center;">Returned</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td>Laptop / Desktop / IT Devices</td><td class="text-center">@(Model.ClearedLaptop ? "Yes" : "No")</td></tr>
+                <tr><td>2</td><td>Mobile / Device</td><td class="text-center">@(Model.ClearedMobile ? "Yes" : "No")</td></tr>
+                <tr><td>3</td><td>Keys / Cards</td><td class="text-center">@(Model.ClearedKeys ? "Yes" : "No")</td></tr>
+                <tr><td>4</td><td>Other Assets</td><td class="text-center">@(Model.ClearedOtherAssets ? "Yes" : "No")</td></tr>
+            </tbody>
+        </table>
+        @if (!string.IsNullOrEmpty(Model.ClearanceRemarks))
+        {
+                                <div class="p-3" style="border-top: 1px solid var(--border);">
+                                    <small style="color: var(--text-muted);">Remarks:</small> @Model.ClearanceRemarks
+                                </div>
+        }
+    </div>
+</div>
+
+<!-- IT Checklist (Offboarding Phase) -->
+<div class="accordion animate-in mt-4" id="itChecklistAccordion">
+    <div class="accordion-item card border-0 shadow-sm">
+        <h2 class="accordion-header" id="headingITChecklist">
+            <button class="accordion-button collapsed card-header" type="button" data-bs-toggle="collapse" data-bs-target="#collapseITChecklist" aria-expanded="false" aria-controls="collapseITChecklist">
+                <i class="fas fa-tasks me-2" style="color: var(--primary-light);" aria-hidden="true"></i>IT Checklist &mdash; Offboarding Phase
+            </button>
+        </h2>
+        <div id="collapseITChecklist" class="accordion-collapse collapse" aria-labelledby="headingITChecklist" data-bs-parent="#itChecklistAccordion">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th>Particulars</th>
+                    <th style="width: 15%; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td>Physical Checks & Clean on IT Equipment</td><td class="text-center">@(Model.CheckPhysicalClean ? "Yes" : "No")</td></tr>
+                <tr><td>2</td><td>MS O365 Account &mdash; Deactivate completely</td><td class="text-center">@(Model.CheckO365Deactivate ? "Yes" : "No")</td></tr>
+                <tr><td>3</td><td>Windows Account & Login &mdash; Disable completely</td><td class="text-center">@(Model.CheckWindowsDisable ? "Yes" : "No")</td></tr>
+                <tr><td>4</td><td>Outlook & Email &mdash; Sign-out & forwarded</td><td class="text-center">@(Model.CheckEmailSignOut ? "Yes" : "No")</td></tr>
+                <tr><td>5</td><td>Specific Software / Application &mdash; Deactivate</td><td class="text-center">@(Model.CheckSpecificSoftwareDeactivate ? "Yes" : "No")</td></tr>
+                <tr><td>6</td><td>General Software / Application &mdash; Deactivate</td><td class="text-center">@(Model.CheckGeneralSoftwareDeactivate ? "Yes" : "No")</td></tr>
+                <tr><td>7</td><td>Remove user from ADs Group</td><td class="text-center">@(Model.CheckAbcGroupRemove ? "Yes" : "No")</td></tr>
+                <tr><td>8</td><td>Remove user from Email Mail Group</td><td class="text-center">@(Model.CheckEmailMailGroupRemove ? "Yes" : "No")</td></tr>
+                <tr><td>9</td><td>Device Name & Domain &mdash; Disjoin</td><td class="text-center">@(Model.CheckDomainDisjoin ? "Yes" : "No")</td></tr>
+                <tr><td>10</td><td>Shared Drive mapping &mdash; Remove</td><td class="text-center">@(Model.CheckSharedDriveRemove ? "Yes" : "No")</td></tr>
+                <tr><td>11</td><td>Primary Location Wi-Fi &mdash; Disable</td><td class="text-center">@(Model.CheckWiFiDisable ? "Yes" : "No")</td></tr>
+                <tr><td>12</td><td>Primary Location Printer &mdash; Remove</td><td class="text-center">@(Model.CheckPrinterRemove ? "Yes" : "No")</td></tr>
+                <tr><td>13</td><td>Primary Location Scan Folder &mdash; Remove</td><td class="text-center">@(Model.CheckScanFolderRemove ? "Yes" : "No")</td></tr>
+                <tr><td>14</td><td>VPN Account &mdash; Disable completely</td><td class="text-center">@(Model.CheckVPNDisable ? "Yes" : "No")</td></tr>
+            </tbody>
+        </table>
+        @if (!string.IsNullOrEmpty(Model.ChecklistRemarks))
+        {
+                                <div class="p-3" style="border-top: 1px solid var(--border);">
+                                    <small style="color: var(--text-muted);">Remarks:</small> @Model.ChecklistRemarks
+                                </div>
+        }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Follow-up Offboarding Actions -->
+<div class="accordion animate-in mt-4" id="followUpAccordion">
+    <div class="accordion-item card border-0 shadow-sm">
+        <h2 class="accordion-header" id="headingFollowUp">
+            <button class="accordion-button collapsed card-header" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFollowUp" aria-expanded="false" aria-controls="collapseFollowUp">
+                <i class="fas fa-list-check me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Follow-up Offboarding Actions
+            </button>
+        </h2>
+        <div id="collapseFollowUp" class="accordion-collapse collapse" aria-labelledby="headingFollowUp" data-bs-parent="#followUpAccordion">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th>Action</th>
+                    <th style="width: 15%; text-align: center;">Done</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td>Company Data Backup</td><td class="text-center">@(Model.DataBackupDone ? "Yes" : "No")</td></tr>
+                <tr><td>2</td><td>Email Backup & Automatic Reply setup</td><td class="text-center">@(Model.EmailBackupDone ? "Yes" : "No")</td></tr>
+                @if (Model.EmailForwarded)
+                {
+                    <tr>
+                        <td>3</td>
+                        <td>Email Forwarding Setup @(!string.IsNullOrEmpty(Model.EmailForwardName) ? $"(Forward to: {Model.EmailForwardName})" : "")</td>
+                        <td class="text-center">@(Model.EmailForwardingDone ? "Yes" : "No")</td>
+                    </tr>
+                }
+                <tr><td>4</td><td>Removal of assigned licenses</td><td class="text-center">@(Model.LicenseRemovalDone ? "Yes" : "No")</td></tr>
+            </tbody>
+        </table>
+        @if (!string.IsNullOrEmpty(Model.FollowUpRemarks))
+        {
+                                <div class="p-3" style="border-top: 1px solid var(--border);">
+                                    <small style="color: var(--text-muted);">Remarks:</small> @Model.FollowUpRemarks
+                                </div>
+        }
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Clearance Acknowledgment -->
+<div class="card animate-in mt-4" style="animation-delay: 0.25s;">
+    <div class="card-body" style="background: var(--surface); border-radius: 12px;">
+        <h6 style="color: var(--text-primary);"><i class="fas fa-file-signature me-2" aria-hidden="true"></i>Clearance Acknowledgment</h6>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0;">
+            By signing this form, I hereby acknowledge that I have completed the Employee Clearance Form and understand
+            the responsibilities associated with the clearance process at <strong>YTC Precast</strong>. I confirm that I have
+            returned all company property, settled any outstanding obligations, and had no further claims against the company.
+        </p>
+    </div>
+</div>
+
+<div class="card animate-in mt-4 mb-5" style="animation-delay: 0.3s;">
+    <div class="card-header">
+        <i class="bi bi-pen me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Sign Off & Approvals
+    </div>
+    <div class="card-body">
+        <div class="row g-4 text-center">
+
+            <!-- HR Signature -->
+            <div class="col-md-4 border-end">
+                <small class="text-uppercase fw-bold text-muted d-block mb-3">Requestor Signature</small>
+                <p class="small text-muted mb-3" style="font-size: 0.75rem;">I verify that the information provided is accurate and initiation of offboarding is authorized.</p>
+                @if (hasHRSig)
+                {
+                    <img src="@Model.HRSignature" alt="Requestor Signature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
+                    <p class="small text-success mt-2 mb-0">Signed by @(Model.HRSignerName ?? "HR")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@Model.HRSignedAt?.ToString("g")</p>
+                }
+                else
+                {
+                    @if (isHRUser)
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small mb-2" style="border-style: dashed !important;">Awaiting Signature</div>
+                        <form asp-action="SignOffHR" method="post" class="d-grid gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            @if (!string.IsNullOrEmpty(Model.CurrentUserSignature))
+                            {
+                                <input type="hidden" name="signatureBase64" value="@Model.CurrentUserSignature" />
+                                <button type="submit" class="btn btn-sm btn-primary">Sign & Continue</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-secondary" disabled>Signature Not Found</button>
+                                <small class="text-muted">Set your signature in profile first.</small>
+                            }
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Awaiting Signature</div>
+                    }
+                }
+            </div>
+
+            <!-- Manager Signature -->
+            <div class="col-md-4 border-end">
+                <small class="text-uppercase fw-bold text-muted d-block mb-3">Head of Department Signature</small>
+                <p class="small text-muted mb-3" style="font-size: 0.75rem;">I confirm the separation instructions and verify return of physical assets.</p>
+                @if (hasManagerSig)
+                {
+                    @if (Model.HODSignature!.StartsWith("data:image"))
+                    {
+                        <img src="@Model.HODSignature" alt="Manager Signature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
+                    }
+                    else
+                    {
+                        <div class="border rounded bg-white p-3 text-primary fw-semibold">@Model.HODSignature</div>
+                    }
+                    <p class="small text-success mt-2 mb-0">Signed by @(Model.HODSignerName ?? "HOD")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@Model.HODSignedAt?.ToString("g")</p>
+                }
+                else
+                {
+                    @if (hasHRSig && isAssignedManager)
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small mb-2" style="border-style: dashed !important;">Awaiting Signature</div>
+                        <form asp-action="SignOffManager" method="post" class="d-grid gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            @if (!string.IsNullOrEmpty(Model.CurrentUserSignature))
+                            {
+                                <input type="hidden" name="signatureBase64" value="@Model.CurrentUserSignature" />
+                                <button type="submit" class="btn btn-sm btn-primary">Sign & Notify IT</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-secondary" disabled>Signature Not Found</button>
+                                <small class="text-muted">Set your signature in profile first.</small>
+                            }
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject Request</button>
+                        </form>
+                    }
+                    else if (isAssignedManager)
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Please wait for the Requestor to verify before signing.</div>
+                    }
+                    else
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Awaiting HOD Signature</div>
+                    }
+                }
+            </div>
+
+            <!-- IT Signature -->
+            <div class="col-md-4">
+                <small class="text-uppercase fw-bold text-muted d-block mb-3">IT Admin Signature</small>
+                <p class="small text-muted mb-3" style="font-size: 0.75rem;">I confirm all digital access has been revoked and accounts disabled as per checklist.</p>
+                @if (hasITSig)
+                {
+                    <img src="@Model.ITAdminSignature" alt="IT Admin Signature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
+                    <p class="small text-success mt-2 mb-0">Signed by @(Model.ITAdminSignerName ?? "IT Admin")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@Model.ITAdminSignedAt?.ToString("g")</p>
+                }
+                else
+                {
+                    @if (isITUser && hasManagerSig)
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small mb-2" style="border-style: dashed !important;">Awaiting IT Verification</div>
+                        <form asp-action="SignOffITAdmin" method="post" class="d-grid gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            @if (!string.IsNullOrEmpty(Model.CurrentUserSignature))
+                            {
+                                <input type="hidden" name="signatureBase64" value="@Model.CurrentUserSignature" />
+                                <button type="submit" class="btn btn-sm btn-primary">Sign & Complete Internal Approval</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-secondary" disabled>Signature Not Found</button>
+                                <small class="text-muted">Set your signature in profile first.</small>
+                            }
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject Request</button>
+                        </form>
+                    }
+                    else if (isITUser)
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Please wait for Head of Department signature first.</div>
+                    }
+                    else
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Awaiting IT Signature</div>
+                    }
+                }
+            </div>
+        </div>
+
+        <hr class="my-4" style="border-color: var(--border);" />
+        <div class="text-center mb-4 mt-2">
+            <h6 class="text-uppercase fw-bold text-muted mb-0" style="font-size: 0.85rem; letter-spacing: 1px;">
+                <i class="bi bi-person-check me-2 text-primary" aria-hidden="true"></i>Employee Acknowledgements
+            </h6>
+        </div>
+
+        <div class="row align-items-stretch g-4 justify-content-center">
+            <!-- Employee Onboarding -->
+            <div class="col-md-6 text-center border-end py-3">
+                <h6 class="text-uppercase fw-bold text-muted mb-3" style="font-size: 0.8rem; letter-spacing: 0.5px;">Onboarding Acknowledgement</h6>
+                <div class="d-flex flex-column align-items-center">
+                    @if (Model.OnboardingRequest != null && !string.IsNullOrEmpty(Model.OnboardingRequest.EmployeeSignature))
+                    {
+                        <div class="d-flex align-items-center justify-content-center border rounded bg-white p-2 shadow-sm mb-2 mx-auto" style="width: 300px; height: 120px; max-width: 100%;">
+                            <img src="@Model.OnboardingRequest.EmployeeSignature" alt="Employee Onboarding Signature" class="img-fluid" style="max-height: 100px;" />
+                        </div>
+                        <p class="text-success mt-1 mb-0 fw-medium" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Signed by @(Model.OnboardingRequest.EmployeeSignerName ?? Model.OnboardingRequest.FullName ?? "Employee") on @(Model.OnboardingRequest.EmployeeSignedAt?.ToString("dd/MM/yyyy HH:mm:ss"))</p>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center justify-content-center p-3 bg-light border rounded text-muted text-center mx-auto shadow-sm" style="border-style: dashed !important; width: 300px; height: 120px; max-width: 100%;">
+                            <div>
+                                <i class="bi bi-slash-circle d-block mb-1 fs-5" aria-hidden="true"></i>
+                                <span class="fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">No signature on record</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Employee Offboarding -->
+            <div class="col-md-6 text-center py-3">
+                <h6 class="text-uppercase fw-bold text-muted mb-3" style="font-size: 0.8rem; letter-spacing: 0.5px;">Offboarding Acknowledgement</h6>
+                <div class="d-flex flex-column align-items-center">
+                    @if (!string.IsNullOrEmpty(Model.EmployeeSignature))
+                    {
+                        <div class="d-flex align-items-center justify-content-center border rounded bg-white p-2 shadow-sm mb-2 mx-auto" style="width: 300px; height: 120px; max-width: 100%;">
+                            <img src="@Model.EmployeeSignature" alt="Employee Offboarding Signature" class="img-fluid" style="max-height: 100px;" />
+                        </div>
+                        <p class="text-success mt-1 mb-0 fw-medium" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Signed by @(Model.EmployeeSignerName ?? Model.FullName ?? "Employee") on @(Model.EmployeeSignedAt?.ToString("dd/MM/yyyy HH:mm:ss"))</p>
+                    }
+                    else if (Model.Status == RequestStatus.PendingEmployeeSign)
+                    {
+                        <div class="d-flex flex-column align-items-center justify-content-center p-3 bg-light border rounded text-warning text-center shadow-sm mb-3 mx-auto" style="border-style: dashed !important; width: 300px; height: 120px; max-width: 100%;">
+                            <i class="bi bi-clock-history d-block mb-1 fs-5" aria-hidden="true"></i>
+                            <span class="fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">Awaiting Signature</span>
+                        </div>
+                        
+                        @if (isHRUser && !isITUser)
+                        {
+                            <div class="w-100" style="max-width: 300px;">
+                                <div id="sigLinkSection-offboarding" class="bg-white p-3 border rounded shadow-sm">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill w-100 mb-2 shadow-sm fw-bold" onclick="generateSignatureLink('offboarding', '@Model.AccessToken', 'Offboarding')">
+                                        <i class="bi bi-link-45deg me-1" aria-hidden="true"></i> Generate Link
+                                    </button>
+                                    <div id="sigLinkBox-offboarding" style="display: none;">
+                                        <div class="input-group shadow-sm mb-2">
+                                            <input type="text" class="form-control form-control-sm border-primary" id="sigLinkInput-offboarding" readonly style="font-size: 0.7rem;" />
+                                            <button class="btn btn-sm btn-primary px-2" type="button" onclick="copySigLink('offboarding')">
+                                                <i class="bi bi-clipboard" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        <a asp-controller="Notification" asp-action="ComposeOffboardingEmail" asp-route-id="@Model.Id" class="btn btn-sm btn-success rounded-pill w-100 mb-2">
+                                            <i class="bi bi-envelope-paper me-1" aria-hidden="true"></i> Send Link via Outlook
+                                        </a>
+                                        <p class="small text-muted mb-0" style="font-size: 0.7rem;">Share this link with employee.</p>
+                                    </div>
+                                    <form asp-controller="Offboarding" asp-action="RegenerateToken" asp-route-id="@Model.Id" method="post" class="mt-2 text-center">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-link p-0 text-muted" style="font-size: 0.6rem; text-decoration: none;" onclick="return confirm('This will invalidate the old signature link. Continue?');">
+                                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Regenerate Token
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center justify-content-center p-3 bg-light border rounded text-muted text-center mx-auto shadow-sm" style="border-style: dashed !important; width: 300px; height: 120px; max-width: 100%;">
+                            <div>
+                                <i class="bi bi-lock-fill d-block mb-1 fs-5" aria-hidden="true"></i>
+                                <span class="fw-bold text-uppercase" style="letter-spacing: 0.5px; font-size: 0.7rem;">Pending internal approvals</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--border);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                <h5 class="modal-title text-danger" id="rejectModalLabel"><i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>Reject Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="Reject" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <p style="color: var(--text-primary);">Please provide a reason for rejecting this request for <strong>@Model.FullName</strong>. This cannot be undone.</p>
+                    <div class="form-group mb-3">
+                        <label for="rejectionReason" class="form-label" style="color: var(--text-muted);">Rejection Reason <span class="text-danger">*</span></label>
+                        <textarea id="rejectionReason" name="reason" class="form-control reject-reason-textarea" required placeholder="e.g., Incomplete information, role no longer needed..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border);">
+                    <button type="button" class="btn btn-light border rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 shadow-sm">Confirm Rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function generateSignatureLink(sectionId, token, type) {
+            const baseUrl = window.location.origin;
+            const link = `${baseUrl}/Signature/Acknowledge?token=${token}&type=${type}`;
+            const input = document.getElementById(`sigLinkInput-${sectionId}`);
+            const box = document.getElementById(`sigLinkBox-${sectionId}`);
+            if (!input || !box) return;
+            input.value = link;
+            box.style.display = 'block';
+        }
+
+        function copySigLink(sectionId) {
+            const input = document.getElementById(`sigLinkInput-${sectionId}`);
+            if (!input) return;
+
+            const ta = document.createElement('textarea');
+            ta.value = input.value;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+
+            try {
+                document.execCommand('copy');
+                showCopyToast();
+            } catch (err) {
+                alert('Copy failed. Please select the link and copy manually.');
+            }
+
+            document.body.removeChild(ta);
+        }
+
+        function showCopyToast() {
+            let toast = document.getElementById('copyToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'copyToast';
+                toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:0.6rem 1.5rem;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(34,197,94,0.3);z-index:9999;display:flex;align-items:center;gap:8px;opacity:0;transition:opacity 0.3s ease;';
+                toast.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i> Link copied successfully!';
+                document.body.appendChild(toast);
+            }
+
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('rejectModal');
+            if (modal) {
+                document.body.appendChild(modal);
+            }
+        });
+    </script>
+}
+
+
+
+

@@ -1,0 +1,460 @@
+@model IT_Form.ViewModels.EditOnboardingPageViewModel
+@{
+    ViewData["Title"] = $"Edit — {Model.FullName}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <div>
+        <h2 class="fw-bolder"><span class="text-gradient">Edit Request</span></h2>
+        <p style="color: var(--text-muted);">@Model.FullName — Submitted @Model.RequestDate.ToString("dd/MM/yyyy")</p>
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Cancel
+    </a>
+</div>
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="animate-in">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-4">
+        <!-- Employee Details -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user-tie me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Employee Details
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label">Full Name *</label>
+                        <input asp-for="FullName" class="form-control" />
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label asp-for="EmployeeID" class="form-label">Employee ID</label>
+                            <input asp-for="EmployeeID" class="form-control" />
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Designation" class="form-label">Designation</label>
+                            <input asp-for="Designation" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label asp-for="Department" class="form-label">Department *</label>
+                            <select asp-for="Department" class="form-select" asp-items="@(new SelectList(Model.DepartmentOptions, "Name", "Name", Model.Department))">
+                                <option value="">Select Department</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Branch" class="form-label">Company</label>
+                            <select asp-for="Branch" class="form-select" asp-items="@(new SelectList(Model.CompanyOptions))">
+                                <option value="">Select Company</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label asp-for="JoinDate" class="form-label">Join Date</label>
+                            <input asp-for="JoinDate" type="date" class="form-control" />
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="DeskNumber" class="form-label">Desk Number</label>
+                            <input asp-for="DeskNumber" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label asp-for="HODEmail" class="form-label">Reporting Manager (HOD) *</label>
+                            <select asp-for="HODEmail" class="form-select" asp-items="Model.HODUserOptions">
+                                <option value="">Select HOD</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Software & Email -->
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-box me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Software
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check mb-2"><input asp-for="HasMSOffice" class="form-check-input" /><label
+                                    asp-for="HasMSOffice" class="form-check-label">MS Office</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasAdobe" class="form-check-input" /><label
+                                    asp-for="HasAdobe" class="form-check-label">Adobe</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasMSProject" class="form-check-input" /><label
+                                    asp-for="HasMSProject" class="form-check-label">MS Project</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasMSVisio" class="form-check-input" /><label
+                                    asp-for="HasMSVisio" class="form-check-label">MS Visio</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasAutoDesk" class="form-check-input" /><label
+                                    asp-for="HasAutoDesk" class="form-check-label">AutoDesk</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasAutoCAD" class="form-check-input" /><label
+                                    asp-for="HasAutoCAD" class="form-check-label">AutoCAD</label></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check mb-2"><input asp-for="HasGStarCAD" class="form-check-input" /><label
+                                    asp-for="HasGStarCAD" class="form-check-label">GstarCAD</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasSketchUp" class="form-check-input" /><label
+                                    asp-for="HasSketchUp" class="form-check-label">SketchUp</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasSQLAccounting"
+                                    class="form-check-input" /><label asp-for="HasSQLAccounting"
+                                    class="form-check-label">SQL Accounting</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasFortiClientVPN"
+                                    class="form-check-input" /><label asp-for="HasFortiClientVPN"
+                                    class="form-check-label">FortiVPN</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasAntivirus" class="form-check-input" /><label
+                                    asp-for="HasAntivirus" class="form-check-label">Antivirus</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasDWGTrueView" class="form-check-input" /><label
+                                    asp-for="HasDWGTrueView" class="form-check-label">DWG TrueView (Ultraview)</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasGoogleChrome" class="form-check-input" /><label
+                                    asp-for="HasGoogleChrome" class="form-check-label">Google Chrome</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasMSTeams" class="form-check-input" /><label
+                                    asp-for="HasMSTeams" class="form-check-label">MS Teams</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasEShare" class="form-check-input" /><label
+                                    asp-for="HasEShare" class="form-check-label">EShare</label></div>
+                            <div class="form-check mb-2"><input asp-for="HasOtherSoftware"
+                                    class="form-check-input" /><label asp-for="HasOtherSoftware"
+                                    class="form-check-label">Other</label></div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <input asp-for="OtherSoftwareDetails" class="form-control"
+                            placeholder="Other software details..." />
+                    </div>
+                    @{
+                        var issuedSoftware = (Model.IssuedSoftware ?? new List<IT_Form.Models.IssuedSoftware>())
+                            .Where(s => !string.IsNullOrWhiteSpace(s.SoftwareName) || s.SoftwareLicense != null)
+                            .OrderBy(s => s.SoftwareLicense?.SoftwareName ?? s.SoftwareName)
+                            .ToList();
+                    }
+                    <div class="mt-3 pt-3 border-top">
+                        <strong style="font-size: 0.85rem; color: var(--text-secondary);">CURRENTLY ASSIGNED SOFTWARE</strong>
+                        @if (issuedSoftware.Any())
+                        {
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @foreach (var sw in issuedSoftware)
+                                {
+                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
+                                        @(sw.SoftwareLicense?.SoftwareName ?? sw.SoftwareName)
+                                    </span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-muted small mt-2">No software license assigned yet.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-envelope me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Email & Mailboxes
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong style="font-size: 0.85rem; color: var(--text-secondary);">EMAIL GROUPS</strong>
+                        <div class="mt-2">
+                            <div class="form-check mb-2"><input asp-for="PrecastGroup" class="form-check-input" /><label
+                                    asp-for="PrecastGroup" class="form-check-label">Precast Group</label></div>
+                            <div class="form-check mb-2"><input asp-for="OtherGroup" class="form-check-input" /><label
+                                    asp-for="OtherGroup" class="form-check-label">Other Group</label></div>
+                            <input asp-for="OtherGroupDetails" class="form-control mt-1"
+                                placeholder="Other group details..." />
+                        </div>
+                    </div>
+                    <strong style="font-size: 0.85rem; color: var(--text-secondary);">SHARED MAILBOXES</strong>
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <div class="form-check mb-2"><input asp-for="MailboxAccount"
+                                    class="form-check-input" /><label asp-for="MailboxAccount"
+                                    class="form-check-label">Account</label></div>
+                            <div class="form-check mb-2"><input asp-for="MailboxLogistic"
+                                    class="form-check-input" /><label asp-for="MailboxLogistic"
+                                    class="form-check-label">Logistic</label></div>
+                            <div class="form-check mb-2"><input asp-for="MailboxInfo" class="form-check-input" /><label
+                                    asp-for="MailboxInfo" class="form-check-label">Info</label></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check mb-2"><input asp-for="MailboxAdmin" class="form-check-input" /><label
+                                    asp-for="MailboxAdmin" class="form-check-label">Admin</label></div>
+                            <div class="form-check mb-2"><input asp-for="MailboxIntern"
+                                    class="form-check-input" /><label asp-for="MailboxIntern"
+                                    class="form-check-label">Intern</label></div>
+                            <div class="form-check mb-2"><input asp-for="MailboxIT" class="form-check-input" /><label
+                                    asp-for="MailboxIT" class="form-check-label">IT</label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IT Assets -->
+        <div class="col-12 mt-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div><i class="fas fa-laptop me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Issued IT Assets</div>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnAddAsset">
+                        <i class="fas fa-plus me-1" aria-hidden="true"></i> Add Asset
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Asset Add Panel (hidden by default) -->
+                    <div id="addAssetPanel" class="glass-panel p-3 mb-3" style="display: none;">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Asset Type</label>
+                                <select id="newAssetType" class="form-select">
+                                    <option value="0">Laptop</option>
+                                    <option value="1">Monitor</option>
+                                    <option value="2">Keyboard</option>
+                                    <option value="3">Mouse</option>
+                                    <option value="4">Headset</option>
+                                    <option value="5">Docking Station</option>
+                                    <option value="6">Laptop Bag</option>
+                                    <option value="7">Network Cable</option>
+                                    <option value="8">USB Drive</option>
+                                    <option value="9">Webcam</option>
+                                    <option value="10">Others</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Description / Need</label>
+                                <input id="newDescription" class="form-control" placeholder="e.g. Dell Latitude 5540" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Serial Number</label>
+                                <input id="newSerialNumber" class="form-control" placeholder="e.g. SN12345" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Asset Tag</label>
+                                <div class="d-flex gap-2">
+                                    <input id="newAssetTag" class="form-control" placeholder="e.g. YTC-001" />
+                                    <button type="button" class="btn btn-success btn-sm" id="btnConfirmAdd">
+                                        <i class="fas fa-check mt-1" aria-hidden="true"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assets Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="assetsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 20%;">Type</th>
+                                    <th style="width: 25%;">Description / Need</th>
+                                    <th style="width: 20%;">Serial Number</th>
+                                    <th style="width: 20%;">Asset Tag</th>
+                                    <th style="width: 10%;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assetsBody">
+                                @if (Model.IssuedAssets != null && Model.IssuedAssets.Count > 0)
+                                {
+                                    for (int i = 0; i < Model.IssuedAssets.Count; i++)
+                                    {
+                                        <tr>
+                                            <td>@(i + 1)</td>
+                                            <td>
+                                                <input type="hidden" name="IssuedAssets[@i].AssetType"
+                                                    value="@((int)Model.IssuedAssets[i].AssetType)" />
+                                                @Model.IssuedAssets[i].AssetType
+                                            </td>
+                                            <td>
+                                                <input type="text" name="IssuedAssets[@i].Description"
+                                                    value="@Model.IssuedAssets[i].Description"
+                                                    class="form-control form-control-sm" />
+                                            </td>
+                                            <td>
+                                                <input type="text" name="IssuedAssets[@i].SerialNumber"
+                                                    value="@Model.IssuedAssets[i].SerialNumber"
+                                                    class="form-control form-control-sm" placeholder="(IT to fill)" />
+                                            </td>
+                                            <td>
+                                                <input type="text" name="IssuedAssets[@i].AssetTag"
+                                                    value="@Model.IssuedAssets[i].AssetTag" class="form-control form-control-sm"
+                                                    placeholder="(IT to fill)" />
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-danger btn-sm btn-remove-asset"
+                                                    data-index="@i">
+                                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Save -->
+    <div class="d-flex justify-content-end mt-4 gap-2">
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+            <i class="fas fa-times me-1" aria-hidden="true"></i>Cancel
+        </a>
+        @if (Model.Status == IT_Form.Models.Enums.RequestStatus.Draft)
+        {
+            <button type="submit" name="actionType" value="save" class="btn btn-primary">
+                <i class="fas fa-save me-2" aria-hidden="true"></i>Save Draft
+            </button>
+            <button type="submit" name="actionType" value="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-paper-plane me-2" aria-hidden="true"></i>Submit for Approval
+            </button>
+        }
+        else
+        {
+            <button type="submit" name="actionType" value="save" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2" aria-hidden="true"></i>Save Changes
+            </button>
+        }
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        let onboardingEditHodFetchToken = 0;
+        const assetTypeNames = ['Laptop', 'Monitor', 'Keyboard', 'Mouse', 'Headset',
+            'DockingStation', 'LaptopBag', 'NetworkCable', 'USBDrive', 'Webcam', 'Others'];
+        let assetIndex = @(Model.IssuedAssets?.Count ?? 0);
+
+        function loadEditHods(company, preferredEmail) {
+            var hodSelect = document.getElementById('HODEmail');
+            if (!hodSelect) return;
+
+            var currentValue = hodSelect.value;
+            hodSelect.innerHTML = '';
+            hodSelect.appendChild(new Option('Loading HOD...', ''));
+
+            var normalizedCompany = (company || '').trim();
+            if (!normalizedCompany) {
+                hodSelect.innerHTML = '';
+                hodSelect.appendChild(new Option('Select HOD', ''));
+                hodSelect.disabled = true;
+                hodSelect.value = '';
+                return;
+            }
+
+            hodSelect.disabled = true;
+            var requestToken = ++onboardingEditHodFetchToken;
+            fetch('/api/employees/hods-by-company?company=' + encodeURIComponent(normalizedCompany))
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Failed to load HODs');
+                    return response.json();
+                })
+                .then(function (hods) {
+                    if (requestToken !== onboardingEditHodFetchToken) return;
+
+                    var filtered = Array.isArray(hods) ? hods : [];
+                    hodSelect.innerHTML = '';
+                    hodSelect.appendChild(new Option('Select HOD', ''));
+
+                    var selectedValue = '';
+                    if (currentValue && filtered.some(function (h) { return h.email === currentValue; })) {
+                        selectedValue = currentValue;
+                    } else if (preferredEmail) {
+                        var preferred = filtered.find(function (h) {
+                            return h.email && h.email.toLowerCase() === preferredEmail.toLowerCase();
+                        });
+                        selectedValue = preferred ? preferred.email : '';
+                    }
+
+                    filtered.forEach(function (h) {
+                        hodSelect.appendChild(new Option(h.fullName + ' (' + h.email + ')', h.email, false, h.email === selectedValue));
+                    });
+
+                    hodSelect.disabled = filtered.length === 0;
+                    hodSelect.value = selectedValue;
+                })
+                .catch(function () {
+                    if (requestToken !== onboardingEditHodFetchToken) return;
+                    hodSelect.innerHTML = '';
+                    hodSelect.appendChild(new Option('Select HOD', ''));
+                    hodSelect.disabled = true;
+                    hodSelect.value = '';
+                });
+        }
+
+        document.getElementById('btnAddAsset').addEventListener('click', function () {
+            const panel = document.getElementById('addAssetPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('btnConfirmAdd').addEventListener('click', function () {
+            const typeValue = document.getElementById('newAssetType').value;
+            const typeInt = parseInt(typeValue);
+            const desc = document.getElementById('newDescription').value;
+            const serial = document.getElementById('newSerialNumber').value;
+            const tag = document.getElementById('newAssetTag').value;
+
+            const tbody = document.getElementById('assetsBody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                        <td>${assetIndex + 1}</td>
+                        <td>
+                            <input type="hidden" name="IssuedAssets[${assetIndex}].AssetType" value="${typeInt}" />
+                            ${assetTypeNames[typeInt]}
+                        </td>
+                        <td>
+                            <input type="text" name="IssuedAssets[${assetIndex}].Description" value="${desc}" class="form-control form-control-sm" />
+                        </td>
+                        <td>
+                            <input type="text" name="IssuedAssets[${assetIndex}].SerialNumber" value="${serial}" class="form-control form-control-sm" placeholder="(IT to fill)" />
+                        </td>
+                        <td>
+                            <input type="text" name="IssuedAssets[${assetIndex}].AssetTag" value="${tag}" class="form-control form-control-sm" placeholder="(IT to fill)" />
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-asset" data-index="${assetIndex}">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
+                            </button>
+                        </td>
+                    `;
+
+            tbody.appendChild(row);
+            assetIndex++;
+
+            // Clear inputs
+            document.getElementById('newDescription').value = '';
+            document.getElementById('newSerialNumber').value = '';
+            document.getElementById('newAssetTag').value = '';
+        });
+
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-remove-asset');
+            if (btn) {
+                btn.closest('tr').remove();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var branchSelect = document.getElementById('Branch');
+            var hodSelect = document.getElementById('HODEmail');
+
+            if (branchSelect) {
+                branchSelect.addEventListener('change', function () {
+                    loadEditHods(this.value, hodSelect ? hodSelect.value : '');
+                });
+
+                loadEditHods(branchSelect.value, hodSelect ? hodSelect.value : '');
+            }
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}
+
+

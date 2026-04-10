@@ -1,0 +1,469 @@
+@model IT_Form.ViewModels.SignatureAcknowledgePageViewModel
+
+@{
+    ViewData["Title"] = "Employee Acknowledgement";
+    Layout = "_SignatureLayout";
+}
+
+<style>
+    /* ─── Page-Specific Styles ─── */
+    .sig-card {
+        background: var(--sp-surface);
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        width: 100%;
+        max-width: 620px;
+    }
+
+    .sig-card-accent {
+        height: 4px;
+        background: linear-gradient(90deg, var(--sp-primary) 0%, var(--sp-primary-light) 100%);
+    }
+
+    .sig-card-body {
+        padding: 2rem 2rem 1.5rem;
+    }
+
+    /* ─── Status Cards (Expired / Already Signed) ─── */
+    .status-card {
+        text-align: center;
+        padding: 3rem 2.5rem;
+    }
+    .status-icon {
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        margin-bottom: 1.5rem;
+    }
+    .status-icon.danger { background: #fef2f2; color: var(--sp-danger); }
+    .status-icon.success { background: #ecfdf5; color: var(--sp-success); }
+    .status-title { font-size: 1.5rem; font-weight: 700; color: var(--sp-text); margin-bottom: 0.5rem; }
+    .status-desc { color: var(--sp-text-secondary); font-size: 0.95rem; line-height: 1.6; max-width: 360px; margin: 0 auto; }
+
+    /* ─── Badge Pill ─── */
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(11, 60, 93, 0.08);
+        color: var(--sp-blue);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin-bottom: 1rem;
+    }
+
+    /* ─── Info Grid ─── */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .info-item {
+        background: #f5f5f7;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .info-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--sp-text-muted);
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+    .info-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--sp-text);
+    }
+
+    /* ─── Download Button (Red Highlight) ─── */
+    .btn-download {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        background: #ef4444;
+        color: #ffffff;
+        border: none;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+    .btn-download:hover {
+        background: #dc2626;
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+    }
+
+    /* ─── Disclaimer ─── */
+    .disclaimer-box {
+        background: rgba(11, 60, 93, 0.04);
+        border-left: 3px solid var(--sp-blue-light);
+        border-radius: 0 8px 8px 0;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .disclaimer-box p {
+        margin: 0;
+        font-size: 0.8rem;
+        line-height: 1.6;
+        color: var(--sp-text-secondary);
+    }
+    .disclaimer-box i {
+        color: var(--sp-blue-light);
+    }
+
+    /* ─── Signature Canvas ─── */
+    .sig-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        color: var(--sp-text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    .sig-canvas-wrapper {
+        border: 2px dashed #d4d4d8;
+        border-radius: 12px;
+        background: #fafafa;
+        padding: 6px;
+        position: relative;
+        transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .sig-canvas-wrapper:hover,
+    .sig-canvas-wrapper.active {
+        border-color: var(--sp-blue-light);
+        background: rgba(11, 60, 93, 0.02);
+    }
+    .sig-canvas-wrapper canvas {
+        display: block;
+        width: 100%;
+        border-radius: 8px;
+        cursor: crosshair;
+    }
+    .sig-canvas-hint {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: var(--sp-text-muted);
+        font-size: 0.85rem;
+        font-weight: 500;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .sig-canvas-wrapper.drawn .sig-canvas-hint {
+        opacity: 0;
+    }
+
+    .btn-clear {
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--sp-text-secondary);
+        border: 1px solid var(--sp-border);
+        border-radius: 8px;
+        padding: 4px 12px;
+        background: var(--sp-surface);
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .btn-clear:hover {
+        background: #fef2f2;
+        color: var(--sp-danger);
+        border-color: #fca5a5;
+    }
+
+    /* ─── Submit Button (Blue) ─── */
+    .btn-submit-sig {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 0.85rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--sp-primary) 0%, var(--sp-primary-dark) 100%);
+        box-shadow: 0 4px 14px rgba(26, 82, 163, 0.25);
+        transition: all 0.25s ease;
+        cursor: pointer;
+    }
+    .btn-submit-sig:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(26, 82, 163, 0.35);
+    }
+    .btn-submit-sig:active {
+        transform: translateY(0);
+    }
+
+    /* ─── Validation ─── */
+    .validation-alert {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    /* ─── Responsive ─── */
+    @@media (max-width: 575px) {
+        .sig-card-body { padding: 1.5rem 1.25rem 1.25rem; }
+        .info-grid { grid-template-columns: 1fr; }
+        .status-card { padding: 2rem 1.5rem; }
+    }
+</style>
+
+<div class="fade-up" style="width: 100%; max-width: 620px;">
+
+    @if (Model.Expired)
+    {
+        <div class="sig-card">
+            <div class="sig-card-accent" style="background: linear-gradient(90deg, var(--sp-primary) 0%, var(--sp-primary-light) 100%);"></div>
+            <div class="status-card">
+                <div class="status-icon danger">
+                    <i class="bi bi-clock-history" aria-hidden="true"></i>
+                </div>
+                <div class="status-title">Link Expired</div>
+                <p class="status-desc">
+                    This signature link is no longer valid. Links expire 7 days after the IT department completes processing.
+                </p>
+                <hr style="border-color: var(--sp-border); margin: 1.5rem 0;" />
+                <p style="font-size: 0.8rem; color: var(--sp-text-muted); margin: 0;">
+                    Need assistance? Contact the <strong>IT Department</strong> to request a new link.
+                </p>
+            </div>
+        </div>
+    }
+    else if (Model.AlreadySigned)
+    {
+        <div class="sig-card">
+            <div class="sig-card-accent" style="background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);"></div>
+            <div class="status-card">
+                <div class="status-icon success">
+                    <i class="bi bi-check-lg" aria-hidden="true"></i>
+                </div>
+                <div class="status-title">Signature Recorded</div>
+                <p class="status-desc">
+                    Your acknowledgement for this @(Model.RequestType.ToLowerInvariant()) document has already been successfully submitted.
+                </p>
+                <hr style="border-color: var(--sp-border); margin: 1.5rem 0;" />
+                <p style="font-size: 0.8rem; color: var(--sp-text-muted); margin: 0;">
+                    You may safely close this window.
+                </p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="sig-card">
+            <div class="sig-card-accent"></div>
+            <div class="sig-card-body">
+
+                <!-- Badge -->
+                <div class="type-badge">
+                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                    @Model.RequestType Document
+                </div>
+
+                <!-- Title -->
+                <h4 style="font-weight: 800; color: var(--sp-text); margin-bottom: 0.25rem; font-size: 1.35rem;">
+                    Employee Acknowledgement
+                </h4>
+                <p style="color: var(--sp-text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;">
+                    Please review the document and provide your signature below.
+                </p>
+
+                <!-- Info Grid -->
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Employee Name</div>
+                        <div class="info-value">@Model.FullName</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Department</div>
+                        <div class="info-value">@Model.Department</div>
+                    </div>
+                </div>
+
+                <!-- Download PDF -->
+                <a href="/Signature/ViewPdf?token=@Model.Token&type=@Model.RequestType" target="_blank" class="btn-download" download>
+                    <i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i>
+                    Download IT Form (PDF)
+                    <i class="bi bi-download" style="margin-left: auto; opacity: 0.6;" aria-hidden="true"></i>
+                </a>
+
+                <!-- Disclaimer -->
+                <div class="disclaimer-box">
+                    <p>
+                        <i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>
+                        By signing below, you acknowledge that you have reviewed the IT document and confirm receipt or return of all listed items.
+                    </p>
+                </div>
+
+                <!-- Signature Form -->
+                <form asp-action="Acknowledge" method="post" id="employeeSignForm">
+                    <input type="hidden" name="token" value="@Model.Token" />
+                    <input type="hidden" name="type" value="@Model.RequestType" />
+                    <input type="hidden" id="employeeSigInput" name="signatureData" />
+
+                    <div class="sig-section-title">
+                        <i class="bi bi-pen me-1" aria-hidden="true"></i> Your Signature <span style="color: var(--sp-primary-light);">*</span>
+                    </div>
+
+                    <div class="sig-canvas-wrapper" id="canvasWrapper">
+                        <span class="sig-canvas-hint">Draw your signature here</span>
+                        <canvas id="employeeCanvas" height="240" style="touch-action: none;"></canvas>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-2 mb-3">
+                        <button type="button" class="btn-clear" onclick="clearSigCanvas('employeeCanvas')">
+                            <i class="bi bi-eraser me-1" aria-hidden="true"></i> Clear
+                        </button>
+                    </div>
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="validation-alert">
+                            <div asp-validation-summary="All"></div>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn-submit-sig">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        Submit Signature
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        function initSigCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let drawing = false;
+            const wrapper = document.getElementById('canvasWrapper');
+
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 240;
+
+            ctx.strokeStyle = '#18181b';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            }
+
+            function startDraw(e) {
+                drawing = true;
+                if (wrapper) { wrapper.classList.add('active', 'drawn'); }
+                ctx.beginPath();
+                const p = getPos(e);
+                ctx.moveTo(p.x, p.y);
+            }
+            function draw(e) {
+                if (!drawing) return;
+                const p = getPos(e);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+            }
+            function stopDraw() { drawing = false; }
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseleave', stopDraw);
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); });
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+            canvas.addEventListener('touchend', stopDraw);
+        }
+
+        function clearSigCanvas(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const wrapper = document.getElementById('canvasWrapper');
+            if (wrapper) { wrapper.classList.remove('drawn'); }
+        }
+
+        function isCanvasEmpty(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const blank = document.createElement('canvas');
+            blank.width = canvas.width;
+            blank.height = canvas.height;
+            return canvas.toDataURL() === blank.toDataURL();
+        }
+
+        function getCanvasDataWithWhiteBg(canvasId) {
+            const src = document.getElementById(canvasId);
+            const tmp = document.createElement('canvas');
+            tmp.width = src.width;
+            tmp.height = src.height;
+            const tmpCtx = tmp.getContext('2d');
+            tmpCtx.fillStyle = '#ffffff';
+            tmpCtx.fillRect(0, 0, tmp.width, tmp.height);
+            tmpCtx.drawImage(src, 0, 0);
+            return tmp.toDataURL('image/png');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('employeeCanvas')) {
+                initSigCanvas('employeeCanvas');
+
+                document.getElementById('employeeSignForm').addEventListener('submit', function (e) {
+                    if (isCanvasEmpty('employeeCanvas')) {
+                        e.preventDefault();
+                        alert('Please draw your signature before submitting.');
+                        return;
+                    }
+                    const sigData = getCanvasDataWithWhiteBg('employeeCanvas');
+                    document.getElementById('employeeSigInput').value = sigData;
+
+                    // Disable submit button to prevent double-click
+                    const btn = this.querySelector('.btn-submit-sig');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;" aria-hidden="true"></i> Submitting...';
+                });
+            }
+        });
+    </script>
+    <style>
+        @@keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+}
+
+

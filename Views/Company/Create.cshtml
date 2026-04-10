@@ -1,0 +1,46 @@
+@model IT_Form.Application.Features.Company.CompanyEditorPageViewModel
+@{ ViewData["Title"] = "Create Company"; }
+
+<h2>Create Company</h2>
+<div class="card shadow-sm border-0 mt-4" style="max-width: 600px;">
+    <div class="card-body">
+        <form asp-action="Create" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label font-weight-bold">Company Name</label>
+                <input asp-for="Name" class="form-control shadow-sm" placeholder="e.g. YTC Precast" />
+                <span asp-validation-for="Name" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="Lot" class="form-label font-weight-bold">Lot / Address</label>
+                <input asp-for="Lot" class="form-control shadow-sm" placeholder="Optional..." />
+                <span asp-validation-for="Lot" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label font-weight-bold">Company Logo <span class="text-danger">*</span></label>
+                <input type="file" name="Logo" id="Logo" class="form-control shadow-sm" accept="image/*" required data-drag-upload="true" />
+                <div class="form-text text-muted small">Recommended size: 300x120px. Formats: JPG, PNG.</div>
+                <span asp-validation-for="LogoPath" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsLoginPageLogo" class="form-check-input" />
+                <label asp-for="IsLoginPageLogo" class="form-check-label">Use this logo on login page</label>
+                <div class="form-text text-muted small">Only one company can be selected at a time.</div>
+                <span asp-validation-for="IsLoginPageLogo" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="IsActive" class="form-check-input" checked="checked" />
+                <label asp-for="IsActive" class="form-check-label">Is Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create</button>
+            <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+        </form>
+    </div>
+</div>
+@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }

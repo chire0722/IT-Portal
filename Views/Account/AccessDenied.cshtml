@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="text-center">
+        <div class="mb-4">
+            <span style="font-size: 6rem; line-height: 1;">&#128274;</span>
+        </div>
+        <h1 class="display-4 fw-bold text-danger mb-2">Access Denied</h1>
+        <p class="lead text-muted mb-1">You don't have permission to view this page.</p>
+        <p class="text-muted mb-4">
+            If you believe this is a mistake, please contact your IT Administrator.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Go Back
+            </a>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-house me-1" aria-hidden="true"></i> Go to Dashboard
+            </a>
+        </div>
+        <div class="mt-4">
+            <small class="text-muted">
+                Your role: <strong>@(User.Claims.FirstOrDefault(c => c.Type == "UserTitle")?.Value ??
+                    "Unknown")</strong>
+            </small>
+        </div>
+    </div>
+</div>
+
+

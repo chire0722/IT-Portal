@@ -1,0 +1,225 @@
+@model IT_Form.ViewModels.ManageAccessViewModel
+
+@{
+    ViewData["Title"] = "Manage Employee Access";
+    var availableEmailGroups = Model.AvailableEmailGroups ?? Enumerable.Empty<IT_Form.ViewModels.ManageAccessEmailGroupOptionViewModel>();
+    var availableSharedMailboxes = Model.AvailableSharedMailboxes ?? Enumerable.Empty<IT_Form.ViewModels.ManageAccessSharedMailboxOptionViewModel>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <div>
+        <h2 class="fw-bolder mb-1">
+            <span class="text-gradient">Manage Current Employee Access</span>
+        </h2>
+        <p class="text-muted mb-0">Assign server folders, shared mailboxes, and email groups for the active employee record.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Details" asp-route-id="@Model.OnboardingId" class="btn btn-outline-secondary">
+            <i class="fas fa-file-person me-2" aria-hidden="true"></i>View Employee Record
+        </a>
+        <a asp-controller="Employee" asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Back to Directory
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-badge me-2" aria-hidden="true"></i>Employee Snapshot</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-uppercase text-muted fw-bold">Employee</small>
+                    <div class="fs-5 fw-bold">@Model.FullName</div>
+                    <div class="text-muted">@(string.IsNullOrWhiteSpace(Model.Designation) ? "No designation recorded" : Model.Designation)</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-uppercase text-muted fw-bold">Employee ID</small>
+                    <div>@(string.IsNullOrWhiteSpace(Model.EmployeeID) ? "N/A" : Model.EmployeeID)</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-uppercase text-muted fw-bold">Current Department</small>
+                    <div>@(string.IsNullOrWhiteSpace(Model.CurrentDepartment) ? "N/A" : Model.CurrentDepartment)</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-uppercase text-muted fw-bold">Current Company</small>
+                    <div>@(string.IsNullOrWhiteSpace(Model.CurrentBranch) ? "N/A" : Model.CurrentBranch)</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-uppercase text-muted fw-bold">Join Date</small>
+                    <div>@(Model.JoinedAt?.ToString("dd/MM/yyyy") ?? "N/A")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <form asp-action="ManageAccess" method="post" class="card shadow-sm border-0">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="OnboardingId" />
+
+            <div class="card-body p-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-primary mb-1"><i class="bi bi-people me-2" aria-hidden="true"></i>Email Groups</h5>
+                            <p class="text-muted small mb-0">Select the mail groups the employee should newly keep or receive.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border">@availableEmailGroups.Count() available</span>
+                    </div>
+
+                    <div class="row g-3">
+                        @if (availableEmailGroups.Any())
+                        {
+                            foreach (var group in availableEmailGroups)
+                            {
+                                var isChecked = Model.SelectedEmailGroupIds.Contains(group.Id);
+                                <div class="col-md-6">
+                                    <label class="card h-100 border shadow-sm @(isChecked ? "border-primary" : "border-light")" style="cursor: pointer;">
+                                        <div class="card-body py-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="SelectedEmailGroupIds" value="@group.Id" @(isChecked ? "checked" : "") />
+                                                <span class="fw-bold">@group.GroupName</span>
+                                            </div>
+                                            <div class="small text-muted mt-2 ms-4">@group.GroupEmail</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="col-12">
+                                <div class="alert alert-light border text-muted mb-0">No active email groups are available for this employee's current company.</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-3">
+                        <label asp-for="OtherGroupDetails" class="form-label fw-bold small text-muted">Other Group Notes</label>
+                        <input asp-for="OtherGroupDetails" class="form-control" placeholder="Optional: manual group assignment notes" />
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-primary mb-1"><i class="bi bi-envelope me-2" aria-hidden="true"></i>Shared Mailboxes</h5>
+                            <p class="text-muted small mb-0">Tick any shared mailboxes the employee should be added to.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border">@availableSharedMailboxes.Count() available</span>
+                    </div>
+
+                    <div class="row g-3">
+                        @if (availableSharedMailboxes.Any())
+                        {
+                            foreach (var mailbox in availableSharedMailboxes)
+                            {
+                                var isChecked = Model.SelectedSharedMailboxIds.Contains(mailbox.Id);
+                                <div class="col-md-6">
+                                    <label class="card h-100 border shadow-sm @(isChecked ? "border-primary" : "border-light")" style="cursor: pointer;">
+                                        <div class="card-body py-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="SelectedSharedMailboxIds" value="@mailbox.Id" @(isChecked ? "checked" : "") />
+                                                <span class="fw-bold">@mailbox.MailboxName</span>
+                                            </div>
+                                            <div class="small text-muted mt-2 ms-4">@mailbox.MailboxAddress</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="col-12">
+                                <div class="alert alert-light border text-muted mb-0">No active shared mailboxes are available for this employee's current company.</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-3">
+                        <label asp-for="OtherSharedMailboxDetails" class="form-label fw-bold small text-muted">Other Shared Mailbox Notes</label>
+                        <input asp-for="OtherSharedMailboxDetails" class="form-control" placeholder="Optional: mailbox access outside the standard list" />
+                    </div>
+                </div>
+
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-primary mb-1"><i class="bi bi-folder2-open me-2" aria-hidden="true"></i>Server Folder Access</h5>
+                            <p class="text-muted small mb-0">Set read and modify access for the folders this employee needs now.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAllRead">Select All Read</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnClearAllFolders">Clear All</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive rounded border">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Folder</th>
+                                    <th class="text-center" style="width: 100px;">Read</th>
+                                    <th class="text-center" style="width: 100px;">Modify</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.FolderPermissions.Count; i++)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">
+                                            <input type="hidden" name="FolderPermissions[@i].FolderName" value="@Model.FolderPermissions[i].FolderName" />
+                                            @Model.FolderPermissions[i].FolderName
+                                        </td>
+                                        <td class="text-center">
+                                            <input asp-for="FolderPermissions[i].CanRead" class="form-check-input folder-read" />
+                                        </td>
+                                        <td class="text-center">
+                                            <input asp-for="FolderPermissions[i].CanModify" class="form-check-input folder-modify" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        <label asp-for="OtherFolderDetails" class="form-label fw-bold small text-muted">Other Server Folder Notes</label>
+                        <input asp-for="OtherFolderDetails" class="form-control" placeholder="Optional: custom folder path or manual permission notes" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white border-top d-flex justify-content-end gap-2 py-3">
+                <a asp-action="Details" asp-route-id="@Model.OnboardingId" class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-save me-2" aria-hidden="true"></i>Save Access Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        document.getElementById('btnSelectAllRead')?.addEventListener('click', function () {
+            document.querySelectorAll('.folder-read').forEach(function (checkbox) {
+                checkbox.checked = true;
+            });
+        });
+
+        document.getElementById('btnClearAllFolders')?.addEventListener('click', function () {
+            document.querySelectorAll('.folder-read, .folder-modify').forEach(function (checkbox) {
+                checkbox.checked = false;
+            });
+        });
+    </script>
+}

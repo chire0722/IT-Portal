@@ -1,0 +1,84 @@
+@model List<IT_Form.Models.SlaSetting>
+
+@{
+    ViewData["Title"] = "Due Date Setup";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800">
+        <i class="bi bi-stopwatch text-primary me-2" aria-hidden="true"></i> Due Date Time Setup
+    </h2>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Configure the Service Level turnaround time targets for different request types.
+                    These targets are used to calculate the Due Date Time on the dashboard.
+                </p>
+
+                <form asp-action="Update" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Request Type</th>
+                                    <th>Target (Turnaround Days)</th>
+                                    <th>Notify Email</th>
+                                    <th>Tier 1 (Days/Email)</th>
+                                    <th>Tier 2 (Days/Email)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Count; i++)
+                                {
+                                    <tr>
+                                        <td>
+                                            <input type="hidden" asp-for="@Model[i].Id" />
+                                            <input type="hidden" asp-for="@Model[i].RequestType" />
+                                            <strong>@Model[i].RequestType</strong>
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-sm" style="max-width: 100px;">
+                                                <input type="number" asp-for="@Model[i].TargetDays" class="form-control"
+                                                    min="1" max="365" required />
+                                                <span class="input-group-text">d</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input type="email" asp-for="@Model[i].NotifyEmail" class="form-control form-control-sm" placeholder="it@company.com" />
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <input type="number" asp-for="@Model[i].EscalationDaysTier1" class="form-control form-control-sm" style="width: 60px;" placeholder="Days" />
+                                                <input type="email" asp-for="@Model[i].EscalationEmailTier1" class="form-control form-control-sm" placeholder="Manager Email" />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <input type="number" asp-for="@Model[i].EscalationDaysTier2" class="form-control form-control-sm" style="width: 60px;" placeholder="Days" />
+                                                <input type="email" asp-for="@Model[i].EscalationEmailTier2" class="form-control form-control-sm" placeholder="HOD Email" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save me-1" aria-hidden="true"></i> Save Due Date Setup
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+

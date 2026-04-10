@@ -1,0 +1,451 @@
+@model IT_Form.ViewModels.OnboardingStep3PageViewModel
+@{
+    ViewData["Title"] = "Step 3 — Email Group, Shared Mailbox & Software";
+}
+
+<style>
+    .form-check-input {
+        border-width: 2px !important;
+        border-color: #343a40 !important;
+    }
+</style>
+
+<partial name="_WizardSteps" model="3" />
+
+<div class="card animate-in" style="max-width: 900px; margin: 0 auto;">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-th-large me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Email Group, Shared
+            Mailbox & Software Configuration</h5>
+        <small style="color: var(--text-muted);"><span class="badge bg-primary me-1">IT</span> Complete software, email
+            groups and mailbox access for the new employee.</small>
+    </div>
+    <div class="card-body p-0">
+        <form asp-action="Step3" method="post">
+            <input type="hidden" asp-for="CurrentStep" />
+            
+            <!-- ===== Issued IT Assets Assignment (Newly Moved to Step 1) ===== -->
+            <div class="p-3" style="background: rgba(var(--primary-rgb), 0.05); border-bottom: 2px solid var(--primary-light);">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-laptop me-2" aria-hidden="true"></i>Issued IT Assets Assignment</h6>
+                    <span class="badge bg-primary">IT Task #1</span>
+                </div>
+                
+                @if (Model.IssuedAssets != null && Model.IssuedAssets.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0 bg-white">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 20%;">Asset Type</th>
+                                    <th style="width: 25%;">Requirement / Description</th>
+                                    <th style="width: 50%;">Asset Assignment (From Inventory)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.IssuedAssets.Count; i++)
+                                {
+                                    <tr>
+                                        <td class="text-center align-middle">@(i + 1)</td>
+                                        <td class="align-middle">
+                                            <input type="hidden" name="IssuedAssets[@i].AssetType" value="@((int)Model.IssuedAssets[i].AssetType)" />
+                                            <input type="hidden" name="IssuedAssets[@i].IsChecked" value="true" />
+                                            <input type="hidden" name="IssuedAssets[@i].Qty" value="@(Model.IssuedAssets[i].Qty ?? 1)" />
+                                            <span class="badge bg-secondary">@Model.IssuedAssets[i].AssetType</span>
+                                        </td>
+                                        <td class="align-middle">
+                                            <small class="text-muted">@(Model.IssuedAssets[i].Description ?? "-")</small>
+                                            <input type="hidden" name="IssuedAssets[@i].Description" value="@Model.IssuedAssets[i].Description" />
+                                        </td>
+                                        <td class="align-middle">
+                                            @{
+                                                var isOther = Model.IssuedAssets[i].AssetType == IT_Form.Models.Enums.AssetType.Others;
+                                                var availAssets = Model.AvailableAssets ?? new List<IT_Form.Application.DTOs.Options.ITAssetOptionDto>();
+                                                var filteredAssets = isOther 
+                                                    ? availAssets.ToList() 
+                                                    : availAssets.Where(a => (int)a.AssetType == (int)Model.IssuedAssets[i].AssetType).ToList();
+                                            }
+                                            <select name="IssuedAssets[@i].ITAssetId" class="form-select form-select-sm" required>
+                                                <option value="">-- Select from Inventory --</option>
+                                                @if (Model.IssuedAssets[i].ITAssetId.HasValue)
+                                                {
+                                                    // In case it's already selected, it should stay there but we don't have the tag in the model easily, 
+                                                    // so we rely on the list having it or assume it's one of the available ones.
+                                                    // However, ITAssetId is what matters for mapping.
+                                                }
+                                                @foreach (var asset in filteredAssets)
+                                                {
+                                                    <option value="@asset.Id" selected="@(Model.IssuedAssets[i].ITAssetId == asset.Id ? "selected" : null)">
+                                                        @asset.AssetTag - @asset.Model (@asset.SerialNumber)
+                                                    </option>
+                                                }
+                                            </select>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning py-2 mb-0" style="font-size: 0.85rem;">
+                        <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>No equipment was requested by HR in the previous step.
+                    </div>
+                }
+            </div>
+
+            <hr class="my-0" />
+
+            <!-- ===== Email Distribution Groups ===== -->
+            <div class="p-3">
+                <h6 class="fw-bold mb-3"><i class="fas fa-users me-2" aria-hidden="true"></i>Email Distribution Groups</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60%;">Group Email</th>
+                                <th style="width: 15%; text-align: center;">Please tick (✓)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.EmailGroups != null)
+                            {
+                                foreach (var group in Model.EmailGroups)
+                                {
+                                    bool isChecked = Model.SelectedEmailGroupIds != null && Model.SelectedEmailGroupIds.Contains(group.Id);
+                                    <tr>
+                                        <td>
+                                            <strong>@group.GroupName</strong><br />
+                                            <small class="text-muted">(@group.GroupEmail)</small>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input type="checkbox" name="SelectedEmailGroupIds" value="@group.Id" class="form-check-input"
+                                                @(isChecked ? "checked" : "") style="width: 20px; height: 20px;" />
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            <tr>
+                                <td>
+                                    <strong>Other</strong> <small class="text-muted">(please specify)</small>
+                                    <div id="otherGroupDiv"
+                                        style="display: @(Model.OtherGroup ? "block" : "none"); margin-top: 5px;">
+                                        <input asp-for="OtherGroupDetails" class="form-control form-control-sm"
+                                            placeholder="Specify group name / email..." />
+                                    </div>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <input asp-for="OtherGroup" class="form-check-input" id="chkOtherGroup"
+                                        style="width: 20px; height: 20px;" />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <hr class="my-0" />
+
+            <!-- ===== Shared Mailbox Access ===== -->
+            <div class="p-3">
+                <h6 class="fw-bold mb-3"><i class="fas fa-inbox me-2" aria-hidden="true"></i>Shared Mailbox to Access</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 80%;">Shared Mailbox</th>
+                                <th style="width: 20%; text-align: center;">Please tick (✓)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.SharedMailboxes != null)
+                            {
+                                foreach (var mb in Model.SharedMailboxes)
+                                {
+                                    bool isChecked = Model.SelectedSharedMailboxIds != null && Model.SelectedSharedMailboxIds.Contains(mb.Id);
+                                    <tr>
+                                        <td>
+                                            <strong>@mb.MailboxName</strong><br />
+                                            <small class="text-muted">(@mb.MailboxAddress)</small>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input type="checkbox" name="SelectedSharedMailboxIds" value="@mb.Id" class="form-check-input"
+                                                @(isChecked ? "checked" : "") style="width: 20px; height: 20px;" />
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            <tr>
+                                <td>
+                                    <strong>Other</strong> <small class="text-muted">(please specify)</small>
+                                    <div id="otherMailboxDiv" style="display: @(!string.IsNullOrEmpty(Model.OtherSharedMailboxDetails) ? "block" : "none"); margin-top: 5px;">
+                                        <input asp-for="OtherSharedMailboxDetails" class="form-control form-control-sm" placeholder="Specify mailbox address..." />
+                                    </div>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <input type="checkbox" id="chkOtherMailbox" class="form-check-input" @(!string.IsNullOrEmpty(Model.OtherSharedMailboxDetails) ? "checked" : "") style="width: 20px; height: 20px;" />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <hr class="my-0" />
+
+            <!-- ===== Software Section ===== -->
+            <div class="p-3">
+                <h6 class="fw-bold mb-3"><i class="fas fa-cube me-2" aria-hidden="true"></i>Specific Software / Application Configuration
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 5%;">No.</th>
+                                <th style="width: 55%;">Particulars</th>
+                                <th style="width: 20%; text-align: center;">Please tick (✓)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var softwareList = (Model.StandardSoftwareOptions ?? new List<IT_Form.Application.DTOs.Options.StandardSoftwareOptionDto>())
+                                    .OrderBy(s => s.SoftwareName)
+                                    .ToList();
+                                var requestedSoftwareIds = Model.RequestedSoftwareIds ?? new List<int>();
+                                var mandatorySoftwareNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                                {
+                                    "Adobe Acrobat",
+                                    "Microsoft Office Product",
+                                    "DWG TrueView (Ultraview)",
+                                    "Google Chrome",
+                                    "Microsoft Teams",
+                                    "EShare"
+                                };
+                            }
+                            @for (int i = 0; i < softwareList.Count; i++)
+                            {
+                                var std = softwareList[i];
+                                var swLabel = std.SoftwareName?.Trim() ?? string.Empty;
+                                bool isMandatory = mandatorySoftwareNames.Contains(swLabel);
+                                bool isRequestedByHR = requestedSoftwareIds.Contains(std.Id);
+                                bool isParentChecked = (Model.SelectedStandardSoftwareIds?.Contains(std.Id) ?? false) || isRequestedByHR || isMandatory;
+                                bool hasLicenses = std.Licenses != null && std.Licenses.Any();
+
+                                <tr>
+                                    <td class="text-center align-middle">@(i + 1)</td>
+                                    <td class="align-middle">
+                                        <span class="fw-bold fs-6">@swLabel @(isMandatory ? "(Mandatory)" : "")</span>
+
+                                        @if (hasLicenses)
+                                        {
+                                            bool isSingleVersion = std.Licenses!.Count == 1;
+                                            <div class="software-versions-container mt-2" data-software-name="@swLabel" style="display: @(isParentChecked ? "block" : "none"); border: 2px solid #343a40; padding: 12px; border-radius: 6px; background-color: #fcfcfc;">
+                                                <div class="text-primary fw-bold mb-2" style="font-size: 0.85rem;"><i class="fas fa-level-down-alt me-1" aria-hidden="true"></i>Select Version / License:</div>
+                                                <div class="list-group list-group-flush border" style="border-color: rgba(0,0,0,0.125) !important;">
+                                                    @foreach (var license in std.Licenses!)
+                                                    {
+                                                        bool isLicenseChecked = (Model.SelectedSoftwareIds != null && Model.SelectedSoftwareIds.Contains(license.Id)) || (isSingleVersion && isParentChecked);
+
+                                                        @if (isSingleVersion)
+                                                        {
+                                                            <input type="checkbox"
+                                                                   name="SelectedSoftwareIds"
+                                                                   value="@license.Id"
+                                                                   class="auto-license-input d-none"
+                                                                   @(isLicenseChecked ? "checked" : "")
+                                                                   @(!isParentChecked ? "disabled" : "") />
+                                                            <div class="list-group-item bg-light px-3 py-2 text-dark" style="font-size: 0.85rem; border-color: rgba(0,0,0,0.125) !important;">
+                                                                @license.SoftwareName (Auto-assigned)
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="list-group-item d-flex justify-content-between align-items-center bg-white px-3 py-2" style="border-color: rgba(0,0,0,0.125) !important;">
+                                                                <div>
+                                                                    <span class="text-dark fw-medium" style="font-size: 0.9rem;">@license.SoftwareName</span>
+                                                                    @if (license.IsFree)
+                                                                    {
+                                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-2" style="border-radius:4px;font-size:0.65rem;">Free</span>
+                                                                    }
+                                                                    else if (license.IsSubscription)
+                                                                    {
+                                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 ms-2" style="border-radius:4px;font-size:0.65rem;">Subscription</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge bg-light text-dark border ms-2" style="border-radius:4px;font-size:0.65rem;">Perpetual</span>
+                                                                    }
+                                                                    @if (Model.LicenseAvailability != null && Model.LicenseAvailability.ContainsKey(license.Id))
+                                                                    {
+                                                                        int available = Model.LicenseAvailability[license.Id];
+                                                                        if (license.IsFree)
+                                                                        {
+                                                                            <small class="text-success ms-2 fw-bold" style="font-size: 0.75rem;">(Unlimited)</small>
+                                                                        }
+                                                                        else if (available > 0)
+                                                                        {
+                                                                            <small class="text-muted ms-2" style="font-size: 0.75rem;">(Available: @available)</small>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <small class="text-danger ms-2 fw-bold" style="font-size: 0.75rem;">(Out of Stock)</small>
+                                                                        }
+                                                                    }
+                                                                </div>
+                                                                <div>
+                                                                    <input type="checkbox" name="SelectedSoftwareIds" value="@license.Id"
+                                                                           class="form-check-input border-secondary"
+                                                                           @(isLicenseChecked ? "checked" : "")
+                                                                           @(!isParentChecked ? "disabled" : "")
+                                                                           style="width: 18px; height: 18px;" />
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        @if (isMandatory)
+                                        {
+                                            <input type="hidden" name="SelectedStandardSoftwareIds" value="@std.Id" />
+                                            <input type="checkbox" checked disabled class="form-check-input top-software-cb border-secondary"
+                                                   data-software-name="@swLabel"
+                                                   style="width: 22px; height: 22px;" />
+                                        }
+                                        else
+                                        {
+                                            <input type="checkbox" name="SelectedStandardSoftwareIds" value="@std.Id"
+                                                   class="form-check-input top-software-cb border-secondary"
+                                                   data-software-name="@swLabel"
+                                                   @(isParentChecked ? "checked" : "")
+                                                   style="width: 22px; height: 22px;" />
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            <tr>
+                                <td class="text-center align-middle">@(softwareList.Count + 1)</td>
+                                <td class="align-middle">
+                                    <strong>Other</strong> <small class="text-muted">(please specify)</small>
+                                    <div id="otherSoftwareDiv"
+                                        style="display: @(Model.HasOtherSoftware ? "block" : "none"); margin-top: 5px;">
+                                        <input asp-for="OtherSoftwareDetails" class="form-control form-control-sm"
+                                            placeholder="Please specify other software..." />
+                                    </div>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <input asp-for="HasOtherSoftware" class="form-check-input" id="chkOtherSoftware"
+                                        style="width: 20px; height: 20px;" />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @{
+                var selectedSoftwareIds = (Model.SelectedSoftwareIds ?? new List<int>()).Distinct().ToList();
+                var availableSoftware = Model.AvailableSoftware ?? new List<IT_Form.Application.DTOs.Options.SoftwareLicenseOptionDto>();
+                var selectedSoftware = availableSoftware
+                    .Where(s => selectedSoftwareIds.Contains(s.Id))
+                    .OrderBy(s => s.SoftwareName)
+                    .ToList();
+            }
+            <div class="p-3" style="border-top: 1px solid var(--border);">
+                <h6 class="fw-bold mb-2"><i class="fas fa-key me-2" aria-hidden="true"></i>Currently Assigned Software</h6>
+                @if (selectedSoftware.Any())
+                {
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var sw in selectedSoftware)
+                        {
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
+                                @sw.SoftwareName
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted small">No software license assigned yet.</div>
+                }
+            </div>
+
+
+
+            <!-- Remarks -->
+            <div class="p-3" style="border-top: 1px solid var(--border);">
+                <label asp-for="SoftwareRemarks" class="form-label"><i class="fas fa-comment me-1" aria-hidden="true"></i><em>Remarks:</em></label>
+                <textarea asp-for="SoftwareRemarks" class="form-control" rows="2" placeholder="Any remarks..."></textarea>
+            </div>
+                <div class="d-flex justify-content-between p-3" style="border-top: 1px solid var(--border);">
+                    <div>
+                        <a asp-action="Step2" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Previous
+                        </a>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="saveAction" value="draft" class="btn btn-outline-secondary" formnovalidate>
+                            <i class="fas fa-save me-2" aria-hidden="true"></i>Save as Draft
+                        </button>
+                        <button type="submit" name="saveAction" value="submit" class="btn btn-primary">
+                            Next: Server Folder Access <i class="fas fa-arrow-right ms-2" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('chkOtherSoftware').addEventListener('change', function () {
+            document.getElementById('otherSoftwareDiv').style.display = this.checked ? 'block' : 'none';
+        });
+        document.getElementById('chkOtherGroup').addEventListener('change', function () {
+            document.getElementById('otherGroupDiv').style.display = this.checked ? 'block' : 'none';
+        });
+        document.getElementById('chkOtherMailbox').addEventListener('change', function () {
+            document.getElementById('otherMailboxDiv').style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Parent software toggle logic
+        const topSoftwareCheckboxes = document.querySelectorAll('.top-software-cb');
+        
+        topSoftwareCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const softwareName = this.getAttribute('data-software-name');
+                const targetContainer = document.querySelector(`.software-versions-container[data-software-name="${softwareName}"]`);
+                
+                if (targetContainer) {
+                    if (this.checked) {
+                        targetContainer.style.display = 'block';
+                        const autoInputs = targetContainer.querySelectorAll('.auto-license-input');
+                        autoInputs.forEach(input => {
+                            input.disabled = false;
+                            input.checked = true;
+                        });
+                        const nestedCb = targetContainer.querySelectorAll('input[name="SelectedSoftwareIds"][type="checkbox"]:not(.auto-license-input)');
+                        nestedCb.forEach(nCb => nCb.disabled = false);
+                    } else {
+                        targetContainer.style.display = 'none';
+                        const autoInputs = targetContainer.querySelectorAll('.auto-license-input');
+                        autoInputs.forEach(input => {
+                            input.checked = false;
+                            input.disabled = true;
+                        });
+                        const nestedCb = targetContainer.querySelectorAll('input[name="SelectedSoftwareIds"][type="checkbox"]:not(.auto-license-input)');
+                        nestedCb.forEach(nCb => {
+                            nCb.checked = false;
+                            nCb.disabled = true;
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+

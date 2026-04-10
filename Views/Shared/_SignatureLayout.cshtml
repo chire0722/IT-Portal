@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - YTC IT Portal</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --sp-primary: #1A52A3;
+            --sp-primary-light: #306AB5;
+            --sp-primary-dark: #0B3C5D;
+            --sp-blue: #1A52A3;
+            --sp-blue-light: #306AB5;
+            --sp-surface: #ffffff;
+            --sp-bg: #f5f5f7;
+            --sp-text: #18181b;
+            --sp-text-secondary: #52525b;
+            --sp-text-muted: #a1a1aa;
+            --sp-border: rgba(0, 0, 0, 0.08);
+            --sp-success: #22c55e;
+            --sp-danger: #ef4444;
+            --sp-gold: #FCD116;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            background-color: var(--sp-bg) !important;
+            color: var(--sp-text) !important;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+
+        /* ─── Header ─── */
+        .sig-header {
+            background: linear-gradient(135deg, var(--sp-primary) 0%, var(--sp-primary-dark) 100%);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            box-shadow: 0 4px 20px rgba(11, 60, 93, 0.2);
+        }
+
+        .sig-header img {
+            max-height: 38px;
+        }
+
+        .sig-header .divider {
+            width: 1px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .sig-header h5 {
+            color: #ffffff !important;
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        /* ─── Main Content ─── */
+        .sig-main {
+            flex: 1;
+            padding: 2.5rem 1rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        /* ─── Footer ─── */
+        .sig-footer {
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--sp-text-muted);
+            border-top: 1px solid var(--sp-border);
+            background: var(--sp-surface);
+        }
+
+        /* ─── Animations ─── */
+        .fade-up {
+            animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        @@keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .sig-main {
+                padding: 1rem 0.5rem;
+            }
+
+            .sig-card {
+                max-width: 100%;
+                border-radius: 12px;
+            }
+
+            .sig-card-body {
+                padding: 1.25rem 1rem 1rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sig-header {
+                padding: 0.75rem 1rem;
+            }
+
+            .sig-header h5 {
+                font-size: 0.82rem;
+            }
+
+            .sig-canvas-wrapper {
+                touch-action: none;
+            }
+
+            .sig-canvas-wrapper canvas {
+                height: 150px !important;
+                touch-action: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="sig-header">
+        @{
+            var company = ViewBag.Company as string;
+
+
+
+            var isPYT = !string.IsNullOrEmpty(company) && company.Contains("Yeng Tong", StringComparison.OrdinalIgnoreCase);
+        }
+        @if (isPYT)
+
+
+
+        {
+            <img src="~/images/logo-pyt.png" alt="Pembinaan Yeng Tong"
+                style="background: #ffffff; padding: 4px 10px; border-radius: 6px;" />
+        }
+
+
+
+        else
+
+
+
+        {
+            <img src="~/images/logo-ytc.jpg" alt="YTC Precast" />
+        }
+        <div class="divider"></div>
+        <h5>Employee Signing Portal</h5>
+    </header>
+
+    <main class="sig-main">
+        @RenderBody()
+    </main>
+
+    <footer class="sig-footer">
+        &copy; @DateTime.Now.Year YTC Precast &mdash; IT Department. This is a secure document signing portal.
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

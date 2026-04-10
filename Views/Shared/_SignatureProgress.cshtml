@@ -1,0 +1,150 @@
+@model dynamic
+@using IT_Form.Models.Enums
+
+@{
+    string type = ViewBag.RequestType ?? "Onboarding";
+    RequestStatus status = Model.Status;
+    
+    // Mapping signatures based on type
+    bool hrSigned = false;
+    bool hodSigned = false;
+    bool itSigned = false;
+    bool empSigned = false;
+
+    if (type == "Onboarding")
+    {
+        hrSigned = !string.IsNullOrEmpty(Model.RequesterSignature);
+        itSigned = !string.IsNullOrEmpty(Model.ITAdminSignature);
+        empSigned = !string.IsNullOrEmpty(Model.EmployeeSignature);
+        // Onboarding usually skips HOD sign-off in this app's current flow
+    }
+    else if (type == "Offboarding")
+    {
+        hrSigned = !string.IsNullOrEmpty(Model.HRSignature);
+        hodSigned = !string.IsNullOrEmpty(Model.HODSignature);
+        itSigned = !string.IsNullOrEmpty(Model.ITAdminSignature);
+        empSigned = !string.IsNullOrEmpty(Model.EmployeeSignature);
+    }
+
+    // For Onboarding, skip HOD step visually or mark as N/A
+}
+
+<div class="card shadow-sm border-0 mb-4 overflow-hidden animate-in">
+    <div class="card-body p-0">
+        <div class="signature-timeline d-flex justify-content-between p-4 bg-light">
+            <!-- Step 1: HR -->
+            <div class="timeline-item @(hrSigned ? "completed" : "active")">
+                <div class="timeline-icon">
+                    <i class="bi @(hrSigned ? "bi-check-circle-fill" : "bi-pencil-square")" aria-hidden="true"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-label">Initiated</div>
+                    <div class="timeline-sub">HR @(hrSigned ? "Signed" : "Draft")</div>
+                </div>
+            </div>
+
+            @if (type != "Onboarding")
+            {
+                <div class="timeline-connector @(hodSigned ? "filled" : "")"></div>
+
+                <!-- Step 2: HOD -->
+                <div class="timeline-item @(hodSigned ? "completed" : (hrSigned ? "active" : ""))">
+                    <div class="timeline-icon">
+                        <i class="bi @(hodSigned ? "bi-check-circle-fill" : "bi-person-check")" aria-hidden="true"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">Manager Approval</div>
+                        <div class="timeline-sub">@(hodSigned ? "Approved" : "Pending")</div>
+                    </div>
+                </div>
+            }
+
+            <div class="timeline-connector @(itSigned ? "filled" : "")"></div>
+
+            <!-- Step 3: IT -->
+            <div class="timeline-item @(itSigned ? "completed" : (hodSigned || (type == "Onboarding" && hrSigned) ? "active" : ""))">
+                <div class="timeline-icon">
+                    <i class="bi @(itSigned ? "bi-check-circle-fill" : "bi-cpu")" aria-hidden="true"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-label">IT Provisioning</div>
+                    <div class="timeline-sub">@(itSigned ? "Completed" : "In Progress")</div>
+                </div>
+            </div>
+
+            <div class="timeline-connector @(empSigned ? "filled" : "")"></div>
+
+            <!-- Step 4: Employee -->
+            <div class="timeline-item @(empSigned ? "completed" : (itSigned ? "active" : ""))">
+                <div class="timeline-icon">
+                    <i class="bi @(empSigned ? "bi-check-circle-fill" : "bi-person-badge")" aria-hidden="true"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-label">Employee Sign</div>
+                    <div class="timeline-sub">@(empSigned ? "ACK Received" : "Awaiting")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .signature-timeline {
+        position: relative;
+    }
+    .timeline-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+        flex: 1;
+        text-align: center;
+    }
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: #adb5bd;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .timeline-item.active .timeline-icon {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(var(--primary-rgb), 0.1);
+        transform: scale(1.1);
+    }
+    .timeline-item.completed .timeline-icon {
+        background: #198754;
+        border-color: #198754;
+        color: #fff;
+    }
+    .timeline-label {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #495057;
+    }
+    .timeline-sub {
+        font-size: 0.7rem;
+        color: #6c757d;
+    }
+    .timeline-connector {
+        flex: 1;
+        height: 2px;
+        background: #dee2e6;
+        margin-top: 20px;
+        z-index: 1;
+    }
+    .timeline-connector.filled {
+        background: #198754;
+    }
+</style>
+
+

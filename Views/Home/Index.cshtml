@@ -1,0 +1,777 @@
+@model IT_Form.Models.DashboardViewModel
+@using System.Linq
+
+@{
+    ViewData["Title"] = "IT Analytics Dashboard";
+    var isIT = User.HasClaim("UserTitle", "IT");
+    var totalAssets = Model.AssetDistribution.Values.Sum();
+    var currentUserName = User.Identity?.Name;
+    var periodLabel = ViewData["StatsPeriodLabel"]?.ToString() ?? "Selected Period";
+}
+
+<style>
+    .dashboard-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border-radius: 12px;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.06) !important;
+    }
+    .activity-feed-item {
+        transition: background-color 0.15s ease;
+    }
+    .activity-feed-item:hover {
+        background-color: #fafafa !important;
+    }
+    .queue-card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .queue-item {
+        transition: all 0.2s ease;
+    }
+    .queue-item:hover {
+        background-color: #f8f9fa !important;
+        transform: translateX(4px);
+        border-left: 3px solid var(--primary) !important;
+    }
+    .empty-state-glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px dashed rgba(0,0,0,0.1);
+        border-radius: 16px;
+    }
+</style>
+
+@{
+    var isHR = User.HasClaim("UserTitle", "HR");
+    var isManager = User.HasClaim("UserTitle", "HOD") || User.HasClaim("UserTitle", "Manager");
+}
+
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bolder mb-1" style="letter-spacing: -0.5px;">
+            @if (isIT)
+            {
+                <i class="bi bi-speedometer2 me-2 text-primary" aria-hidden="true"></i>@:IT Admin Overview
+            }
+            else if (isHR)
+            {
+                <i class="bi bi-people me-2 text-primary" aria-hidden="true"></i>@:HR Dashboard
+            }
+            else
+            {
+                <i class="bi bi-speedometer2 me-2 text-primary" aria-hidden="true"></i>@:Dashboard
+            }
+        </h2>
+        <span class="text-muted">Welcome back, @(string.IsNullOrWhiteSpace(currentUserName) ? "there" : currentUserName) &mdash; here's everything you need to know today.</span>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        @if (isHR || isIT)
+        {
+            <div class="d-flex align-items-center bg-white border rounded-pill px-3 py-1 shadow-sm">
+                <i class="bi bi-calendar-event text-primary me-2" aria-hidden="true"></i>
+                <label class="small fw-bold text-muted me-2 mb-0">Year:</label>
+                <select class="form-select form-select-sm border-0 fw-bold" style="width: auto; background: transparent; cursor: pointer;" 
+                        onchange="window.location.href='/Home/Index?year=' + this.value">
+                    @foreach (var year in Model.AvailableYears)
+                    {
+                        if (year == Model.SelectedYear)
+                        {
+                            <option value="@year" selected>@year</option>
+                        }
+                        else
+                        {
+                            <option value="@year">@year</option>
+                        }
+                    }
+                </select>
+            </div>
+        }
+
+        @if (isHR)
+        {
+            <div class="dropdown">
+                <button class="btn btn-primary shadow-sm fw-bold dropdown-toggle rounded-pill px-4 py-2" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> New Request
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px;">
+                    <li><a class="dropdown-item py-2" asp-controller="Onboarding" asp-action="Create"><i class="bi bi-person-plus text-success me-2" aria-hidden="true"></i> Onboarding</a></li>
+                    <li><a class="dropdown-item py-2" asp-controller="Offboarding" asp-action="Create"><i class="bi bi-person-dash text-danger me-2" aria-hidden="true"></i> Offboarding</a></li>
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
+@{
+    var hasPendingQueues = ((isIT || isHR) && Model.PendingOnboarding.Any()) || 
+                           Model.PendingOffboarding.Any() || 
+                           ((isIT || isHR) && (Model.PendingEmployeeSignOnboarding.Any() || Model.PendingEmployeeSignOffboarding.Any()));
+}
+
+@if (hasPendingQueues)
+{
+    <partial name="_PendingQueues" model="Model" view-data='new ViewDataDictionary(ViewData) { ["ShowEmptyState"] = false }' />
+}
+
+@* â•â•â•â•â•â•â•â•â•â•â•â•â• HR DASHBOARD â•â•â•â•â•â•â•â•â•â•â•â•â• *@
+@if (isHR && !isIT)
+{
+    <!-- HR Stat Cards -->
+    <div class="stats-row mb-4">
+        <div class="stat-card stat-success">
+            <div class="stat-value">@Model.MonthlyOnboardingCount</div>
+            <div class="stat-label">New Hires (This Month)</div>
+        </div>
+        <div class="stat-card stat-danger">
+            <div class="stat-value">@Model.MonthlyOffboardingCount</div>
+            <div class="stat-label">Exits (This Month)</div>
+        </div>
+        <div class="stat-card stat-info">
+            <div class="stat-value">@Model.PendingEmployeeSignCount</div>
+            <div class="stat-label">Pending Employee Sign</div>
+        </div>
+        <div class="stat-card stat-primary">
+            <div class="stat-value">@Model.CompletedThisMonthCount</div>
+            <div class="stat-label">Completed (This Month)</div>
+        </div>
+    </div>
+
+
+    <!-- Monthly Trend Chart -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2 text-primary" aria-hidden="true"></i>Activity Trend (@Model.SelectedYear)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.MonthlyTrendLabels.Any())
+                    {
+                        <canvas id="trendChart" height="80" role="img" aria-label="Line chart showing Onboarding vs Offboarding trends over the selected year"></canvas>
+                        <!-- Accessible Data Table for Screen Readers -->
+                        <div class="visually-hidden-focusable">
+                            <table aria-label="Raw data for Activity Trend Chart">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Onboarding</th>
+                                        <th>Offboarding</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.MonthlyTrendLabels.Count; i++)
+                                    {
+                                        <tr>
+                                            <td>@Model.MonthlyTrendLabels[i]</td>
+                                            <td>@Model.MonthlyTrendOnboarding[i]</td>
+                                            <td>@Model.MonthlyTrendOffboarding[i]</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4" style="color: var(--text-muted);">
+                            <i class="bi bi-graph-up" style="font-size: 2rem; opacity: 0.3;" aria-hidden="true"></i>
+                            <p class="mb-0 mt-2 small">No trend data available.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Breakdown & Recent Completions -->
+    <div class="row g-4 mb-4">
+        <!-- Department Breakdown (Chart) -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-building me-2 text-primary" aria-hidden="true"></i>Department Activity (@Model.SelectedYear)</h6>
+                </div>
+                <div class="card-body" style="position: relative; height: 320px;">
+                    @if (Model.DepartmentOnboardingBreakdown.Any() || Model.DepartmentOffboardingBreakdown.Any())
+                    {
+                        <canvas id="deptChart" role="img" aria-label="Bar chart showing breakdown of request activity by Department"></canvas>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5" style="color: var(--text-muted);">
+                            <i class="bi bi-bar-chart" style="font-size: 2rem; opacity: 0.3;" aria-hidden="true"></i>
+                            <p class="mb-0 mt-2 small">No activity this month yet.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Completions -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-check2-circle me-2 text-success" aria-hidden="true"></i>Recently Completed</h6>
+                </div>
+                <div class="card-body p-0">
+                    @{
+                        var recentAll = Model.RecentCompletedOnboarding
+                            .Select(r => new { FullName = (string?)r.FullName, Department = (string?)r.Department, Type = "Onboarding", SignedAt = r.EmployeeSignedAt })
+                            .Concat(Model.RecentCompletedOffboarding
+                            .Select(r => new { FullName = (string?)r.FullName, Department = (string?)r.Department, Type = "Offboarding", SignedAt = r.EmployeeSignedAt }))
+                            .OrderByDescending(r => r.SignedAt)
+                            .Take(8)
+                            .ToList();
+                    }
+                    @if (recentAll.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var item in recentAll)
+                            {
+                                <div class="list-group-item px-4 py-3" style="border-bottom: 1px solid var(--border);">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@item.FullName</strong>
+                                            <br />
+                                            <small style="color: var(--text-muted);">@item.Department</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="@(item.Type == "Onboarding" ? "badge-completed" : "badge-rejected")">@item.Type</span>
+                                            <br />
+                                            <small style="color: var(--text-muted);">@(item.SignedAt?.ToString("dd/MM/yyyy") ?? "â€”")</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4" style="color: var(--text-muted);">
+                            <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;" aria-hidden="true"></i>
+                            <p class="mb-0 mt-2 small">No completed requests yet.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isIT)
+{
+    <!-- IT Dashboard Tabs (Hick's Law: Reduce Cognitive Load) -->
+    <ul class="nav nav-pills nav-fill mb-4 p-1 bg-white border rounded-pill shadow-sm" id="itDashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill fw-bold" id="metrics-tab" data-bs-toggle="pill" data-bs-target="#metrics-content" type="button" role="tab">
+                <i class="bi bi-graph-up me-2" aria-hidden="true"></i>Core Metrics
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill fw-bold" id="assets-tab" data-bs-toggle="pill" data-bs-target="#assets-content" type="button" role="tab">
+                <i class="bi bi-pc-display me-2" aria-hidden="true"></i>Assets & Software
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill fw-bold" id="health-tab" data-bs-toggle="pill" data-bs-target="#health-content" type="button" role="tab">
+                <i class="bi bi-shield-check me-2" aria-hidden="true"></i>System Health
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="itDashboardContent">
+        <!-- Tab 1: Metrics -->
+        <div class="tab-pane fade show active" id="metrics-content" role="tabpanel">
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100" style="border-left: 4px solid var(--success) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;"><i class="fas fa-user-plus me-2" aria-hidden="true"></i>Onboards (Mth)</h6>
+                                    <h2 class="mb-0 fw-bold text-dark display-6">@Model.MonthlyOnboardingCount</h2>
+                                </div>
+                                <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bi bi-person-plus text-success fs-4" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100" style="border-left: 4px solid var(--danger) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;"><i class="fas fa-user-minus me-2" aria-hidden="true"></i>Offboards (Mth)</h6>
+                                    <h2 class="mb-0 fw-bold text-dark display-6">@Model.MonthlyOffboardingCount</h2>
+                                </div>
+                                <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bi bi-person-dash text-danger fs-4" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100" style="border-left: 4px solid var(--primary) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;"><i class="bi bi-pc-display me-2" aria-hidden="true"></i>Assets</h6>
+                                    <h2 class="mb-0 fw-bold text-dark display-6">@Model.TotalAssets</h2>
+                                </div>
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bi bi-pc-display text-primary fs-4" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100" style="border-left: 4px solid var(--warning) !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;"><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>Expiry Alerts</h6>
+                                    <h2 class="mb-0 fw-bold text-dark display-6">@((Model.ExpiringLicenses?.Count() ?? 0) + (Model.ExpiringAssets?.Count() ?? 0))</h2>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bi bi-exclamation-triangle text-warning fs-4" aria-hidden="true"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Assets & Software -->
+        <div class="tab-pane fade" id="assets-content" role="tabpanel">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                        <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-primary" aria-hidden="true"></i>Asset Distribution</h6>
+                        </div>
+                        <div class="card-body" style="position: relative; height: 300px;">
+                             <canvas id="assetDistChart" role="img"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                        <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-key me-2 text-primary" aria-hidden="true"></i>Software Distribution</h6>
+                        </div>
+                        <div class="card-body" style="position: relative; height: 300px;">
+                            <canvas id="swDistChart" role="img"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: System Health -->
+        <div class="tab-pane fade" id="health-content" role="tabpanel">
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-3 me-3">
+                                <i class="bi bi-people fs-4" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-1 small">Active Users</h6>
+                                <h4 class="mb-0 fw-bold">@Model.TotalActiveUsers</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="bg-secondary bg-opacity-10 text-secondary rounded-3 p-3 me-3">
+                                <i class="bi bi-journal-text fs-4" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-1 small">Logs</h6>
+                                <h4 class="mb-0 fw-bold">@Model.TotalAuditLogEntries</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="bg-warning bg-opacity-10 text-warning-emphasis rounded-3 p-3 me-3">
+                                <i class="bi bi-clock-history fs-4" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-1 small">Pending Approvals</h6>
+                                <h4 class="mb-0 fw-bold">@Model.PendingITApprovalCount</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <a class="card border-0 shadow-sm h-100 text-decoration-none text-reset" style="border-radius: 12px;"
+                       asp-controller="AuditLog" asp-action="Index" asp-route-entity="Command" asp-route-isSuccess="false">
+                        <div class="card-body p-3 d-flex align-items-center">
+                            <div class="bg-danger bg-opacity-10 text-danger rounded-3 p-3 me-3">
+                                <i class="bi bi-exclamation-octagon fs-4" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-1 small">Failed Commands</h6>
+                                <h4 class="mb-0 fw-bold">@Model.FailedCommandCount</h4>
+                                <div class="small text-muted">@Model.FailedCommandCountPeriod @periodLabel</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.RecentFailedCommands.Any())
+    {
+        <div class="card dashboard-card border-0 shadow-sm border-top border-danger border-4 mb-4" style="background-color: #fff8f8;">
+            <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle text-danger me-2" aria-hidden="true"></i>Recent Failed Commands</h6>
+                    <small class="text-muted">Most recent command-pipeline failures captured by the audit behavior.</small>
+                </div>
+                <a class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                   asp-controller="AuditLog" asp-action="Index" asp-route-entity="Command" asp-route-isSuccess="false">
+                    Review Failures
+                </a>
+            </div>
+            <div class="card-body p-0 mt-2">
+                <div class="list-group list-group-flush">
+                    @foreach (var log in Model.RecentFailedCommands)
+                    {
+                        var actor = string.IsNullOrWhiteSpace(log.PerformedBy) ? log.UserId : log.PerformedBy;
+                        var errorText = !string.IsNullOrWhiteSpace(log.ErrorMessage) ? log.ErrorMessage : (log.Details ?? "Command execution failed.");
+                        <a class="list-group-item list-group-item-action px-4 py-3 border-bottom"
+                           asp-controller="AuditLog" asp-action="Details" asp-route-id="@log.Id">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <div class="fw-bold text-dark">@log.Action</div>
+                                    <div class="small text-muted mt-1">@errorText</div>
+                                    <div class="small text-secondary mt-2">
+                                        <i class="bi bi-person-circle me-1" aria-hidden="true"></i>@actor
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Failed</span>
+                                    <div class="small text-muted mt-2">@log.CreatedAt.ToLocalTime().ToString("dd MMM HH:mm")</div>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Middle Row: Activity & Alerts -->
+    <div class="row g-4 mb-5">
+        <!-- Main Column: Recent Activity Feed (Takes 8 columns or 12 if no alerts) -->
+        <div class="@((Model.ExpiringLicenses != null && Model.ExpiringLicenses.Any()) || (Model.ExpiringAssets != null && Model.ExpiringAssets.Any()) ? "col-lg-8" : "col-lg-12")">
+            <div class="card dashboard-card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h6 class="fw-bold"><i class="fas fa-history text-secondary me-2" aria-hidden="true"></i>Recent System Activity</h6>
+                </div>
+                <div class="card-body p-0 mt-2">
+                    <div class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
+                        @if (Model.RecentActivity.Any())
+                        {
+                            @foreach (var log in Model.RecentActivity)
+                            {
+                                var activityTime = log.CreatedAt == default ? log.Timestamp : log.CreatedAt;
+                                var actor = string.IsNullOrWhiteSpace(log.PerformedBy) ? log.UserId : log.PerformedBy;
+                                var targetName = log.EntityName == "Command" ? "Command Pipeline" : log.EntityName;
+                                var activitySummary = !string.IsNullOrWhiteSpace(log.Details) ? log.Details : log.ErrorMessage;
+                                <div class="list-group-item activity-feed-item px-4 py-3 border-bottom">
+                                    <div class="d-flex w-100 justify-content-between mb-1">
+                                        <span class="fw-bold small text-dark">
+                                            @if (!log.IsSuccess) { <i class="fas fa-exclamation-circle text-danger me-1" aria-hidden="true"></i> }
+                                            else if(log.Action == "Created") { <i class="fas fa-plus-circle text-success me-1" aria-hidden="true"></i> }
+                                            else if(log.Action == "Deleted") { <i class="fas fa-trash-alt text-danger me-1" aria-hidden="true"></i> }
+                                            else if(log.EntityName == "Command") { <i class="bi bi-diagram-3 text-dark me-1" aria-hidden="true"></i> }
+                                            else { <i class="fas fa-edit text-primary me-1" aria-hidden="true"></i> }
+                                            @log.Action
+                                        </span>
+                                        <span class="badge @(log.IsSuccess ? "bg-light text-muted border" : "bg-danger-subtle text-danger border border-danger-subtle")" style="font-weight: normal;">
+                                            @activityTime.ToLocalTime().ToString("dd MMM HH:mm")
+                                        </span>
+                                    </div>
+                                    <p class="mb-1 text-muted" style="font-size: 0.85rem;">
+                                        @if (!string.IsNullOrWhiteSpace(activitySummary))
+                                        {
+                                            @activitySummary
+                                        }
+                                        else
+                                        {
+                                            <text>Record #@log.EntityId in <strong>@targetName</strong></text>
+                                        }
+                                    </p>
+                                    <small class="text-secondary d-flex align-items-center" style="font-size: 0.75rem;">
+                                        <i class="bi bi-person-circle me-1" aria-hidden="true"></i> By @actor
+                                    </small>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="p-5 text-center text-muted empty-state-glass m-3">
+                                <i class="fas fa-calendar-times mb-3" style="font-size: 2.5rem; opacity: 0.3;" aria-hidden="true"></i>
+                                <p class="mb-0 fw-bold">No recent activity found.</p>
+                                <small>System events will appear here.</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Column: Licensing Alerts -->
+        @if ((Model.ExpiringLicenses != null && Model.ExpiringLicenses.Any()) || (Model.ExpiringAssets != null && Model.ExpiringAssets.Any()))
+        {
+            <div class="col-lg-4">
+                <div class="card dashboard-card border-0 shadow-sm border-top border-warning border-4 h-100" style="background-color: #fffaf0;">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-warning-emphasis mb-3"><i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>Expiry Alerts</h6>
+                        <p class="small text-muted mb-3">The following items are already expired or will expire within the next 30 days.</p>
+                        
+                        <div class="list-group list-group-flush gap-2" style="max-height: 350px; overflow-y: auto;">
+                            @if (Model.ExpiringLicenses != null)
+                            {
+                                @foreach (var lic in Model.ExpiringLicenses)
+                                {
+                                    if (lic.ExpiryDate.HasValue)
+                                    {
+                                        var daysRemaining = (lic.ExpiryDate.Value.Date - DateTime.UtcNow.Date).Days;
+                                        var urgencyBg = daysRemaining <= 7 ? "bg-danger" : "bg-warning";
+                                        var statusText = daysRemaining < 0
+                                            ? $"Expired {Math.Abs(daysRemaining)} day{(Math.Abs(daysRemaining) == 1 ? "" : "s")} ago"
+                                            : daysRemaining == 0
+                                                ? "Expires today"
+                                                : $"{daysRemaining} day{(daysRemaining == 1 ? "" : "s")} left";
+                                
+                                <div class="list-group-item rounded-3 border-0 shadow-sm p-3 bg-white">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light rounded p-2 me-2">
+                                                <i class="fas fa-key text-muted" aria-hidden="true"></i>
+                                            </div>
+                                            <span class="fw-bold small text-dark">@lic.SoftwareName <span class="badge bg-secondary ms-1">Software</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <small class="text-muted" style="font-size: 0.7rem;">Exp: @lic.ExpiryDate.Value.ToString("dd MMM yyyy")</small>
+                                        <span class="badge @urgencyBg text-dark py-1 px-2 rounded-pill shadow-sm" style="font-size: 0.7rem;">@statusText</span>
+                                    </div>
+                                </div>
+                                    }
+                                }
+                            }
+
+                            @if (Model.ExpiringAssets != null)
+                            {
+                                @foreach (var asset in Model.ExpiringAssets)
+                                {
+                                    if (asset.WarrantyExpiry.HasValue)
+                                    {
+                                        var daysRemaining = (asset.WarrantyExpiry.Value.Date - DateTime.UtcNow.Date).Days;
+                                        var urgencyBg = daysRemaining <= 7 ? "bg-danger" : "bg-warning";
+                                        var statusText = daysRemaining < 0
+                                            ? $"Expired {Math.Abs(daysRemaining)} day{(Math.Abs(daysRemaining) == 1 ? "" : "s")} ago"
+                                            : daysRemaining == 0
+                                                ? "Expires today"
+                                                : $"{daysRemaining} day{(daysRemaining == 1 ? "" : "s")} left";
+                                
+                                <div class="list-group-item rounded-3 border-0 shadow-sm p-3 bg-white">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light rounded p-2 me-2">
+                                                <i class="fas fa-pc-display text-muted" aria-hidden="true"></i>
+                                            </div>
+                                            <span class="fw-bold small text-dark">@asset.AssetTag <span class="badge bg-secondary ms-1">Asset Warranty</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <small class="text-muted" style="font-size: 0.7rem;">Exp: @asset.WarrantyExpiry.Value.ToString("dd MMM yyyy")</small>
+                                        <span class="badge @urgencyBg text-dark py-1 px-2 rounded-pill shadow-sm" style="font-size: 0.7rem;">@statusText</span>
+                                    </div>
+                                </div>
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (!hasPendingQueues)
+{
+    <partial name="_PendingQueues" model="Model" view-data='new ViewDataDictionary(ViewData) { ["ShowEmptyState"] = true }' />
+}
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Trend Chart
+            const trendCtx = document.getElementById('trendChart');
+            if (trendCtx) {
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrendLabels)),
+                        datasets: [
+                            {
+                                label: 'Onboarding',
+                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrendOnboarding)),
+                                borderColor: '#198754',
+                                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            },
+                            {
+                                label: 'Offboarding',
+                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrendOffboarding)),
+                                borderColor: '#dc3545',
+                                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true } } },
+                        scales: { y: { beginAtZero: true, suggestedMax: 5, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+
+            // Department Chart
+            const deptCtx = document.getElementById('deptChart');
+            if (deptCtx) {
+                const deptOn = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentOnboardingBreakdown ?? new Dictionary<string, int>()));
+                const deptOff = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentOffboardingBreakdown ?? new Dictionary<string, int>()));
+                
+                // Merge keys
+                const allDepts = [...new Set([...Object.keys(deptOn), ...Object.keys(deptOff)])];
+                const onData = allDepts.map(d => deptOn[d] || 0);
+                const offData = allDepts.map(d => deptOff[d] || 0);
+
+                new Chart(deptCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: allDepts,
+                        datasets: [
+                            {
+                                label: 'New Hires',
+                                data: onData,
+                                backgroundColor: '#198754',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Exits',
+                                data: offData,
+                                backgroundColor: '#dc3545',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true } } },
+                        scales: { 
+                            y: { beginAtZero: true, stacked: false, ticks: { stepSize: 1 } },
+                            x: { stacked: false }
+                        }
+                    }
+                });
+            }
+
+            // Asset Distribution Chart
+            const assetCtx = document.getElementById('assetDistChart');
+            if (assetCtx) {
+                const assetData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AssetDistribution ?? new Dictionary<IT_Form.Models.Enums.AssetStatus, int>()));
+                
+                const statusLabels = Object.keys(assetData).map(k => {
+                    // map integer enums to strings, or if it's already string.
+                    // Assuming enum values are strings in JSON (or we can fallback to raw keys)
+                    const keyMap = { "0": "In Use", "1": "Available", "2": "Under Maintenance", "3": "Retired", "4": "Missing" };
+                    return keyMap[k] || k;
+                });
+                const statusValues = Object.values(assetData);
+
+                new Chart(assetCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusLabels,
+                        datasets: [{
+                            data: statusValues,
+                            backgroundColor: ['#1A52A3', '#FCD116', '#f59e0b', '#dc3545', '#6c757d'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '65%',
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { usePointStyle: true, padding: 20 }
+                            }
+                        }
+                    }
+                });
+            }
+            // Software Distribution Chart
+            const swCtx = document.getElementById('swDistChart');
+            if (swCtx) {
+                const swData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SoftwareLicenseBreakdown ?? new Dictionary<string, int>()));
+                
+                new Chart(swCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(swData),
+                        datasets: [{
+                            data: Object.values(swData),
+                            backgroundColor: ['#1A52A3', '#FCD116'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '65%',
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { usePointStyle: true, padding: 20 }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}
+
+
+

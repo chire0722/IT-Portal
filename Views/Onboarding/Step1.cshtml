@@ -1,0 +1,226 @@
+@model IT_Form.ViewModels.OnboardingStep1PageViewModel
+@{
+    ViewData["Title"] = "Step 1 — Employee Details";
+}
+
+<!-- Wizard Progress -->
+<partial name="_WizardSteps" model="1" />
+
+<div class="card animate-in" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-user-tie me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Employee Bio & HR
+            Details</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Step1" method="post">
+            <input type="hidden" asp-for="CurrentStep" />
+            <input type="hidden" asp-for="Id" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="FullName" class="form-label">Full Name *</label>
+                    <input asp-for="FullName" class="form-control" placeholder="e.g. Ahmad bin Ali" />
+                    <span asp-validation-for="FullName" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EmployeeID" class="form-label">Employee ID *</label>
+                    <input asp-for="EmployeeID" class="form-control" placeholder="e.g. EMP-001" />
+                    <span asp-validation-for="EmployeeID" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Designation" class="form-label">Designation / Job Title *</label>
+                    <input asp-for="Designation" class="form-control" placeholder="e.g. Project Engineer" />
+                    <span asp-validation-for="Designation" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Department" class="form-label">Department *</label>
+                    <select asp-for="Department" class="form-select" id="deptSelect" onchange="toggleOtherDept()">
+                        <option value="">Select Department</option>
+                        @foreach (var dept in Model.Departments)
+                        {
+                            <option value="@dept.Name" data-company="@dept.CompanyName">@dept.Name</option>
+                        }
+                        <option value="Others">Others (Please Specify)</option>
+                    </select>
+                    <span asp-validation-for="Department" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                    
+                    <div id="otherDeptDiv" class="mt-2" style="display: @(Model.Department == "Others" ? "block" : "none")">
+                        <input asp-for="OtherDepartmentDetails" class="form-control form-control-sm" placeholder="Specify Department Name..." />
+                    </div>
+                </div>
+ 
+                <div class="col-md-6">
+                    <label asp-for="Branch" class="form-label">Company</label>
+                    @{
+                        var allowedCompanies = Model.AllowedCompanies ?? new List<string>();
+                    }
+                    @if (allowedCompanies.Count == 1)
+                    {
+                        <input type="hidden" asp-for="Branch" value="@allowedCompanies[0]" />
+                        <input type="text" class="form-control bg-light" value="@allowedCompanies[0]" readonly />
+                    }
+                    else
+                    {
+                        <select asp-for="Branch" class="form-select" id="companySelect">
+                            <option value="">Select Company</option>
+                            @foreach (var company in allowedCompanies)
+                            {
+                                <option value="@company">@company</option>
+                            }
+                        </select>
+                    }
+                    <span asp-validation-for="Branch" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="DeskNumber" class="form-label">Desk Number *</label>
+                    <input asp-for="DeskNumber" class="form-control" placeholder="e.g. D-001" />
+                    <span asp-validation-for="DeskNumber" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="JoinDate" class="form-label">Date Hire *</label>
+                    <input asp-for="JoinDate" type="text" class="form-control date-picker" placeholder="dd/mm/yyyy" />
+                    <span asp-validation-for="JoinDate" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="EmailAddress" class="form-label">Email Address *</label>
+                    <input asp-for="EmailAddress" class="form-control" placeholder="employee@company.com" />
+                    <span asp-validation-for="EmailAddress" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ContactNumber" class="form-label">Contact Number</label>
+                    <input asp-for="ContactNumber" class="form-control" placeholder="e.g. 012-3456789" />
+                    <span asp-validation-for="ContactNumber" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="HODEmail" class="form-label">Head of Department (HOD) *</label>
+                    <select asp-for="HODEmail" class="form-select" asp-items="Model.HODUsers">
+                        <option value="">Select HOD</option>
+                    </select>
+                    <span asp-validation-for="HODEmail" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4 pt-3" style="border-top: 1px solid var(--border);">
+                <button type="submit" asp-action="SaveDraft" formmethod="post" class="btn btn-outline-secondary" formnovalidate>
+                    <i class="fas fa-save me-2" aria-hidden="true"></i>Save as Draft
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    Next: IT Assets <i class="fas fa-arrow-right ms-2" aria-hidden="true"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let onboardingHodFetchToken = 0;
+
+        function loadOnboardingHods(company, preferredEmail) {
+            var hodSelect = document.getElementById('HODEmail');
+            if (!hodSelect) return;
+
+            var currentValue = hodSelect.value;
+            hodSelect.innerHTML = '';
+            hodSelect.appendChild(new Option('Loading HOD...', ''));
+
+            var normalizedCompany = (company || '').trim();
+            if (!normalizedCompany) {
+                hodSelect.innerHTML = '';
+                hodSelect.appendChild(new Option('Select HOD', ''));
+                hodSelect.disabled = true;
+                hodSelect.value = '';
+                return;
+            }
+
+            hodSelect.disabled = true;
+            var requestToken = ++onboardingHodFetchToken;
+            fetch('/api/employees/hods-by-company?company=' + encodeURIComponent(normalizedCompany))
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Failed to load HODs');
+                    return response.json();
+                })
+                .then(function (hods) {
+                    if (requestToken !== onboardingHodFetchToken) return;
+
+                    var filtered = Array.isArray(hods) ? hods : [];
+                    hodSelect.innerHTML = '';
+                    hodSelect.appendChild(new Option('Select HOD', ''));
+
+                    var selectedValue = '';
+                    if (currentValue && filtered.some(function (h) { return h.email === currentValue; })) {
+                        selectedValue = currentValue;
+                    } else if (preferredEmail) {
+                        var preferred = filtered.find(function (h) {
+                            return h.email && h.email.toLowerCase() === preferredEmail.toLowerCase();
+                        });
+                        selectedValue = preferred ? preferred.email : '';
+                    }
+
+                    filtered.forEach(function (h) {
+                        hodSelect.appendChild(new Option(h.fullName + ' (' + h.email + ')', h.email, false, h.email === selectedValue));
+                    });
+
+                    hodSelect.disabled = filtered.length === 0;
+                    hodSelect.value = selectedValue;
+                })
+                .catch(function () {
+                    if (requestToken !== onboardingHodFetchToken) return;
+                    hodSelect.innerHTML = '';
+                    hodSelect.appendChild(new Option('Select HOD', ''));
+                    hodSelect.disabled = true;
+                    hodSelect.value = '';
+                });
+        }
+
+        function toggleOtherDept() {
+            var select = document.getElementById('deptSelect');
+            var div = document.getElementById('otherDeptDiv');
+            div.style.display = (select.value === 'Others') ? 'block' : 'none';
+            
+            // Auto-filter company if available
+            var selectedOption = select.options[select.selectedIndex];
+            var company = selectedOption.getAttribute('data-company');
+            if (company && company !== '') {
+                var compSelect = document.getElementById('companySelect');
+                if (compSelect) {
+                    for (var i = 0; i < compSelect.options.length; i++) {
+                        if (compSelect.options[i].value === company) {
+                            compSelect.selectedIndex = i;
+                            toggleOtherCompany();
+                            loadOnboardingHods(compSelect.value, '');
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        function toggleOtherCompany() {
+            var select = document.getElementById('companySelect');
+            var div = document.getElementById('otherCompanyDiv');
+            if (select) {
+                div.style.display = (select.value === 'Others') ? 'block' : 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var branchField = document.getElementById('companySelect') || document.getElementById('Branch');
+            var hodSelect = document.getElementById('HODEmail');
+
+            if (branchField) {
+                branchField.addEventListener('change', function () {
+                    loadOnboardingHods(this.value, hodSelect ? hodSelect.value : '');
+                });
+
+                loadOnboardingHods(branchField.value, hodSelect ? hodSelect.value : '');
+            }
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}
+
+

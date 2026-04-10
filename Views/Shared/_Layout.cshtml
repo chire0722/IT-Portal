@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - YTC IT Portal</title>
+    <meta name="description" content="YTC Precast IT Asset & Access Management System" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+
+<body>
+    <a href="#main-content" class="skip-to-content visually-hidden-focusable p-3 bg-primary text-white position-absolute top-0 start-0 z-3">Skip to main content</a>
+    <div class="app-wrapper">
+
+        <!-- Mobile Header (Visible only on small screens) -->
+        <div class="mobile-header">
+            @{
+                var userCompany = User.Claims.FirstOrDefault(c => c.Type == "UserCompany")?.Value ?? "";
+                var navLogo = userCompany.Contains("YTC", StringComparison.OrdinalIgnoreCase) ? "logo-ytc.jpg" :
+                "logo-pyt.png";
+            }
+            <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <img src="~/images/@navLogo" alt="@userCompany" style="height: 32px; width: auto; @(navLogo == "logo-pyt.png" ? "background-color: white; padding: 2px; border-radius: 4px;" : "")" />
+                }
+                else
+                {
+                    <i class="bi bi-shield-check text-primary" aria-hidden="true"></i>
+                }
+                <span>IT Portal</span>
+            </a>
+            <button class="btn btn-ghost" id="mobileMenuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                <i class="bi bi-list fs-4" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Left Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <img src="~/images/@navLogo" alt="@userCompany" style="height: 36px; width: auto; @(navLogo == "logo-pyt.png" ? "background-color: white; padding: 2px; border-radius: 4px;" : "")" />
+                    }
+                    else
+                    {
+                        <div class="bg-primary bg-opacity-10 rounded p-1 me-1">
+                            <i class="bi bi-shield-check text-primary fs-5" aria-hidden="true"></i>
+                        </div>
+                    }
+                    <span>IT Portal</span>
+                </a>
+            </div>
+
+            <div class="sidebar-nav">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+
+                    <div class="nav-item-header">MAIN</div>
+                    <a class="sidebar-link @(currentController == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="Home"
+                        asp-action="Index">
+                        <i class="bi bi-house-door" aria-hidden="true"></i> Dashboard
+                    </a>
+                    
+                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR") || User.HasClaim("UserTitle", "HOD"))
+                    {
+                        <a class="sidebar-link @(currentController == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "active" : "")" asp-controller="Home"
+                            asp-action="Analytics">
+                            <i class="bi bi-bar-chart-line" aria-hidden="true"></i> Analytics
+                        </a>
+                    }
+
+                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
+                    {
+                        <div class="nav-item-header">REQUESTS</div>
+                        <a class="sidebar-link @(currentController == "Onboarding" ? "active" : "")" asp-controller="Onboarding"
+                            asp-action="Index">
+                            <i class="bi bi-person-plus" aria-hidden="true"></i> Onboarding
+                        </a>
+                        <a class="sidebar-link @(currentController == "Offboarding" ? "active" : "")"
+                            asp-controller="Offboarding" asp-action="Index">
+                            <i class="bi bi-person-dash" aria-hidden="true"></i> Offboarding
+                        </a>
+                    }
+                    else if (User.HasClaim("UserTitle", "HOD"))
+                    {
+                        <div class="nav-item-header">REQUESTS</div>
+                        <a class="sidebar-link @(currentController == "Offboarding" ? "active" : "")"
+                            asp-controller="Offboarding" asp-action="Index">
+                            <i class="bi bi-person-dash" aria-hidden="true"></i> Offboarding
+                        </a>
+                    }
+
+                    <div class="nav-item-header">DIRECTORY</div>
+                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
+                    {
+                        <a class="sidebar-link @(currentController == "Employee" ? "active" : "")" asp-controller="Employee"
+                            asp-action="Index">
+                            <i class="bi bi-person-lines-fill" aria-hidden="true"></i> Employees
+                        </a>
+                    }
+                    <a class="sidebar-link @(currentController == "EmailContact" ? "active" : "")" asp-controller="EmailContact"
+                        asp-action="Index">
+                        <i class="bi bi-person-rolodex" aria-hidden="true"></i> Email Directory
+                    </a>
+
+                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
+                    {
+                        <div class="nav-item-header">ASSETS & SYSTEM</div>
+                        @if (User.HasClaim("UserTitle", "IT"))
+                        {
+                            <a class="sidebar-link @(currentController == "ITAsset" ? "active" : "")" asp-controller="ITAsset"
+                                asp-action="Index">
+                                <i class="bi bi-pc-display" aria-hidden="true"></i> IT Assets
+                            </a>
+                        }
+                        @if (User.HasClaim("UserTitle", "IT"))
+                        {
+                            <a class="sidebar-link @(currentController == "StandardSoftware" ? "active" : "")" asp-controller="StandardSoftware" asp-action="Index">
+                                <i class="bi bi-box-seam" aria-hidden="true"></i> Software List
+                            </a>
+                        }
+                        @if (User.HasClaim("UserTitle", "IT"))
+                        {
+                            <a class="sidebar-link @(currentController == "UserManagement" ? "active" : "")"
+                                asp-controller="UserManagement" asp-action="Index">
+                                <i class="bi bi-people-fill" aria-hidden="true"></i> System Users
+                            </a>
+                        }
+                        <a class="sidebar-link @(currentController == "AuditLog" ? "active" : "")" asp-controller="AuditLog"
+                            asp-action="Index">
+                            <i class="bi bi-clock-history" aria-hidden="true"></i> Audit Logs
+                        </a>
+                        @if (User.HasClaim("UserTitle", "IT"))
+                        {
+                            <a class="sidebar-link @(currentController == "SlaSettings" ? "active" : "")" asp-controller="SlaSettings"
+                                asp-action="Index">
+                                <i class="bi bi-stopwatch" aria-hidden="true"></i> Due Date Setup
+                            </a>
+                        }
+                        <div class="nav-item-header">CONFIGURATION</div>
+                        @if (User.HasClaim("UserTitle", "IT"))
+                        {
+                            <a class="sidebar-link @(currentController == "Company" ? "active" : "")" asp-controller="Company"
+                                asp-action="Index">
+                                <i class="bi bi-building" aria-hidden="true"></i> Companies
+                            </a>
+                        }
+                        @if (User.HasClaim("UserTitle", "IT"))
+                        {
+                            <a class="sidebar-link @(currentController == "Department" ? "active" : "")" asp-controller="Department"
+                                asp-action="Index">
+                                <i class="bi bi-diagram-3" aria-hidden="true"></i> Departments
+                            </a>
+
+                            <a class="sidebar-link @(currentController == "EmailGroup" ? "active" : "")" asp-controller="EmailGroup"
+                                asp-action="Index">
+                                <i class="bi bi-people" aria-hidden="true"></i> Email Groups
+                            </a>
+                            <a class="sidebar-link @(currentController == "SharedMailbox" ? "active" : "")" asp-controller="SharedMailbox"
+                                asp-action="Index">
+                                <i class="bi bi-envelope-at" aria-hidden="true"></i> Shared Mailboxes
+                            </a>
+                            <a class="sidebar-link @(currentController == "ServerFolder" ? "active" : "")" asp-controller="ServerFolder"
+                                asp-action="Index">
+                                <i class="bi bi-folder" aria-hidden="true"></i> Server Folders
+                            </a>
+                        }
+                    }
+                }
+                else
+                {
+                    <a class="sidebar-link" asp-controller="Account" asp-action="Login">
+                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Login
+                    </a>
+                }
+            </div>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="sidebar-footer">
+                    <a asp-controller="Account" asp-action="Profile" class="user-profile-sm" title="My Profile">
+                        <div class="user-avatar">
+                            @(User.Identity.Name?.Substring(0, 1).ToUpper())
+                        </div>
+                        <div class="user-info">
+                            <span class="user-name">@User.Identity.Name</span>
+                            <span class="user-role">
+                                @{
+                                    var titleClaim = User.Claims.FirstOrDefault(c => c.Type == "UserTitle")?.Value ?? "User";
+                                    var displayTitle = titleClaim;
+                                }
+                                @displayTitle
+                            </span>
+                        </div>
+                    </a>
+
+                    <div class="d-flex align-items-center gap-1">
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0 p-0">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="logout-btn" title="Logout" aria-label="Securely logout of IT Portal">
+                                <i class="bi bi-box-arrow-right fs-5" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="main-content" aria-label="Main Content Area" tabindex="-1">
+            <div class="content-container">
+                @RenderBody()
+            </div>
+
+            <footer class="main-footer">
+                <div class="container-fluid">
+                    &copy; @DateTime.Now.Year Tan Beng Hong. All rights reserved.;
+            </footer>
+        </main>
+
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="app-toast toast-success" role="alert">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>@TempData["SuccessMessage"]</span>
+                <button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss notification">&times;</button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="app-toast toast-error" role="alert">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>@TempData["ErrorMessage"]</span>
+                <button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss notification">&times;</button>
+            </div>
+        }
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/table-sort.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Mobile Sidebar Toggle
+            const toggleBtn = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (toggleBtn && sidebar && overlay) {
+                function toggleMenu() {
+                    sidebar.classList.toggle('show');
+                    overlay.style.display = sidebar.classList.contains('show') ? 'block' : 'none';
+                }
+                toggleBtn.addEventListener('click', toggleMenu);
+                overlay.addEventListener('click', toggleMenu);
+            }
+
+            // Init flatpickr on date inputs to enforce dd/MM/yyyy display
+            flatpickr("input[type=date], .date-picker", {
+                altInput: true,
+                altFormat: "d/m/Y",
+                dateFormat: "Y-m-d",
+                allowInput: true
+            });
+
+
+
+            // Auto-dismiss toasts
+            document.querySelectorAll('.app-toast').forEach(function (toast) {
+                setTimeout(function () {
+                    toast.style.animation = 'toastSlideOut 0.35s ease forwards';
+                    setTimeout(function () { toast.remove(); }, 350);
+                }, 4000);
+            });
+        });
+    </script>
+    @{
+        var autoOpenEmailUrl = TempData["AutoOpenEmail"] as string;
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        var shouldAutoOpenEmail = !string.IsNullOrWhiteSpace(autoOpenEmailUrl)
+            && string.Equals(currentAction, "Details", StringComparison.OrdinalIgnoreCase);
+    }
+    @if (shouldAutoOpenEmail)
+    {
+        <script>
+            setTimeout(function () {
+                window.location.href = '@Html.Raw(autoOpenEmailUrl)';
+            }, 500);
+        </script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>
+
+

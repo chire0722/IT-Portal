@@ -1,0 +1,178 @@
+@model IT_Form.Models.DeviceVerificationToken
+@{
+    Layout = null;
+    var employeeName = string.IsNullOrWhiteSpace(Model.Employee?.FullName) ? null : Model.Employee!.FullName;
+    var greeting = employeeName == null ? "Device verification" : $"Hello, {employeeName}";
+    var description = employeeName == null
+        ? "Please complete the hardware verification for this device so IT can safely record its hardware profile."
+        : "Please complete the hardware verification for your assigned device to gain full network access.";
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YTC Device Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ytcBlue: '#0047AB',
+                        ytcGreen: '#10B981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-ytcBlue p-6 text-center text-white">
+            <h1 class="text-2xl font-bold tracking-wider">YTC IT Security</h1>
+            <p class="text-blue-100 mt-2">Device Verification Portal</p>
+        </div>
+
+        <!-- Body -->
+        <div class="p-8">
+
+            <div class="text-center mb-8">
+                <h2 class="text-xl text-gray-800 font-semibold">@greeting</h2>
+                <p class="text-gray-500 mt-2 text-sm">@description</p>
+            </div>
+
+            <!-- Steps -->
+            <div class="relative mb-10">
+                <div class="border-l-2 border-gray-200 absolute h-full left-6 top-0 hidden sm:block"></div>
+
+                <!-- Step 1 -->
+                <div class="flex items-start mb-8 relative">
+                    <div
+                        class="flex items-center justify-center w-12 h-12 rounded-full bg-ytcBlue text-white font-bold text-lg z-10 shrink-0">
+                        <i class="fas fa-link" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4 mt-2">
+                        <h3 class="font-bold text-gray-800">Step 1: Open Secure Link</h3>
+                        <p class="text-sm text-gray-500">You've successfully authenticated your unique session.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="flex items-start mb-8 relative">
+                    <div id="step2-icon"
+                        class="flex items-center justify-center w-12 h-12 rounded-full bg-ytcBlue text-white font-bold text-lg z-10 shrink-0 shadow-lg shadow-blue-500/50 ring-4 ring-blue-50">
+                        <i class="fas fa-download" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4 mt-2 w-full">
+                        <h3 id="step2-title" class="font-bold text-gray-800">Step 2: Run Verification Tool</h3>
+                        <p id="step2-desc" class="text-sm text-gray-500 mb-4">Download and run the automated collector.
+                            It will securely fingerprint your hardware.</p>
+
+                        <div id="download-section">
+                            <a href="/api/inventory/download/@Model.Token" onclick="startPolling()"
+                                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-ytcBlue hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ytcBlue transition-all w-full justify-center">
+                                <i class="fas fa-cloud-download-alt mr-2" aria-hidden="true"></i> Download Tool (.zip)
+                            </a>
+                            <p class="text-xs text-gray-400 mt-2 text-center">Contains AssetCollector.exe and a run
+                                script.</p>
+                        </div>
+
+                        <div id="waiting-section"
+                            class="hidden mt-4 bg-blue-50 rounded-lg p-4 border border-blue-100 flex items-center">
+                            <i class="fas fa-circle-notch fa-spin text-ytcBlue text-xl mr-3" aria-hidden="true"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-ytcBlue">Waiting for device signal...</p>
+                                <p class="text-xs text-blue-600/80">Extract the downloaded ZIP and double-click
+                                    <strong>Verify_Device.bat</strong>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="flex items-start relative">
+                    <div id="step3-icon"
+                        class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 text-gray-400 font-bold text-lg z-10 shrink-0 transition-colors duration-500">
+                        <i class="fas fa-check" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4 mt-2">
+                        <h3 id="step3-title" class="font-bold text-gray-400 transition-colors duration-500">Step 3:
+                            Verification Complete</h3>
+                        <p id="step3-desc" class="text-sm text-gray-400 transition-colors duration-500">Awaiting
+                            hardware telemetry package.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let pollInterval;
+        const token = '@Model.Token';
+
+        function startPolling() {
+            // Hide download button, show waiting spinner
+            document.getElementById('download-section').classList.add('hidden');
+            document.getElementById('waiting-section').classList.remove('hidden');
+
+            // Start pinging the status API
+            pollInterval = setInterval(checkStatus, 3000);
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch(`/api/inventory/status/${token}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isVerified) {
+                        clearInterval(pollInterval);
+                        showSuccess();
+                    }
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+            }
+        }
+
+        function showSuccess() {
+            // Update Step 2 visuals
+            const s2Icon = document.getElementById('step2-icon');
+            s2Icon.classList.remove('bg-ytcBlue', 'shadow-blue-500/50', 'ring-blue-50');
+            s2Icon.classList.add('bg-gray-200', 'text-gray-500');
+            s2Icon.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i>';
+            document.getElementById('waiting-section').classList.add('hidden');
+
+            // Activate Step 3 visuals
+            const s3Icon = document.getElementById('step3-icon');
+            s3Icon.classList.remove('bg-gray-200', 'text-gray-400');
+            s3Icon.classList.add('bg-ytcGreen', 'text-white', 'shadow-lg', 'shadow-green-500/50', 'ring-4', 'ring-green-50');
+
+            document.getElementById('step3-title').classList.remove('text-gray-400');
+            document.getElementById('step3-title').classList.add('text-ytcGreen');
+
+            document.getElementById('step3-desc').classList.remove('text-gray-400');
+            document.getElementById('step3-desc').classList.add('text-gray-600');
+            document.getElementById('step3-desc').innerText = "Telemetry received safely. It is now safe to close this page.";
+        }
+
+        // Auto-check on load just in case they refreshed the page after verifying
+        @if (Model.IsVerified)
+        {
+            <text>
+                    showSuccess();
+                    document.getElementById('download-section').classList.add('hidden');
+            </text>
+        }
+    </script>
+</body>
+
+</html>
+
+

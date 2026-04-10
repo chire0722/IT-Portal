@@ -1,0 +1,148 @@
+@model IT_Form.ViewModels.OnboardingStep5PageViewModel
+@{
+    ViewData["Title"] = "Step 5 - Review & Submit";
+}
+
+<partial name="_WizardSteps" model="5" />
+
+<div class="card animate-in" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-paper-plane me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Review & Submit
+        </h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Step5" method="post" id="submitForm">
+
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2" aria-hidden="true"></i>
+                <strong>Review all details and complete IT setup.</strong>
+                After submission, an employee acknowledgement email will be sent for the employee to sign.
+                The Manager and IT Admin will also be notified to sign.
+            </div>
+
+            <!-- IT Checklist (Onboarding Phase) -->
+            <div class="mb-4 p-3" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
+                <h6 style="color: var(--text-primary);"><i class="fas fa-tasks me-2" aria-hidden="true"></i>IT Checklist - Onboarding Phase</h6>
+                @{
+                    var checklistItems = new (string Name, string Field, bool Value)[] {
+                        ("Physical Checks & Clean on IT Equipment", "CheckPhysicalClean", Model.CheckPhysicalClean),
+                        ("MS O365 Account Setup", "CheckO365Setup", Model.CheckO365Setup),
+                        ("Windows Account & Login", "CheckWindowsLogin", Model.CheckWindowsLogin),
+                        ("Outlook & Email Account Setup", "CheckEmailSetup", Model.CheckEmailSetup),
+                        ("Specific Software / Application", "CheckSpecificSoftware", Model.CheckSpecificSoftware),
+                        ("General Software / Application", "CheckGeneralSoftware", Model.CheckGeneralSoftware),
+                        ("Add user to ADs Group", "CheckAbcGroup", Model.CheckAbcGroup),
+                        ("Add user to Email Mail Group", "CheckEmailMailGroup", Model.CheckEmailMailGroup),
+                        ("Device Name & Domain Join", "CheckDomainJoin", Model.CheckDomainJoin),
+                        ("Shared Drive Mapping", "CheckSharedDrive", Model.CheckSharedDrive),
+                        ("Primary Location Wi-Fi Setup", "CheckWiFiSetup", Model.CheckWiFiSetup),
+                        ("Primary Location Printer Setup", "CheckPrinterSetup", Model.CheckPrinterSetup),
+                        ("Primary Location Scan Folder Setup", "CheckScanFolder", Model.CheckScanFolder),
+                        ("VPN Account Setup", "CheckVPNSetup", Model.CheckVPNSetup)
+                    };
+                }
+                <div class="d-flex justify-content-end mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('#submitForm input[type=checkbox]').forEach(cb => cb.checked = true)">
+                        <i class="fas fa-check-square me-1" aria-hidden="true"></i> Select All
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-3">
+                        <tbody>
+                            @for (int i = 0; i < checklistItems.Length; i++)
+                            {
+                                <tr style="cursor:pointer;" onclick="var cb=this.querySelector('input[type=checkbox]'); cb.checked=!cb.checked;">
+                                    <td style="width: 5%;">@(i + 1)</td>
+                                    <td>@checklistItems[i].Name</td>
+                                    <td class="text-center" style="width: 15%;">
+                                        <input type="checkbox" name="@checklistItems[i].Field" value="true" class="form-check-input" @(checklistItems[i].Value ? "checked" : "") onclick="event.stopPropagation();" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <label class="form-label mb-1" style="font-size: 0.85rem; color: var(--text-muted);">Remarks</label>
+                    <textarea asp-for="ChecklistRemarks" class="form-control" rows="2" placeholder="Optional remarks..."></textarea>
+                </div>
+            </div>
+
+            <!-- Issuance Acknowledgment -->
+            <div class="mb-4 p-3"
+                style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
+                <h6 style="color: var(--text-primary);"><i class="fas fa-file-signature me-2" aria-hidden="true"></i>Issuance
+                    Acknowledgment</h6>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0;">
+                    By signing this checklist, I hereby certify that the above service(s) has been carried out to my
+                    satisfaction,
+                    and I acknowledge receipt of the service rendered and/or equipment in good order. I understand that
+                    all the
+                    devices and accessories listed above will always remain the property of <strong>YTC Precast</strong>
+                    and are
+                    to be returned upon demand or exchanged by the company. I acknowledge and accept the terms and
+                    conditions
+                    for the use of the Company assets.
+                </p>
+            </div>
+
+            <!-- HR Signature Auto -->
+            <div class="mb-4 p-3" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px;">
+                <h6 class="fw-bold mb-3"><i class="fas fa-pen-nib me-2 text-primary" aria-hidden="true"></i>IT Admin Signature</h6>
+                @if (Model.CurrentUserSignature != null)
+                {
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="background: #fff; padding: 10px; border-radius: 8px; border: 1px dashed var(--border);">
+                            <img src="@Model.CurrentUserSignature" alt="Your Signature" style="max-height: 80px;" />
+                        </div>
+                        <div class="text-success small fw-bold">
+                            <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Your saved signature will be applied automatically.
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+                        <strong>No signature found!</strong> You have not set up a signature in your profile. Please go to your profile settings to draw one, or this form will be submitted without an HR signature.
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex justify-content-between mt-4 pt-3" style="border-top: 1px solid var(--border);">
+                <a asp-action="Step4" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Previous
+                </a>
+                <div class="d-flex gap-2">
+                    <button type="submit" name="IsDraft" value="true" class="btn btn-outline-primary" id="btnDraft" formnovalidate>
+                        <i class="fas fa-save me-2" aria-hidden="true"></i>Save Draft
+                    </button>
+                    <button type="submit" name="IsDraft" value="false" class="btn btn-primary" id="btnSubmit">
+                        <i class="fas fa-check-circle me-2" aria-hidden="true"></i>Complete IT Setup
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('button[type="submit"]').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                var form = this.closest('form');
+                if(this.value !== 'draft' && !form.checkValidity()) return;
+                
+                var btnValue = this.value;
+                setTimeout(() => {
+                    document.querySelectorAll('button[type="submit"]').forEach(b => b.disabled = true);
+                    if (btnValue === 'submit') {
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin me-2" aria-hidden="true"></i>Submitting...';
+                    } else if (btnValue === 'draft') {
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin me-2" aria-hidden="true"></i>Saving...';
+                    }
+                }, 10);
+            });
+        });
+    </script>
+}

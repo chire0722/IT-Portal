@@ -1,0 +1,109 @@
+@{
+    ViewData["Title"] = "Signature Submitted";
+    Layout = "_SignatureLayout";
+}
+
+<style>
+    .success-card {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        width: 100%;
+        max-width: 480px;
+        text-align: center;
+    }
+    .success-accent {
+        height: 4px;
+        background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    }
+    .success-body {
+        padding: 3rem 2.5rem;
+    }
+    .success-icon-ring {
+        width: 90px; height: 90px;
+        border-radius: 50%;
+        background: #ecfdf5;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+    .success-icon-ring::after {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        border: 2px solid #a7f3d0;
+        animation: ringPulse 2s ease-in-out infinite;
+    }
+    @@keyframes ringPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.08); }
+    }
+    .success-icon-ring i {
+        font-size: 2.5rem;
+        color: #059669;
+    }
+    .success-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #18181b;
+        margin-bottom: 0.5rem;
+    }
+    .success-desc {
+        color: #52525b;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        max-width: 340px;
+        margin: 0 auto;
+    }
+    .success-divider {
+        border: none;
+        border-top: 1px solid rgba(0,0,0,0.08);
+        margin: 1.5rem 0;
+    }
+    .btn-close-window {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.6rem 1.5rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #52525b;
+        background: #f5f5f7;
+        border: 1px solid rgba(0,0,0,0.08);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .btn-close-window:hover {
+        background: #e4e4e7;
+        color: #18181b;
+    }
+</style>
+
+<div class="fade-up" style="width: 100%; max-width: 480px;">
+    <div class="success-card">
+        <div class="success-accent"></div>
+        <div class="success-body">
+            <div class="success-icon-ring">
+                <i class="bi bi-check-lg" aria-hidden="true"></i>
+            </div>
+            <div class="success-title">Signature Received!</div>
+            <p class="success-desc">
+                Thank you. Your acknowledgement signature has been successfully recorded. No further action is required.
+            </p>
+            <hr class="success-divider" />
+            <p style="font-size: 0.8rem; color: #a1a1aa; margin-bottom: 1rem;">
+                You may safely close this browser window.
+            </p>
+            <a href="javascript:window.close();" class="btn-close-window">
+                <i class="bi bi-x-lg" aria-hidden="true"></i> Close Window
+            </a>
+        </div>
+    </div>
+</div>
+
+

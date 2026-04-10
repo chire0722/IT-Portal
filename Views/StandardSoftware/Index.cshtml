@@ -1,0 +1,1173 @@
+@model IT_Form.Application.Features.StandardSoftware.StandardSoftwareIndexPageViewModel
+@{
+    ViewData["Title"] = "Software List Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="h4 mb-0 fw-bold"><i class="bi bi-box-seam me-2 text-primary" aria-hidden="true"></i>Software Inventory</h2>
+        <p class="text-muted small mb-0">Manage your software catalog, versions, and license keys.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-success shadow-sm rounded-pill px-3 fw-bold text-white d-inline-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="bi bi-upload me-1" aria-hidden="true"></i> Bulk Import
+        </button>
+        <a asp-action="Create" class="btn btn-sm btn-primary shadow-sm px-3 d-inline-flex align-items-center justify-content-center gap-2" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Add Software
+        </a>
+    </div>
+</div>
+
+<!-- Premium Analytics Dashboard -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-5 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                        <i class="bi bi-box-seam text-primary fs-4" aria-hidden="true"></i>
+                    </div>
+                    <span class="text-muted small fw-semibold">TOTAL SOFTWARE</span>
+                </div>
+                <h3 class="mb-0 fw-bold text-dark">@Model.TotalSoftwareCount</h3>
+                <div class="text-muted small mt-1">Across @Model.TotalVersionCount versions</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-7 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-2 me-3">
+                        <i class="bi bi-key text-success fs-4" aria-hidden="true"></i>
+                    </div>
+                    <span class="text-muted small fw-semibold">LICENSE CAP</span>
+                </div>
+                <h3 class="mb-0 fw-bold text-dark">@Model.TotalSeatCapacity</h3>
+                <div class="text-muted small mt-1">@Model.TotalAssignedSeats seats assigned</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-5 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-info bg-opacity-10 p-2 me-3">
+                        <i class="bi bi-pie-chart text-info fs-4" aria-hidden="true"></i>
+                    </div>
+                    <span class="text-muted small fw-semibold">UTILIZATION</span>
+                </div>
+                <h3 class="mb-0 fw-bold text-dark">@Model.UtilizationPercentage.ToString("F1")%</h3>
+                <div class="progress mt-2" style="height: 6px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: @Model.UtilizationPercentage%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-7 col-lg-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-2 me-3">
+                        <i class="bi bi-clock-history text-warning fs-4" aria-hidden="true"></i>
+                    </div>
+                    <span class="text-muted small fw-semibold">EXPIRING SOON</span>
+                </div>
+                <h3 class="mb-0 fw-bold text-dark">@Model.ExpiringSoonCount</h3>
+                <div class="text-muted small mt-1">Within next 30 days</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter Bar -->
+<div class="card shadow-sm border-0 rounded-3 mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search" aria-hidden="true"></i></span>
+                    <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="Search software or version..." value="@Model.CurrentSearch" />
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="isSubscription" class="form-select form-select-sm">
+                    <option value="">-- All License Types --</option>
+                    @if (Model.IsSubscription == true)
+                    {
+                        <option value="true" selected>Subscription (Seat-based)</option>
+                    }
+                    else
+                    {
+                        <option value="true">Subscription (Seat-based)</option>
+                    }
+                    @if (Model.IsSubscription == false)
+                    {
+                        <option value="false" selected>Perpetual (Key-based)</option>
+                    }
+                    else
+                    {
+                        <option value="false">Perpetual (Key-based)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+            </div>
+            <div class="col-12 col-md-2">
+                <a asp-action="Index" class="btn btn-sm btn-light w-100 border">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+    <div class="card-body p-0">
+        @foreach (var item in Model.SoftwareList)
+        {
+            <div class="border-bottom p-4 hover-bg-light transition-all">
+                <!-- Software Header -->
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center">
+                            <i class="bi bi-box-seam fs-5" aria-hidden="true"></i>
+                        </div>
+                        <h5 class="mb-0 fw-bold text-dark">@item.SoftwareName</h5>
+                        @if (item.IsMandatory)
+                        {
+                            <span class="badge bg-danger rounded-pill px-2 py-1 ms-2" style="font-size: 0.7rem;">Mandatory</span>
+                        }
+                        @if (item.IsFree)
+                        {
+                            <span class="badge bg-info rounded-pill px-2 py-1 ms-1" style="font-size: 0.7rem;">Free</span>
+                        }
+                        @if (item.IsActive)
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 ms-1" style="font-size: 0.7rem;">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-1 ms-1" style="font-size: 0.7rem;">Inactive</span>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        @* [Keys button removed by request] *@
+                        
+                        @if (item.Licenses.Any())
+                        {
+                            <button class="btn btn-sm btn-light border shadow-sm rounded-circle p-2" type="button" data-bs-toggle="collapse" data-bs-target="#versions_@item.Id" aria-expanded="false" aria-controls="versions_@item.Id" aria-label="Toggle versions for @item.SoftwareName">
+                                <i class="bi bi-chevron-down text-dark" aria-hidden="true"></i>
+                            </button>
+
+                            <span class="text-muted small align-self-center me-2 ms-1">
+                                <i class="bi bi-layers me-1" aria-hidden="true"></i> @item.Licenses.Count version(s)
+                            </span>
+                        }
+
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-action-circle btn-outline-primary" aria-label="Edit software @item.SoftwareName" title="Edit">
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                        </a>
+                        <button type="button" class="btn btn-action-circle btn-outline-danger" aria-label="Delete software @item.SoftwareName" title="Delete" onclick="openDeleteSoftware(@item.Id, '@(item.SoftwareName?.Replace("'", "\\'") ?? "Unknown")')">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Software Versions -->
+                <div class="ps-5 pe-2 collapse" id="versions_@item.Id">
+                    @if (item.Licenses.Any())
+                    {
+                        <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                            @foreach (var ver in item.Licenses)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-light bg-opacity-50">
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-semibold text-dark">
+                                                <i class="bi bi-hash text-muted me-1" aria-hidden="true"></i>@ver.SoftwareName
+                                            </span>
+                                            @if (ver.IsFree)
+                                            {
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="border-radius:4px;font-size:0.65rem;">
+                                                    <i class="bi bi-gift me-1" aria-hidden="true"></i>Free
+                                                </span>
+                                            }
+                                            else if (ver.IsSubscription)
+                                            {
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="border-radius:4px;font-size:0.65rem;">
+                                                    <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Subscription
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-dark border" style="border-radius:4px;font-size:0.65rem;">Perpetual</span>
+                                            }
+                                        </div>
+                                        <div class="d-flex align-items-center gap-3" style="font-size:0.8rem;">
+                                            @if (ver.ExpiryDate.HasValue)
+                                            {
+                                                <span class="text-muted"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>Expires @ver.ExpiryDate.Value.ToString("dd MMM yyyy")</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(ver.VendorName))
+                                            {
+                                                <span class="text-muted"><i class="bi bi-shop me-1" aria-hidden="true"></i>@ver.VendorName</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(ver.SupportContact))
+                                            {
+                                                <span class="text-muted"><i class="bi bi-telephone ms-2 me-1" aria-hidden="true"></i>@ver.SupportContact</span>
+                                            }
+                                            @if (ver.IsFree)
+                                            {
+                                                <span class="text-muted fw-bold ms-2" style="color:#198754 !important;"><i class="bi bi-infinity me-1" aria-hidden="true"></i>Unlimited Seats</span>
+                                            }
+                                            else if (ver.ContractLimit > 0)
+                                            {
+                                                <span class="text-muted"><i class="bi bi-people ms-2 me-1" aria-hidden="true"></i>@ver.ContractLimit Seats</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(ver.Description))
+                                            {
+                                                <span class="text-muted fst-italic ms-3">— @ver.Description</span>
+                                            }
+                                        </div>
+                                    </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (!ver.IsFree)
+                                            {
+                                                <button class="btn btn-sm btn-outline-primary py-0 px-2" type="button"
+                                                        onclick="toggleKeys(@ver.Id)" style="font-size:0.75rem;" aria-label="View license keys for @ver.SoftwareName">
+                                                    <i class="bi bi-key-fill me-1" aria-hidden="true"></i>License Keys
+                                                    <span class="badge bg-secondary ms-1" id="keyCount_@ver.Id">@ver.KeyCount</span>
+                                                </button>
+                                            }
+                                            <button class="btn btn-sm btn-outline-primary py-0 px-2 edit-version-btn" type="button"
+                                                    data-id="@ver.Id"
+                                                    data-name="@ver.SoftwareName"
+                                                    data-description="@ver.Description"
+                                                    data-issub="@ver.IsSubscription.ToString().ToLower()"
+                                                    data-isfree="@ver.IsFree.ToString().ToLower()"
+                                                    data-expiry="@(ver.ExpiryDate?.ToString("yyyy-MM-dd") ?? "")"
+                                                    data-limit="@ver.ContractLimit"
+                                                    data-vendor="@ver.VendorName"
+                                                    data-support="@ver.SupportContact"
+                                                    onclick="openEditVersionModal(this)"
+                                                    style="font-size:0.75rem;" title="Edit Version Details">
+                                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" type="button" aria-label="Remove version @ver.SoftwareName"
+                                                onclick="openDeleteVersion(@ver.Id, '@(ver.SoftwareName?.Replace("'", "\\'") ?? "Unknown")' )">
+                                            <i class="bi bi-x" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- AJAX-driven keys panel -->
+                                <div class="collapse" id="keysPanel_@ver.Id">
+                                    <div class="card-body py-2 px-3">
+                                        <!-- Inline Add Key form (Moved to Top) -->
+                                        @if (!ver.IsFree)
+                                        {
+                                            <div class="d-flex gap-2 align-items-center border-bottom pb-2 mb-2">
+                                                @if (!ver.IsSubscription)
+                                                {
+                                                    <div class="input-group input-group-sm" style="max-width: 400px;">
+                                                        <input type="text" class="form-control" id="newKey_@ver.Id"
+                                                               placeholder="Enter license key..."
+                                                               onkeypress="if(event.key === 'Enter'){ event.preventDefault(); addKey(@ver.Id); }">
+                                                        <button class="btn btn-sm btn-success" type="button" onclick="addKey(@ver.Id)">
+                                                            <i class="bi bi-plus me-1" aria-hidden="true"></i>Add Key
+                                                        </button>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-success" type="button" onclick="quickAllocate(@ver.Id)">
+                                                        <i class="bi bi-person-plus me-1" aria-hidden="true"></i>Add Seat
+                                                    </button>
+                                                }
+                                                <span id="addKeyMsg_@ver.Id" class="small"></span>
+                                            </div>
+                                        }
+
+                                        <!-- Keys table will be populated by JS -->
+                                        <div id="keysContainer_@ver.Id">
+                                            <div class="text-center py-2">
+                                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                                <span class="text-muted small ms-1">Loading keys...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-2">No versions added yet.</p>
+                    }
+
+                    <!-- Add Version Toggle -->
+                    <div class="mt-3 mb-2 px-3 text-end" id="addVersionToggle_@item.Id">
+                        <button class="btn btn-sm btn-outline-primary shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#addVersionForm_@item.Id" aria-expanded="false" aria-controls="addVersionForm_@item.Id">
+                            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Add New Version
+                        </button>
+                    </div>
+
+                    <!-- Add Version form -->
+                    <div class="collapse px-3 mb-3" id="addVersionForm_@item.Id">
+                        <div class="card card-body bg-white border border-primary border-opacity-10 shadow-sm rounded-4 p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-light">
+                                <h6 class="fw-bold mb-0 text-dark">
+                                    <i class="bi bi-plus-circle-fill me-2 text-primary" aria-hidden="true"></i>Register New Version
+                                </h6>
+                                <button type="button" class="btn-close" data-bs-toggle="collapse" data-bs-target="#addVersionForm_@item.Id" aria-label="Close"></button>
+                            </div>
+                            <form asp-action="AddLicense" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="standardSoftwareId" value="@item.Id" />
+                                
+                                <div class="row g-4">
+                                    <!-- Row 1: Name and Expiry -->
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">Version Name / Edition</label>
+                                        <input type="text" name="softwareName" class="form-control rounded-3 border-light-subtle shadow-sm px-3"
+                                               placeholder="e.g. Adobe Pro 2024" value="@item.SoftwareName" required />
+                                    </div>
+                                    <div class="col-12 col-md-6" id="expiryCol_@item.Id">
+                                        <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">License Expiry Date</label>
+                                        <input type="date" name="expiryDate" class="form-control rounded-3 border-light-subtle shadow-sm px-3" />
+                                    </div>
+
+                                    <!-- Row 2: Switches -->
+                                    <div class="col-12">
+                                        <div class="d-flex gap-5 p-3 bg-light bg-opacity-50 rounded-4 border border-light-subtle">
+                                            <div class="form-check form-switch mb-0" id="subWrapper_@item.Id">
+                                                <input class="form-check-input" type="checkbox" name="isSubscription" value="true" checked="checked"
+                                                       id="sub_@item.Id" onchange="toggleKeyInput(@item.Id, this)" />
+                                                <label class="form-check-label fw-semibold" for="sub_@item.Id">Subscription</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox" name="isFree" value="true"
+                                                       id="free_@item.Id" onchange="toggleFreeInput(@item.Id, this)" />
+                                                <label class="form-check-label fw-semibold text-success" for="free_@item.Id">Free Software</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 3: Dynamic Fields (Vendor, Support, Limit) -->
+                                    <div class="col-12" id="subFields_@item.Id">
+                                        <div class="row g-3 p-3 bg-white border border-light rounded-4 shadow-sm mx-0">
+                                            <div class="col-12 col-md-4">
+                                                <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">Vendor Name</label>
+                                                <input type="text" name="vendorName" class="form-control rounded-2 px-3" placeholder="Authorized supplier..." />
+                                            </div>
+                                            <div class="col-12 col-md-5">
+                                                <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">Support Hub / Contact</label>
+                                                <input type="text" name="supportContact" class="form-control rounded-2 px-3" placeholder="Phone or portal URL..." />
+                                            </div>
+                                            <div class="col-12 col-md-3">
+                                                <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">Initial Seats (auto-created)</label>
+                                                <input type="number" name="contractLimit" class="form-control rounded-2 px-3" value="1" min="1" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Additional Fields & Submit -->
+                                    <div class="col-12 col-md-8">
+                                        <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">Internal Notes (Optional)</label>
+                                        <input type="text" name="description" class="form-control rounded-3 border-light-subtle shadow-sm px-3" placeholder="Reference purchase order or department..." />
+                                    </div>
+                                    <div class="col-12 col-md-4 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow rounded-3" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                                            <i class="bi bi-save2-fill me-2" aria-hidden="true"></i>Deploy Version
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div> <!-- End card -->
+                    </div> <!-- End addVersionForm -->
+                </div> <!-- End ps-5 collapse #versions_item.Id -->
+            </div> <!-- End item row container -->
+        }
+        @if (!Model.SoftwareList.Any())
+        {
+            <div class="text-center text-muted py-5">
+                No software catalog entries yet. Click <strong>Add Software</strong> or use <strong>Bulk Import</strong>.
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Edit Key Modal -->
+<div class="modal fade" id="editKeyModal" tabindex="-1" aria-labelledby="editKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+            <div class="modal-header py-2 bg-warning bg-opacity-25 border-0" style="border-radius:12px 12px 0 0;">
+                <h6 class="modal-title fw-bold" id="editKeyModalLabel"><i class="bi bi-pencil me-2" aria-hidden="true"></i>Edit License Key</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editKeyId" />
+                <input type="hidden" id="editKeyVersionId" />
+                <label class="form-label small fw-semibold">License Key</label>
+                <input type="text" id="editKeyValue" class="form-control" />
+                <div id="editKeyError" class="text-danger small mt-1 d-none"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveEditKey()">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Key Modal -->
+<div class="modal fade" id="assignKeyModal" tabindex="-1" aria-labelledby="assignKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+            <div class="modal-header py-2 bg-success bg-opacity-25 border-0" id="assignKeyModalHeader" style="border-radius:12px 12px 0 0;">
+                <h6 class="modal-title fw-bold" id="assignKeyModalLabel"><i class="bi bi-person-check me-2" aria-hidden="true"></i>Assign License Key</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignKeyId" />
+                <input type="hidden" id="assignKeyVersionId" />
+                <input type="hidden" id="isCurrentlyAssigned" />
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Key</label>
+                    <input type="text" id="assignKeyDisplay" class="form-control form-control-sm" readonly />
+                </div>
+                <div id="unassignWarning" class="alert alert-danger px-3 py-2 border-0 mb-3 d-none" style="font-size:0.85rem; border-radius:8px;">
+                    <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i> 
+                    <strong>Warning:</strong> You are about to unassign this seat. You must confirm this unassignment before it can be re-assigned to another person.
+                </div>
+                <div id="assignEmployeeWrapper">
+                    <label class="form-label small fw-semibold">Assign to Employee</label>
+                    <select id="assignEmployeeSelect" class="form-select form-select-sm">
+                        <option value="">— Unassign —</option>
+                    </select>
+                </div>
+                <div id="assignKeyError" class="text-danger small mt-1 d-none"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-success" id="saveAssignKeyBtn" onclick="saveAssignKey()">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Save Assignment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteSoftwareModal" tabindex="-1" aria-labelledby="deleteSoftwareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+            <div class="modal-header py-2 bg-danger bg-opacity-25 border-0" style="border-radius:12px 12px 0 0;">
+                <h6 class="modal-title fw-bold text-danger" id="deleteSoftwareModalLabel"><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>Delete
+                    Software</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Are you sure you want to delete this software and <strong>all its versions</strong>?</p>
+                <div class="bg-light rounded px-3 py-2">
+                    <span class="fw-bold text-danger" id="deleteSoftwareDisplay"></span>
+                </div>
+                <div id="deleteSoftwareError" class="text-danger small mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteSoftwareForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-danger" id="confirmDeleteSoftwareBtn">
+                        <i class="bi bi-trash me-1" aria-hidden="true"></i>Delete Software
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Version Confirmation Modal -->
+<div class="modal fade" id="deleteVersionModal" tabindex="-1" aria-labelledby="deleteVersionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+            <div class="modal-header py-2 bg-danger bg-opacity-25 border-0" style="border-radius:12px 12px 0 0;">
+                <h6 class="modal-title fw-bold text-danger" id="deleteVersionModalLabel"><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>Delete
+                    Version</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Are you sure you want to remove this version and all its license keys?</p>
+                <div class="bg-light rounded px-3 py-2">
+                    <span class="fw-bold text-danger" id="deleteVersionDisplay"></span>
+                </div>
+                <div id="deleteVersionError" class="text-danger small mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteVersionForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-danger" id="confirmDeleteVersionBtn">
+                        <i class="bi bi-trash me-1" aria-hidden="true"></i>Delete Version
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Version Modal -->
+<div class="modal fade" id="editVersionModal" tabindex="-1" aria-labelledby="editVersionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary bg-opacity-10 py-3 border-0">
+                <h5 class="modal-title fw-bold text-dark" id="editVersionModalLabel">
+                    <i class="bi bi-pencil-square me-2 text-primary" aria-hidden="true"></i>Edit Software Version
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editVersionForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="editVerId" name="id" />
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Version Name</label>
+                            <input type="text" id="editVerName" name="softwareName" class="form-control" placeholder="e.g. Adobe Pro 2024" required />
+                        </div>
+                        <div class="col-md-6" id="editVerExpiryCol">
+                            <label class="form-label small fw-bold">Expiry Date</label>
+                            <input type="date" id="editVerExpiryDate" name="expiryDate" class="form-control" />
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Description (Optional)</label>
+                            <textarea id="editVerDescription" name="description" class="form-control" rows="2" placeholder="Notes about this version..."></textarea>
+                        </div>
+
+                        <div class="col-12 d-flex gap-4 py-2 border-top border-bottom bg-light bg-opacity-50">
+                            <div class="form-check form-switch" id="editVerSubWrapper">
+                                <input class="form-check-input" type="checkbox" id="editVerIsSubscription" name="isSubscription" value="true" onchange="toggleEditVerFields()">
+                                <label class="form-check-label small fw-bold" for="editVerIsSubscription">Subscription</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editVerIsFree" name="isFree" value="true" onchange="toggleEditVerFields()">
+                                <label class="form-check-label small fw-bold text-success" for="editVerIsFree">Free Software</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12" id="editVerSubFields">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Vendor Name</label>
+                                    <input type="text" id="editVerVendor" name="vendorName" class="form-control" placeholder="Supplier..." />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Support Contact / Link</label>
+                                    <input type="text" id="editVerSupport" name="supportContact" class="form-control" placeholder="Contact number or portal..." />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4" id="editVerSeatLimitCol">
+                            <label class="form-label small fw-bold">Seat Limit</label>
+                            <input type="number" id="editVerContractLimit" name="contractLimit" class="form-control" min="0" />
+                            <div class="form-text">Applies to subscription seats only.</div>
+                        </div>
+                    </div>
+                    
+                    <div id="editVerError" class="alert alert-danger d-none mt-3 p-2 small"></div>
+                </div>
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="saveVerEditBtn" class="btn btn-primary px-4 fw-bold" onclick="saveVersionEdit()" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                        <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Key Confirmation Modal -->
+<div class="modal fade" id="deleteKeyModal" tabindex="-1" aria-labelledby="deleteKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+            <div class="modal-header py-2 bg-danger bg-opacity-25 border-0" style="border-radius:12px 12px 0 0;">
+                <h6 class="modal-title fw-bold text-danger" id="deleteKeyModalLabel"><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>Delete
+                    License Key</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deleteKeyId" />
+                <input type="hidden" id="deleteKeyVersionId" />
+                <p class="mb-2">Are you sure you want to delete this license key?</p>
+                <div class="bg-light rounded px-3 py-2">
+                    <code class="text-danger fw-bold" id="deleteKeyDisplay"></code>
+                </div>
+                <div id="deleteKeyError" class="text-danger small mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-danger" id="confirmDeleteKeyBtn"
+                    onclick="confirmDeleteKey()">
+                    <i class="bi bi-trash me-1" aria-hidden="true"></i>Delete Key
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white border-0 py-3"
+                style="background: linear-gradient(135deg,#1a9c56,#15803d);">
+                <h5 class="modal-title fw-bold" id="importModalLabel">
+                    <i class="bi bi-upload me-2" aria-hidden="true"></i>Software List Bulk Import
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info d-flex gap-2 py-2 px-3 rounded-3 mb-4" style="font-size:0.88rem;">
+                    <i class="bi bi-info-circle-fill mt-1 flex-shrink-0" aria-hidden="true"></i>
+                    <div>
+                        <strong>Full Import:</strong> Import software, versions, and license keys in one file.
+                        Rows with the same <em>SoftwareName</em> are grouped under the same software.
+                        <br />
+                        <a asp-action="DownloadTemplate" class="fw-semibold text-decoration-none mt-1 d-inline-block">
+                            <i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true"></i>Download Template (.xlsx)
+                        </a>
+                    </div>
+                </div>
+                <form asp-action="ImportExcel" method="post" enctype="multipart/form-data" id="importForm">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-1">
+                        <label class="form-label text-uppercase fw-bold"
+                            style="font-size:0.72rem;letter-spacing:.08em;color:#6b7280;">
+                            Select Excel File
+                        </label>
+                        <input type="file" name="file" accept=".xlsx,.xls" required data-drag-upload="true"
+                            class="form-control border rounded-3" />
+                    </div>
+                    <p class="text-muted mb-0" style="font-size:0.78rem;">Maximum file size: 5MB. Only .xlsx files are
+                        supported.</p>
+                </form>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0 gap-2">
+                <button type="button" class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="importForm" class="btn px-4 rounded-3 text-white fw-semibold"
+                    style="background:linear-gradient(135deg,#1a9c56,#15803d);">
+                    <i class="bi bi-cloud-upload me-2" aria-hidden="true"></i>Start Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ─── Delete Software Modal ──────────────────────
+        const deleteSoftwareModal = new bootstrap.Modal(document.getElementById('deleteSoftwareModal'));
+
+        function openDeleteSoftware(id, name) {
+            document.getElementById('deleteSoftwareDisplay').textContent = name;
+            document.getElementById('deleteSoftwareForm').action = '/StandardSoftware/Delete/' + id;
+            document.getElementById('deleteSoftwareError').classList.add('d-none');
+            deleteSoftwareModal.show();
+        }
+
+        // ─── Delete Version Modal ────────────────────────
+        const deleteVersionModal = new bootstrap.Modal(document.getElementById('deleteVersionModal'));
+
+        function openDeleteVersion(id, name) {
+            document.getElementById('deleteVersionDisplay').textContent = name;
+            document.getElementById('deleteVersionForm').action = '/StandardSoftware/DeleteLicense/' + id;
+            document.getElementById('deleteVersionError').classList.add('d-none');
+            deleteVersionModal.show();
+        }
+
+        // ─── CSRF Token Helper ───────────────────────────
+        const getToken = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        // ─── Employees cache ───────────────────────────
+        let employeesCache = null;
+        async function loadEmployees() {
+            if (employeesCache) return employeesCache;
+            try {
+                const res = await fetch('/StandardSoftware/GetEmployees');
+                employeesCache = await res.json();
+            } catch { employeesCache = []; }
+            return employeesCache;
+        }
+
+        // ─── Toggle keys panel and load via AJAX ────────
+        function toggleKeys(versionId, parentId) {
+            if (parentId) {
+                const parentPanel = document.getElementById('versions_' + parentId);
+                if (parentPanel && !parentPanel.classList.contains('show') && !parentPanel.classList.contains('collapsing')) {
+                    bootstrap.Collapse.getOrCreateInstance(parentPanel).show();
+                }
+            }
+            
+            const panel = document.getElementById('keysPanel_' + versionId);
+            const isOpening = !panel.classList.contains('show') && !panel.classList.contains('collapsing');
+            
+            bootstrap.Collapse.getOrCreateInstance(panel).toggle();
+
+            if (isOpening) {
+                loadKeys(versionId);
+            }
+        }
+
+        // ─── Load Keys via AJAX ─────────────────────────
+        async function loadKeys(versionId) {
+            const container = document.getElementById('keysContainer_' + versionId);
+            container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> <span class="text-muted small">Loading...</span></div>';
+
+            try {
+                const res = await fetch('/StandardSoftware/GetKeys?softwareId=' + versionId);
+                const data = await res.json();
+                const keys = data.keys;
+
+                // Update badge count
+                const badge = document.getElementById('keyCount_' + versionId);
+                if (badge) badge.textContent = keys.length;
+
+                if (keys.length === 0) {
+                    container.innerHTML = '<p class="text-muted small fst-italic mb-0">No license keys added yet.</p>';
+                    return;
+                }
+
+                let html = `<table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">
+                                            <thead><tr class="text-muted">
+                                                <th style="font-size:0.7rem;">LICENSE KEY</th>
+                                                <th style="font-size:0.7rem;">STATUS</th>
+                                                <th style="font-size:0.7rem;">ASSIGNED TO</th>
+                                                <th class="text-end" style="font-size:0.7rem;">ACTIONS</th>
+                                            </tr></thead><tbody>`;
+
+                keys.forEach(k => {
+                    const statusBadge = k.isAssigned
+                        ? '<span class="badge bg-success">In Use</span>'
+                        : '<span class="badge bg-secondary">Available</span>';
+
+                    const assignedName = k.assignedTo || '—';
+
+                    let safeKey = escapeHtml(k.keyValue).replace(/'/g, '&#39;');
+                    let displayKey = `<code class="text-primary fw-bold">${safeKey}</code>`;
+                    let canEdit = true;
+                    
+                    if (safeKey.startsWith('[Account-Linked]:')) {
+                        const email = safeKey.replace('[Account-Linked]:', '').trim();
+                        displayKey = `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="bi bi-envelope-check me-1" aria-hidden="true"></i>Account: ${email}</span>`;
+                        safeKey = `Account Linked: ${email}`;
+                        canEdit = false;
+                    } else if (safeKey === 'Subscription Seat') {
+                        displayKey = `<span class="text-muted fst-italic"><i class="bi bi-person-dash me-1" aria-hidden="true"></i>Unassigned Seat</span>`;
+                        canEdit = false;
+                    }
+
+                    const editBtn = canEdit ? `<button class="btn btn-sm btn-outline-warning" onclick="openEditKey(${k.id}, '${safeKey}', ${versionId})" title="Edit Key"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</button>` : '';
+
+                    const assignBtn = k.isAssigned
+                        ? `<button class="btn btn-sm btn-outline-danger" onclick="openAssignKey(${k.id}, '${safeKey}', ${versionId}, ${k.onboardingRequestId || 0}, true)" title="Unassign Seat"><i class="bi bi-person-x me-1" aria-hidden="true"></i>Unassign</button>`
+                        : `<button class="btn btn-sm btn-outline-success" onclick="openAssignKey(${k.id}, '${safeKey}', ${versionId}, ${k.onboardingRequestId || 0}, false)" title="Assign Seat"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Assign</button>`;
+
+                    const deleteBtn = k.isAssigned
+                        ? '<button class="btn btn-sm btn-outline-secondary" disabled title="Cannot delete assigned key"><i class="bi bi-lock me-1" aria-hidden="true"></i>Locked</button>'
+                        : `<button class="btn btn-sm btn-outline-danger" onclick="deleteKey(${k.id}, ${versionId})" title="Delete Key"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete</button>`;
+
+                    html += `<tr>
+                                                <td>${displayKey}</td>
+                                                <td>${statusBadge}</td>
+                                                <td class="text-muted small">${escapeHtml(assignedName)}</td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        ${editBtn} ${assignBtn} ${deleteBtn}
+                                                    </div>
+                                                </td>
+                                            </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<p class="text-danger small">Failed to load keys.</p>';
+            }
+        }
+
+        // ─── Add Key (AJAX) ─────────────────────────────
+        async function quickAllocate(versionId) {
+            const msgEl = document.getElementById('addKeyMsg_' + versionId);
+            const msgHeaderEl = document.getElementById('addKeyMsg_header_' + versionId);
+            
+            try {
+                const res = await fetch('/StandardSoftware/QuickAllocateSeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-XSRF-TOKEN': getToken() },
+                    body: `softwareId=${versionId}`
+                });
+                
+                const successHtml = '<span class="text-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Seat Added!</span>';
+                
+                if (res.ok) {
+                    if (msgEl) msgEl.innerHTML = successHtml;
+                    if (msgHeaderEl) msgHeaderEl.innerHTML = successHtml;
+                    
+                    setTimeout(() => {
+                        if (msgEl) msgEl.innerHTML = '';
+                        if (msgHeaderEl) msgHeaderEl.innerHTML = '';
+                    }, 2000);
+                    loadKeys(versionId);
+                } else {
+                    const msg = await res.text();
+                    const errorHtml = `<span class="text-danger">${msg || 'Failed.'}</span>`;
+                    if (msgEl) msgEl.innerHTML = errorHtml;
+                    if (msgHeaderEl) msgHeaderEl.innerHTML = errorHtml;
+                }
+            } catch (err) {
+                const networkError = '<span class="text-danger">Network error.</span>';
+                if (msgEl) msgEl.innerHTML = networkError;
+                if (msgHeaderEl) msgHeaderEl.innerHTML = networkError;
+            }
+        }
+
+        async function addKey(versionId) {
+            const input = document.getElementById('newKey_' + versionId);
+            const msgEl = document.getElementById('addKeyMsg_' + versionId);
+            const keyValue = input.value.trim();
+
+            if (!keyValue) {
+                input.classList.add('is-invalid');
+                return;
+            }
+            input.classList.remove('is-invalid');
+
+            try {
+                const res = await fetch('/StandardSoftware/AddKey', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-XSRF-TOKEN': getToken() },
+                    body: `softwareId=${versionId}&keyValue=${encodeURIComponent(keyValue)}`
+                });
+                if (res.ok) {
+                    input.value = '';
+                    msgEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Added!</span>';
+                    setTimeout(() => msgEl.innerHTML = '', 2000);
+                    loadKeys(versionId);
+                } else {
+                    const msg = await res.text();
+                    msgEl.innerHTML = `<span class="text-danger">${msg || 'Failed.'}</span>`;
+                }
+            } catch {
+                msgEl.innerHTML = '<span class="text-danger">Network error.</span>';
+            }
+        }
+
+        // ─── Delete Key Modal ────────────────────────────
+        const deleteKeyModal = new bootstrap.Modal(document.getElementById('deleteKeyModal'));
+
+        function deleteKey(keyId, versionId) {
+            document.getElementById('deleteKeyId').value = keyId;
+            document.getElementById('deleteKeyVersionId').value = versionId;
+            document.getElementById('deleteKeyError').classList.add('d-none');
+            // Grab key text from the table row
+            const btn = document.querySelector(`button[onclick*="deleteKey(${keyId},"]`);
+            const row = btn ? btn.closest('tr') : null;
+            const keyText = row ? row.querySelector('code')?.textContent : '';
+            document.getElementById('deleteKeyDisplay').textContent = keyText || 'Key #' + keyId;
+            deleteKeyModal.show();
+        }
+
+        async function confirmDeleteKey() {
+            const keyId = document.getElementById('deleteKeyId').value;
+            const versionId = document.getElementById('deleteKeyVersionId').value;
+            const errEl = document.getElementById('deleteKeyError');
+            const btn = document.getElementById('confirmDeleteKeyBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Deleting...';
+
+            try {
+                const res = await fetch('/StandardSoftware/DeleteKey', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'X-XSRF-TOKEN': getToken() },
+                    body: `id=${keyId}`
+                });
+                if (res.ok) {
+                    deleteKeyModal.hide();
+                    loadKeys(versionId);
+                } else {
+                    let errMsg = 'Failed to delete key.';
+                    try { errMsg = await res.text(); } catch { }
+                    errEl.textContent = errMsg;
+                    errEl.classList.remove('d-none');
+                }
+            } catch (e) {
+                errEl.textContent = 'Network error: ' + e.message;
+                errEl.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash me-1" aria-hidden="true"></i>Delete Key';
+            }
+        }
+
+        // ─── Edit Key Modal ─────────────────────────────
+        const editKeyModal = new bootstrap.Modal(document.getElementById('editKeyModal'));
+
+        function openEditKey(keyId, keyValue, versionId) {
+            document.getElementById('editKeyId').value = keyId;
+            document.getElementById('editKeyVersionId').value = versionId;
+            document.getElementById('editKeyValue').value = keyValue;
+            document.getElementById('editKeyError').classList.add('d-none');
+            editKeyModal.show();
+        }
+
+        async function saveEditKey() {
+            const keyId = document.getElementById('editKeyId').value;
+            const versionId = document.getElementById('editKeyVersionId').value;
+            const keyValue = document.getElementById('editKeyValue').value.trim();
+            const errEl = document.getElementById('editKeyError');
+
+            if (!keyValue) {
+                errEl.textContent = 'Key value is required.';
+                errEl.classList.remove('d-none');
+                return;
+            }
+
+            try {
+                const res = await fetch('/StandardSoftware/UpdateKey', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-XSRF-TOKEN': getToken() },
+                    body: `id=${keyId}&keyValue=${encodeURIComponent(keyValue)}`
+                });
+                if (res.ok) {
+                    editKeyModal.hide();
+                    loadKeys(versionId);
+                } else {
+                    errEl.textContent = await res.text() || 'Failed to update.';
+                    errEl.classList.remove('d-none');
+                }
+            } catch {
+                errEl.textContent = 'Network error.';
+                errEl.classList.remove('d-none');
+            }
+        }
+
+        // ─── Assign Key Modal ───────────────────────────
+        const assignKeyModal = new bootstrap.Modal(document.getElementById('assignKeyModal'));
+
+        async function openAssignKey(keyId, keyValue, versionId, currentEmployeeId, isAssigned) {
+            document.getElementById('assignKeyId').value = keyId;
+            document.getElementById('assignKeyVersionId').value = versionId;
+            document.getElementById('isCurrentlyAssigned').value = isAssigned ? 'true' : 'false';
+            document.getElementById('assignKeyDisplay').value = keyValue;
+            document.getElementById('assignKeyError').classList.add('d-none');
+
+            const header = document.getElementById('assignKeyModalHeader');
+            const title = document.getElementById('assignKeyModalLabel');
+            const saveBtn = document.getElementById('saveAssignKeyBtn');
+            const warning = document.getElementById('unassignWarning');
+            const wrapper = document.getElementById('assignEmployeeWrapper');
+
+            if (isAssigned) {
+                header.className = 'modal-header py-2 bg-danger bg-opacity-25 border-0';
+                title.innerHTML = '<i class="bi bi-person-x me-2" aria-hidden="true"></i>Confirm Unassignment';
+                saveBtn.className = 'btn btn-sm btn-danger';
+                saveBtn.innerHTML = '<i class="bi bi-check-lg me-1" aria-hidden="true"></i>Confirm Unassign';
+                
+                warning.classList.remove('d-none');
+                wrapper.classList.add('d-none');
+            } else {
+                header.className = 'modal-header py-2 bg-success bg-opacity-25 border-0';
+                title.innerHTML = '<i class="bi bi-person-check me-2" aria-hidden="true"></i>Assign License Key';
+                saveBtn.className = 'btn btn-sm btn-success';
+                saveBtn.innerHTML = '<i class="bi bi-check-lg me-1" aria-hidden="true"></i>Save Assignment';
+
+                warning.classList.add('d-none');
+                wrapper.classList.remove('d-none');
+            }
+
+            const select = document.getElementById('assignEmployeeSelect');
+            select.innerHTML = '<option value="">— Unassign —</option>';
+
+            const employees = await loadEmployees();
+            employees.forEach(emp => {
+                const opt = document.createElement('option');
+                opt.value = emp.id;
+                opt.textContent = emp.name;
+                if (emp.id === currentEmployeeId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            assignKeyModal.show();
+        }
+
+        async function saveAssignKey() {
+            const keyId = document.getElementById('assignKeyId').value;
+            const versionId = document.getElementById('assignKeyVersionId').value;
+            const isAssigned = document.getElementById('isCurrentlyAssigned').value === 'true';
+            
+            // If in unassign mode, force employeeId to "" (Unassign)
+            const employeeId = isAssigned ? "" : document.getElementById('assignEmployeeSelect').value;
+            
+            const errEl = document.getElementById('assignKeyError');
+
+            try {
+                const res = await fetch('/StandardSoftware/AssignKey', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-XSRF-TOKEN': getToken() },
+                    body: `id=${keyId}&onboardingRequestId=${employeeId}`
+                });
+                if (res.ok) {
+                    assignKeyModal.hide();
+                    loadKeys(versionId);
+                } else {
+                    errEl.textContent = await res.text() || 'Failed to assign.';
+                    errEl.classList.remove('d-none');
+                }
+            } catch {
+                errEl.textContent = 'Network error.';
+                errEl.classList.remove('d-none');
+            }
+        }
+
+        // ─── Helpers ─────────────────────────────────────
+        function toggleKeyInput(itemId, checkbox) {
+            const keyWrapper = document.getElementById('keyWrapper_' + itemId);
+            const subFields = document.getElementById('subFields_' + itemId);
+            const isFree = document.getElementById('free_' + itemId).checked;
+            const expiryCol = document.getElementById('expiryCol_' + itemId);
+
+            if (keyWrapper) {
+                keyWrapper.style.display = (checkbox.checked || isFree) ? 'none' : 'flex';
+            }
+            if (subFields) {
+                subFields.style.display = (checkbox.checked && !isFree) ? 'flex' : 'none';
+                
+                // Toggle required tags (Vendor name no longer mandatory as requested)
+                // const vendorInput = subFields.querySelector('input[name="vendorName"]');
+                // if (vendorInput) vendorInput.required = checkbox.checked && !isFree;
+            }
+            
+            if (expiryCol) {
+                expiryCol.style.display = isFree ? 'none' : 'block';
+            }
+        }
+
+        function toggleFreeInput(itemId, checkbox) {
+            const subCheckbox = document.getElementById('sub_' + itemId);
+            const subWrapper = document.getElementById('subWrapper_' + itemId);
+            const keyWrapper = document.getElementById('keyWrapper_' + itemId);
+            const subFields = document.getElementById('subFields_' + itemId);
+            const expiryCol = document.getElementById('expiryCol_' + itemId);
+
+            if (checkbox.checked) {
+                if (subCheckbox) subCheckbox.checked = false; // Uncheck sub if Free is checked
+                if (subWrapper) subWrapper.style.display = 'none';
+                if (keyWrapper) keyWrapper.style.display = 'none';
+                if (subFields) subFields.style.display = 'none';
+                if (expiryCol) expiryCol.style.display = 'none';
+            } else {
+                if (subWrapper) subWrapper.style.display = 'block';
+                if (expiryCol) expiryCol.style.display = 'block';
+                toggleKeyInput(itemId, subCheckbox);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ─── Edit Version Logic ─────────────────────────
+        let verModalInstance = null;
+
+        function openEditVersionModal(btn) {
+            if (!verModalInstance) {
+                const el = document.getElementById('editVersionModal');
+                if (el) verModalInstance = new bootstrap.Modal(el);
+            }
+
+            const d = btn.dataset;
+            document.getElementById('editVerId').value = d.id;
+            document.getElementById('editVerName').value = d.name || '';
+            document.getElementById('editVerDescription').value = d.description || '';
+            document.getElementById('editVerIsSubscription').checked = d.issub === 'true';
+            document.getElementById('editVerIsFree').checked = d.isfree === 'true';
+            document.getElementById('editVerExpiryDate').value = d.expiry || '';
+            document.getElementById('editVerContractLimit').value = d.limit || 0;
+            document.getElementById('editVerVendor').value = d.vendor || '';
+            document.getElementById('editVerSupport').value = d.support || '';
+            
+            document.getElementById('editVerError').classList.add('d-none');
+            toggleEditVerFields();
+            
+            if (verModalInstance) verModalInstance.show();
+        }
+
+        function toggleEditVerFields() {
+            const isSub = document.getElementById('editVerIsSubscription');
+            const isFree = document.getElementById('editVerIsFree');
+            const subWrapper = document.getElementById('editVerSubWrapper');
+            const subFields = document.getElementById('editVerSubFields');
+            const expiryCol = document.getElementById('editVerExpiryCol');
+            const seatLimitCol = document.getElementById('editVerSeatLimitCol');
+
+            if (isFree.checked) {
+                isSub.checked = false;
+                subWrapper.style.display = 'none';
+                subFields.style.display = 'none';
+                expiryCol.style.display = 'none';
+                seatLimitCol.style.display = 'none';
+            } else {
+                subWrapper.style.display = 'block';
+                expiryCol.style.display = 'block';
+                subFields.style.display = isSub.checked ? 'block' : 'none';
+                seatLimitCol.style.display = isSub.checked ? 'block' : 'none';
+            }
+        }
+
+        async function saveVersionEdit() {
+            const btn = document.getElementById('saveVerEditBtn');
+            const form = document.getElementById('editVersionForm');
+            const errEl = document.getElementById('editVerError');
+            
+            const formData = new URLSearchParams(new FormData(form));
+            // Ensure checkboxes send false if unchecked
+            if (!document.getElementById('editVerIsSubscription').checked) formData.set('isSubscription', 'false');
+            if (!document.getElementById('editVerIsFree').checked) formData.set('isFree', 'false');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+            errEl.classList.add('d-none');
+
+            try {
+                const res = await fetch('/StandardSoftware/EditLicense', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-XSRF-TOKEN': getToken() },
+                    body: formData.toString()
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    if (verModalInstance) verModalInstance.hide();
+                    window.location.reload(); // Reload to see visual changes in list
+                } else {
+                    errEl.textContent = data.message || 'Update failed.';
+                    errEl.classList.remove('d-none');
+                }
+            } catch (e) {
+                errEl.textContent = 'Network error: ' + e.message;
+                errEl.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1" aria-hidden="true"></i>Save Changes';
+            }
+        }
+    </script>
+}
+

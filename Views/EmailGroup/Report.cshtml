@@ -1,0 +1,131 @@
+@model IT_Form.Application.Features.EmailGroup.EmailGroupReportPageViewModel
+@{
+    var groupNameDisplay = Model.GroupNameDisplay;
+    ViewData["Title"] = $"Access Report - {groupNameDisplay}";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-1 text-primary fw-bold">
+                <i class="bi bi-file-earmark-lock me-2" aria-hidden="true"></i> Access Report: @groupNameDisplay
+            </h2>
+            <p class="text-muted mb-0">History of employees assigned to email distribution groups.</p>
+        </div>
+        <div>
+            <a asp-action="ExportCsv" asp-route-id="@Model.GroupId" asp-route-searchString="@Model.CurrentFilter" class="btn btn-success me-2 shadow-sm rounded-pill px-3" aria-label="Export report to CSV">
+                <i class="bi bi-file-earmark-excel me-1" aria-hidden="true"></i> Export CSV
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary shadow-sm rounded-pill px-3" aria-label="Back to Email Groups">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 rounded-3">
+        <div class="card-body py-3">
+            <form asp-action="Report" method="get">
+                @if (Model.GroupId != null)
+                {
+                    <input type="hidden" name="id" value="@Model.GroupId" />
+                }
+                <div class="input-group" style="max-width: 500px;">
+                    <span class="input-group-text bg-white border-end-0 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="searchString" value="@Model.CurrentFilter" class="form-control border-start-0 ps-0" placeholder="Search by Employee, Dept, or Group..." aria-label="Search reports">
+                    <button class="btn btn-primary px-4" type="submit" aria-label="Search">Search</button>
+                    @if (!string.IsNullOrEmpty(Model.CurrentFilter))
+                    {
+                        <a asp-action="Report" asp-route-id="@Model.GroupId" class="btn btn-light border ms-1" aria-label="Clear Search">Clear</a>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Employee Name</th>
+                            <th>Department</th>
+                            <th>Branch</th>
+                            @if (Model.ShowGroupColumn)
+                            {
+                                <th>Group Name</th>
+                            }
+                            <th>Source Req.</th>
+                            <th>Date Granted</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Report.Any())
+                        {
+                            @foreach (var item in Model.Report)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">@item.EmployeeName</div>
+                                    </td>
+                                    <td>@item.Department</td>
+                                    <td>@item.Branch</td>
+                                    @if (Model.ShowGroupColumn)
+                                    {
+                                        <td>
+                                            <div class="fw-medium text-primary">@item.GroupName</div>
+                                            <small class="text-muted">@item.GroupEmail</small>
+                                        </td>
+                                    }
+                                    <td>
+                                        <span class="badge @(item.RequestType == "Onboarding" ? "bg-info bg-opacity-10 text-info" : "bg-warning bg-opacity-10 text-warning") border px-2">
+                                            @item.RequestType
+                                        </span>
+                                    </td>
+                                    <td>@(item.DateGranted?.ToString("dd MMM yyyy") ?? "N/A")</td>
+                                    <td class="text-center">
+                                        <a asp-controller="Onboarding" asp-action="Details" asp-route-id="@item.RequestId" class="btn btn-sm btn-outline-primary rounded-pill px-3" target="_blank">View #@item.RequestId</a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="@Model.EmptyStateColumnCount" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
+                                    No access records found.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (Model.Report.TotalPages > 1)
+        {
+            <div class="card-footer bg-white border-0 py-3">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(!Model.Report.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link shadow-none" asp-action="Report" asp-route-id="@Model.GroupId" asp-route-page="@(Model.Report.PageIndex - 1)" asp-route-searchString="@Model.CurrentFilter">Previous</a>
+                        </li>
+                        @for (int i = 1; i <= Model.Report.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.Report.PageIndex ? "active" : "")">
+                                <a class="page-link shadow-none" asp-action="Report" asp-route-id="@Model.GroupId" asp-route-page="@i" asp-route-searchString="@Model.CurrentFilter">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(!Model.Report.HasNextPage ? "disabled" : "")">
+                            <a class="page-link shadow-none" asp-action="Report" asp-route-id="@Model.GroupId" asp-route-page="@(Model.Report.PageIndex + 1)" asp-route-searchString="@Model.CurrentFilter">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>

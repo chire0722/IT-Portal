@@ -1,0 +1,329 @@
+@model IT_Form.Models.ViewModels.AuditLogDetailsPageViewModel
+@{
+    ViewData["Title"] = "Audit Log Details";
+    var entry = Model.Entry;
+    var entryTime = entry.CreatedAt == default ? entry.Timestamp : entry.CreatedAt;
+    var displayJson = entry.Payload ?? entry.Changes;
+    var entrySourceType = IT_Form.Helpers.AuditLogClassifier.GetSourceType(entry);
+    var entryStageLabel = IT_Form.Helpers.AuditLogClassifier.GetStageLabel(entry);
+}
+
+<style>
+    .audit-chain-timeline {
+        position: relative;
+        margin-left: 0.75rem;
+        padding-left: 2rem;
+    }
+
+    .audit-chain-timeline::before {
+        content: "";
+        position: absolute;
+        top: 0.25rem;
+        bottom: 0.25rem;
+        left: 0.5rem;
+        width: 2px;
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.35), rgba(148, 163, 184, 0.25));
+    }
+
+    .audit-chain-node {
+        position: relative;
+        margin-bottom: 1.25rem;
+    }
+
+    .audit-chain-node:last-child {
+        margin-bottom: 0;
+    }
+
+    .audit-chain-dot {
+        position: absolute;
+        left: -1.95rem;
+        top: 1.1rem;
+        width: 0.95rem;
+        height: 0.95rem;
+        border-radius: 999px;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.16);
+        background: #94a3b8;
+    }
+
+    .audit-chain-node.is-current .audit-chain-dot {
+        background: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    }
+
+    .audit-chain-node.is-failed .audit-chain-dot {
+        background: #dc2626;
+        box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+    }
+
+    .audit-chain-card {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 1rem;
+        padding: 1rem 1.1rem;
+        background: #fff;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .audit-chain-card:hover {
+        border-color: rgba(59, 130, 246, 0.28);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+        transform: translateY(-1px);
+    }
+
+    .audit-chain-node.is-current .audit-chain-card {
+        border-color: rgba(37, 99, 235, 0.42);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .audit-chain-node.is-failed .audit-chain-card {
+        border-left: 4px solid rgba(220, 38, 38, 0.9);
+        background: linear-gradient(180deg, rgba(254, 242, 242, 0.7), rgba(255, 255, 255, 1));
+    }
+
+    .audit-chain-meta {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="mb-0">
+            <i class="bi bi-journal-text text-primary me-2" aria-hidden="true"></i> Audit Entry #@entry.Id
+        </h2>
+        <p class="text-muted mt-1 mb-0">Full command and entity audit record for this event.</p>
+    </div>
+    <div class="col-auto">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to Log
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white fw-bold">
+        <i class="bi bi-info-circle me-2 text-primary" aria-hidden="true"></i> Event Summary
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Action</p>
+                @{
+                    var badgeClass = entry.IsSuccess
+                        ? "bg-success"
+                        : "bg-danger";
+                }
+                <span class="badge @badgeClass fs-6">@entry.Action</span>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Outcome</p>
+                <strong class="@(entry.IsSuccess ? "text-success" : "text-danger")">@(entry.IsSuccess ? "Success" : "Failed")</strong>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Entity</p>
+                <strong>@entry.EntityName</strong>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Record ID</p>
+                <strong>#@entry.EntityId</strong>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Created (UTC)</p>
+                <strong>@entryTime.ToString("dd/MM/yyyy HH:mm:ss")</strong>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Local Time</p>
+                <strong>@entryTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</strong>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">User ID</p>
+                <strong>@entry.UserId</strong>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Performed By</p>
+                <strong>@entry.PerformedBy</strong>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Source Type</p>
+                <span class="badge bg-dark-subtle text-dark border border-dark-subtle">@entrySourceType</span>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted small mb-1">Stage</p>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@entryStageLabel</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(entry.IpAddress))
+            {
+                <div class="col-md-4">
+                    <p class="text-muted small mb-1">IP Address</p>
+                    <strong>@entry.IpAddress</strong>
+                </div>
+            }
+            @if (entry.CorrelationId.HasValue)
+            {
+                <div class="col-md-8">
+                    <p class="text-muted small mb-1">Correlation ID</p>
+                    <strong>@entry.CorrelationId</strong>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(entry.Details))
+            {
+                <div class="col-12">
+                    <hr class="my-2 opacity-25" />
+                    <p class="text-muted small mb-1">Description</p>
+                    <div class="p-2 bg-light rounded border-start border-primary border-4">
+                        <strong class="text-dark">@entry.Details</strong>
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(entry.ErrorMessage))
+            {
+                <div class="col-12">
+                    <p class="text-muted small mb-1">Error Message</p>
+                    <div class="p-2 bg-danger-subtle rounded border-start border-danger border-4 text-danger-emphasis">
+                        <strong>@entry.ErrorMessage</strong>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.FormattedAuditDetails))
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white fw-bold">
+            <i class="bi bi-card-text me-2 text-secondary" aria-hidden="true"></i> Audit Details
+        </div>
+        <div class="card-body">
+            <div class="p-3 bg-light rounded border mb-3" style="white-space: pre-wrap; font-family: inherit; font-size: 0.95rem; color: #334155;">
+                @Model.FormattedAuditDetails
+            </div>
+
+            @if (!string.IsNullOrEmpty(displayJson) && displayJson.Trim().StartsWith("{"))
+            {
+                <div class="mt-3">
+                    <p class="text-muted small mb-1">Raw Data (JSON)</p>
+                    <div class="p-3 bg-dark text-light rounded font-monospace" style="font-size: 0.85rem; max-height: 400px; overflow-y: auto;">
+                        <pre class="mb-0"><code>@IT_Form.Helpers.AuditFormatter.PrettyPrintJson(displayJson)</code></pre>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-secondary">No additional details recorded for this entry.</div>
+}
+
+@if (Model.HasCorrelation)
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-diagram-3 me-2 text-primary" aria-hidden="true"></i> Execution Chain</span>
+            <div class="d-flex gap-2">
+                @if (Model.FailuresOnly)
+                {
+                    <a class="btn btn-sm btn-outline-secondary rounded-pill" asp-action="Details" asp-route-id="@entry.Id">
+                        Show Full Chain
+                    </a>
+                }
+                else
+                {
+                    <a class="btn btn-sm btn-outline-danger rounded-pill" asp-action="Details" asp-route-id="@entry.Id" asp-route-failuresOnly="true">
+                        Show Failures Only
+                    </a>
+                }
+                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="/api/audit-logs/@entry.Id/chain@(Model.FailuresOnly ? "?failuresOnly=true" : string.Empty)">
+                    API Chain
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="rounded border bg-light px-3 py-2">
+                        <div class="small text-muted">Chain Entries</div>
+                        <div class="fw-bold">@Model.ChainTotalCount</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="rounded border bg-light px-3 py-2">
+                        <div class="small text-muted">Failures</div>
+                        <div class="fw-bold text-danger">@Model.ChainFailureCount</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="rounded border bg-light px-3 py-2">
+                        <div class="small text-muted">Visible Now</div>
+                        <div class="fw-bold">@Model.VisibleChainCount</div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-muted small mb-3">
+                Entries that share the same correlation ID. This represents the related audit trail for the same business execution.
+                @if (Model.FailuresOnly)
+                {
+                    <text> The list is filtered to failures, while keeping the current anchor entry visible for context.</text>
+                }
+            </p>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <span class="badge bg-dark-subtle text-dark border border-dark-subtle">Source Type</span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Stage</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Success</span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Failed</span>
+            </div>
+            <div class="audit-chain-timeline">
+                @foreach (var related in Model.RelatedEntries)
+                {
+                    var relatedTime = related.CreatedAt == default ? related.Timestamp : related.CreatedAt;
+                    var sourceType = IT_Form.Helpers.AuditLogClassifier.GetSourceType(related);
+                    var stageLabel = IT_Form.Helpers.AuditLogClassifier.GetStageLabel(related);
+                    var nodeClass = related.Id == entry.Id
+                        ? "audit-chain-node is-current"
+                        : (!related.IsSuccess ? "audit-chain-node is-failed" : "audit-chain-node");
+                    <div class="@nodeClass">
+                        <div class="audit-chain-dot"></div>
+                        <a class="text-decoration-none text-reset" asp-action="Details" asp-route-id="@related.Id" asp-route-failuresOnly="@Model.FailuresOnly">
+                            <div class="audit-chain-card">
+                                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                            @if (related.Id == entry.Id)
+                                            {
+                                                <span class="badge bg-primary">Current</span>
+                                            }
+                                            <span class="fw-semibold text-dark">@related.Action</span>
+                                            <span class="badge @(related.IsSuccess ? "bg-success-subtle text-success border border-success-subtle" : "bg-danger-subtle text-danger border border-danger-subtle")">
+                                                @(related.IsSuccess ? "Success" : "Failed")
+                                            </span>
+                                        </div>
+                                        <div class="audit-chain-meta mb-2">
+                                            @related.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm:ss") · @related.EntityName #@related.EntityId
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            <span class="badge bg-dark-subtle text-dark border border-dark-subtle">@sourceType</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@stageLabel</span>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(related.Details))
+                                        {
+                                            <div class="small text-secondary">@related.Details</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(related.ErrorMessage))
+                                        {
+                                            <div class="small text-danger mt-2">@related.ErrorMessage</div>
+                                        }
+                                    </div>
+                                    <div class="text-end audit-chain-meta">
+                                        <div>ID @related.Id</div>
+                                        <div>@(string.IsNullOrWhiteSpace(related.PerformedBy) ? related.UserId : related.PerformedBy)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

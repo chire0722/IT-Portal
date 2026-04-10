@@ -1,0 +1,308 @@
+@model IT_Form.Helpers.PaginatedList<IT_Form.Models.OnboardingRequest>
+
+@{
+    ViewData["Title"] = "Employee Directory";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0 text-gradient"><i class="fas fa-users me-2" aria-hidden="true"></i> Employee Directory</h2>
+    <div class="d-flex gap-2">
+        @if (User.HasClaim("UserTitle", "HR"))
+        {
+            <button type="button" class="btn btn-success shadow-sm rounded-pill px-4 py-2 fw-bold text-white" data-bs-toggle="modal"
+                data-bs-target="#importModal">
+                <i class="fas fa-file-import me-2" aria-hidden="true"></i>Bulk Import Legacy Data
+            </button>
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="background: var(--bg-card); border-radius: 12px;">
+    <div class="card-body p-4">
+        <!-- Filter Bar -->
+        <form asp-action="Index" method="get" class="row g-3 align-items-end mb-4 p-3 filter-bar rounded">
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-bold">SEARCH NAME OR ID</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0"><i
+                            class="fas fa-search text-muted" aria-hidden="true"></i></span>
+                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]"
+                        class="form-control border-start-0 ps-0" placeholder="e.g. John Doe, EMP001">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold">DEPARTMENT</label>
+                <select name="department" class="form-select">
+                    <option value="">All Departments</option>
+                    @if (ViewData["Departments"] is List<string> depts)
+                    {
+                        foreach (var d in depts)
+                        {
+                            if ((string?)ViewData["DeptFilter"] == d)
+                            {
+                                <option value="@d" selected>@d</option>
+                            }
+                            else
+                            {
+                                <option value="@d">@d</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold">COMPANY</label>
+                <select name="branch" class="form-select">
+                    <option value="">All Companies</option>
+                    @if (ViewData["Branches"] is List<string> branches)
+                    {
+                        foreach (var b in branches)
+                        {
+                            if ((string?)ViewData["BranchFilter"] == b)
+                            {
+                                <option value="@b" selected>@b</option>
+                            }
+                            else
+                            {
+                                <option value="@b">@b</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2" aria-hidden="true"></i>Filter</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Employee Info</th>
+                        <th>ID</th>
+                        <th>Department</th>
+                        <th>Company</th>
+                        <th>Joined</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar bg-gradient-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                        style="width: 40px; height: 40px; font-weight: bold;">
+                                        @(string.IsNullOrEmpty(item.FullName) ? "?" : item.FullName[0].ToString().ToUpper())
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">@item.FullName</div>
+                                        <div class="text-muted small">@item.Designation</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@(item.EmployeeID ?? "N/A")</span></td>
+                            <td>@item.Department</td>
+                            <td>@item.Branch</td>
+                            <td>@(item.JoinDate?.ToLocalTime().ToString("dd/MM/yyyy") ?? "-")</td>
+                            <td class="text-end">
+                                <a asp-controller="Onboarding" asp-action="Details" asp-route-id="@item.Id" 
+                                   class="btn btn-sm btn-outline-primary shadow-sm" title="View Onboarding Details">
+                                    <i class="bi bi-file-person me-1"></i> Onboarding
+                                </a>
+                                @if (User.HasClaim("UserTitle", "IT"))
+                                {
+                                    <a asp-controller="Onboarding" asp-action="ManageAccess" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-success shadow-sm rounded-pill px-3 py-2 d-inline-flex align-items-center justify-content-center gap-2 text-nowrap fw-bold" title="Assign Email Groups, Shared Mailboxes, and Server Folders">
+                                        <i class="bi bi-shield-check" aria-hidden="true"></i>Manage Access
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3 opacity-25" aria-hidden="true"></i>
+                <h5 class="text-muted">No employees found.</h5>
+                <p class="text-muted small">Try adjusting your filters or search terms.</p>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary mt-2">Clear Filters</a>
+            </div>
+        }
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)"
+                            asp-route-searchString="@ViewData["CurrentFilter"]"
+                            asp-route-department="@ViewData["DeptFilter"]" asp-route-branch="@ViewData["BranchFilter"]">
+                            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">Page @Model.PageIndex of @Model.TotalPages</span>
+                    </li>
+                    <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)"
+                            asp-route-searchString="@ViewData["CurrentFilter"]"
+                            asp-route-department="@ViewData["DeptFilter"]" asp-route-branch="@ViewData["BranchFilter"]">
+                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header bg-success text-white" style="border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="importModalLabel"><i class="fas fa-file-import me-2" aria-hidden="true"></i>Legacy Staff Bulk
+                    Import</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info border-0 shadow-sm mb-4">
+                    <div class="d-flex">
+                        <i class="fas fa-info-circle me-3 mt-1" style="font-size: 1.2rem;" aria-hidden="true"></i>
+                        <div>
+                            <strong>Professional Template:</strong> Download the template — Department &amp; Company
+                            columns have built-in dropdown lists in Excel.
+                            <div class="mt-2">
+                                <a href="/api/employees/import-template"
+                                    class="btn btn-sm btn-link text-info p-0 fw-bold">
+                                    <i class="fas fa-download me-1" aria-hidden="true"></i>Download Template (.xlsx)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="importFile" class="form-label fw-bold text-muted small">SELECT EXCEL FILE</label>
+                    <input type="file" class="form-control" id="importFile" accept=".xlsx" data-drag-upload="true" />
+                    <div class="form-text mt-2">Maximum file size: 5MB. Only .xlsx files are supported.</div>
+                </div>
+
+                <div id="importResults" class="d-none mt-3">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <h6 class="fw-bold mb-3">Import Summary:</h6>
+                        <div class="row g-3">
+                            <div class="col-4 text-center">
+                                <div class="text-muted small">TOTAL</div>
+                                <div id="resTotal" class="h4 mb-0 fw-bold">0</div>
+                            </div>
+                            <div class="col-4 text-center border-start">
+                                <div class="text-success small">SUCCESS</div>
+                                <div id="resSuccess" class="h4 mb-0 fw-bold text-success">0</div>
+                            </div>
+                            <div class="col-4 text-center border-start">
+                                <div class="text-warning small">SKIPPED</div>
+                                <div id="resSkipped" class="h4 mb-0 fw-bold text-warning">0</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="window.location.reload()">
+                                <i class="fas fa-sync-alt me-1" aria-hidden="true"></i> Update Directory
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light" style="border-radius: 0 0 15px 15px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success px-4" id="btnDoImport">
+                    <i class="fas fa-upload me-1" aria-hidden="true"></i> Start Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        document.getElementById('btnDoImport').addEventListener('click', async function () {
+            const fileInput = document.getElementById('importFile');
+            if (fileInput.files.length === 0) { alert('Please select an Excel file first.'); return; }
+
+            const btn = this;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing...';
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+                const token = tokenElement ? tokenElement.value : '';
+
+                window.ITUploadProgress?.start({ determinate: true, label: 'Uploading employee import...' });
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/employees/import', true);
+                xhr.setRequestHeader('X-XSRF-TOKEN', token);
+
+                xhr.upload.onprogress = function (e) {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total) * 100;
+                        window.ITUploadProgress?.set(percent, `Uploading employee import... ${Math.round(percent)}%`);
+                    } else {
+                        window.ITUploadProgress?.set(35, 'Uploading employee import...');
+                    }
+                };
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const result = JSON.parse(xhr.responseText);
+                        document.getElementById('resTotal').innerText = result.totalProcessed;
+                        document.getElementById('resSuccess').innerText = result.successfullyInserted;
+                        document.getElementById('resSkipped').innerText = result.skippedDuplicates;
+                        document.getElementById('importResults').classList.remove('d-none');
+                        btn.classList.replace('btn-success', 'btn-outline-secondary');
+                        btn.innerHTML = '<i class="fas fa-check me-1" aria-hidden="true"></i> Finished';
+                        window.ITUploadProgress?.finish('Employee import uploaded');
+                    } else {
+                        alert('Import failed: ' + (xhr.responseText || 'Unknown error'));
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                        window.ITUploadProgress?.fail('Employee import failed');
+                    }
+                };
+
+                xhr.onerror = function () {
+                    alert('An unexpected network error occurred.');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    window.ITUploadProgress?.fail('Employee import failed');
+                };
+
+                xhr.send(formData);
+            } catch (err) {
+                console.error(err);
+                alert('An unexpected network error occurred.');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                window.ITUploadProgress?.fail('Employee import failed');
+            }
+        });
+ 
+    </script>
+}
+
+

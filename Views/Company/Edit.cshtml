@@ -1,0 +1,57 @@
+@model IT_Form.Application.Features.Company.CompanyEditorPageViewModel
+@{ ViewData["Title"] = "Edit Company"; }
+
+<h2>Edit Company</h2>
+<div class="card shadow-sm border-0 mt-4" style="max-width: 600px;">
+    <div class="card-body">
+        <form asp-action="Edit" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="LogoPath" />
+            
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label font-weight-bold">Company Name</label>
+                <input asp-for="Name" class="form-control shadow-sm" />
+                <span asp-validation-for="Name" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+            </div>
+            
+            <div class="mb-3">
+                <label asp-for="Lot" class="form-label font-weight-bold">Lot / Address</label>
+                <input asp-for="Lot" class="form-control shadow-sm" placeholder="Optional..." />
+                <span asp-validation-for="Lot" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label font-weight-bold">Company Logo</label>
+                @if (!string.IsNullOrEmpty(Model.LogoPath))
+                {
+                    <div class="mb-2">
+                        <div class="rounded border bg-light d-inline-flex align-items-center justify-content-center overflow-hidden" style="width: 150px; height: 60px;">
+                            <img src="/@Model.LogoPath" alt="Current Logo" class="img-fluid" style="max-height: 100%; object-fit: contain;" />
+                        </div>
+                        <div class="small text-muted mt-1">Current Logo</div>
+                    </div>
+                }
+                <input type="file" name="Logo" id="Logo" class="form-control shadow-sm" accept="image/*" data-drag-upload="true" />
+                <div class="form-text text-muted small">Leave empty to keep existing logo. Recommended: 300x120px.</div>
+                <span asp-validation-for="LogoPath" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsLoginPageLogo" class="form-check-input" />
+                <label asp-for="IsLoginPageLogo" class="form-check-label">Use this logo on login page</label>
+                <div class="form-text text-muted small">Only one company can be selected at a time.</div>
+                <span asp-validation-for="IsLoginPageLogo" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label">Is Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+        </form>
+    </div>
+</div>
+@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }

@@ -1,0 +1,368 @@
+@model IT_Form.Models.OnboardingRequest
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Onboarding Form - @Model.FullName</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
+        .page { width: 210mm; padding: 15mm; page-break-after: always; }
+        .page:last-child { page-break-after: auto; }
+
+        .header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .header h1 { font-size: 18px; font-weight: bold; margin-bottom: 2px; }
+        .header h2 { font-size: 14px; color: #555; font-weight: normal; }
+        .company-name { font-size: 11px; color: #666; }
+        .form-ref { font-size: 9px; color: #999; text-align: right; }
+
+        h3 { font-size: 13px; background: #f0f0f0; padding: 5px 10px; margin: 12px 0 8px 0; border-left: 4px solid #333; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        table.info td { padding: 4px 8px; border: 1px solid #ccc; }
+        table.info td:first-child { width: 30%; background: #fafafa; font-weight: bold; }
+
+        table.grid th, table.grid td { padding: 4px 6px; border: 1px solid #ccc; text-align: center; font-size: 10px; }
+        table.grid th { background: #eee; font-weight: bold; }
+        table.grid td:first-child { text-align: left; }
+
+        .check { display: inline-block; width: 12px; height: 12px; border: 1px solid #333; text-align: center; font-size: 10px; line-height: 12px; margin-right: 4px; }
+        .check.checked { background: #333; color: white; }
+
+        .sig-box { display: inline-block; width: 30%; text-align: center; vertical-align: top; }
+        .sig-box img { max-width: 180px; max-height: 60px; background: #fff; }
+        .sig-line { border-top: 1px solid #333; margin-top: 5px; padding-top: 3px; font-size: 10px; }
+
+        .software-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px 10px; }
+        .software-item { display: flex; align-items: center; gap: 4px; }
+    </style>
+</head>
+<body>
+    <!-- PAGE 1: IT ISSUANCE FORM -->
+    <div class="page">
+        <div class="header">
+            <div class="company-name">YTC PRECAST SDN BHD / YENG TONG CONSTRUCTION SDN BHD</div>
+            <h1>IT EQUIPMENT ISSUANCE FORM</h1>
+            <h2>Borang Pengeluaran Peralatan IT</h2>
+        </div>
+        
+        <h3>A. Employee Information</h3>
+        <table class="info">
+            <tr><td>Full Name</td><td>@Model.FullName</td></tr>
+            <tr><td>Employee ID</td><td>@(Model.EmployeeID ?? "—")</td></tr>
+            <tr><td>Designation</td><td>@(Model.Designation ?? "—")</td></tr>
+            <tr><td>Department</td><td>@Model.Department @(Model.Department == "Others" && !string.IsNullOrEmpty(Model.OtherDepartmentDetails) ? $"({Model.OtherDepartmentDetails})" : "")</td></tr>
+            <tr><td>Company</td><td>@(Model.Branch ?? "—") @(Model.Branch == "Others" && !string.IsNullOrEmpty(Model.OtherBranchDetails) ? $"({Model.OtherBranchDetails})" : "")</td></tr>
+            <tr><td>Desk Number</td><td>@(Model.DeskNumber ?? "—")</td></tr>
+            <tr><td>Date Hire</td><td>@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "—")</td></tr>
+            <tr><td>Email Address</td><td>@(Model.EmailAddress ?? "—")</td></tr>
+            <tr><td>Reporting Manager</td><td>@Model.HODEmail</td></tr>
+        </table>
+
+        <h3>B. IT Equipment Issued</h3>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">No.</th>
+                    <th style="width: 20%;">Item</th>
+                    <th style="width: 30%;">Description</th>
+                    <th style="width: 25%;">Serial Number</th>
+                    <th style="width: 20%;">Asset Tag</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.IssuedAssets != null && Model.IssuedAssets.Any())
+                {
+                    for (int i = 0; i < Model.IssuedAssets.Count; i++)
+                    {
+                        <tr>
+                            <td>@(i + 1)</td>
+                            <td style="text-align: left;">@Model.IssuedAssets[i].AssetType</td>
+                            <td style="text-align: left;">@Model.IssuedAssets[i].Description</td>
+                            <td>@Model.IssuedAssets[i].SerialNumber</td>
+                            <td>@Model.IssuedAssets[i].AssetTag</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="5" style="text-align: center; color: #999;">No equipment issued</td></tr>
+                }
+            </tbody>
+        </table>
+        @if (!string.IsNullOrEmpty(Model.AssetRemarks))
+        {
+            <div style="margin-top: 5px; font-style: italic;"><strong>Asset Remarks:</strong> @Model.AssetRemarks</div>
+        }
+
+        <h3>C. Software Entitlements</h3>
+        <div class="software-grid" style="margin-bottom: 12px;">
+            @{
+                var assignedSoftwareNames = (Model.IssuedSoftware ?? new List<IT_Form.Models.IssuedSoftware>())
+                    .Select(sw => !string.IsNullOrWhiteSpace(sw.SoftwareName)
+                        ? sw.SoftwareName!.Trim()
+                        : sw.SoftwareLicense?.SoftwareName?.Trim())
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(name => name)
+                    .ToList();
+
+                if (!assignedSoftwareNames.Any())
+                {
+                    assignedSoftwareNames = (Model.RequestSoftware ?? new List<IT_Form.Models.RequestSoftware>())
+                        .Select(sw => sw.SoftwareName?.Trim())
+                        .Where(name => !string.IsNullOrWhiteSpace(name))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(name => name)
+                        .Cast<string>()
+                        .ToList();
+                }
+            }
+            @if (assignedSoftwareNames.Any())
+            {
+                @foreach (var softwareName in assignedSoftwareNames)
+                {
+                    <div class="software-item">
+                        <span class="check checked">@( "✓" )</span>
+                        @softwareName
+                    </div>
+                }
+            }
+            else
+            {
+                <div>No specific software requested.</div>
+            }
+        </div>
+        @if (Model.HasOtherSoftware)
+        {
+            <p><strong>Other Software:</strong> @Model.OtherSoftwareDetails</p>
+        }
+        @if (!string.IsNullOrEmpty(Model.SoftwareRemarks))
+        {
+            <p style="margin-top: 5px; font-style: italic;"><strong>Software Remarks:</strong> @Model.SoftwareRemarks</p>
+        }
+
+        <h3>D. Checklist for IT Personal to follow</h3>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">No.</th>
+                    <th style="text-align: left;">Particulars</th>
+                    <th style="width: 30%;">Onboarding Phase</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var checkItems = new (string Name, bool Value, string Label)[] {
+                        ("Physical Checks & Clean on IT Equipment", Model.CheckPhysicalClean, "Checks complete"),
+                        ("MS O365 Account Setup", Model.CheckO365Setup, "Setup successfully"),
+                        ("Windows Account & Login", Model.CheckWindowsLogin, "Login successfully"),
+                        ("Outlook & Email Account Setup", Model.CheckEmailSetup, "Access successfully"),
+                        ("Specific Software / Application", Model.CheckSpecificSoftware, "Setup successfully"),
+                        ("General Software / Application", Model.CheckGeneralSoftware, "Setup successfully"),
+                        ("Add user to ADs Group", Model.CheckAbcGroup, "Add successfully"),
+                        ("Add user to Email Mail Group", Model.CheckEmailMailGroup, "Add successfully"),
+                        ("Device Name & Domain Join", Model.CheckDomainJoin, "Join successfully"),
+                        ("Shared Drive mapping", Model.CheckSharedDrive, "Access successfully"),
+                        ("Primary Location Wi-Fi Setup", Model.CheckWiFiSetup, "Connect successfully"),
+                        ("Primary Location Printer Setup", Model.CheckPrinterSetup, "Print successfully"),
+                        ("Primary Location Scan Folder Setup", Model.CheckScanFolder, "Access successfully"),
+                        ("VPN Account Setup", Model.CheckVPNSetup, "Connect successfully")
+                    };
+                }
+                @for (int ci = 0; ci < checkItems.Length; ci++)
+                {
+                    <tr>
+                        <td>@(ci + 1)</td>
+                        <td style="text-align: left;">@checkItems[ci].Name</td>
+                        <td><span class="check @(checkItems[ci].Value ? "checked" : "")">@(checkItems[ci].Value ? "✓" : "")</span> @checkItems[ci].Label</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (!string.IsNullOrEmpty(Model.ChecklistRemarks))
+        {
+            <p><strong>Remarks:</strong> @Model.ChecklistRemarks</p>
+        }
+
+        <h3>E. Signatures</h3>
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <div class="sig-box">
+                @if (!string.IsNullOrEmpty(Model.RequesterSignature))
+                {
+                    <img src="@Model.RequesterSignature" alt="Requester" />
+                }
+                else
+                {
+                    <div style="height: 60px;"></div>
+                }
+                <div class="sig-line">HR</div>
+                @if (Model.RequesterSignedAt.HasValue)
+                {
+                    <div style="font-size: 8px; color: #999;">Date: @Model.RequesterSignedAt.Value.ToString("dd/MM/yyyy")</div>
+                }
+            </div>
+            <div class="sig-box">
+                @if (!string.IsNullOrEmpty(Model.ITAdminSignature))
+                {
+                    <img src="@Model.ITAdminSignature" alt="IT Admin" />
+                }
+                else
+                {
+                    <div style="height: 60px;"></div>
+                }
+                <div class="sig-line">IT Department</div>
+                @if (Model.ITAdminSignedAt.HasValue)
+                {
+                    <div style="font-size: 8px; color: #999;">Date: @Model.ITAdminSignedAt.Value.ToString("dd/MM/yyyy")</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: SERVER ACCESS FORM -->
+    <div class="page">
+        <div class="header">
+            <div class="company-name">YTC PRECAST SDN BHD / YENG TONG CONSTRUCTION SDN BHD</div>
+            <h1>SERVER ACCESS & SYSTEM REQUEST FORM</h1>
+            <h2>Borang Permohonan Akses Pelayan & Sistem</h2>
+        </div>
+
+        <h3>A. Applicant Information</h3>
+        <table class="info">
+            <tr><td>Full Name</td><td>@Model.FullName</td></tr>
+            <tr><td>Department</td><td>@Model.Department</td></tr>
+            <tr><td>Designation</td><td>@(Model.Designation ?? "—")</td></tr>
+        </table>
+
+        <h3>B. Email Distribution Groups</h3>
+        <table class="info">
+            <tr>
+                <td>Precast Group</td>
+                <td><span class="check @(Model.PrecastGroup ? "checked" : "")">@(Model.PrecastGroup ? "✓" : "")</span> Yes</td>
+            </tr>
+            <tr>
+                <td>Other Group</td>
+                <td>
+                    <span class="check @(Model.OtherGroup ? "checked" : "")">@(Model.OtherGroup ? "✓" : "")</span> Yes
+                    @if (Model.OtherGroup && !string.IsNullOrEmpty(Model.OtherGroupDetails))
+                    {
+                        <span> — @Model.OtherGroupDetails</span>
+                    }
+                </td>
+            </tr>
+        </table>
+
+        <h3>C. Shared Mailbox Access</h3>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Mailbox</th>
+                    <th>Access Granted</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var mailboxList = new (string Name, bool Value)[] {
+                        ("account@@ytcprecast.com", Model.MailboxAccount),
+                        ("logistic@@ytcprecast.com", Model.MailboxLogistic),
+                        ("info@@ytcprecast.com", Model.MailboxInfo),
+                        ("admin@@ytcprecast.com", Model.MailboxAdmin),
+                        ("intern@@ytcprecast.com", Model.MailboxIntern),
+                        ("itdept@@ytcprecast.com", Model.MailboxIT),
+                        ("store@@ytcprecast.com", Model.MailboxStore)
+                    };
+                }
+                @foreach (var mb in mailboxList)
+                {
+                    <tr>
+                        <td style="text-align: left;">@mb.Name</td>
+                        <td><span class="check @(mb.Value ? "checked" : "")">@(mb.Value ? "✓" : "")</span></td>
+                    </tr>
+                }
+                @if (!string.IsNullOrEmpty(Model.OtherSharedMailboxDetails))
+                {
+                    <tr>
+                        <td style="text-align: left;"><strong>Other:</strong> @Model.OtherSharedMailboxDetails</td>
+                        <td><span class="check checked">✓</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <h3>D. Server Folder Access Permissions</h3>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Folder Name</th>
+                    <th style="width: 25%;">Read</th>
+                    <th style="width: 25%;">Modify</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.FolderPermissions != null)
+                {
+                    @foreach (var fp in Model.FolderPermissions)
+                    {
+                        <tr>
+                            <td style="text-align: left;">@fp.FolderName</td>
+                            <td><span class="check @(fp.CanRead ? "checked" : "")">@(fp.CanRead ? "✓" : "")</span></td>
+                            <td><span class="check @(fp.CanModify ? "checked" : "")">@(fp.CanModify ? "✓" : "")</span></td>
+                        </tr>
+                    }
+                }
+                @if (!string.IsNullOrEmpty(Model.OtherFolderDetails))
+                {
+                    <tr>
+                        <td style="text-align: left;"><strong>Other:</strong> @Model.OtherFolderDetails</td>
+                        <td><span class="check checked">✓</span></td>
+                        <td></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (!string.IsNullOrEmpty(Model.FolderRemarks))
+        {
+            <p style="margin-top: 5px; font-style: italic;"><strong>Folder Remarks:</strong> @Model.FolderRemarks</p>
+        }
+
+        <h3>E. Authorization Signatures</h3>
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <div class="sig-box">
+                @if (!string.IsNullOrEmpty(Model.RequesterSignature))
+                {
+                    <img src="@Model.RequesterSignature" alt="Requester" />
+                }
+                else
+                {
+                    <div style="height: 60px;"></div>
+                }
+                <div class="sig-line">HR</div>
+                @if (Model.RequesterSignedAt.HasValue)
+                {
+                    <div style="font-size: 8px; color: #999;">Date: @Model.RequesterSignedAt.Value.ToString("dd/MM/yyyy")</div>
+                }
+            </div>
+            <div class="sig-box">
+                @if (!string.IsNullOrEmpty(Model.ITAdminSignature))
+                {
+                    <img src="@Model.ITAdminSignature" alt="IT Admin" />
+                }
+                else
+                {
+                    <div style="height: 60px;"></div>
+                }
+                <div class="sig-line">Processed By (IT Dept)</div>
+                @if (Model.ITAdminSignedAt.HasValue)
+                {
+                    <div style="font-size: 8px; color: #999;">Date: @Model.ITAdminSignedAt.Value.ToString("dd/MM/yyyy")</div>
+                }
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

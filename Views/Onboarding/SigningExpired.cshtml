@@ -1,0 +1,49 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Link Expired</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .expired-card {
+            max-width: 420px;
+            border-radius: 16px;
+            overflow: hidden;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: #fff;
+            padding: 48px 32px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="expired-card">
+        <div style="font-size: 3rem; color: #e74c3c; margin-bottom: 16px;">
+            <i class="fas fa-link-slash" aria-hidden="true"></i>
+        </div>
+        <h3>This link has expired</h3>
+        <p class="text-muted mt-2">
+            This signing link is no longer valid. It may have already been used or has expired.
+            Please contact HR or IT to request a new link.
+        </p>
+    </div>
+</body>
+
+</html>
+
+

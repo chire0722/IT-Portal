@@ -1,0 +1,349 @@
+@model IT_Form.Models.ITAsset
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Asset Details";
+    if (Model == null) return;
+
+    JsonElement hardwareAuditRoot = default;
+    bool hasHardwareAudit = false;
+
+    if (!string.IsNullOrWhiteSpace(Model.HardwareAuditJson))
+    {
+        try
+        {
+            using var hardwareAuditDoc = JsonDocument.Parse(Model.HardwareAuditJson);
+            hardwareAuditRoot = hardwareAuditDoc.RootElement.Clone();
+            hasHardwareAudit = true;
+        }
+        catch
+        {
+            hasHardwareAudit = false;
+        }
+    }
+
+    static string JsonTextOrDash(JsonElement element, string propertyName)
+    {
+        if (!element.ValueKind.Equals(JsonValueKind.Object) || !element.TryGetProperty(propertyName, out var prop))
+        {
+            return "-";
+        }
+
+        return prop.ValueKind switch
+        {
+            JsonValueKind.String => string.IsNullOrWhiteSpace(prop.GetString()) ? "-" : prop.GetString()!,
+            JsonValueKind.Number => prop.ToString(),
+            JsonValueKind.True => "True",
+            JsonValueKind.False => "False",
+            _ => "-"
+        };
+    }
+
+    static string JsonArrayFirstOrDash(JsonElement element, string propertyName)
+    {
+        if (!element.ValueKind.Equals(JsonValueKind.Object) || !element.TryGetProperty(propertyName, out var prop))
+        {
+            return "-";
+        }
+
+        if (prop.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in prop.EnumerateArray())
+            {
+                var text = item.ValueKind == JsonValueKind.String ? item.GetString() : item.ToString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text!;
+                }
+            }
+        }
+
+        return "-";
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Asset Details: @Model.AssetTag</h2>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-warning shadow-sm px-3 text-dark">
+            <i class="bi bi-pencil me-1"></i> Edit Asset
+        </a>
+        <a asp-action="Index" class="btn btn-sm btn-secondary shadow-sm px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Asset Info -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Hardware Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Asset Tag</dt>
+                    <dd class="col-sm-8 fw-bold">@Model.AssetTag</dd>
+
+                    <dt class="col-sm-4">Type</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.AssetType == IT_Form.Models.Enums.AssetType.Others && !string.IsNullOrEmpty(Model.OtherAssetType))
+                        {
+                            <span>@Model.OtherAssetType</span> <small class="text-muted">(Others)</small>
+                        }
+                        else
+                        {
+                            @Model.AssetType
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Status == IT_Form.Models.Enums.AssetStatus.Available)
+                        {
+                            <span class="badge bg-success">@Model.Status</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-primary">@Model.Status</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Model / Make</dt>
+                    <dd class="col-sm-8">@(Model.Model ?? "-")</dd>
+
+                    <dt class="col-sm-4">Serial Number</dt>
+                    <dd class="col-sm-8">@(Model.SerialNumber ?? "-")</dd>
+
+
+                    @if (Model.AssetType == IT_Form.Models.Enums.AssetType.Laptop || 
+                        Model.AssetType == IT_Form.Models.Enums.AssetType.DesktopPC || 
+                        Model.AssetType == IT_Form.Models.Enums.AssetType.Others)
+                    {
+                        <dt class="col-sm-4 text-primary">RAM</dt>
+                        <dd class="col-sm-8">@(Model.RAM ?? "-") @(string.IsNullOrEmpty(Model.DDRType) ? "" :
+                        $"({Model.DDRType})")</dd>
+
+                        <dt class="col-sm-4 text-primary">Storage</dt>
+                        <dd class="col-sm-8">@(Model.Storage ?? "-")</dd>
+
+                        <dt class="col-sm-4 text-primary">Windows Version</dt>
+                        <dd class="col-sm-8">@(Model.WindowsVersion ?? "-")</dd>
+                    }
+
+                    <dt class="col-sm-4">Hardware Hash</dt>
+                    <dd class="col-sm-8">
+                        @if (!string.IsNullOrWhiteSpace(Model.HardwareHash))
+                        {
+                            <code>@Model.HardwareHash</code>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Last Seen</dt>
+                    <dd class="col-sm-8">@(Model.LastSeen?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</dd>
+
+                    <dt class="col-sm-4">Purchase Date</dt>
+                    <dd class="col-sm-8">@(Model.PurchaseDate?.ToString("dd/MM/yyyy") ?? "-")</dd>
+
+                    <dt class="col-sm-4">Warranty Expiry</dt>
+                    <dd class="col-sm-8">@(Model.WarrantyExpiry?.ToString("dd/MM/yyyy") ?? "-")</dd>
+
+                    <dt class="col-sm-4">Warranty Plan</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.NoExtendWarranty)
+                        {
+                            <span class="badge bg-secondary">No Extend (Notifications Disabled)</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Extend / Monitor</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment History -->
+    <div class="col-md-7 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">Assignment History</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @if (Model.IssuedHistory != null && Model.IssuedHistory.Any())
+                    {
+                        foreach (var history in Model.IssuedHistory.OrderByDescending(h => h.Id))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    @if (history.OnboardingRequest != null)
+                                    {
+                                        <strong>@history.OnboardingRequest.FullName</strong>
+                                        <br />
+                                        <small class="text-muted">Req #@history.OnboardingRequestId - @history.OnboardingRequest.Department</small>
+                                    }
+                                    else if (!string.IsNullOrEmpty(history.CustomEmployeeName))
+                                    {
+                                        <strong>@history.CustomEmployeeName</strong> <span class="badge bg-light text-dark-50 border ms-1" style="font-size: 0.65em;">Manual</span>
+                                        <br />
+                                        <small class="text-muted">Direct Assignment</small>
+                                    }
+                                </div>
+                                @if (history.OnboardingRequestId != null)
+                                {
+                                    <a asp-controller="Onboarding" asp-action="Details" asp-route-id="@history.OnboardingRequestId"
+                                        class="btn btn-sm btn-outline-info">View Form</a>
+                                }
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-muted text-center py-4">No assignment history.</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (hasHardwareAudit)
+{
+    var generatedAt = JsonTextOrDash(hardwareAuditRoot, "GeneratedAtUtc");
+    var motherboard = hardwareAuditRoot.TryGetProperty("Motherboard", out var mb) ? mb : default;
+    var bios = hardwareAuditRoot.TryGetProperty("BIOS", out var biosNode) ? biosNode : default;
+    var cpu = hardwareAuditRoot.TryGetProperty("CPU", out var cpuNode) ? cpuNode : default;
+    var os = hardwareAuditRoot.TryGetProperty("OS", out var osNode) ? osNode : default;
+    var identity = hardwareAuditRoot.TryGetProperty("Identity", out var idNode) ? idNode : default;
+
+    var ram = hardwareAuditRoot.TryGetProperty("RAM", out var ramNode) ? ramNode : default;
+    var ramSummary = "-";
+    if (ram.ValueKind == JsonValueKind.Array)
+    {
+        var modules = ram.EnumerateArray().ToList();
+        var firstModule = modules.FirstOrDefault();
+        if (modules.Count > 0)
+        {
+            ramSummary = $"{modules.Count} module(s), first: {JsonTextOrDash(firstModule, "CapacityGB")} GB @ {JsonTextOrDash(firstModule, "SpeedMHz")} MHz";
+        }
+    }
+
+    var storage = hardwareAuditRoot.TryGetProperty("Storage", out var storageNode) ? storageNode : default;
+    var storageSummary = "-";
+    if (storage.ValueKind == JsonValueKind.Array)
+    {
+        var firstDisk = storage.EnumerateArray().FirstOrDefault();
+        if (firstDisk.ValueKind == JsonValueKind.Object)
+        {
+            storageSummary = $"{JsonTextOrDash(firstDisk, "Model")} ({JsonTextOrDash(firstDisk, "SizeGB")} GB)";
+        }
+    }
+
+    var network = hardwareAuditRoot.TryGetProperty("Network", out var networkNode) ? networkNode : default;
+    var networkSummary = "-";
+    if (network.ValueKind == JsonValueKind.Array)
+    {
+        var firstAdapter = network.EnumerateArray().FirstOrDefault();
+        if (firstAdapter.ValueKind == JsonValueKind.Object)
+        {
+            networkSummary = $"{JsonTextOrDash(firstAdapter, "Adapter")} / {JsonTextOrDash(firstAdapter, "MACAddress")} / {JsonArrayFirstOrDash(firstAdapter, "IPAddress")}";
+        }
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Hardware Fingerprint Details</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Captured At (UTC)</dt>
+                <dd class="col-sm-9">@generatedAt</dd>
+
+                <dt class="col-sm-3">Motherboard</dt>
+                <dd class="col-sm-9">@JsonTextOrDash(motherboard, "Manufacturer") @JsonTextOrDash(motherboard, "Product") / SN: @JsonTextOrDash(motherboard, "SerialNumber")</dd>
+
+                <dt class="col-sm-3">BIOS</dt>
+                <dd class="col-sm-9">@JsonTextOrDash(bios, "Manufacturer") @JsonTextOrDash(bios, "Version") / SN: @JsonTextOrDash(bios, "SerialNumber")</dd>
+
+                <dt class="col-sm-3">CPU</dt>
+                <dd class="col-sm-9">@JsonTextOrDash(cpu, "Name") / ID: @JsonTextOrDash(cpu, "ProcessorId")</dd>
+
+                <dt class="col-sm-3">RAM</dt>
+                <dd class="col-sm-9">@ramSummary</dd>
+
+                <dt class="col-sm-3">Storage</dt>
+                <dd class="col-sm-9">@storageSummary</dd>
+
+                <dt class="col-sm-3">Network</dt>
+                <dd class="col-sm-9">@networkSummary</dd>
+
+                <dt class="col-sm-3">Operating System</dt>
+                <dd class="col-sm-9">@JsonTextOrDash(os, "Caption") (@JsonTextOrDash(os, "Version"))</dd>
+
+                <dt class="col-sm-3">Identity</dt>
+                <dd class="col-sm-9">@JsonTextOrDash(identity, "ComputerName") / @JsonTextOrDash(identity, "CurrentUser")</dd>
+            </dl>
+        </div>
+    </div>
+}
+
+<!-- Maintenance Logs -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Maintenance & Repair Logs</h5>
+        <a asp-controller="MaintenanceLog" asp-action="Create" asp-route-itAssetId="@Model.Id"
+            class="btn btn-sm btn-light">Log Maintenance</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Service Provider</th>
+                        <th>Cost</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.MaintenanceLogs != null && Model.MaintenanceLogs.Any())
+                    {
+                        foreach (var log in Model.MaintenanceLogs.OrderByDescending(m => m.ServiceDate))
+                        {
+                            <tr>
+                                <td>@log.ServiceDate.ToString("dd/MM/yyyy")</td>
+                                <td>@log.Description</td>
+                                <td>@(log.ServiceProvider ?? "-")</td>
+                                <td>@(log.Cost?.ToString("C") ?? "-")</td>
+                                <td>@(log.Notes ?? "-")</td>
+                                <td>
+                                     <a asp-controller="MaintenanceLog" asp-action="Edit" asp-route-id="@log.Id"
+                                         class="text-warning me-2" aria-label="Edit maintenance log #@log.Id"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                     <a asp-controller="MaintenanceLog" asp-action="Delete" asp-route-id="@log.Id"
+                                         class="text-danger" aria-label="Delete maintenance log #@log.Id"><i class="bi bi-trash" aria-hidden="true"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No maintenance logs found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+

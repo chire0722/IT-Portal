@@ -1,0 +1,275 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using IT_Form.Controllers;
+using IT_Form.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Moq;
+using Xunit;
+using IT_Form.Tests.Helpers;
+
+namespace IT_Form.Tests
+{
+    public class VerificationControllerTests : ControllerTestBase
+    {
+        // VerificationController uses Index(token)
+
+        [Fact]
+        public async Task Index_ReturnsView_ForValidToken()
+        {
+            using var context = CreateContext();
+            var empId = Guid.NewGuid().ToString();
+            context.Users.Add(new ApplicationUser { Id = empId, UserName = "test", Email = "test@ytc.com" });
+            
+            var token = new DeviceVerificationToken { Token = Guid.NewGuid().ToString(), EmployeeId = empId, IsVerified = false };
+            context.DeviceVerificationTokens.Add(token);
+            await context.SaveChangesAsync();
+
+            var controller = GetController<VerificationController>(context);
+            var result = await controller.Index(token.Token);
+
+            Assert.IsType<ViewResult>(result);
+        }
+
+        [Fact]
+        public async Task Index_ReturnsBadRequest_ForExpiredToken()
+        {
+            using var context = CreateContext();
+            var empId = Guid.NewGuid().ToString();
+            context.Users.Add(new ApplicationUser { Id = empId, UserName = "expired", Email = "expired@ytc.com" });
+            context.DeviceVerificationTokens.Add(new DeviceVerificationToken
+            {
+                Token = Guid.NewGuid().ToString(),
+                EmployeeId = empId,
+                CreatedAt = DateTime.UtcNow.AddHours(-2)
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>
+                {
+                    ["SecuritySettings:DeviceVerificationExpiryMinutes"] = "30"
+                },
+                "localhost",
+                5063);
+
+            var token = await context.DeviceVerificationTokens.FirstAsync();
+            var result = await controller.Index(token.Token);
+
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public void DownloadUniversalTool_ReturnsNotFound_AfterSecurityHardening()
+        {
+            using var context = CreateContext();
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>(),
+                "testhost.local",
+                6000);
+
+            var result = controller.DownloadUniversalTool();
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GenerateToken_ReturnsEmployeeSpecificLink_AndReplacesOlderTokens()
+        {
+            using var context = CreateContext();
+            var empId = Guid.NewGuid().ToString();
+            context.Users.Add(new ApplicationUser
+            {
+                Id = empId,
+                UserName = "verified-user",
+                Email = "verified-user@ytc.com",
+                FullName = "Verified User"
+            });
+            context.DeviceVerificationTokens.Add(new DeviceVerificationToken
+            {
+                Token = Guid.NewGuid().ToString("N"),
+                EmployeeId = empId,
+                IsVerified = false
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>
+                {
+                    ["SecuritySettings:DeviceVerificationExpiryMinutes"] = "30"
+                },
+                "localhost",
+                5063);
+
+            var result = await controller.GenerateToken(empId);
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(ok.Value);
+
+            var link = ok.Value.GetType().GetProperty("link")?.GetValue(ok.Value) as string;
+            Assert.False(string.IsNullOrWhiteSpace(link));
+            Assert.Contains("/verify/", link, StringComparison.OrdinalIgnoreCase);
+
+            var tokens = await context.DeviceVerificationTokens
+                .Where(t => t.EmployeeId == empId)
+                .ToListAsync();
+
+            var current = Assert.Single(tokens);
+            Assert.False(current.IsVerified);
+            Assert.Contains(current.Token, link, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task GenerateTokenWithoutEmployee_ReturnsAssetOnlyLink_AndStoresAnonymousToken()
+        {
+            using var context = CreateContext();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>
+                {
+                    ["SecuritySettings:DeviceVerificationExpiryMinutes"] = "30"
+                },
+                "localhost",
+                5063);
+
+            var result = await controller.GenerateTokenWithoutEmployee();
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(ok.Value);
+
+            var link = ok.Value.GetType().GetProperty("link")?.GetValue(ok.Value) as string;
+            var assignmentMode = ok.Value.GetType().GetProperty("assignmentMode")?.GetValue(ok.Value) as string;
+            var expiresAtUtc = ok.Value.GetType().GetProperty("expiresAtUtc")?.GetValue(ok.Value);
+
+            Assert.False(string.IsNullOrWhiteSpace(link));
+            Assert.Equal("asset-only", assignmentMode);
+            Assert.Null(expiresAtUtc);
+            Assert.Contains("/verify/", link, StringComparison.OrdinalIgnoreCase);
+
+            var storedToken = await context.DeviceVerificationTokens.SingleAsync();
+            Assert.Null(storedToken.EmployeeId);
+            Assert.False(storedToken.IsVerified);
+            Assert.Contains(storedToken.Token, link, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task Index_AllowsOldAssetOnlyToken_WithoutExpiry()
+        {
+            using var context = CreateContext();
+            context.DeviceVerificationTokens.Add(new DeviceVerificationToken
+            {
+                Token = Guid.NewGuid().ToString("N"),
+                EmployeeId = null,
+                CreatedAt = DateTime.UtcNow.AddDays(-7),
+                IsVerified = false
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>
+                {
+                    ["SecuritySettings:DeviceVerificationExpiryMinutes"] = "30"
+                },
+                "localhost",
+                5063);
+
+            var token = await context.DeviceVerificationTokens.FirstAsync();
+            var result = await controller.Index(token.Token);
+
+            Assert.IsType<ViewResult>(result);
+        }
+
+        [Fact]
+        public async Task DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry()
+        {
+            using var context = CreateContext();
+            context.DeviceVerificationTokens.Add(new DeviceVerificationToken
+            {
+                Token = Guid.NewGuid().ToString("N"),
+                EmployeeId = null,
+                CreatedAt = DateTime.UtcNow.AddDays(-7),
+                IsVerified = false
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>
+                {
+                    ["SecuritySettings:DeviceVerificationExpiryMinutes"] = "30"
+                },
+                "localhost",
+                5063);
+
+            var token = await context.DeviceVerificationTokens.FirstAsync();
+            var result = await controller.DownloadTool(token.Token);
+
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.Equal("application/zip", file.ContentType);
+        }
+
+        [Fact]
+        public async Task DownloadTool_RejectsExpiredToken()
+        {
+            using var context = CreateContext();
+            var empId = Guid.NewGuid().ToString();
+            context.Users.Add(new ApplicationUser { Id = empId, UserName = "expired-dl", Email = "expired-dl@ytc.com" });
+            context.DeviceVerificationTokens.Add(new DeviceVerificationToken
+            {
+                Token = Guid.NewGuid().ToString("N"),
+                EmployeeId = empId,
+                CreatedAt = DateTime.UtcNow.AddHours(-2)
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>
+                {
+                    ["SecuritySettings:DeviceVerificationExpiryMinutes"] = "30"
+                },
+                "localhost",
+                5063);
+
+            var token = await context.DeviceVerificationTokens.FirstAsync();
+            var result = await controller.DownloadTool(token.Token);
+
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        private static VerificationController CreateVerificationController(
+            Data.ApplicationDbContext context,
+            IDictionary<string, string?> configurationValues,
+            string host,
+            int port)
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(configurationValues)
+                .Build();
+
+            var controller = new VerificationController(context, configuration);
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            };
+
+            controller.ControllerContext.HttpContext.Request.Scheme = "http";
+            controller.ControllerContext.HttpContext.Request.Host = new HostString(host, port);
+            var urlHelper = new Mock<IUrlHelper>();
+            urlHelper
+                .Setup(helper => helper.Action(It.IsAny<UrlActionContext>()))
+                .Returns<UrlActionContext>(actionContext =>
+                    $"http://{host}:{port}/verify/{actionContext.Values?.GetType().GetProperty("token")?.GetValue(actionContext.Values)}");
+            controller.Url = urlHelper.Object;
+            return controller;
+        }
+    }
+}

@@ -1,0 +1,26 @@
+using FluentValidation;
+
+namespace IT_Form.Application.Features.Account.Writes.UpdateProfile;
+
+public sealed class UpdateProfileCommandValidator : AbstractValidator<UpdateProfileCommand>
+{
+    private static readonly string[] AllowedContentTypes = ["image/png", "image/jpeg", "image/gif"];
+
+    public UpdateProfileCommandValidator()
+    {
+        RuleFor(x => x.UserId)
+            .NotEmpty();
+
+        RuleFor(x => x.JobTitle)
+            .MaximumLength(100)
+            .When(x => !string.IsNullOrWhiteSpace(x.JobTitle));
+
+        RuleFor(x => x.SignatureImageFile)
+            .Must(file => file == null || file.Length <= 512_000)
+            .WithMessage("Signature image must be under 500 KB.");
+
+        RuleFor(x => x.SignatureImageFile)
+            .Must(file => file == null || AllowedContentTypes.Contains(file.ContentType.ToLowerInvariant()))
+            .WithMessage("Only PNG, JPG, and GIF images are allowed.");
+    }
+}

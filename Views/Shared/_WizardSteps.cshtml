@@ -1,0 +1,44 @@
+@{
+    int currentStep = (int)Model;
+    var steps = new[] { "Employee", "Assets", "Software", "Folders", "Sign" };
+    // Steps 1-2 = HR, Steps 3-5 = IT
+    int hrUpTo = 2;
+}
+
+<div class="wizard-steps">
+    @for (int i = 0; i < steps.Length; i++)
+    {
+        var stepNum = i + 1;
+
+        // Skip rendering IT steps (3 and 4) if the user is HR
+        if (User.HasClaim("UserTitle", "HR") && (stepNum == 3 || stepNum == 4)) continue;
+
+        var cls = stepNum < currentStep ? "completed" : stepNum == currentStep ? "active" : "";
+        var roleLabel = stepNum <= hrUpTo ? "HR" : "IT";
+        var roleBadgeColor = stepNum <= hrUpTo ? "#10b981" : "#4f46e5";
+
+        <div class="wizard-step @cls">
+            @if (i > 0)
+            {
+                <div class="wizard-step-connector"></div>
+            }
+            <div class="wizard-step-circle">
+                @if (stepNum < currentStep)
+                {
+                    <i class="fas fa-check" style="font-size: 0.8rem;" aria-hidden="true"></i>
+                }
+                else
+                {
+                    @stepNum
+                }
+            </div>
+            <div class="wizard-step-label">
+                @steps[i]
+                <span class="ms-1 badge rounded-pill"
+                    style="font-size:0.6rem;background:@roleBadgeColor;color:#fff;padding:2px 6px;vertical-align:middle;">@roleLabel</span>
+            </div>
+        </div>
+    }
+</div>
+
+

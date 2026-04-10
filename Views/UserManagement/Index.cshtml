@@ -1,0 +1,251 @@
+@model IEnumerable<IT_Form.Application.Features.UserManagement.UserManagementIndexListItem>
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h2><i class="bi bi-people-fill me-2" aria-hidden="true"></i>User Management</h2>
+        <span class="subtitle">Manage user accounts and assign titles</span>
+    </div>
+    <a asp-action="Create" class="btn btn-sm btn-primary shadow-sm d-inline-flex align-items-center justify-content-center gap-2 px-3">
+        <i class="bi bi-person-plus me-1"></i> Create User
+    </a>
+</div>
+
+<div class="card animate-in">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Titles</th>
+                        <th style="min-width: 250px;">Company</th>
+                        <th>Status</th>
+                        <th style="width: 160px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int idx = 1;
+                    }
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@(idx++)</td>
+                            <td><strong>@user.FullName</strong></td>
+                            <td>@user.Username</td>
+                            <td><small>@user.Email</small></td>
+                            <td>@(user.Department ?? "—")</td>
+                            <td>
+                                <div class="badge-group">
+                                    @if (user.Titles != null && user.Titles.Any())
+                                    {
+                                        var titles = user.Titles.ToList();
+                                        foreach (var t in titles)
+                                        {
+                                            var badgeClass = t switch
+                                            {
+                                                "IT" => "badge-approved",
+                                                "HR" => "badge-pending",
+                                                "HOD" => "badge-hod",
+                                                "Manager" => "badge-hod",
+                                                _ => "badge-draft"
+                                            };
+                                            <span class="@badgeClass">@(t == "Manager" ? "HOD" : t)</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">No title</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div class="badge-group">
+                                    @if (user.Companies != null && user.Companies.Any())
+                                    {
+                                        var companies = user.Companies.ToList();
+                                        var displayCompanies = companies.Take(2);
+                                        var remainingCount = companies.Count - 2;
+
+                                        foreach (var c in displayCompanies)
+                                        {
+                                            <span class="badge-info">@c</span>
+                                        }
+                                        if (remainingCount > 0)
+                                        {
+                                            var allCompanies = string.Join(", ", companies);
+                                            <span class="badge-overflow" data-bs-toggle="tooltip" data-bs-placement="top" title="@allCompanies">
+                                                +@remainingCount more
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge-approved">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-draft">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-outline-primary me-1"
+                                    title="Edit" aria-label="Edit user @user.FullName">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </a>
+                                @if (user.IsActive)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Deactivate"
+                                        aria-label="Deactivate user @user.Username"
+                                        onclick="openToggleModal('@user.Id', '@user.Username', 'deactivate')">
+                                        <i class="fas fa-user-slash" aria-hidden="true"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-success" title="Activate"
+                                        aria-label="Activate user @user.Username"
+                                        onclick="openToggleModal('@user.Id', '@user.Username', 'activate')">
+                                        <i class="fas fa-user-check" aria-hidden="true"></i>
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-sm btn-outline-danger ms-1" title="Delete User"
+                                    aria-label="Delete user @user.FullName"
+                                    onclick="openDeleteModal('@user.Id', '@user.FullName')">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Toggle Active Modal -->
+<div class="modal fade" id="toggleModal" tabindex="-1" aria-labelledby="toggleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="toggleModalLabel">Confirm Account Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to <span id="toggleActionText" class="fw-bold"></span> the user <strong
+                    id="toggleUserName"></strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form asp-controller="UserManagement" asp-action="ToggleActive" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="toggleUserId" />
+                    <button type="submit" class="btn btn-primary" id="toggleSubmitBtn">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="deleteModalLabel"><i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i> Delete User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to permanently delete <strong><span id="deleteUserName"></span></strong>.</p>
+                <p class="text-danger mb-3">
+                    <i class="fas fa-exclamation-circle me-1" aria-hidden="true"></i>
+                    <strong>Warning:</strong> This action cannot be undone. All associated data will be removed. It is
+                    highly recommended to <em>Deactivate</em> the user instead if they are simply leaving the company.
+                </p>
+                <hr />
+                <div class="mb-3">
+                    <label for="deleteConfirmation" class="form-label">Type <strong>DELETE</strong> below to
+                        confirm:</label>
+                    <input type="text" class="form-control text-center text-danger fw-bold" id="deleteConfirmation"
+                        autocomplete="off" />
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form asp-controller="UserManagement" asp-action="Delete" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="deleteUserId" />
+                    <button type="submit" class="btn btn-danger" id="btnConfirmDelete" disabled>
+                        <i class="fas fa-trash me-2" aria-hidden="true"></i> Permanently Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Toggle Active Modal Logic
+        const toggleModal = new bootstrap.Modal(document.getElementById('toggleModal'));
+        function openToggleModal(id, username, action) {
+            document.getElementById('toggleUserId').value = id;
+            document.getElementById('toggleUserName').textContent = username;
+
+            const actionText = action === 'activate' ? 'activate' : 'deactivate';
+            document.getElementById('toggleActionText').textContent = actionText;
+
+            const btn = document.getElementById('toggleSubmitBtn');
+            btn.className = action === 'activate' ? 'btn btn-success' : 'btn btn-danger';
+
+            toggleModal.show();
+        }
+
+        // Delete Modal Logic
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        const deleteInput = document.getElementById('deleteConfirmation');
+        const deleteBtn = document.getElementById('btnConfirmDelete');
+
+        function openDeleteModal(id, fullname) {
+            document.getElementById('deleteUserId').value = id;
+            document.getElementById('deleteUserName').textContent = fullname;
+            deleteInput.value = '';
+            deleteBtn.disabled = true;
+            deleteModal.show();
+        }
+
+        deleteInput.addEventListener('input', function () {
+            if (this.value === 'DELETE') {
+                deleteBtn.disabled = false;
+            } else {
+                deleteBtn.disabled = true;
+            }
+        });
+
+        // Focus input when modal opens
+        document.getElementById('deleteModal').addEventListener('shown.bs.modal', function () {
+            deleteInput.focus();
+        });
+        // Initialize Bootstrap Tooltips
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+        });
+    </script>
+}

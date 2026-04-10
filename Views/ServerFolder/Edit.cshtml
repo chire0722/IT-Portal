@@ -1,0 +1,81 @@
+@model IT_Form.Application.Features.ServerFolder.ServerFolderEditorPageViewModel
+@{
+    ViewData["Title"] = "Edit Server Folder";
+}
+
+<div class="page-header animate-in">
+    <div class="page-header-left">
+        <h2><i class="bi bi-pencil-square me-2 text-primary" aria-hidden="true"></i>Edit Server Folder</h2>
+        <span class="subtitle">Update folder name, status, or modify its company access scope.</span>
+    </div>
+    <div class="d-flex align-items-center">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="card animate-in shadow-sm border-0 mt-4 mx-auto" style="max-width: 600px; animation-delay: 0.1s;">
+    <div class="card-body p-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm mb-4" role="alert"></div>
+            <input type="hidden" asp-for="Id" />
+            
+            <div class="mb-4">
+                <label asp-for="FolderName" class="form-label fw-bold text-dark mb-1">Folder Name <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-folder text-muted"></i></span>
+                    <input asp-for="FolderName" class="form-control ps-2 border-start-0 shadow-none" placeholder="e.g. Finance_Shared" />
+                </div>
+                <span asp-validation-for="FolderName" class="text-danger small" aria-live="polite"></span>
+            </div>
+
+            <div class="mb-4">
+                @{
+                    var currentCompanyIds = Model.SelectedCompanyIds ?? new List<int>();
+                }
+                <label class="form-label fw-bold text-dark mb-2"><i class="bi bi-building me-1 text-primary"></i>Assigned Companies</label>
+                <div class="d-flex flex-wrap gap-3 border rounded p-3 bg-light bg-opacity-50 shadow-sm transition-all hover-border-primary" style="border-radius: 12px;">
+                    @if (Model.CompanyOptions != null)
+                    {
+                        foreach (var company in Model.CompanyOptions)
+                        {
+                            <div class="form-check custom-checkbox-card">
+                                <input type="checkbox" name="selectedCompanyIds" value="@company.Id" class="form-check-input" id="comp_@company.Id" 
+                                       @(currentCompanyIds.Contains(company.Id) ? "checked" : "") />
+                                <label class="form-check-label ps-1" for="comp_@company.Id">
+                                    <span class="badge-info" style="font-size: 0.85rem;">@company.DisplayName</span>
+                                </label>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="form-text mt-2" style="font-size: 0.82rem; color: #6b7280;">
+                    <i class="bi bi-info-circle-fill me-1 text-primary shadow-sm" aria-hidden="true"></i> 
+                    Leave empty to make this available to <strong>all companies</strong> (Global).
+                </div>
+                <span asp-validation-for="SelectedCompanyIds" class="text-danger small" aria-live="polite"></span>
+            </div>
+
+            <div class="form-check form-switch mb-4 ps-5">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" id="activeSwitch">
+                <label class="form-check-label fw-semibold text-dark h6 mb-0" for="activeSwitch">Active Status</label>
+                <div class="form-text small">Inactive folders will not appear in new onboarding forms.</div>
+            </div>
+
+            <hr class="my-4 opacity-10">
+
+            <div class="d-flex gap-2 pt-2">
+                <button type="submit" class="btn btn-primary px-4 fw-bold">
+                    <i class="bi bi-save me-1"></i> Save Changes
+                </button>
+                <a asp-action="Index" class="btn btn-light px-4 fw-bold text-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

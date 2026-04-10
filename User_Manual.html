@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Manual</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --bg:#f6f8fb;
+    --paper:#ffffff;
+    --ink:#0f172a;
+    --muted:#475569;
+    --line:#dbe3ee;
+    --nav:#1e293b;
+    --nav-text:#e5edf8;
+    --accent:#2563eb;
+    --accent-soft:#eaf2ff;
+    --info:#0f766e;
+    --info-soft:#e8fbf6;
+    --warn:#b45309;
+    --warn-soft:#fff4e5;
+    --shadow:0 8px 24px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:"Inter","Segoe UI","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);line-height:1.65}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:270px;padding:22px 16px;background:var(--nav);color:var(--nav-text);overflow:auto;z-index:20}
+  .brand{padding:16px;border:1px solid rgba(255,255,255,.12);border-radius:14px;margin-bottom:18px}
+  .brand small{display:block;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#9fb2cf;font-weight:800}
+  .brand h1{margin:0 0 8px;font-size:26px;line-height:1.1}
+  .brand p{margin:0;font-size:14px;color:#cfdbed}
+  .nav-title{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9fb2cf;font-weight:800}
+  .nav-links{display:flex;flex-direction:column;gap:8px}
+  .nav-links a{color:var(--nav-text);text-decoration:none;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:600}
+  .nav-links a:hover,.nav-links a.active{background:rgba(255,255,255,.10)}
+  .side-note{margin-top:18px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.08);font-size:13px;color:#d9e4f5}
+  .nav-toggle{display:none;position:fixed;top:16px;right:16px;z-index:30;border:none;border-radius:10px;background:var(--nav);color:#fff;padding:10px 12px;font-weight:700;box-shadow:var(--shadow);cursor:pointer}
+  .content{margin-left:270px;padding:26px 20px 50px}
+  .wrap{max-width:980px;margin:0 auto}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:24px;margin-bottom:18px}
+  .hero h1{margin:0 0 10px;font-size:34px;line-height:1.1}
+  .eyebrow{margin:0 0 8px;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  h2{margin:0 0 12px;font-size:24px;line-height:1.2}
+  h3{margin:18px 0 10px;font-size:18px;line-height:1.3}
+  p{margin:0 0 14px}
+  ul{margin:0;padding-left:20px}
+  li{margin-bottom:8px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;background:#f3f4f6;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+  .grid{display:grid;gap:14px}
+  .three-col{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .two-col{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff}
+  .card strong{display:block;margin-bottom:6px}
+  .note{padding:14px 16px;border-radius:12px;border:1px solid var(--line);margin:14px 0}
+  .note.info{background:var(--info-soft)}
+  .note.warn{background:var(--warn-soft)}
+  .label{display:inline-block;margin-bottom:6px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+  .label.info{background:#d6f5ee;color:#0f766e}
+  .label.warn{background:#ffe6c4;color:#9a3412}
+  .diagram{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;overflow:auto}
+  .mermaid{min-width:740px;text-align:center}
+  table{width:100%;border-collapse:collapse;margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  th,td{padding:12px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+  th{background:#eef4fb;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  tr:last-child td{border-bottom:none}
+  .steps{display:grid;gap:12px;margin-top:12px}
+  .step{display:grid;grid-template-columns:40px 1fr;gap:12px;border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+  .step-num{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .footer{text-align:center;color:var(--muted);font-size:13px;padding-top:6px}
+  @media (max-width:980px){
+    .sidebar{transform:translateX(-100%);transition:transform .2s ease}
+    .sidebar.open{transform:translateX(0)}
+    .nav-toggle{display:block}
+    .content{margin-left:0;padding-top:72px}
+    .three-col,.two-col{grid-template-columns:1fr}
+  }
+  @media print{
+    @page{margin:15mm}
+    body{background:#fff}
+    .sidebar,.nav-toggle{display:none !important}
+    .content{margin:0;padding:0}
+    .panel,.card,.diagram,.note,table,.step{box-shadow:none;break-inside:avoid-page;page-break-inside:avoid}
+    .panel,.card,.diagram,table,.step{border-color:#cbd5e1}
+  }
+</style>
+</head>
+<body>
+  <button class="nav-toggle" id="navToggle" type="button">Menu</button>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <small>HR and IT Collaboration</small>
+      <h1>User Manual</h1>
+      <p>A practical guide for HR staff, IT support staff, and business leaders.</p>
+    </div>
+
+    <p class="nav-title">Contents</p>
+    <nav class="nav-links">
+      <a href="#intro">System Introduction</a>
+      <a href="#value">Collaboration Value</a>
+      <a href="#workflow">Core Workflow</a>
+      <a href="#permissions">States and Permissions</a>
+      <a href="#erd">Data Relationship Diagram</a>
+      <a href="#security">Account and Security Guide</a>
+      <a href="#faq">FAQ</a>
+      <a href="#print">Printing and PDF Export</a>
+    </nav>
+
+    <div class="side-note">
+      Press <strong>Ctrl + P</strong> to export a clean PDF. The left navigation is hidden automatically in print layout.
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="wrap">
+      <section class="panel hero" id="intro">
+        <p class="eyebrow">IT Portal / Mermaid Enabled</p>
+        <h1>System Introduction</h1>
+        <p>
+          The purpose of this system is simple: HR raises the request, IT provisions the resources, managers can see the
+          progress, and employees complete the final acknowledgement in one traceable process. This reduces the risk of
+          missed steps caused by verbal handovers, spreadsheets, and scattered email threads.
+        </p>
+        <div class="grid three-col">
+          <div class="card">
+            <strong>For HR</strong>
+            <p>Employee details, onboarding assets, email groups, shared mailboxes, and approval actions are tracked in one request flow.</p>
+          </div>
+          <div class="card">
+            <strong>For IT</strong>
+            <p>Checklists, software access, mailbox access, folder permissions, and signatures can all be traced back to the same request.</p>
+          </div>
+          <div class="card">
+            <strong>For Leadership</strong>
+            <p>Status is easier to understand because the process shows where a request is waiting and who is responsible for the next action.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="value">
+        <h2>Why HR and IT Collaboration Matters</h2>
+        <p>
+          In a manual process, HR tells IT that someone is joining, and IT then has to interpret what accounts, devices,
+          software, and access rights are actually needed. The biggest problem is inconsistency and omission. A standardized
+          workflow fixes that by capturing requirements first and execution second, with final acknowledgement and audit visibility at the end.
+        </p>
+        <div class="grid three-col">
+          <div class="card">
+            <strong>Single entry point</strong>
+            <p>Accounts, equipment, email groups, shared mailboxes, and folder access all start from one workflow.</p>
+          </div>
+          <div class="card">
+            <strong>Fewer missed actions</strong>
+            <p>IT works through explicit steps instead of guessing what should be prepared for each employee.</p>
+          </div>
+          <div class="card">
+            <strong>Clear accountability</strong>
+            <p>The system records who created, submitted, completed, and acknowledged each request.</p>
+          </div>
+        </div>
+        <div class="note info">
+          <span class="label info">Info</span><br>
+          This manual focuses on the onboarding flow because it best shows the full HR-to-IT-to-employee collaboration chain.
+        </div>
+      </section>
+
+      <section class="panel" id="workflow">
+        <h2>Core Business Workflow</h2>
+        <p>
+          The diagram below uses Mermaid <code>graph TD</code> syntax to show the main Stateless-driven onboarding flow,
+          including the asynchronous email trigger points that exist in the codebase.
+        </p>
+        <div class="diagram">
+          <div class="mermaid">
+graph TD
+    Draft["Draft<br/>HR draft"] -->|Save draft| Draft
+    Draft -->|Initial request saved| WelcomeQueue["Async Mail Queue<br/>WelcomeEmailMessage"]
+    WelcomeQueue -->|Background send| Worker["BackgroundService<br/>EmailDispatcherBackgroundService"]
+    Draft -->|HR signs and submits| HrSubmitted["HrSubmitted<br/>Submitted by HR"]
+    HrSubmitted -. Optional manual notification .-> ManualNotify["Manual email template<br/>Notification/ComposeEmail"]
+    HrSubmitted -->|IT starts setup| ItProvisioning["ItProvisioning<br/>IT provisioning"]
+    ItProvisioning -->|Checklist complete and IT sign-off| Completed["Completed<br/>Business-level complete"]
+    Completed -. Employee sign email can be sent manually .-> ManualNotify
+    Completed -->|Employee acknowledgement| Archived["Final archive<br/>Request completed"]
+    Draft -->|Cancel or reject| Rejected["Canceled or Rejected"]
+    HrSubmitted -->|Reject| Rejected
+    ItProvisioning -->|Reject| Rejected
+          </div>
+        </div>
+
+        <div class="note info">
+          <span class="label info">Info</span><br>
+          The abstract states shown here map to the source-level <code>OnboardingState</code> model: <strong>Draft</strong>,
+          <strong>HrSubmitted</strong>, <strong>ItProvisioning</strong>, and <strong>Completed</strong>. The persisted request status
+          can be more detailed. For example, after IT finishes the workflow typically moves into <code>PendingEmployeeSign</code>
+          before the final stored status becomes <code>Completed</code>.
+        </div>
+
+        <div class="note warn">
+          <span class="label warn">Warning</span><br>
+          The real asynchronous email path is the background queue used for welcome emails, OTP delivery, and lockout alerts.
+          The notification email opened by HR or IT from the details page is a manual template action, not an automatic background queue message.
+        </div>
+      </section>
+
+      <section class="panel" id="permissions">
+        <h2>States and Permissions</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Main operator</th>
+              <th>What can be done</th>
+              <th>Business meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Draft</td>
+              <td>HR</td>
+              <td>Enter employee information, save drafts, continue editing, and finally sign and submit.</td>
+              <td>The request is still being prepared and has not yet been handed to IT.</td>
+            </tr>
+            <tr>
+              <td>HrSubmitted</td>
+              <td>IT</td>
+              <td>Review the submitted request and begin the IT setup steps.</td>
+              <td>HR input is effectively finalized and IT can now execute the request.</td>
+            </tr>
+            <tr>
+              <td>ItProvisioning</td>
+              <td>IT</td>
+              <td>Provision software, email groups, shared mailboxes, folder access, fill the IT checklist, and complete IT sign-off.</td>
+              <td>This is the execution stage where actual resource provisioning happens.</td>
+            </tr>
+            <tr>
+              <td>Completed</td>
+              <td>Employee, HR, IT</td>
+              <td>The employee reviews and acknowledges; HR and IT mainly review, resend links, and track the result.</td>
+              <td>From a business point of view the work is complete, with only final acknowledgement or archive handling left.</td>
+            </tr>
+            <tr>
+              <td>Canceled or Rejected</td>
+              <td>Authorized operator</td>
+              <td>The process stops and does not continue forward.</td>
+              <td>This is used when information is incorrect, the request is invalid, or the flow is intentionally stopped.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="erd">
+        <h2>Data Relationship Diagram</h2>
+        <p>
+          The diagram below shows a practical subset of the main business entities. To stay aligned with the source code,
+          the request flow stores snapshots of selected values, so <code>OnboardingRequest</code> is not linked directly to
+          <code>Department</code> as a formal foreign key.
+        </p>
+        <div class="diagram">
+          <div class="mermaid">
+erDiagram
+    ApplicationUser {
+        string Id PK
+        string UserName
+        string Email
+        string FullName
+        bool IsActive
+    }
+    UserTitle {
+        int Id PK
+        string UserId FK
+        string Title
+    }
+    UserCompany {
+        int Id PK
+        string UserId FK
+        string CompanyName
+    }
+    Company {
+        int Id PK
+        string Name
+        string Lot
+        bool IsActive
+    }
+    Department {
+        int Id PK
+        string Name
+        string Description
+        bool IsActive
+    }
+    DepartmentCompany {
+        int Id PK
+        int DepartmentId FK
+        int CompanyId FK
+    }
+    EmailGroup {
+        int Id PK
+        string GroupName
+        string GroupEmail
+        bool IsActive
+    }
+    EmailGroupCompany {
+        int Id PK
+        int EmailGroupId FK
+        int CompanyId FK
+    }
+    SharedMailbox {
+        int Id PK
+        string MailboxName
+        string MailboxAddress
+        bool IsActive
+    }
+    SharedMailboxCompany {
+        int Id PK
+        int SharedMailboxId FK
+        int CompanyId FK
+    }
+    OnboardingRequest {
+        int Id PK
+        string FullName
+        string DepartmentSnapshot
+        string BranchSnapshot
+        string EmailAddress
+        string Status
+    }
+    RequestEmailGroup {
+        int Id PK
+        int OnboardingRequestId FK
+        int EmailGroupId FK
+        string GroupNameSnapshot
+    }
+    RequestSharedMailbox {
+        int Id PK
+        int OnboardingRequestId FK
+        int SharedMailboxId FK
+        string MailboxNameSnapshot
+    }
+
+    ApplicationUser ||--o{ UserTitle : has
+    ApplicationUser ||--o{ UserCompany : scoped_to
+    Company ||--o{ DepartmentCompany : includes
+    Department ||--o{ DepartmentCompany : mapped
+    Company ||--o{ EmailGroupCompany : includes
+    EmailGroup ||--o{ EmailGroupCompany : mapped
+    Company ||--o{ SharedMailboxCompany : includes
+    SharedMailbox ||--o{ SharedMailboxCompany : mapped
+    OnboardingRequest ||--o{ RequestEmailGroup : requests
+    EmailGroup ||--o{ RequestEmailGroup : selected_from
+    OnboardingRequest ||--o{ RequestSharedMailbox : requests
+    SharedMailbox ||--o{ RequestSharedMailbox : selected_from
+          </div>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <strong>Users and authorization</strong>
+              <p>User identity lives in <code>ApplicationUser</code>. Roles are tracked through <code>UserTitle</code>, and company scope is tracked through <code>UserCompany</code>.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <strong>Master data</strong>
+              <p>Departments, email groups, and shared mailboxes are maintained as reusable master data, with company-specific mapping tables.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <strong>Request snapshots</strong>
+              <p>The onboarding request stores selected names and addresses as snapshots so history remains readable even if master data changes later.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="security">
+        <h2>Account and Security Guide</h2>
+        <p>
+          The login journey has two related but separate security tracks: normal password-based login and OTP-based password recovery.
+          They are not governed by the same lockout rules.
+        </p>
+        <div class="grid two-col">
+          <div class="card">
+            <strong>Normal sign-in</strong>
+            <p>Users sign in with username or email and password. If the account is flagged for first-use password change, the system redirects to the forced change password page.</p>
+          </div>
+          <div class="card">
+            <strong>Forgot password</strong>
+            <p>Users request a one-time code through their registered email address, verify the code, and then reset the password.</p>
+          </div>
+        </div>
+
+        <h3>Recommended Understanding of the OTP Flow</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <strong>Submit the account</strong>
+              <p>The system checks whether the account exists, is active, and has a registered email address.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <strong>Receive the OTP</strong>
+              <p>A high-strength 6-character OTP is generated and sent through the background email queue.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <strong>Verify the OTP</strong>
+              <p>If the code is correct, the system issues a password reset token and continues to the password reset step.</p>
+            </div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Security item</th>
+              <th>Rule</th>
+              <th>What users should remember</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>OTP lifetime</td>
+              <td>5 minutes</td>
+              <td>If more than 5 minutes pass, the OTP expires and a new code must be requested.</td>
+            </tr>
+            <tr>
+              <td>OTP failed attempts</td>
+              <td>Invalidated after 3 failures</td>
+              <td>This invalidates the current OTP only. It does not permanently disable the account.</td>
+            </tr>
+            <tr>
+              <td>OTP resend cooldown</td>
+              <td>1 minute</td>
+              <td>If a code was just sent, the user should wait instead of repeatedly requesting another code.</td>
+            </tr>
+            <tr>
+              <td>Password login failures</td>
+              <td>Account lockout after 5 failed attempts</td>
+              <td>The account can be temporarily locked, and repeated lockouts increase the penalty duration.</td>
+            </tr>
+            <tr>
+              <td>IT alerting</td>
+              <td>Lockout events can notify IT</td>
+              <td>This helps the organization detect suspicious login behavior earlier.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note warn">
+          <span class="label warn">Warning</span><br>
+          If the user simply forgot the password, the OTP recovery path is the safest option. Repeatedly trying old passwords can trigger account lockout.
+        </div>
+
+        <div class="note info">
+          <span class="label info">Info</span><br>
+          From a management perspective, the most important point is that OTP brute-force protection and password login brute-force protection are handled separately. This improves security without making the account unusable because of one bad OTP session.
+        </div>
+      </section>
+
+      <section class="panel" id="faq">
+        <h2>Frequently Asked Questions</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Short answer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Why does the request not look fully complete right after HR submits it?</td>
+              <td>Because after HR submission the request still has to move through the IT provisioning stage before the workflow reaches its complete stage.</td>
+            </tr>
+            <tr>
+              <td>Why does the diagram say Completed when the system sometimes shows PendingEmployeeSign?</td>
+              <td>The diagram shows the higher-level business states. The stored request status is more detailed and often enters PendingEmployeeSign before the final completed status is saved.</td>
+            </tr>
+            <tr>
+              <td>If a shared mailbox or email group is renamed later, will old requests become unclear?</td>
+              <td>No. The request stores snapshot values so historical records still show the original selected information clearly.</td>
+            </tr>
+            <tr>
+              <td>Does entering the OTP incorrectly three times destroy the account?</td>
+              <td>No. It only invalidates that specific OTP. The user can request a new code.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="print">
+        <h2>Printing and PDF Export</h2>
+        <p>
+          This file includes print-specific styles. When the browser print dialog opens with <strong>Ctrl + P</strong>,
+          the left navigation is hidden and the layout switches to a document-friendly format intended for PDF output.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <strong>Open the file in a browser</strong>
+              <p>Wait until the Mermaid diagrams finish rendering before printing.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <strong>Print to PDF</strong>
+              <p>Select "Save as PDF" or your PDF printer target in the browser print dialog.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer">
+        Mermaid diagrams are loaded from a CDN and rendered in the browser. If the network is slow, wait for the diagrams to appear before printing.
+      </p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      fontFamily: "Inter, Segoe UI, Microsoft YaHei, sans-serif",
+      themeVariables: {
+        primaryColor: "#eef4fb",
+        primaryTextColor: "#0f172a",
+        primaryBorderColor: "#94a3b8",
+        lineColor: "#475569",
+        secondaryColor: "#ffffff",
+        tertiaryColor: "#f8fafc"
+      }
+    });
+
+    const sidebar = document.getElementById("sidebar");
+    const navToggle = document.getElementById("navToggle");
+    const navLinks = Array.from(document.querySelectorAll(".nav-links a"));
+    const sections = Array.from(document.querySelectorAll("section[id]"));
+
+    navToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+
+    navLinks.forEach(link => {
+      link.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+      });
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (!visible) return;
+
+      const id = visible.target.getAttribute("id");
+      navLinks.forEach(link => {
+        link.classList.toggle("active", link.getAttribute("href") === "#" + id);
+      });
+    }, {
+      rootMargin: "-20% 0px -60% 0px",
+      threshold: [0.15, 0.35, 0.6]
+    });
+
+    sections.forEach(section => observer.observe(section));
+  </script>
+</body>
+</html>

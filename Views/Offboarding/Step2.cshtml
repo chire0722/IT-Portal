@@ -1,0 +1,240 @@
+@model IT_Form.Models.OffboardingRequest
+@{
+    ViewData["Title"] = "Step 2 - IT Checklist & Review";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card mb-5 animate-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-card-checklist me-2" style="color: var(--primary-light);"
+                        aria-hidden="true"></i>Step 2 - IT Checklist & Review - Req #@Model.Id
+                </div>
+                <span class="badge bg-secondary">Step 2 of 2</span>
+            </div>
+
+            <div class="card-body">
+                <form asp-action="Step2" method="post" id="submitForm">
+                    <input type="hidden" asp-for="Id" />
+                    
+                    <!-- Hidden Fields to preserve Step 1 data -->
+                    @Html.HiddenFor(m => m.AccountDisabledAD)
+                    @Html.HiddenFor(m => m.M365LicenseRevoked)
+                    @Html.HiddenFor(m => m.SoftwareLicensesRevoked)
+                    @Html.HiddenFor(m => m.EmailForwarded)
+                    @Html.HiddenFor(m => m.ForwardToEmail)
+
+                    @Html.HiddenFor(m => m.LaptopReturned)
+                    @Html.HiddenFor(m => m.AccessoriesReturned)
+                    @Html.HiddenFor(m => m.IsHardwareDamaged)
+                    @Html.HiddenFor(m => m.HardwareNotes)
+                    @Html.HiddenFor(m => m.MissingItemFines)
+                    @Html.HiddenFor(m => m.FinesRemarks)
+                    @Html.HiddenFor(m => m.HardwareDamageImagePath)
+                    @Html.HiddenFor(m => m.HardwareReturnImagePath)
+
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>
+                        Please complete the IT Checklist and follow-up actions below. This is the final step of the IT
+                        Setup.
+                    </div>
+
+                    <h5 class="border-bottom pb-2 mb-3 text-secondary">IT Checklist - Offboarding Phase</h5>
+
+                    @{
+                        var checklistItems = new (string Name, string Field, bool Value)[] {
+                    ("Physical Checks & Clean on IT Equipment", "CheckPhysicalClean", Model.CheckPhysicalClean),
+                    ("MS O365 Account Deactivation", "CheckO365Deactivate", Model.CheckO365Deactivate),
+                    ("Windows Account & Login Disable", "CheckWindowsDisable", Model.CheckWindowsDisable),
+                    ("Outlook & Email Sign Out", "CheckEmailSignOut", Model.CheckEmailSignOut),
+                    ("Specific Software / App Deactivation", "CheckSpecificSoftwareDeactivate",
+                    Model.CheckSpecificSoftwareDeactivate),
+                    ("General Software / App Deactivation", "CheckGeneralSoftwareDeactivate",
+                    Model.CheckGeneralSoftwareDeactivate),
+                    ("Remove user from ADs Group", "CheckAbcGroupRemove", Model.CheckAbcGroupRemove),
+                    ("Remove user from Email Mail Group", "CheckEmailMailGroupRemove", Model.CheckEmailMailGroupRemove),
+                    ("Device Name & Domain Disjoin", "CheckDomainDisjoin", Model.CheckDomainDisjoin),
+                    ("Shared Drive Mapping Removal", "CheckSharedDriveRemove", Model.CheckSharedDriveRemove),
+                    ("Primary Location Wi-Fi Disable", "CheckWiFiDisable", Model.CheckWiFiDisable),
+                    ("Primary Location Printer Removal", "CheckPrinterRemove", Model.CheckPrinterRemove),
+                    ("Primary Location Scan Folder Removal", "CheckScanFolderRemove", Model.CheckScanFolderRemove),
+                    ("VPN Account Disable", "CheckVPNDisable", Model.CheckVPNDisable)
+                                };
+                    }
+
+                    <div class="d-flex justify-content-end mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                            onclick="document.querySelectorAll('.it-checklist-cb').forEach(cb => cb.checked = true)">
+                            <i class="bi bi-check2-square me-1" aria-hidden="true"></i> Select All
+                        </button>
+                    </div>
+
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover table-sm border">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th>Particulars</th>
+                                    <th style="width: 15%; text-align: center;">Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < checklistItems.Length; i++)
+
+                                {
+                                    <tr style="cursor:pointer;"
+                                        onclick="var cb=this.querySelector('input[type=checkbox]'); cb.checked=!cb.checked;">
+                                        <td>@(i + 1)</td>
+                                        <td>@checklistItems[i].Name</td>
+                                        <td class="text-center">
+                                            <div class="form-check d-flex justify-content-center m-0">
+                                                <input type="checkbox" name="@checklistItems[i].Field" value="true"
+                                                    class="form-check-input it-checklist-cb" @(checklistItems[i].Value ?
+                                                "checked" : "") onclick="event.stopPropagation();" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ChecklistRemarks" class="form-label text-muted fw-bold">IT Checklist Remarks
+                            (Optional)</label>
+                        <textarea asp-for="ChecklistRemarks" class="form-control" rows="2"
+                            placeholder="Any additional notes..."></textarea>
+                    </div>
+
+                    <h5 class="border-bottom pb-2 mb-3 text-secondary">Clearance Items</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-check form-switch p-3 border rounded bg-light h-100">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox" asp-for="ClearedLaptop" role="switch">
+                                <label class="form-check-label fw-bold" asp-for="ClearedLaptop">
+                                    <span class="d-block">Laptop / Desktop / IT Devices</span>
+                                    <span class="d-block">Returned</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-check form-switch p-3 border rounded bg-light h-100">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox" asp-for="ClearedMobile" role="switch">
+                                <label class="form-check-label fw-bold" asp-for="ClearedMobile">
+                                    <span class="d-block">Mobile / Device</span>
+                                    <span class="d-block">Returned</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-check form-switch p-3 border rounded bg-light h-100">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox" asp-for="ClearedKeys" role="switch">
+                                <label class="form-check-label fw-bold" asp-for="ClearedKeys">
+                                    <span class="d-block">Keys / Cards</span>
+                                    <span class="d-block">Returned</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-check form-switch p-3 border rounded bg-light h-100">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox" asp-for="ClearedOtherAssets" role="switch">
+                                <label class="form-check-label fw-bold" asp-for="ClearedOtherAssets">
+                                    <span class="d-block">Other Assets</span>
+                                    <span class="d-block">Returned</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <label asp-for="ClearanceRemarks" class="form-label text-muted fw-bold">Clearance Remarks (Optional)</label>
+                            <textarea asp-for="ClearanceRemarks" class="form-control" rows="2" placeholder="Any notes about returned / missing assets..."></textarea>
+                        </div>
+                    </div>
+
+                    <h5 class="border-bottom pb-2 mb-3 text-secondary">Follow-Up Actions</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-check form-switch p-3 border rounded bg-light">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox" asp-for="DataBackupDone"
+                                    role="switch">
+                                <label class="form-check-label fw-bold" asp-for="DataBackupDone">Data Backup
+                                    Done</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-check form-switch p-3 border rounded bg-light">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox" asp-for="EmailBackupDone"
+                                    role="switch">
+                                <label class="form-check-label fw-bold" asp-for="EmailBackupDone">Email Backup
+                                    Done</label>
+                            </div>
+                        </div>
+                        @if (Model.EmailForwarded)
+                        {
+                            <div class="col-md-6 col-lg-3">
+                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                    <input class="form-check-input ms-0 me-2 mt-1" type="checkbox"
+                                        asp-for="EmailForwardingDone" role="switch">
+                                    <label class="form-check-label fw-bold" asp-for="EmailForwardingDone">Email Forward
+                                        Done</label>
+                                </div>
+                            </div>
+                        }
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-check form-switch p-3 border rounded bg-light">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox"
+                                    asp-for="LicenseRemovalDone" role="switch">
+                                <label class="form-check-label fw-bold" asp-for="LicenseRemovalDone">License
+                                    Removed</label>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <label asp-for="FollowUpRemarks" class="form-label text-muted fw-bold">Follow-Up Remarks
+                                (Optional)</label>
+                            <textarea asp-for="FollowUpRemarks" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <hr class="mt-4 mb-4" />
+
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <a asp-action="Step1" asp-route-id="@Model.Id" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Previous
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="saveAction" value="draft" class="btn btn-outline-primary"
+                                id="btnDraft" formnovalidate>
+                                <i class="bi bi-save me-1" aria-hidden="true"></i> Save Draft
+                            </button>
+                            <button type="submit" name="saveAction" value="submit" class="btn btn-success"
+                                id="btnSubmit">
+                                <i class="bi bi-check-circle me-1" aria-hidden="true"></i> Complete IT Setup
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('button[type="submit"]').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                var form = this.closest('form');
+                if (this.value !== 'draft' && !form.checkValidity()) return;
+
+                var btnValue = this.value;
+                setTimeout(() => {
+                    document.querySelectorAll('button[type="submit"]').forEach(b => b.disabled = true);
+                    if (btnValue === 'submit') {
+                        this.innerHTML = '<i class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></i>Submitting...';
+                    } else if (btnValue === 'draft') {
+                        this.innerHTML = '<i class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></i>Saving...';
+                    }
+                }, 10);
+            });
+        });
+    </script>
+}

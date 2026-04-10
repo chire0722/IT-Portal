@@ -1,0 +1,140 @@
+@model IT_Form.ViewModels.OnboardingViewModel
+@{
+    ViewData["Title"] = "Step 4 — Server Folder Access";
+}
+
+<partial name="_WizardSteps" model="4" />
+
+<div class="card animate-in" style="max-width: 900px; margin: 0 auto;">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-folder-open me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Main Server Folder
+            Access</h5>
+    </div>
+    <div class="card-body p-0">
+        <form asp-action="Step4" method="post">
+            <input type="hidden" asp-for="CurrentStep" />
+
+            <!-- Access Right Definition -->
+            <div class="p-3" style="background: var(--surface); border-bottom: 1px solid var(--border);">
+                <h6 class="fw-bold mb-2"><u>Access Right Definition:</u></h6>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">
+                    <strong>Modify</strong> – view, navigate to sub-folders, add file & sub-folder, delete file, open
+                    file, change file
+                </p>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0;">
+                    <strong>Read</strong> – view, navigate to sub-folders, open files, copy & view data in the folder's
+                    files.
+                </p>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Main Server Folder Access</th>
+                            <th style="width: 25%; text-align: center;">Modify</th>
+                            <th style="width: 25%; text-align: center;">Read</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.FolderPermissions.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@Model.FolderPermissions[i].FolderName</strong>
+                                    <input type="hidden" name="FolderPermissions[@i].FolderName"
+                                        value="@Model.FolderPermissions[i].FolderName" />
+                                </td>
+                                <td class="text-center align-middle">
+                                    @if (Model.FolderPermissions[i].FolderName == "Public Folder")
+                                    {
+                                        <input type="hidden" name="FolderPermissions[@i].CanModify" value="true" />
+                                        <input type="checkbox" checked disabled class="form-check-input"
+                                            style="width: 20px; height: 20px;" />
+                                    }
+                                    else
+                                    {
+                                        <input type="checkbox" name="FolderPermissions[@i].CanModify" value="true"
+                                            class="form-check-input" @(Model.FolderPermissions[i].CanModify ? "checked" : "")
+                                            style="width: 20px; height: 20px;" />
+                                    }
+                                </td>
+                                <td class="text-center align-middle">
+                                    @if (Model.FolderPermissions[i].FolderName == "Public Folder")
+                                    {
+                                        <input type="hidden" name="FolderPermissions[@i].CanRead" value="true" />
+                                        <input type="checkbox" checked disabled class="form-check-input"
+                                            style="width: 20px; height: 20px;" />
+                                    }
+                                    else
+                                    {
+                                        <input type="checkbox" name="FolderPermissions[@i].CanRead" value="true"
+                                            class="form-check-input" @(Model.FolderPermissions[i].CanRead ? "checked" : "")
+                                            style="width: 20px; height: 20px;" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        <tr>
+                            <td>
+                                <strong>Other</strong> <small class="text-muted">(please specify)</small>
+                                <div id="otherFolderDiv" style="display: @(!string.IsNullOrEmpty(Model.OtherFolderDetails) ? "block" : "none"); margin-top: 5px;">
+                                    <input asp-for="OtherFolderDetails" class="form-control form-control-sm" placeholder="Specify folder name..." />
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                <input type="checkbox" id="chkOtherFolder" class="form-check-input" @(!string.IsNullOrEmpty(Model.OtherFolderDetails) ? "checked" : "") style="width: 20px; height: 20px;" />
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Remarks -->
+            <div class="p-3" style="border-top: 1px solid var(--border);">
+                <label asp-for="FolderRemarks" class="form-label"><em>Remarks:</em></label>
+                <textarea asp-for="FolderRemarks" class="form-control" rows="2" placeholder="Any remarks..."></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between p-3" style="border-top: 1px solid var(--border);">
+                <div>
+                    <a asp-action="Step3" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Previous
+                    </a>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btnClearAll">
+                        <i class="fas fa-times me-1" aria-hidden="true"></i>Clear All
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" id="btnSelectAllRead">
+                        <i class="fas fa-check-double me-1" aria-hidden="true"></i>All Read
+                    </button>
+                    <div class="vr mx-1"></div>
+                    <button type="submit" name="saveAction" value="draft" class="btn btn-outline-secondary" formnovalidate>
+                        <i class="fas fa-save me-2" aria-hidden="true"></i>Save Draft
+                    </button>
+                    <button type="submit" name="saveAction" value="submit" class="btn btn-primary">
+                        Next: Signatures <i class="fas fa-arrow-right ms-2" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('btnSelectAllRead').addEventListener('click', function () {
+            document.querySelectorAll('input[name$=".CanRead"]').forEach(cb => cb.checked = true);
+        });
+        document.getElementById('btnClearAll').addEventListener('click', function () {
+            document.querySelectorAll('table input[type="checkbox"]:not([disabled])').forEach(cb => cb.checked = false);
+        });
+        document.getElementById('chkOtherFolder').addEventListener('change', function () {
+            document.getElementById('otherFolderDiv').style.display = this.checked ? 'block' : 'none';
+        });
+    </script>
+}
+
+

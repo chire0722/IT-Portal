@@ -1,0 +1,98 @@
+@model IT_Form.Application.Features.StandardSoftware.StandardSoftwareEditorPageViewModel
+@{
+    ViewData["Title"] = "Edit Software Settings";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="card-header bg-primary bg-opacity-10 py-3 border-0">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="bi bi-gear-fill me-2 text-primary"></i>Software Configuration
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Edit">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <label asp-for="SoftwareName" class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em;"></label>
+                            <input asp-for="SoftwareName" class="form-control form-control-lg rounded-3 border-light-subtle shadow-sm" placeholder="e.g. Adobe Creative Cloud" />
+                            <span asp-validation-for="SoftwareName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="bg-light bg-opacity-50 p-3 rounded-4 border">
+                                <div class="row g-3">
+                                    <div class="col-md-6 border-end border-light-subtle">
+                                        <div class="form-check form-switch py-1">
+                                            <input asp-for="IsMandatory" class="form-check-input" />
+                                            <label asp-for="IsMandatory" class="form-check-label fw-semibold">Mandatory Software</label>
+                                            <div class="form-text mt-0" style="font-size: 0.75rem;">Required for all relevant staff</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch py-1">
+                                            <input asp-for="IsActive" class="form-check-input" />
+                                            <label asp-for="IsActive" class="form-check-label fw-semibold">Active Status</label>
+                                            <div class="form-text mt-0" style="font-size: 0.75rem;">Visible and available for selection</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 border-top border-light-subtle pt-3">
+                                        <div class="row">
+                                            <div class="col-md-6 border-end border-light-subtle">
+                                                <div class="form-check form-switch py-1">
+                                                    <input asp-for="IsFree" class="form-check-input" id="isFreeCheckbox" onchange="toggleVersionOption()" />
+                                                    <label asp-for="IsFree" class="form-check-label fw-semibold text-success">Free / Open Source</label>
+                                                    <div class="form-text mt-0" style="font-size: 0.75rem;">No license tracking required</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6" id="versionOptionWrapper">
+                                                <div class="form-check form-switch py-1">
+                                                    <input asp-for="HasMultipleVersions" class="form-check-input" id="hasMultipleVersionsCheckbox" />
+                                                    <label asp-for="HasMultipleVersions" class="form-check-label fw-semibold">Multi-Edition</label>
+                                                    <div class="form-text mt-0" style="font-size: 0.75rem;">Supports multiple version entries</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-3 shadow" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                            <i class="bi bi-save me-2"></i>Save Configuration
+                        </button>
+                        <a asp-action="Index" class="btn btn-light px-4 py-2 border rounded-3 fw-semibold">Discard Changes</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function toggleVersionOption() {
+            const isFree = document.getElementById('isFreeCheckbox').checked;
+            const versionWrapper = document.getElementById('versionOptionWrapper');
+            const versionCheckbox = document.getElementById('hasMultipleVersionsCheckbox');
+            
+            if (isFree) {
+                versionWrapper.style.opacity = '0.5';
+                versionWrapper.style.pointerEvents = 'none';
+                versionCheckbox.checked = false;
+            } else {
+                versionWrapper.style.opacity = '1';
+                versionWrapper.style.pointerEvents = 'auto';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', toggleVersionOption);
+    </script>
+}

@@ -1,0 +1,522 @@
+@model IT_Form.Models.ViewModels.AssetAnalyticsViewModel
+@using IT_Form.Models.Enums
+
+@{
+    ViewData["Title"] = "IT Asset Inventory";
+}
+
+<div class="page-header animate-in mb-4">
+    <div class="page-header-left">
+        <h2 class="fw-bolder mb-1"><i class="bi bi-pc-display me-2 text-primary" aria-hidden="true"></i>IT Asset Inventory</h2>
+        <span class="subtitle">Track and manage all company IT assets</span>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        @if (User.HasClaim("UserTitle", "IT"))
+        {
+            <button type="button" class="btn btn-info text-white shadow-sm rounded-pill px-4 py-2 fw-bold"
+                onclick="openVerificationModal()">
+                <i class="fas fa-shield-alt me-1" aria-hidden="true"></i> Generate Verification Link
+            </button>
+        }
+        <a asp-action="ExportCsv" asp-route-searchString="@ViewData["CurrentFilter"]"
+            asp-route-assetType="@ViewData["AssetTypeFilter"]" asp-route-status="@ViewData["StatusFilter"]"
+            class="btn btn-secondary shadow-sm rounded-pill px-4 py-2 fw-bold">
+            <i class="bi bi-filetype-csv me-1" aria-hidden="true"></i> Export CSV
+        </a>
+        <button type="button" class="btn btn-success shadow-sm rounded-pill px-4 py-2 fw-bold text-white"
+            data-bs-toggle="modal" data-bs-target="#bulkImportModal">
+            <i class="bi bi-upload me-1" aria-hidden="true"></i> Bulk Import
+        </button>
+        <a asp-action="Create" class="btn btn-primary shadow-sm rounded-pill px-4 py-2 d-inline-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Add New Asset
+        </a>
+    </div>
+</div>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2" aria-hidden="true"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Asset Analytics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100"
+            style="border-left: 4px solid var(--primary) !important; border-radius: 12px;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;"><i
+                                class="fas fa-boxes me-2" aria-hidden="true"></i>Total Assets</h6>
+                        <h2 class="mb-0 fw-bold text-dark display-6">@Model.TotalAssets</h2>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 48px; height: 48px;">
+                        <i class="bi bi-pc-display text-primary fs-5" aria-hidden="true"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100"
+            style="border-left: 4px solid var(--success) !important; border-radius: 12px;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;"><i
+                                class="fas fa-user-check me-2" aria-hidden="true"></i>Given / Issued Assets</h6>
+                        <h2 class="mb-0 fw-bold text-dark display-6">@Model.IssuedAssets</h2>
+                    </div>
+                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 48px; height: 48px;">
+                        <i class="bi bi-arrow-right-circle text-success fs-5" aria-hidden="true"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100"
+            style="border-left: 4px solid var(--danger) !important; border-radius: 12px;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;"><i
+                                class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>Expired Warranty</h6>
+                        <h2 class="mb-0 fw-bold text-danger display-2" style="text-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);">@Model.ExpiredWarrantyCount</h2>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 48px; height: 48px;">
+                        <i class="bi bi-shield-exclamation text-danger fs-5" aria-hidden="true"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body" style="background: var(--bg-card);">
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="searchString" class="form-label">Search (Tag, S/N, Model)</label>
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control"
+                    placeholder="Search..." />
+            </div>
+
+            <div class="col-md-3">
+                <label for="assetType" class="form-label">Asset Type</label>
+                <select name="assetType" class="form-select" asp-items="Html.GetEnumSelectList<AssetType>()">
+                    <option value="">All Types</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<AssetStatus>()">
+                    <option value="">All Statuses</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-secondary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Asset Tag</th>
+                        <th>Type</th>
+                        <th>Model</th>
+                        <th>Serial Number</th>
+                        <th>Warranty Detail</th>
+                        <th>Assigned To</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Assets)
+                    {
+                        <tr>
+                            <td class="fw-bold">@item.AssetTag</td>
+                            <td>
+                                @if (item.AssetType == AssetType.Others && !string.IsNullOrEmpty(item.OtherAssetType))
+                                {
+                                    <span>@item.OtherAssetType</span>
+                                }
+                                else
+                                {
+                                    @item.AssetType
+                                }
+                            </td>
+                            <td>
+                                <div>@(item.Model ?? "-")</div>
+                                @if (item.AssetType == AssetType.Laptop || item.AssetType == AssetType.DesktopPC || item.AssetType == AssetType.Others)
+                                {
+                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                        @if (!string.IsNullOrEmpty(item.RAM))
+                                        {
+                                            <span class="me-2"><i class="fas fa-memory me-1" aria-hidden="true"></i>@item.RAM
+                                                @(string.IsNullOrEmpty(item.DDRType) ? "" : $"({item.DDRType})")</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(item.Storage))
+                                        {
+                                            <span class="me-2"><i class="fas fa-hdd me-1" aria-hidden="true"></i>@item.Storage</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(item.WindowsVersion))
+                                        {
+                                            <span><i class="fab fa-windows me-1" aria-hidden="true"></i>@item.WindowsVersion</span>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td>@(item.SerialNumber ?? "-")</td>
+                            <td>
+                                <div>
+                                    @if (item.NoExtendWarranty)
+                                    {
+                                        <span class="badge bg-secondary mb-1">No Extend</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success mb-1">Extended / Monitored</span>
+                                    }
+                                </div>
+                                <div class="small fw-bold">
+                                    @if (item.WarrantyExpiry.HasValue)
+                                    {
+                                        bool isExpired = item.WarrantyExpiry < DateTime.Today;
+                                        <span class="@(isExpired ? "text-danger" : "text-muted")">
+                                            <i class="bi bi-calendar-event me-1"></i>
+                                            @item.WarrantyExpiry.Value.ToLocalTime().ToString("dd MMM yyyy")
+                                            @if (isExpired)
+                                            {
+                                                <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.65rem;">EXPIRED</span>
+                                            }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">No Expiry Date</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                @{
+                                    var latestIssue = item.IssuedHistory.OrderByDescending(ih => ih.Id).FirstOrDefault();
+                                    if (item.Status == AssetStatus.Issued && latestIssue != null)
+                                    {
+                                        if (latestIssue.OnboardingRequest != null)
+                                        {
+                                            <a asp-controller="Onboarding" asp-action="Details"
+                                                asp-route-id="@latestIssue.OnboardingRequestId"
+                                                class="text-decoration-none fw-semibold">
+                                                @latestIssue.OnboardingRequest.FullName
+                                            </a>
+                                        }
+                                        else if (!string.IsNullOrEmpty(latestIssue.CustomEmployeeName))
+                                        {
+                                            <span class="fw-semibold">@latestIssue.CustomEmployeeName</span> <span class="badge bg-light text-dark-50 border ms-1" style="font-size: 0.65em;">Manual</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">-</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">-</span>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                @if (item.Status == AssetStatus.Available)
+                                {
+                                    <span class="badge bg-success">@item.Status</span>
+                                }
+                                else if (item.Status == AssetStatus.Issued)
+                                {
+                                    <span class="badge bg-primary">@item.Status</span>
+                                }
+                                else if (item.Status == AssetStatus.UnderRepair)
+                                {
+                                    <span class="badge bg-warning text-dark">@item.Status</span>
+                                }
+                                else if (item.Status == AssetStatus.Disposed)
+                                {
+                                    <span class="badge bg-secondary">@item.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">@item.Status</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2 px-2">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-action-circle btn-outline-info" aria-label="View details for asset @item.AssetTag" title="Details">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-action-circle btn-outline-warning" aria-label="Edit asset @item.AssetTag" title="Edit">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-action-circle btn-outline-danger" aria-label="Delete asset @item.AssetTag" title="Delete">
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </a>
+                                </div>
+                                <form asp-action="ToggleNoExtendWarranty" asp-route-id="@item.Id" method="post" class="mt-1">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn w-100 @(item.NoExtendWarranty ? "btn-outline-success" : "btn-outline-secondary")"
+                                        title="Toggle No Extend Warranty"
+                                        style="font-size: 0.65rem; padding: 2px 6px; line-height: 1.3; border-radius: 4px;">
+                                        <i class="bi @(item.NoExtendWarranty ? "bi-bell" : "bi-bell-slash") me-1" aria-hidden="true"></i>
+                                        @(item.NoExtendWarranty ? "Enable Extend Reminder" : "No Extend Warranty")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Assets.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="empty-state" style="padding: 1rem;">
+                                    <div class="empty-icon"><i class="bi bi-pc-display" aria-hidden="true"></i></div>
+                                    <h5>No assets found</h5>
+                                    <p>No assets match the current filter criteria.</p>
+                                    <a asp-action="Create" class="btn btn-primary btn-sm"><i
+                                            class="bi bi-plus-circle me-1" aria-hidden="true"></i>Add New Asset</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (User.HasClaim("UserTitle", "IT"))
+{
+    var verificationUsers = ViewBag.UserList as IEnumerable<IT_Form.Models.ApplicationUser> ?? [];
+
+    <!-- Verification Link Modal -->
+    <div class="modal fade" id="verificationModal" tabindex="-1" aria-labelledby="verificationModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-info">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="verificationModalLabel"><i class="fas fa-link me-2" aria-hidden="true"></i> Device Verification</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Universal verification downloads were disabled during security hardening.</p>
+                    <p class="mb-0">Generate a short-lived verification link for a specific employee, or leave the employee blank to verify the asset only.</p>
+
+                    <div class="mt-4">
+                        <label for="verificationEmployeeId" class="form-label fw-bold">Employee (optional)</label>
+                        <select id="verificationEmployeeId" class="form-select">
+                            <option value="">Verify asset only (no employee assignment)</option>
+                            @foreach (var user in verificationUsers)
+                            {
+                                <option value="@user.Id">@user.FullName (@(user.Email ?? user.UserName ?? user.Id))</option>
+                            }
+                        </select>
+                        <div class="form-text">Choose an employee only when you want successful verification to assign the asset. Employee-specific links invalidate older tokens for that same employee.</div>
+                    </div>
+
+                    <div id="verifyLinkStatus" class="alert alert-info py-2 mt-3 mb-0">
+                        Select an employee if you want assignment, or leave it blank to verify the asset only.
+                    </div>
+
+                    <div class="input-group mb-2 mt-3">
+                        <input type="text" id="verifyLinkOutput" class="form-control bg-light" readonly placeholder="Generated verification link will appear here">
+                        <button class="btn btn-outline-secondary" type="button" id="verifyLinkCopyBtn" onclick="copyVerificationLink()" disabled>
+                            <i class="fas fa-copy" aria-hidden="true"></i> Copy
+                        </button>
+                    </div>
+                    <div id="verifyLinkExpiry" class="small text-muted"></div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-info text-white" id="generateVerificationLinkBtn" onclick="generateVerificationLink()">
+                        <i class="fas fa-link me-1" aria-hidden="true"></i> Generate Link
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        let verificationModal;
+        document.addEventListener("DOMContentLoaded", function () {
+            verificationModal = new bootstrap.Modal(document.getElementById('verificationModal'));
+            resetVerificationState();
+        });
+
+        function openVerificationModal() {
+            verificationModal.show();
+        }
+
+        function getVerificationXsrfToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        }
+
+        function setVerificationStatus(message, level) {
+            const statusElement = document.getElementById('verifyLinkStatus');
+            statusElement.className = 'alert py-2 mt-3 mb-0';
+            statusElement.classList.add(level === 'error' ? 'alert-danger' : level === 'success' ? 'alert-success' : 'alert-info');
+            statusElement.textContent = message;
+        }
+
+        function resetVerificationState(keepStatusMessage) {
+            document.getElementById('verifyLinkOutput').value = '';
+            document.getElementById('verifyLinkExpiry').textContent = '';
+            document.getElementById('verifyLinkCopyBtn').disabled = true;
+
+            if (!keepStatusMessage) {
+                setVerificationStatus('Select an employee if you want assignment, or leave it blank to verify the asset only.', 'info');
+            }
+        }
+
+        async function generateVerificationLink() {
+            const employeeSelect = document.getElementById('verificationEmployeeId');
+            const employeeId = employeeSelect.value;
+            const isAssetOnly = !employeeId;
+            const generateBtn = document.getElementById('generateVerificationLinkBtn');
+            const originalHtml = generateBtn.innerHTML;
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Generating...';
+            resetVerificationState(true);
+            setVerificationStatus(isAssetOnly
+                ? 'Generating asset-only verification link...'
+                : 'Generating employee-specific verification link...', 'info');
+
+            try {
+                const endpoint = isAssetOnly
+                    ? '/api/inventory/generate-token'
+                    : `/api/inventory/generate-token/${encodeURIComponent(employeeId)}`;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-XSRF-TOKEN': getVerificationXsrfToken()
+                    }
+                });
+
+                let payload = null;
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    payload = await response.json();
+                } else {
+                    const text = await response.text();
+                    payload = { message: text };
+                }
+
+                if (!response.ok) {
+                    throw new Error(payload?.message || payload?.title || 'Failed to generate verification link.');
+                }
+
+                document.getElementById('verifyLinkOutput').value = payload.link || '';
+                document.getElementById('verifyLinkCopyBtn').disabled = !payload.link;
+
+                if (payload.expiresAtUtc) {
+                    const expiresAt = new Date(payload.expiresAtUtc);
+                    document.getElementById('verifyLinkExpiry').textContent = `Expires: ${expiresAt.toLocaleString()}`;
+                } else if (isAssetOnly) {
+                    document.getElementById('verifyLinkExpiry').textContent = 'No expiry for asset-only verification link.';
+                }
+
+                setVerificationStatus(isAssetOnly
+                    ? 'Asset-only verification link generated. Successful verification will update the asset without assigning it to an employee.'
+                    : 'Verification link generated. Share it only with the selected employee.', 'success');
+            } catch (error) {
+                resetVerificationState(true);
+                setVerificationStatus(error.message || 'Failed to generate verification link.', 'error');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalHtml;
+            }
+        }
+
+        function copyVerificationLink() {
+            const linkInput = document.getElementById('verifyLinkOutput');
+            if (!linkInput.value) {
+                return;
+            }
+            const copyBtn = linkInput.nextElementSibling;
+            const originalHtml = copyBtn.innerHTML;
+
+            navigator.clipboard.writeText(linkInput.value).then(function () {
+                copyBtn.innerHTML = '<i class="fas fa-check text-success" aria-hidden="true"></i> Copied';
+                setTimeout(() => { copyBtn.innerHTML = originalHtml; }, 2000);
+            }).catch(function () {
+                setVerificationStatus('Clipboard copy failed. Copy the link manually.', 'error');
+            });
+        }
+    </script>
+    }
+}
+
+<!-- Bulk Import Modal -->
+<div class="modal fade" id="bulkImportModal" tabindex="-1" aria-labelledby="bulkImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="bulkImportModalLabel"><i class="fas fa-file-import me-2" aria-hidden="true"></i> Bulk Asset Import</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="BulkImport" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <p class="text-muted mb-4">Upload an Excel file (.xlsx) to import multiple assets at once. Use our template to ensure data compatibility.</p>
+                    
+                    <div class="d-grid mb-4">
+                        <a asp-action="DownloadImportTemplate" class="btn btn-outline-info">
+                            <i class="fas fa-download me-2" aria-hidden="true"></i> Download .xlsx Template
+                        </a>
+                        <small class="text-center text-info mt-1"><i class="fas fa-info-circle me-1" aria-hidden="true"></i> Template includes categorical dropdowns.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label fw-bold">Select Excel File</label>
+                        <input type="file" name="file" id="importFile" class="form-control" accept=".xlsx" required data-drag-upload="true" />
+                    </div>
+
+                    <div class="alert alert-warning py-2 mb-0" style="font-size: 0.85rem;">
+                        <i class="fas fa-exclamation-circle me-1" aria-hidden="true"></i>
+                        <strong>Important:</strong> Asset Tags must be unique. Existing tags will skip import.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="fas fa-upload me-2" aria-hidden="true"></i> Start Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+

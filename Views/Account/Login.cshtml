@@ -1,0 +1,120 @@
+@model IT_Form.Application.Features.Account.Queries.GetLoginPageBranding.LoginPageBrandingViewModel
+@{
+    ViewData["Title"] = "Login";
+    Layout = null;
+    var loginLogoSrc = !string.IsNullOrWhiteSpace(Model.LoginLogoPath)
+        ? Url.Content($"~/{Model.LoginLogoPath.TrimStart('/')}")
+        : Url.Content("~/images/logo-combined.png");
+    var backgroundStyle = !string.IsNullOrWhiteSpace(Model.BackgroundImagePath)
+        ? $"background-image: linear-gradient(rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.18)), url('{Url.Content($"~/{Model.BackgroundImagePath.TrimStart('/')}")}'); background-size: cover; background-position: center;"
+        : string.Empty;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - YTC IT Portal</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+
+<body style="@backgroundStyle">
+    <div class="auth-container">
+        <div class="auth-card animate-in">
+            <div class="auth-header">
+                <div style="margin-bottom: 0.75rem;">
+                    <img src="@loginLogoSrc" alt="Login Logo" style="max-width: 280px; height: auto;" />
+                </div>
+                <h1>@Model.SystemName</h1>
+                <p>@Model.Subtitle</p>
+            </div>
+            <div class="auth-body">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2" aria-hidden="true"></i>@TempData["SuccessMessage"]
+                    </div>
+                }
+
+                <form asp-action="Login" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger"
+                        style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label">
+                            <i class="fas fa-user me-1" aria-hidden="true"></i> @Html.DisplayNameFor(m => m.Username)
+                        </label>
+                        <input asp-for="Username" class="form-control" placeholder="Enter your username" autofocus />
+                        <span asp-validation-for="Username" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">
+                            <i class="fas fa-lock me-1" aria-hidden="true"></i> @Html.DisplayNameFor(m => m.Password)
+                        </label>
+                        <div class="input-group">
+                            <input asp-for="Password" class="form-control" placeholder="Enter your password"
+                                id="passwordInput" />
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword" 
+                                    aria-label="Show password" aria-pressed="false">
+                                <i class="fas fa-eye" id="toggleIcon" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                    </div>
+
+                    <div class="mb-4 d-flex justify-content-between align-items-center">
+                        <div class="form-check mb-0">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label">Remember me</label>
+                        </div>
+                        <a asp-action="ForgotPassword" class="text-decoration-none small fw-semibold">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-sign-in-alt me-2" aria-hidden="true"></i>Login
+                    </button>
+                </form>
+
+                <div class="text-center mt-3 text-muted small">
+                    <div>@Model.CompanyName</div>
+                    <div>Version @Model.SystemVersion</div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function (e) {
+            const passwordInput = document.getElementById('passwordInput');
+            const toggleIcon = document.getElementById('toggleIcon');
+            const isPressed = passwordInput.type === 'password';
+
+            if (isPressed) {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+            
+            this.setAttribute('aria-pressed', isPressed);
+            this.setAttribute('aria-label', isPressed ? 'Hide password' : 'Show password');
+        });
+    </script>
+</body>
+
+</html>
+
+

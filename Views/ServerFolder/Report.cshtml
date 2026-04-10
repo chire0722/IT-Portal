@@ -1,0 +1,166 @@
+@model IT_Form.Application.Features.ServerFolder.ServerFolderReportPageViewModel
+@{
+    var folderNameDisplay = Model.FolderNameDisplay;
+    ViewData["Title"] = $"Access Report - {folderNameDisplay}";
+}
+
+<div class="page-header animate-in">
+    <div class="page-header-left">
+        <h2><i class="bi bi-shield-lock-fill me-2 text-primary" aria-hidden="true"></i>Access Report</h2>
+        <span class="subtitle">@folderNameDisplay - Permission audit and access history</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a asp-action="ExportCsv" asp-route-id="@Model.FolderId" asp-route-searchString="@Model.CurrentFilter"
+           class="btn btn-sm btn-success text-white shadow-sm" aria-label="Export report to CSV">
+            <i class="bi bi-file-earmark-excel me-1" aria-hidden="true"></i> Export CSV
+        </a>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary shadow-sm" aria-label="Back to Server Folders">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="filter-bar animate-in" style="animation-delay: 0.1s;">
+    <form asp-action="Report" method="get" class="row g-3 align-items-center">
+        @if (Model.FolderId != null)
+        {
+            <input type="hidden" name="id" value="@Model.FolderId" />
+        }
+        <div class="col-md-8 col-lg-6">
+            <div class="input-group shadow-sm rounded-pill overflow-hidden">
+                <span class="input-group-text bg-white border-end-0 ps-3">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" name="searchString" value="@Model.CurrentFilter"
+                       class="form-control border-start-0 ps-2"
+                       placeholder="Search by Employee, Dept, Branch, or Folder..." aria-label="Search reports">
+                <button class="btn btn-primary px-4" type="submit">Filter Results</button>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-6 d-flex justify-content-md-end">
+            @if (!string.IsNullOrEmpty(Model.CurrentFilter))
+            {
+                <a asp-action="Report" asp-route-id="@Model.FolderId" class="text-decoration-none text-muted small fw-bold px-3 py-2">
+                    <i class="bi bi-x-circle me-1"></i> Clear Search
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<div class="card animate-in shadow-sm border-0 mt-4" style="animation-delay: 0.2s;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Employee Name</th>
+                        <th>Department & Branch</th>
+                        @if (Model.ShowFolderColumn)
+                        {
+                            <th>Folder Name</th>
+                        }
+                        <th>Access Level</th>
+                        <th>Request Type</th>
+                        <th>Date Granted</th>
+                        <th class="text-end pe-4">Source Req.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Report.Any())
+                    {
+                        @foreach (var item in Model.Report)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">@item.EmployeeName</div>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold text-primary">@item.Department</div>
+                                    <div class="small text-muted">@item.Branch</div>
+                                </td>
+                                @if (Model.ShowFolderColumn)
+                                {
+                                    <td><span class="badge-info">@item.FolderName</span></td>
+                                }
+                                <td>
+                                    @if (item.AccessLevel.Contains("Modify"))
+                                    {
+                                        <span class="badge-approved" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">
+                                            <i class="bi bi-pencil-fill me-1 small"></i> Read & Modify
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-approved">
+                                            <i class="bi bi-eye-fill me-1 small"></i> Read Only
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">@item.RequestType</span>
+                                </td>
+                                <td>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-calendar3 me-1"></i>
+                                        @(item.DateGranted?.ToString("dd MMM yyyy") ?? "N/A")
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a asp-controller="Onboarding" asp-action="Details" asp-route-id="@item.RequestId"
+                                       class="btn btn-sm btn-outline-primary rounded-pill px-3" target="_blank">
+                                        <i class="bi bi-link-45deg"></i> #@item.RequestId
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="@Model.EmptyStateColumnCount" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                                No access records found matching your criteria.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.Report.TotalPages > 1)
+    {
+        <div class="card-footer bg-light border-0 py-3">
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    <li class="page-item @(!Model.Report.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link shadow-none" asp-action="Report" asp-route-id="@Model.FolderId" asp-route-page="@(Model.Report.PageIndex - 1)" asp-route-searchString="@Model.CurrentFilter">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    @for (int i = 1; i <= Model.Report.TotalPages; i++)
+                    {
+                        if (i == 1 || i == Model.Report.TotalPages || (i >= Model.Report.PageIndex - 2 && i <= Model.Report.PageIndex + 2))
+                        {
+                            <li class="page-item @(i == Model.Report.PageIndex ? "active" : "")">
+                                <a class="page-link shadow-none" asp-action="Report" asp-route-id="@Model.FolderId" asp-route-page="@i" asp-route-searchString="@Model.CurrentFilter">@i</a>
+                            </li>
+                        }
+                        else if (i == Model.Report.PageIndex - 3 || i == Model.Report.PageIndex + 3)
+                        {
+                            <li class="page-item disabled"><span class="page-link shadow-none">...</span></li>
+                        }
+                    }
+
+                    <li class="page-item @(!Model.Report.HasNextPage ? "disabled" : "")">
+                        <a class="page-link shadow-none" asp-action="Report" asp-route-id="@Model.FolderId" asp-route-page="@(Model.Report.PageIndex + 1)" asp-route-searchString="@Model.CurrentFilter">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

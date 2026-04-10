@@ -1,0 +1,62 @@
+@model IT_Form.Application.Features.EmailGroup.EmailGroupEditorPageViewModel
+@{
+    ViewData["Title"] = "Create EmailGroup";
+}
+
+<h2>Create EmailGroup</h2>
+<div class="card shadow-sm border-0 mt-4" style="max-width: 600px;">
+    <div class="card-body">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="GroupName" class="form-label"></label>
+                <input asp-for="GroupName" class="form-control" />
+                <span asp-validation-for="GroupName" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="GroupEmail" class="form-label"></label>
+                <input asp-for="GroupEmail" class="form-control" />
+                <span asp-validation-for="GroupEmail" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+            </div>
+
+            <div class="mb-3">
+                @{
+                    var selectedCompanyIds = Model.SelectedCompanyIds ?? new List<int>();
+                }
+                <label class="form-label fw-bold"><i class="bi bi-building me-1"></i>Assigned Companies</label>
+                <div class="d-flex flex-wrap gap-3 border rounded p-3 bg-light bg-opacity-50">
+                    @if (Model.CompanyOptions != null)
+                    {
+                        foreach (var company in Model.CompanyOptions)
+                        {
+                            <div class="form-check">
+                                <input type="checkbox" name="selectedCompanyIds" value="@company.Id" class="form-check-input"
+                                       @(selectedCompanyIds.Contains(company.Id) ? "checked" : "") />
+                                <label class="form-check-label">
+                                    <span class="badge-info">@company.DisplayName</span>
+                                </label>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="form-text text-muted mt-2">
+                    <i class="bi bi-info-circle me-1"></i> Leave empty to make this available to <strong>all companies</strong> (Global).
+                </div>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="IsActive" class="form-check-input" checked="checked" />
+                <label asp-for="IsActive" class="form-check-label">Is Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create</button>
+            <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

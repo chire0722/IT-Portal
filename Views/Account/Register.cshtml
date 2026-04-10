@@ -1,0 +1,139 @@
+@model IT_Form.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - YTC IT Portal</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-card animate-in">
+            <div class="auth-header">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">
+                    <i class="fas fa-user-plus" aria-hidden="true"></i>
+                </div>
+                <h1>Create Account</h1>
+                <p>Only @("@ytcprecast.com") and @("@yengtong.com") emails</p>
+            </div>
+            <div class="auth-body">
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger"
+                        style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label">
+                            <i class="fas fa-user me-1" aria-hidden="true"></i> @Html.DisplayNameFor(m => m.FullName)
+                        </label>
+                        <input asp-for="FullName" class="form-control" placeholder="John Doe" autofocus />
+                        <span asp-validation-for="FullName" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label">
+                            <i class="fas fa-user me-1" aria-hidden="true"></i> @Html.DisplayNameFor(m => m.Username)
+                        </label>
+                        <input asp-for="Username" class="form-control" placeholder="johndoe" />
+                        <span asp-validation-for="Username" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Department" class="form-label">
+                            <i class="fas fa-building me-1" aria-hidden="true"></i> @Html.DisplayNameFor(m => m.Department)
+                        </label>
+                        <select asp-for="Department" class="form-select">
+                            <option value="">Select Department</option>
+                            <option>IT</option>
+                            <option>HR</option>
+                            <option>Account</option>
+                            <option>Admin</option>
+                            <option>Contract</option>
+                            <option>Drawing</option>
+                            <option>Logistic</option>
+                            <option>Marketing</option>
+                            <option>Production</option>
+                            <option>Project</option>
+                            <option>Purchasing</option>
+                            <option>QA/QC</option>
+                            <option>Safety</option>
+                            <option>Sales</option>
+                            <option>Store</option>
+                            <option>Technical</option>
+                            <option>Workshop</option>
+                        </select>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-5">
+                            <label asp-for="Password" class="form-label">
+                                <i class="fas fa-lock me-1" aria-hidden="true"></i> @Html.DisplayNameFor(m => m.Password)
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Password" class="form-control" placeholder="Min. 6 characters" id="passwordInput" />
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye" id="toggleIcon" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                        <div class="col-md-7">
+                            <label asp-for="ConfirmPassword" class="form-label">
+                                <i class="fas fa-lock me-1" aria-hidden="true"></i> @Html.DisplayNameFor(m => m.ConfirmPassword)
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="ConfirmPassword" class="form-control" placeholder="Repeat password" id="confirmPasswordInput" />
+                                <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                    <i class="fas fa-eye" id="toggleConfirmIcon" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-user-plus me-2" aria-hidden="true"></i>Create Account
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <span class="text-muted">Already have an account?</span>
+                    <a asp-action="Login" class="text-decoration-none ms-1" style="color: var(--primary-light);">
+                        Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        function toggleVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+        document.getElementById('togglePassword').addEventListener('click', () => toggleVisibility('passwordInput', 'toggleIcon'));
+        document.getElementById('toggleConfirmPassword').addEventListener('click', () => toggleVisibility('confirmPasswordInput', 'toggleConfirmIcon'));
+    </script>
+</body>
+
+</html>
+
+

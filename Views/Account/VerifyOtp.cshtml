@@ -1,0 +1,122 @@
+@model IT_Form.ViewModels.VerifyOtpViewModel
+@{
+    ViewData["Title"] = "Verify OTP";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify OTP - YTC IT Portal</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-card animate-in">
+            <div class="auth-header">
+                <div style="margin-bottom: 0.75rem;">
+                    <img src="~/images/logo-combined.png" alt="PYT & YTC" style="max-width: 280px; height: auto;" />
+                </div>
+                <h1>Verify Your Identity</h1>
+                <p>Enter the 6-character code sent to your email</p>
+            </div>
+            <div class="auth-body text-center">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2" aria-hidden="true"></i>@TempData["SuccessMessage"]
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <i class="fas fa-envelope" style="font-size: 1.2rem; color: var(--primary-light);" aria-hidden="true"></i>
+                    <span class="ms-2" style="color: var(--text-secondary);">@Model.Email</span>
+                </div>
+
+                <form asp-action="VerifyOtp" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger text-start"
+                        style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <input type="hidden" asp-for="Email" />
+
+                    <div class="mb-4">
+                        <input asp-for="Code" class="form-control otp-input" placeholder="ABC234" maxlength="6"
+                            inputmode="text" pattern="[A-HJ-NP-Za-hj-np-z2-9]{6}" autofocus
+                            oninput="this.value = this.value.toUpperCase();" autocomplete="one-time-code" />
+                        <span asp-validation-for="Code" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                        <i class="fas fa-check-circle me-2" aria-hidden="true"></i>Verify & Login
+                    </button>
+                </form>
+
+                <form asp-action="ResendOtp" method="post" class="d-inline" id="resendForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="email" value="@Model.Email" />
+                    <button type="button" id="resendBtn" class="btn btn-link"
+                        style="color: var(--primary-light); text-decoration: none;">
+                        <i class="fas fa-redo me-1" aria-hidden="true"></i> Resend OTP
+                    </button>
+                    <div id="resendCountdown" class="small text-muted mt-2 fw-semibold" style="display:none; color: var(--warning) !important;"></div>
+                </form>
+
+                <div class="mt-3">
+                    <a asp-action="Login" class="text-decoration-none"
+                        style="color: var(--text-muted); font-size: 0.85rem;">
+                        <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Back to Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resendBtn = document.getElementById('resendBtn');
+            const resendForm = document.getElementById('resendForm');
+            const countdownEl = document.getElementById('resendCountdown');
+            let timeLeft = parseInt('@Model.RemainingCooldownSeconds', 10);
+            
+            if (timeLeft > 0) {
+                resendBtn.disabled = true;
+                resendBtn.style.opacity = '0.5';
+                resendBtn.style.cursor = 'not-allowed';
+                countdownEl.style.display = 'block';
+                countdownEl.innerHTML = `<i class="fas fa-clock me-1" aria-hidden="true"></i> Please wait ${timeLeft}s to resend.`;
+                
+                const timerId = setInterval(() => {
+                    timeLeft--;
+                    countdownEl.innerHTML = `<i class="fas fa-clock me-1" aria-hidden="true"></i> Please wait ${timeLeft}s to resend.`;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timerId);
+                        resendBtn.disabled = false;
+                        resendBtn.style.opacity = '1';
+                        resendBtn.style.cursor = 'pointer';
+                        countdownEl.style.display = 'none';
+                    }
+                }, 1000);
+            }
+
+            resendBtn.addEventListener('click', function(e) {
+                if (!resendBtn.disabled) {
+                    resendForm.submit();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
+
+

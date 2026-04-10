@@ -1,0 +1,70 @@
+using System.Diagnostics;
+using IT_Form.Application.Features.Home;
+using IT_Form.Models;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace IT_Form.Controllers
+{
+    [Authorize]
+    public class HomeController : Controller
+    {
+        private readonly ISender _sender;
+
+        public HomeController(ISender sender)
+        {
+            _sender = sender;
+        }
+
+        public async Task<IActionResult> Index(int? year)
+        {
+            var result = await _sender.Send(new GetHomeDashboardQuery(year));
+            ApplyPageMetadata(result);
+            return View(result.ViewModel);
+        }
+
+        public async Task<IActionResult> Analytics(int? year)
+        {
+            var result = await _sender.Send(new GetHomeAnalyticsQuery(year));
+            if (result.IsForbidden)
+            {
+                return Forbid();
+            }
+
+            var page = result.Data!;
+            ApplyPageMetadata(page);
+            return View(page.ViewModel);
+        }
+
+        [Authorize(Policy = "RequireIT")]
+        public async Task<IActionResult> DiagAnalytics()
+        {
+            var result = await _sender.Send(new GetHomeDiagAnalyticsQuery());
+            return Json(new
+            {
+                AssetType = result.AssetType,
+                AssetStatus = result.AssetStatus,
+                SoftwareLicense = result.SoftwareLicense
+            });
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [AllowAnonymous]
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        private void ApplyPageMetadata(HomePageResult result)
+        {
+            ViewData["IsCurrentYear"] = result.IsCurrentYear;
+            ViewData["StatsPeriodLabel"] = result.StatsPeriodLabel;
+        }
+    }
+}

@@ -1,0 +1,656 @@
+using IT_Form.Data;
+using IT_Form.Models;
+using IT_Form.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using QuestPDF.Infrastructure;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
+using Serilog;
+using Serilog.Events;
+using IT_Form.Models.Enums;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using IT_Form.Security;
+using IT_Form.Helpers;
+using IT_Form.Filters;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Behaviors;
+using IT_Form.Application.Common.Mapping;
+using IT_Form.Application.Common.Support;
+using IT_Form.Application.Features.Account.Queries.GetLoginPageBranding;
+using IT_Form.Infrastructure.Notifications;
+using Mapster;
+using MapsterMapper;
+using System.Net.NetworkInformation;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
+using FluentValidation;
+using MediatR;
+using Microsoft.OpenApi;
+using Scalar.AspNetCore;
+
+
+
+QuestPDF.Settings.License = LicenseType.Community;
+
+// Diagnostic Check
+if (args.Contains("--seed-check"))
+{
+    var tempBuilder = WebApplication.CreateBuilder(args);
+    tempBuilder.Services.AddLogging();
+    tempBuilder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite(tempBuilder.Configuration.GetConnectionString("DefaultConnection"),
+            o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+    tempBuilder.Services.AddHttpContextAccessor();
+    var tempApp = tempBuilder.Build();
+    using (var scope = tempApp.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Console.WriteLine($"ITAssets: {db.ITAssets.Count()}");
+        Console.WriteLine($"SoftwareKeys: {db.SoftwareKeys.Count()}");
+        Console.WriteLine($"OnboardingRequests: {db.OnboardingRequests.Count()}");
+        Console.WriteLine($"AuditLogs: {db.AuditLogs.Count()}");
+        Console.WriteLine($"SoftwareLicenses: {db.SoftwareLicenses.Count()}");
+    }
+    return;
+}
+
+
+// --- Serilog: Configure rolling file logger before host is built ---
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "logs/app-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,           // Keep last 30 days of logs
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
+if (StartupUrlGuard.TryGetConflictingUrls(Environment.GetEnvironmentVariable("ASPNETCORE_URLS"), out var conflictingUrls))
+{
+    Log.Error(
+        "Startup aborted because the configured URL(s) are already in use: {Urls}. Stop the existing app instance or change the configured port.",
+        string.Join(", ", conflictingUrls));
+    Environment.ExitCode = 1;
+    return;
+}
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables(prefix: "IT_FORM__");
+
+MapsterConfig.RegisterMappings();
+
+// --- Kestrel: Fingerprint Masking ---
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    // Bindings are managed via launchSettings.json, appsettings.json, or environment variables
+    // to avoid "Overriding address(es)" warnings.
+});
+
+// Use Serilog as the logging provider
+builder.Host.UseSerilog();
+
+// --- Set DataDirectory for LocalDB/SQLite creation ---
+string dataDirectory = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
+if (!Directory.Exists(dataDirectory))
+{
+    Directory.CreateDirectory(dataDirectory);
+}
+AppDomain.CurrentDomain.SetData("DataDirectory", dataDirectory);
+
+// --- Data Protection ---
+// Persist keys so auth/antiforgery cookies remain valid across restarts and launch profiles.
+var dataProtectionPath = Path.Combine(dataDirectory, "DataProtection-Keys");
+Directory.CreateDirectory(dataProtectionPath);
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
+    .SetApplicationName("IT_Form");
+
+
+
+// --- Database ---
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    var contentRoot = builder.Environment.ContentRootPath;
+    var dbPath = Path.Combine(contentRoot, "App_Data", "IT_FormDB.db");
+    options.UseSqlite($"Data Source={dbPath}",
+        o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+
+    // SQLite table rebuild migrations emit a one-time non-transactional warning
+    // when EF toggles foreign key enforcement during schema changes.
+    options.ConfigureWarnings(warnings =>
+        warnings.Ignore(RelationalEventId.NonTransactionalMigrationOperationWarning));
+});
+
+// Required for ApplicationDbContext to capture the current user for audit logs
+builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<LoginPageBrandingOptions>(builder.Configuration.GetSection("LoginPageBranding"));
+builder.Services.AddMemoryCache();
+
+// --- Identity ---
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // --- Strengthened Password Policy (NIST SP 800-63B aligned) ---
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 10;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequiredUniqueChars = 4;
+    options.SignIn.RequireConfirmedEmail = false;
+    options.User.RequireUniqueEmail = true;
+    // Account lockout: 5 failed attempts lock the account for 1 minute
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1);
+    options.Lockout.AllowedForNewUsers = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// --- Cookie Config ---
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    // Direct unauthorized users to a proper 403 page instead of the login screen
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromHours(4);          // Reduced from 8h to 4h
+    options.SlidingExpiration = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;           // SECURITY: Prevent CSRF via top-level navigation
+    options.Cookie.Name = "YTC.IT.Auth";                     // Rename from default to avoid fingerprinting
+    // Enforce HTTPS-only cookies in production; allow HTTP in dev (Kestrel HTTP only)
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
+
+// Hardened: Global Forced Logout - check security stamp on EVERY request
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.Zero;
+});
+
+// --- Session (for wizard state) ---
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;           // SECURITY: Prevent session CSRF
+    options.Cookie.Name = "YTC.IT.Session";                  // Non-default name
+});
+
+// --- Services ---
+// builder.Services.AddScoped<IEmailService, EmailService>(); // REMOVED: SMTP disabled
+builder.Services.AddScoped<IEmailOtpService, EmailOtpService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<ICompanyReferenceSyncService, CompanyReferenceSyncService>();
+builder.Services.AddScoped<IOnboardingWizardService, OnboardingWizardService>();
+builder.Services.AddScoped<IOnboardingDocumentService, OnboardingDocumentService>();
+builder.Services.AddScoped<IOnboardingSessionAccessor, OnboardingSessionAccessor>();
+builder.Services.AddScoped<ICurrentEmployeeAccessService, CurrentEmployeeAccessService>();
+builder.Services.AddScoped<IOnboardingHodService, OnboardingHodService>();
+builder.Services.AddScoped<LegacySensitiveUploadMigrationService>();
+builder.Services.AddScoped<AuditLogRepairService>();
+builder.Services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
+builder.Services.AddSingleton<IKeyedLockProvider, KeyedLockProvider>();
+builder.Services.AddScoped<IPostCommitActionQueue, PostCommitActionQueue>();
+/* builder.Services
+    .AddHttpClient<IExternalNotificationService, ExternalNotificationService>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.dummyemail.com/");
+        client.Timeout = Timeout.InfiniteTimeSpan;
+    })
+    .AddResilienceHandler("external-notification", static pipeline =>
+    {
+        // 超时策略：单次请求最多执行 5 秒，超时后立即中断本次调用。
+        pipeline.AddTimeout(TimeSpan.FromSeconds(5));
+
+        // 重试策略：针对 5xx、网络异常、超时等瞬时故障最多重试 3 次，采用指数退避。
+        pipeline.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(2),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = false,
+            ShouldRetryAfterHeader = false,
+            OnRetry = static args =>
+            {
+                Log.Warning(
+                    "External notification API retry scheduled. Attempt={Attempt}; Delay={Delay}.",
+                    args.AttemptNumber + 1,
+                    args.RetryDelay);
+
+                return default;
+            }
+        });
+
+        // 断路器策略：30 秒窗口内达到 5 次瞬时故障时打开断路器 1 分钟，期间请求快速失败。
+        pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+        {
+            SamplingDuration = TimeSpan.FromSeconds(30),
+            MinimumThroughput = 5,
+            FailureRatio = 1.0,
+            BreakDuration = TimeSpan.FromMinutes(1),
+            OnOpened = static args =>
+            {
+                Log.Error(
+                    "External notification API circuit opened for {BreakDuration}. Subsequent requests will fail fast.",
+                    args.BreakDuration);
+
+                return default;
+            },
+            OnHalfOpened = static args =>
+            {
+                Log.Warning("External notification API circuit is half-open. The next request will probe service recovery.");
+                return default;
+            },
+            OnClosed = static args =>
+            {
+                Log.Information("External notification API circuit closed. Normal traffic has resumed.");
+                return default;
+            }
+        });
+    }); */
+builder.Services.AddScoped<IEmailBackgroundQueue, EmailBackgroundQueue>();
+builder.Services.AddHostedService<EmailDispatcherBackgroundService>();
+builder.Services.AddSingleton(TypeAdapterConfig.GlobalSettings);
+builder.Services.AddScoped<IMapper, ServiceMapper>();
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining<Program>();
+    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    cfg.AddOpenBehavior(typeof(AuditLoggingBehavior<,>));
+    cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
+    cfg.AddOpenBehavior(typeof(RequestLoggingBehavior<,>));
+    cfg.AddOpenBehavior(typeof(PerformanceBehavior<,>));
+});
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+
+// --- Advanced Password Hashing: Argon2id ---
+builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, Argon2idPasswordHasher<ApplicationUser>>();
+
+// --- CSRF Protection (Hardened) ---
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN"; // Support for AJAX/Fetch
+    options.Cookie.Name = ".ITPortal.XSRF";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
+
+// Configure SmtpSettings
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.Configure<SecuritySettings>(builder.Configuration.GetSection("SecuritySettings"));
+builder.Services.AddScoped<IOutlookService, OutlookService>();
+builder.Services.AddSingleton<SecureOtpGenerator>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Authentication.IClaimsTransformation, UserTitleClaimsTransformation>();
+builder.Services.AddHostedService<OffboardingAutoSignService>();
+builder.Services.AddHostedService<SlaCheckerService>();
+builder.Services.AddHostedService<AssetLicenseExpiryService>();
+builder.Services.AddHostedService<DatabaseBackupService>();
+
+// --- Security Services ---
+builder.Services.AddSingleton<ISignatureIntegrityService, SignatureIntegrityService>(); // HMAC signing (H-03)
+builder.Services.AddSingleton<ILicenseEncryptionService, LicenseEncryptionService>();
+builder.Services.AddScoped<ILicenseService, LicenseService>();
+builder.Services.AddHostedService<DataRetentionService>();                               // PDPA retention (M-06)
+
+// --- MVC ---
+builder.Services.AddControllersWithViews(options =>
+{
+    // Enforce CSRF protection on all non-GET requests (POST, PUT, DELETE, etc.)
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+    options.Filters.Add<ValidationExceptionFilter>();
+    options.Filters.Add<NotFoundExceptionFilter>();
+});
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new OpenApiInfo
+        {
+            Title = "IT Form Parallel API",
+            Version = context.DocumentName,
+            Description = "OpenAPI surface for the hybrid MVC + Web API application."
+        };
+
+        var nonApiPaths = document.Paths.Keys
+            .Where(path => !path.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var path in nonApiPaths)
+        {
+            document.Paths.Remove(path);
+        }
+
+        document.Tags = new HashSet<OpenApiTag>(
+            ApiOpenApiTagResolver.All.Select(tagName => new OpenApiTag { Name = tagName }));
+
+        return Task.CompletedTask;
+    });
+
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
+    {
+        var metadata = context.Description.ActionDescriptor.EndpointMetadata ?? [];
+        var httpMethod = context.Description.HttpMethod ?? string.Empty;
+        var requiresAntiforgeryHeader =
+            !HttpMethods.IsGet(httpMethod) &&
+            !HttpMethods.IsHead(httpMethod) &&
+            !HttpMethods.IsOptions(httpMethod) &&
+            !metadata.OfType<AllowAnonymousAttribute>().Any() &&
+            !metadata.OfType<IgnoreAntiforgeryTokenAttribute>().Any();
+
+        if (requiresAntiforgeryHeader)
+        {
+            operation.Parameters ??= [];
+
+            var hasXsrfHeader = operation.Parameters.Any(parameter =>
+                parameter.In == ParameterLocation.Header &&
+                string.Equals(parameter.Name, "X-XSRF-TOKEN", StringComparison.OrdinalIgnoreCase));
+
+            if (!hasXsrfHeader)
+            {
+                operation.Parameters.Add(new OpenApiParameter
+                {
+                    Name = "X-XSRF-TOKEN",
+                    In = ParameterLocation.Header,
+                    Required = true,
+                    Description = "CSRF antiforgery token required for authenticated state-changing requests.",
+                    Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+                });
+            }
+        }
+
+        var tagName = ApiOpenApiTagResolver.Resolve(context.Description.RelativePath);
+        if (!string.IsNullOrWhiteSpace(tagName))
+        {
+            operation.Tags = new HashSet<OpenApiTagReference>
+            {
+                new(tagName, context.Document, null)
+            };
+        }
+
+        return Task.CompletedTask;
+    });
+});
+
+// --- Health Checks ---
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>(name: "database");
+
+// --- Authorization Policies ---
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireIT", policy =>
+        policy.RequireAssertion(ctx => ctx.User.HasClaim("UserTitle", "IT")));
+    options.AddPolicy("RequireHR", policy =>
+        policy.RequireAssertion(ctx => ctx.User.HasClaim("UserTitle", "HR")));
+    options.AddPolicy("RequireHROrIT", policy =>
+        policy.RequireAssertion(ctx =>
+            ctx.User.HasClaim("UserTitle", "IT") || ctx.User.HasClaim("UserTitle", "HR")));
+    options.AddPolicy("RequireManager", policy =>
+        policy.RequireAssertion(ctx => ctx.User.HasClaim("UserTitle", "Manager")));
+});
+
+// --- Rate Limiting (Availability) ---
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddFixedWindowLimiter("fixed", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 100;
+        opt.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("strict", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 10;
+        opt.QueueLimit = 0;
+    });
+
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        if (context.HttpContext.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+        {
+            await context.HttpContext.Response.WriteAsJsonAsync(new { error = "Too many requests. Please try again later." }, cancellationToken: token);
+        }
+        else
+        {
+            context.HttpContext.Response.ContentType = "text/html";
+            await context.HttpContext.Response.WriteAsync(
+                "<!DOCTYPE html><html><head><title>Too Many Requests</title>" +
+                "<link href=\"http://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\" rel=\"stylesheet\">" +
+                "</head><body class=\"bg-light d-flex align-items-center justify-content-center\" style=\"height: 100vh;\">" +
+                "<div class=\"text-center\"><h1 class=\"display-1 fw-bold text-danger\">429</h1><h2 class=\"mb-4\">Too Many Requests</h2>" +
+                "<p class=\"lead\">You have exceeded the allowed number of requests. Please wait a moment and try again.</p>" +
+                "<a href=\"/\" class=\"btn btn-primary mt-3\">Return to Home</a></div></body></html>", cancellationToken: token);
+        }
+    };
+});
+
+// --- Localization (Date Format) ---
+var defaultCulture = new CultureInfo("en-GB");
+defaultCulture.DateTimeFormat.ShortDatePattern = "dd/MM/yyyy";
+defaultCulture.DateTimeFormat.DateSeparator = "/";
+
+var supportedCultures = new[] { defaultCulture };
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture = new RequestCulture(defaultCulture);
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
+
+// --- Reverse Proxy Forwarded Headers ---
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    // Trust upstream proxy entries configured at infrastructure boundary.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// Bindings are managed via launchSettings.json or environment variables
+
+var app = builder.Build();
+
+// --- Middleware Pipeline ---
+app.UseForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+}
+app.Use(async (context, next) =>
+{
+    if (SensitiveFileStorage.IsLegacySensitiveUploadPath(context.Request.Path))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    await next();
+});
+app.UseStaticFiles();
+// Use Serilog to log every HTTP request
+app.UseSerilogRequestLogging();
+
+app.UseRateLimiter();
+
+app.UseRequestLocalization();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// --- Password Change Enforcement Middleware ---
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true && context.User.HasClaim("MustChangePassword", "true"))
+    {
+        var path = context.Request.Path.Value ?? string.Empty;
+        // Allow access to ForceChangePassword, Logout, Static Assets, and Health endpoints
+        if (!path.StartsWith("/Account/ForceChangePassword", StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith("/Account/Logout", StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith("/css/", StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith("/lib/", StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith("/js/", StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith("/images/", StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.Redirect("/Account/ForceChangePassword");
+            return;
+        }
+    }
+    await next();
+});
+
+// --- Security Headers Middleware (Architect Level: CSP, X-Frame-Options, Masking) ---
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+app.UseSession();
+
+app.MapStaticAssets();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(options => options
+        .WithTitle("IT Form API Reference")
+        .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+        .WithOpenApiRoutePattern("/openapi/{documentName}.json"))
+        .AllowAnonymous();
+}
+app.MapControllers();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}")
+    .WithStaticAssets();
+
+// Health check endpoint — accessible without auth so monitoring tools can ping it
+// Visit /health to verify the app and database are up
+app.MapHealthChecks("/health");
+
+// --- Seed Database ---
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+        await DbInitializer.EnsureDefaultSlaSettingsAsync(context);
+        DbInitializer.Seed(context);
+
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var configuration = services.GetRequiredService<IConfiguration>();
+        await DbInitializer.SeedUsersAsync(userManager, context, configuration);
+
+        var sensitiveUploadMigrationService = services.GetRequiredService<LegacySensitiveUploadMigrationService>();
+        await sensitiveUploadMigrationService.MigrateAsync();
+
+        var auditLogRepairService = services.GetRequiredService<AuditLogRepairService>();
+        await auditLogRepairService.RepairAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating/seeding the database.");
+    }
+}
+
+// --- Minimal API for Hardware Telemetry Sync ---
+app.MapInventoryEndpoints();
+
+app.Run();
+
+internal static class StartupUrlGuard
+{
+    public static bool TryGetConflictingUrls(string? urls, out IReadOnlyCollection<string> conflictingUrls)
+    {
+        var conflicts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        conflictingUrls = conflicts;
+
+        if (string.IsNullOrWhiteSpace(urls))
+        {
+            return false;
+        }
+
+        var listeningPorts = IPGlobalProperties
+            .GetIPGlobalProperties()
+            .GetActiveTcpListeners()
+            .Select(endpoint => endpoint.Port)
+            .ToHashSet();
+
+        foreach (var rawUrl in urls.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri))
+            {
+                continue;
+            }
+
+            if (uri.Port > 0 && listeningPorts.Contains(uri.Port))
+            {
+                conflicts.Add(rawUrl);
+            }
+        }
+
+        conflictingUrls = conflicts;
+        return conflicts.Count > 0;
+    }
+}
+
+internal static class ApiOpenApiTagResolver
+{
+    public static IReadOnlyCollection<string> All { get; } =
+        ["Onboarding", "Offboarding", "Employees", "Inventory", "Audit Logs"];
+
+    public static string? Resolve(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+        {
+            return null;
+        }
+
+        var normalized = relativePath.TrimStart('/');
+        return normalized switch
+        {
+            var path when path.StartsWith("api/onboarding-requests", StringComparison.OrdinalIgnoreCase) => "Onboarding",
+            var path when path.StartsWith("api/offboarding-requests", StringComparison.OrdinalIgnoreCase) => "Offboarding",
+            var path when path.StartsWith("api/employees", StringComparison.OrdinalIgnoreCase) => "Employees",
+            var path when path.StartsWith("api/inventory", StringComparison.OrdinalIgnoreCase) => "Inventory",
+            var path when path.StartsWith("api/audit-logs", StringComparison.OrdinalIgnoreCase) => "Audit Logs",
+            _ => null
+        };
+    }
+}
+
+

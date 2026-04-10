@@ -1,0 +1,373 @@
+@model IT_Form.ViewModels.OffboardingStep1PageViewModel
+
+@{
+    ViewData["Title"] = "Step 1 - Digital Access & Hardware";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card mb-5 animate-in">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-shield-lock me-2" style="color: var(--primary-light);" aria-hidden="true"></i>Step 1 - Digital Access & Hardware - Req #@Model.Id
+                </div>
+                <span class="badge bg-secondary">Step 1 of 2</span>
+            </div>
+
+            <div class="card-body">
+                <form asp-action="Step1" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="Id" />
+                    
+                    <!-- Hidden Fields to preserve Step 2 data if navigating back from Step 2 -->
+                    @Html.HiddenFor(m => m.ClearedLaptop)
+                    @Html.HiddenFor(m => m.ClearedMobile)
+                    @Html.HiddenFor(m => m.ClearedKeys)
+                    @Html.HiddenFor(m => m.ClearedOtherAssets)
+                    @Html.HiddenFor(m => m.ClearanceRemarks)
+
+                    @Html.HiddenFor(m => m.CheckPhysicalClean)
+                    @Html.HiddenFor(m => m.CheckO365Deactivate)
+                    @Html.HiddenFor(m => m.CheckWindowsDisable)
+                    @Html.HiddenFor(m => m.CheckEmailSignOut)
+                    @Html.HiddenFor(m => m.CheckSpecificSoftwareDeactivate)
+                    @Html.HiddenFor(m => m.CheckGeneralSoftwareDeactivate)
+                    @Html.HiddenFor(m => m.CheckAbcGroupRemove)
+                    @Html.HiddenFor(m => m.CheckEmailMailGroupRemove)
+                    @Html.HiddenFor(m => m.CheckDomainDisjoin)
+                    @Html.HiddenFor(m => m.CheckSharedDriveRemove)
+                    @Html.HiddenFor(m => m.CheckWiFiDisable)
+                    @Html.HiddenFor(m => m.CheckPrinterRemove)
+                    @Html.HiddenFor(m => m.CheckScanFolderRemove)
+                    @Html.HiddenFor(m => m.CheckVPNDisable)
+                    @Html.HiddenFor(m => m.ChecklistRemarks)
+
+                    @Html.HiddenFor(m => m.DataBackupDone)
+                    @Html.HiddenFor(m => m.EmailBackupDone)
+                    @Html.HiddenFor(m => m.EmailForwardingDone)
+                    @Html.HiddenFor(m => m.LicenseRemovalDone)
+                    @Html.HiddenFor(m => m.FollowUpRemarks)
+
+                    <h5 class="border-bottom pb-2 mb-3 text-secondary">Employee Demographics</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-5 mb-2">
+                            <label asp-for="FullName" class="form-label fw-bold">Full Name *</label>
+                            <input asp-for="FullName" class="form-control bg-light" disabled />
+                            <span asp-validation-for="FullName" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                        <div class="col-md-7 mb-2">
+                            <label asp-for="EmployeeID" class="form-label fw-bold">Employee ID / IC</label>
+                            <input asp-for="EmployeeID" class="form-control bg-light" disabled />
+                            <span asp-validation-for="EmployeeID" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label asp-for="Department" class="form-label fw-bold">Department *</label>
+                            <input asp-for="Department" class="form-control bg-light" disabled />
+                        </div>
+                        <div class="col-md-5 mb-2">
+                             <label asp-for="Branch" class="form-label fw-bold">Company</label>
+                             <select asp-for="Branch" class="form-select bg-light" disabled>
+                                 <option value="">-- Select --</option>
+                                 @if (Model.Companies != null)
+                                 {
+                                     foreach (var company in Model.Companies)
+                                     {
+                                         <option value="@company">@company</option>
+                                     }
+                                 }
+                                 <option value="Others">Others</option>
+                             </select>
+                         </div>
+                        @if (Model.Department == "Others" && !string.IsNullOrEmpty(Model.OtherDepartmentDetails))
+                        {
+                            <div class="col-md-5 mb-2">
+                                <label class="form-label fw-bold text-info">Other Department Details</label>
+                                <input class="form-control bg-light" value="@Model.OtherDepartmentDetails" disabled />
+                            </div>
+                        }
+                        @if (Model.Branch == "Others" && !string.IsNullOrEmpty(Model.OtherBranchDetails))
+                        {
+                            <div class="col-md-7 mb-2">
+                                <label class="form-label fw-bold text-info">Other Company Details</label>
+                                <input class="form-control bg-light" value="@Model.OtherBranchDetails" disabled />
+                            </div>
+                        }
+                        <div class="col-md-4 mb-2">
+                            <label asp-for="LastDayOfWork" class="form-label fw-bold">Last Day *</label>
+                            <input asp-for="LastDayOfWork" type="date" class="form-control bg-light" disabled />
+                        </div>
+                        <div class="col-md-12 mb-2">
+                            <label asp-for="HODEmail" class="form-label fw-bold">Manager Email *</label>
+                            <input asp-for="HODEmail" type="email" class="form-control bg-light"
+                                disabled />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Account & Access Column -->
+                        <div class="col-md-5">
+                            <h5 class="border-bottom pb-2 mb-3 text-primary"><i class="bi bi-person-x me-2" aria-hidden="true"></i>Digital
+                                Access Removal</h5>
+                            <div class="mb-4">
+                                <!-- Contextual Info Display -->
+                                @if (Model.OnboardingRequest != null)
+                                {
+                                        <div class="alert alert-secondary py-2 small mb-3 border-0 shadow-sm"
+                                            style="background: var(--bg-body);">
+                                            <strong><i class="fas fa-info-circle me-1 text-primary" aria-hidden="true"></i> Assigned Software &
+                                                Access:</strong>
+                                            <ul class="mb-0 mt-1 ps-3 text-muted">
+                                            @if (Model.OnboardingRequest.MailboxAccount)
+                                            {
+                                                        <li>M365 License</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasAdobe)
+                                            {
+                                                        <li>Adobe</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasMSProject)
+                                            {
+                                                        <li>MS Project</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasAutoDesk)
+                                            {
+                                                        <li>AutoDesk</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasGStarCAD)
+                                            {
+                                                        <li>G-Star CAD</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasFortiClientVPN)
+                                            {
+                                                        <li>FortiClient VPN</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasSQLAccounting)
+                                            {
+                                                        <li>SQL Accounting</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasMSVisio)
+                                            {
+                                                        <li>MS Visio</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasAutoCAD)
+                                            {
+                                                        <li>AutoCAD</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasSketchUp)
+                                            {
+                                                        <li>SketchUp</li>
+                                            }
+                                            @if (Model.OnboardingRequest.HasMSOffice) { <li>MS Office</li> }
+                                            @if (Model.OnboardingRequest.HasGoogleChrome) { <li>Google Chrome</li> }
+                                            @if (Model.OnboardingRequest.HasMSTeams) { <li>MS Teams</li> }
+                                            @if (Model.OnboardingRequest.HasAntivirus) { <li>Antivirus Endpoint</li> }
+                                            @if (Model.OnboardingRequest.HasDWGTrueView) { <li>DWG TrueView</li> }
+                                            @if (Model.OnboardingRequest.HasIFlexiHRMS) { <li>i-Flexi HRMS</li> }
+                                            @if (Model.OnboardingRequest.HasEShare) { <li>EShare</li> }
+                                            @if (Model.OnboardingRequest.HasOS) { <li>Operating System</li> }
+                                            @if (Model.OnboardingRequest.HasOtherSoftware &&
+                                          !string.IsNullOrEmpty(Model.OnboardingRequest.OtherSoftwareDetails))
+                                            {
+                                                        <li>Other: @Model.OnboardingRequest.OtherSoftwareDetails</li>
+                                            }
+                                            @if (Model.OnboardingRequest.PrecastGroup || Model.OnboardingRequest.OtherGroup || Model.OnboardingRequest.MailboxLogistic || Model.OnboardingRequest.MailboxInfo || Model.OnboardingRequest.MailboxAdmin || Model.OnboardingRequest.MailboxIntern || Model.OnboardingRequest.MailboxIT || Model.OnboardingRequest.MailboxSupervisor || Model.OnboardingRequest.MailboxStore)
+                                            {
+                                                        <li>Email Groups: 
+                                                            @if (Model.OnboardingRequest.PrecastGroup) { <span class="badge bg-light text-dark border me-1">Precast</span> }
+                                                            @if (Model.OnboardingRequest.MailboxLogistic) { <span class="badge bg-light text-dark border me-1">Logistic</span> }
+                                                            @if (Model.OnboardingRequest.MailboxInfo) { <span class="badge bg-light text-dark border me-1">Info</span> }
+                                                            @if (Model.OnboardingRequest.MailboxAdmin) { <span class="badge bg-light text-dark border me-1">Admin</span> }
+                                                            @if (Model.OnboardingRequest.MailboxIntern) { <span class="badge bg-light text-dark border me-1">Intern</span> }
+                                                            @if (Model.OnboardingRequest.MailboxIT) { <span class="badge bg-light text-dark border me-1">IT</span> }
+                                                            @if (Model.OnboardingRequest.MailboxSupervisor) { <span class="badge bg-light text-dark border me-1">Supervisor</span> }
+                                                            @if (Model.OnboardingRequest.MailboxStore) { <span class="badge bg-light text-dark border me-1">Store</span> }
+                                                            @if (Model.OnboardingRequest.OtherGroup) { <span class="text-primary italic">@Model.OnboardingRequest.OtherGroupDetails</span> }
+                                                        </li>
+                                            }
+                                            @if (Model.OnboardingRequest.FolderPermissions.Any())
+                                            {
+                                                        <li>Folders: @string.Join(", ",
+                                                    Model.OnboardingRequest.FolderPermissions.Select(f => f.FolderName))</li>
+                                            }
+                                            </ul>
+                                        </div>
+                                }
+
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="AccountDisabledAD"
+                                        id="chkAD">
+                                    <label class="form-check-label fw-bold" for="chkAD">Active Directory Account
+                                        Disabled</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="M365LicenseRevoked"
+                                        id="chkM365">
+                                    <label class="form-check-label fw-bold" for="chkM365">M365 License Revoked /
+                                        Blocked</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="SoftwareLicensesRevoked"
+                                        id="chkSoft">
+                                    <label class="form-check-label fw-bold" for="chkSoft">Other Software Revoked</label>
+                                </div>
+
+                                <hr />
+
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" asp-for="EmailForwarded" id="chkFwd"
+                                        onchange="toggleForwardEmail()">
+                                    <label class="form-check-label fw-bold" for="chkFwd">Setup Email Forwarding?</label>
+                                </div>
+                                <div class="ps-4" id="fwdEmailDiv"
+                                    style="display: @(Model.EmailForwarded ? "block" : "none")">
+                                    <label asp-for="ForwardToEmail" class="form-label small text-muted">Forward To
+                                        Address</label>
+                                    <input asp-for="ForwardToEmail" type="email" class="form-control form-control-sm"
+                                        placeholder="e.g. manager@ytc.com" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-7">
+                            <h5 class="border-bottom pb-2 mb-3 text-info"><i class="bi bi-laptop me-2" aria-hidden="true"></i>Hardware
+                                Collection</h5>
+                            <div class="mb-4">
+                                <!-- Contextual Info Display -->
+                                @if (Model.OnboardingRequest != null && Model.OnboardingRequest.IssuedAssets.Any())
+                                {
+                                        <div class="alert alert-secondary py-2 small mb-3 border-0 shadow-sm"
+                                            style="background: var(--bg-body);">
+                                            <strong><i class="fas fa-desktop me-1 text-info" aria-hidden="true"></i> Specifically Assigned
+                                                Hardware:</strong>
+                                            <ul class="mb-0 mt-2 ps-1 list-unstyled text-muted">
+                                            @foreach (var asset in Model.OnboardingRequest.IssuedAssets.Where(a => a.ITAssetId.HasValue))
+                                            {
+                                                var isReturned = asset.ITAsset != null && asset.ITAsset.Status != IT_Form.Models.Enums.AssetStatus.Issued;
+                                                        <li class="mb-1 ms-1">
+                                                            @asset.AssetType.ToString() - @(asset.AssetTag ?? "No Tag") <span
+                                                                    class="text-secondary" style="font-size: 0.8rem;">(@(asset.Description
+                                                    ??
+                                                    "N/A"))</span>
+                                                            @if (isReturned)
+                                                            {
+                                                                <span class="badge bg-success ms-1">Returned</span>
+                                                            }
+                                                        </li>
+                                            }
+                                            @foreach (var asset in Model.OnboardingRequest.IssuedAssets.Where(a => !a.ITAssetId.HasValue))
+                                            {
+                                                        <li class="mb-1 ms-4">
+                                                    @asset.AssetType.ToString() <span
+                                                                    class="text-secondary" style="font-size: 0.8rem;">(@(asset.Description
+                                                    ??
+                                                    "N/A"))</span>
+                                                        </li>
+                                            }
+                                            </ul>
+                                        </div>
+                                }
+                                else if (Model.OnboardingRequest != null)
+                                {
+                                        <div class="alert alert-secondary py-2 small mb-3 border-0 shadow-sm text-muted fst-italic"
+                                            style="background: var(--bg-body);">
+                                            No specific hardware linked during Onboarding.
+                                        </div>
+                                }
+
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="LaptopReturned"
+                                        id="chkLaptop">
+                                    <label class="form-check-label fw-bold" for="chkLaptop">Laptop / Desktop
+                                        Returned</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" asp-for="AccessoriesReturned" id="chkAcc">
+                                    <label class="form-check-label fw-bold" for="chkAcc">Accessories Returned (Mouse, Bag, Cables)</label>
+                                </div>
+
+                                <div class="form-check form-switch mb-4 mt-4 p-3 bg-light rounded-3 border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="IsHardwareDamaged" id="chkDamage" onchange="toggleDamageInfo()">
+                                    <label class="form-check-label fw-bold text-danger" for="chkDamage">
+                                        <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i> Is Hardware Damage / Missing?
+                                    </label>
+                                </div>
+
+                                <div id="damageInfoDiv" style="display: @(Model.IsHardwareDamaged ? "block" : "none")" class="p-3 border rounded-3 mb-3 bg-white shadow-sm border-danger border-opacity-25 animate-in">
+                                    <div class="mb-3">
+                                        <label asp-for="MissingItemFines" class="form-label fw-bold small text-danger uppercase letter-spacing-1">Missing/Damaged Items Fine (RM)</label>
+                                        <input asp-for="MissingItemFines" type="number" step="0.01" class="form-control form-control-lg border-danger border-opacity-25" placeholder="0.00" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label asp-for="FinesRemarks" class="form-label fw-bold small text-muted uppercase letter-spacing-1">Fines Remarks</label>
+                                        <textarea asp-for="FinesRemarks" class="form-control" rows="2" placeholder="Details about the fine..."></textarea>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label fw-bold small text-muted uppercase letter-spacing-1">Damage Proof (Optional)</label>
+                                        <input type="file" name="hardwareDamageImage" class="form-control" accept="image/*,video/*,.pdf" data-drag-upload="true" />
+                                        <div class="form-text">Accepted: image, video, or PDF.</div>
+                                        @if (!string.IsNullOrEmpty(Model.HardwareDamageImagePath))
+                                        {
+                                                <div class="mt-2 p-2 bg-light rounded border">
+                                                    <a href="@Model.HardwareDamageImagePath" target="_blank" class="text-info small fw-bold">
+                                                        <i class="fas fa-image me-1" aria-hidden="true"></i>View Current Proof Image
+                                                    </a>
+                                                </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="mb-2 mt-2">
+                                    <label asp-for="HardwareNotes" class="form-label fw-bold">Return Notes / Discrepancies</label>
+                                    <textarea asp-for="HardwareNotes" class="form-control" rows="3" placeholder="Condition of laptop, missing charger, etc."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="mt-4 mb-4" />
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary text-decoration-none">Cancel</a>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="saveAction" value="draft" class="btn btn-outline-primary" formnovalidate>
+                                <i class="fas fa-save me-2" aria-hidden="true"></i>Save Draft
+                            </button>
+                            <button type="submit" name="saveAction" value="submit" class="btn btn-primary">
+                                Next: IT Checklist <i class="fas fa-arrow-right ms-2" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+        <script>
+            function toggleForwardEmail() {
+                var chk = document.getElementById('chkFwd');
+                var div = document.getElementById('fwdEmailDiv');
+                if (chk.checked) {
+                    div.style.display = 'block';
+                } else {
+                    div.style.display = 'none';
+                    document.getElementById('ForwardToEmail').value = '';
+                }
+            }
+            function toggleDamageInfo() {
+                var chk = document.getElementById('chkDamage');
+                var div = document.getElementById('damageInfoDiv');
+                if (chk.checked) {
+                    div.style.display = 'block';
+                } else {
+                    div.style.display = 'none';
+                    // Optional: clear values if hidden? No, let's keep them in case of accidental click
+                }
+            }
+        </script>
+}
+
+

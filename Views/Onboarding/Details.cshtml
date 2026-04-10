@@ -1,0 +1,638 @@
+@model IT_Form.ViewModels.OnboardingDetailsPageViewModel
+@using IT_Form.Models.Enums
+@inject IT_Form.Services.ILicenseEncryptionService EncryptionService
+@{
+    ViewData["Title"] = $"Request — {Model.FullName}";
+}
+
+<div class="details-hero animate-in mt-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            @if (Model.CompanyLogoPath != null)
+            {
+                <div class="flex-shrink-0">
+                    <img src="/@Model.CompanyLogoPath" alt="Company Logo" style="height: 32px; object-fit: contain;" />
+                </div>
+            }
+            <h2 class="fw-bolder mb-0 fs-4">
+                <span class="text-gradient">@Model.FullName</span>
+                @if (Model.Status == RequestStatus.Completed)
+                {
+                    <span class="badge badge-completed ms-2 fs-6" style="vertical-align: middle;">Completed</span>
+                }
+                else if (Model.Status == RequestStatus.PendingEmployeeSign)
+                {
+                    <span class="badge badge-employeesign ms-2 fs-6" style="vertical-align: middle;">Pending Employee Sign</span>
+                }
+                else if (Model.Status == RequestStatus.Draft)
+                {
+                    <span class="badge badge-draft ms-2 fs-6" style="vertical-align: middle;">Draft</span>
+                }
+                else if (Model.Status == RequestStatus.Rejected)
+                {
+                    <span class="badge badge-rejected ms-2 fs-6" style="vertical-align: middle;">Rejected</span>
+                }
+                else if (Model.Status == RequestStatus.Approved)
+                {
+                    <span class="badge badge-completed ms-2 fs-6" style="vertical-align: middle;">Approved</span>
+                }
+                else
+                {
+                    <span class="badge badge-pending ms-2 fs-6" style="vertical-align: middle;">@(Model.Status == RequestStatus.PendingITApproval ? "Pending IT Approval" : Model.Status.ToString())</span>
+                }
+            </h2>
+        </div>
+
+        <div class="details-action-bar ms-auto d-flex gap-2">
+            <a asp-action="GeneratePdf" asp-route-id="@Model.Id" class="btn details-action details-action--pdf">
+                <span class="details-action__icon">
+                    <i class="fas fa-file-pdf"></i>
+                </span>
+                <span>Download PDF</span>
+            </a>
+            
+            @if (User.HasClaim("UserTitle", "HR") && !string.IsNullOrEmpty(Model.RequesterSignature) && string.IsNullOrEmpty(Model.ITAdminSignature))
+            {
+                <button type="button" class="btn details-action details-action--danger" data-bs-toggle="modal" data-bs-target="#deleteFormModal">
+                    <span class="details-action__icon">
+                        <i class="bi bi-trash"></i>
+                    </span>
+                    <span>Delete Form</span>
+                </button>
+            }
+
+            @if (Model.Status == IT_Form.Models.Enums.RequestStatus.Rejected)
+            {
+                <a asp-controller="Notification" asp-action="ComposeRejectionEmail" asp-route-id="@Model.Id" 
+                   asp-route-type="Onboarding" class="btn details-action details-action--danger">
+                    <span class="details-action__icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </span>
+                    <span>Send Rejection Email</span>
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Notification" asp-action="ComposeEmail" asp-route-id="@Model.Id" class="btn details-action details-action--success">
+                    <span class="details-action__icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </span>
+                    <span>Open in Outlook</span>
+                </a>
+            }
+
+            @if (Model.Status == IT_Form.Models.Enums.RequestStatus.Completed && User.HasClaim("UserTitle", "HR"))
+            {
+                <a asp-controller="Offboarding" asp-action="Create" asp-route-onboardingRequestId="@Model.Id" class="btn details-action details-action--warning">
+                    <span class="details-action__icon">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </span>
+                    <span>Initiate Offboarding</span>
+                </a>
+            }
+
+            @if (Model.Status == IT_Form.Models.Enums.RequestStatus.PendingITApproval && User.HasClaim("UserTitle", "IT"))
+            {
+                <a asp-action="ITSetup" asp-route-id="@Model.Id" class="btn details-action details-action--primary">
+                    <span class="details-action__icon">
+                        <i class="fas fa-tools"></i>
+                    </span>
+                    <span>Continue IT Setup</span>
+                </a>
+            }
+
+            @if ((Model.Status == IT_Form.Models.Enums.RequestStatus.Completed || Model.Status == IT_Form.Models.Enums.RequestStatus.Approved) && User.HasClaim("UserTitle", "IT"))
+            {
+                <a asp-action="ManageAccess" asp-route-id="@Model.Id" class="btn details-action details-action--access">
+                    <span class="details-action__icon">
+                        <i class="bi bi-shield-check"></i>
+                    </span>
+                    <span>Manage Access</span>
+                </a>
+            }
+
+            <a asp-action="Index" class="btn details-action details-action--neutral">
+                <span class="details-action__icon">
+                    <i class="fas fa-arrow-left"></i>
+                </span>
+                <span>Back</span>
+            </a>
+        </div>
+    </div>
+    <div class="mt-2 d-flex align-items-center gap-4">
+        <p class="text-muted mb-0 small"><i class="bi bi-calendar-check me-1"></i>Submitted on @Model.RequestDate.ToString("dd/MM/yyyy")</p>
+        @if (Model.Status != RequestStatus.Completed && Model.Status != RequestStatus.Rejected && Model.Status != RequestStatus.Approved)
+        {
+            var deadline = Model.SlaDeadline;
+            if (deadline.HasValue)
+            {
+                var isOverdue = DateTime.UtcNow > deadline.Value;
+                <p class="mb-0 small @(isOverdue ? "text-danger fw-bold" : "text-primary")">
+                    <i class="bi bi-clock-history me-1"></i>Due: @deadline.Value.AddHours(8).ToString("dd/MM/yyyy HH:mm")
+                    @if (isOverdue)
+                    {
+                        <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">Overdue</span>
+                    }
+                </p>
+            }
+        }
+    </div>
+</div>
+
+@if (Model.Status == IT_Form.Models.Enums.RequestStatus.Rejected)
+{
+    <div class="rejection-banner animate-in mb-4">
+        <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-x-circle-fill text-danger fs-3"></i>
+            <div>
+                <h5 class="text-danger mb-1 fw-bold">Request Rejected</h5>
+                <p class="mb-0" style="color: var(--text-primary);">
+                    <strong>Reason:</strong> @Model.RejectionReason
+                </p>
+                @if (!string.IsNullOrEmpty(Model.RejectedByUserId))
+                {
+                    <small class="text-muted">Rejected by @Model.RejectedByUserId</small>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-4 animate-in">
+    <!-- Employee Info -->
+    <div class="col-md-5">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-user-tie me-2" style="color: var(--primary-light);"></i>Employee Details
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td style="color: var(--text-muted); width: 40%;">Name</td>
+                        <td><strong>@Model.FullName</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Employee ID</td>
+                        <td>@(Model.EmployeeID ?? "N/A")</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Designation</td>
+                        <td>@(Model.Designation ?? "N/A")</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Department</td>
+                        <td>
+                            @Model.Department
+                            @if (Model.Department == "Others" && !string.IsNullOrEmpty(Model.OtherDepartmentDetails))
+                            {
+                                <span class="text-info small">(@Model.OtherDepartmentDetails)</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Company</td>
+                        <td>
+                            @(Model.Branch ?? "N/A")
+                            @if (Model.Branch == "Others" && !string.IsNullOrEmpty(Model.OtherBranchDetails))
+                            {
+                                <span class="text-info small">(@Model.OtherBranchDetails)</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Desk Number</td>
+                        <td>@(Model.DeskNumber ?? "N/A")</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Date Hire</td>
+                        <td>@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "TBD")</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Email Address</td>
+                        <td>@(Model.EmailAddress ?? "N/A")</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-muted);">Reporting Manager</td>
+                        <td>@Model.HODEmail</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Software & Email Groups -->
+    <div class="col-md-7">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-box me-2" style="color: var(--primary-light);"></i>Software & Accounts
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-uppercase fw-bold text-muted" style="font-size: 0.75rem;">Requested Software</small>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        @{
+                            var softwareFields = new Dictionary<string, bool> {
+                                {"MS Office", Model.HasMSOffice}, {"Adobe", Model.HasAdobe}, {"MS Project", Model.HasMSProject},
+                                {"MS Visio", Model.HasMSVisio}, {"AutoDesk", Model.HasAutoDesk}, {"AutoCAD", Model.HasAutoCAD},
+                                {"GstarCAD", Model.HasGStarCAD}, {"SketchUp", Model.HasSketchUp}, {"SQL Accounting", Model.HasSQLAccounting},
+                                {"FortiVPN", Model.HasFortiClientVPN}, {"Antivirus", Model.HasAntivirus}, {"iFlexiHRMS", Model.HasIFlexiHRMS},
+                                {"Google Chrome", Model.HasGoogleChrome}, {"MS Teams", Model.HasMSTeams}, {"Windows OS", Model.HasOS}
+                            };
+
+                            var legacyRequestedSoftware = softwareFields.Where(s => s.Value).Select(s => s.Key).ToList();
+                            var assignedSoftware = (Model.IssuedSoftware != null
+                                ? Model.IssuedSoftware
+                                    .Select(s => s.SoftwareName)
+                                : Enumerable.Empty<string>())
+                                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                                    .ToList();
+                        }
+                        @foreach (var sw in legacyRequestedSoftware)
+                        {
+                            <span class="badge-approved">@sw</span>
+                        }
+                        @foreach (var sw in assignedSoftware.Where(s => !legacyRequestedSoftware.Contains(s, StringComparer.OrdinalIgnoreCase)))
+                        {
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">@sw</span>
+                        }
+                        @if (Model.HasOtherSoftware)
+                        {
+                            <span class="badge bg-info text-dark border border-info">Other: @Model.OtherSoftwareDetails</span>
+                        }
+                        @if (!legacyRequestedSoftware.Any() && !assignedSoftware.Any() && !Model.HasOtherSoftware)
+                        {
+                            <span class="text-muted small">No software selected or assigned.</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-uppercase fw-bold text-muted" style="font-size: 0.75rem;">Email Groups</small>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        @foreach (var g in Model.RequestEmailGroups)
+                        {
+                            <span class="badge-approved">@g.GroupName</span>
+                        }
+                        @if (Model.PrecastGroup) { <span class="badge-pending">Precast Group</span> }
+                        @if (Model.OtherGroup) { <span class="badge-pending">Other: @Model.OtherGroupDetails</span> }
+                    </div>
+                </div>
+
+                <div>
+                    <small class="text-uppercase fw-bold text-muted" style="font-size: 0.75rem;">Shared Mailboxes</small>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        @foreach (var m in Model.RequestSharedMailboxes) { <span class="badge-approved">@m.MailboxName</span> }
+                        @if (Model.MailboxAccount) { <span class="badge-pending">Account</span> }
+                        @if (Model.MailboxLogistic) { <span class="badge-pending">Logistic</span> }
+                        @if (Model.MailboxInfo) { <span class="badge-pending">Info</span> }
+                        @if (Model.MailboxAdmin) { <span class="badge-pending">Admin</span> }
+                        @if (Model.MailboxIT) { <span class="badge-pending">IT</span> }
+                        @if (Model.HasOtherSharedMailbox) { <span class="badge-approved">Other: @Model.OtherSharedMailboxDetails</span> }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IT Managed Assets -->
+@if (Model.IssuedAssets.Any())
+{
+    <div class="card animate-in mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-laptop me-2" style="color: var(--primary-light);"></i>IT Assets Issued</span>
+            <span class="badge bg-primary">@Model.IssuedAssets.Count Item(s)</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Asset Type</th>
+                            <th>Asset Tag</th>
+                            <th>Brand / Model</th>
+                            <th>Serial Number</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var asset in Model.IssuedAssets)
+                        {
+                            <tr>
+                                <td><span class="badge bg-secondary">@asset.AssetType</span></td>
+                                <td><strong>@asset.AssetTag</strong></td>
+                                <td>@asset.BrandModel</td>
+                                <td><code>@asset.SerialNumber</code></td>
+                                <td class="text-muted small">@asset.Description</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.IssuedSoftware?.Any() == true)
+{
+    <div class="card animate-in mt-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-cube me-2" style="color: var(--primary-light);"></i>Software Assigned</span>
+            <span class="badge bg-success">@Model.IssuedSoftware.Count License(s)</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Software</th>
+                            <th>Version / License</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sw in Model.IssuedSoftware.OrderBy(s => s.SoftwareName))
+                        {
+                            <tr>
+                                <td><span class="badge bg-secondary">Assigned</span></td>
+                                <td>
+                                    <strong>@sw.SoftwareName</strong>
+                                </td>
+                                <td class="text-muted small">@(string.IsNullOrWhiteSpace(sw.Notes) ? "-" : sw.Notes)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Folder Permissions -->
+@if ((User.HasClaim("UserTitle", "IT") || Model.Status == RequestStatus.PendingEmployeeSign || Model.Status == RequestStatus.Completed || Model.Status == RequestStatus.Approved) && (Model.FolderPermissions.Any() || Model.HasOtherFolder))
+{
+    <div class="card animate-in mt-4">
+        <div class="card-header">
+            <i class="fas fa-folder-open me-2" style="color: var(--primary-light);"></i>Server Folder Access
+        </div>
+        <div class="card-body">
+            @if (Model.FolderPermissions.Any())
+            {
+                <div class="table-responsive rounded border">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Folder</th>
+                                <th class="text-center" style="width: 100px;">Read</th>
+                                <th class="text-center" style="width: 100px;">Modify</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var folder in Model.FolderPermissions.OrderBy(f => f.FolderName))
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@folder.FolderName</td>
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input" @(folder.CanRead ? "checked" : "") disabled />
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input" @(folder.CanModify ? "checked" : "") disabled />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (Model.HasOtherFolder)
+            {
+                <div class="mt-3">
+                    <span class="badge bg-info text-dark border border-info">Other: @Model.OtherFolderDetails</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.FolderRemarks))
+            {
+                <div class="mt-3 p-2 bg-light rounded small">
+                    <strong>Remarks:</strong> @Model.FolderRemarks
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- IT Checklist -->
+@if (User.HasClaim("UserTitle", "IT") || Model.Status == RequestStatus.Completed)
+{
+    <div class="accordion animate-in mt-4" id="itChecklistAccordion">
+        <div class="accordion-item card border-0 shadow-sm">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed card-header" type="button" data-bs-toggle="collapse" data-bs-target="#collapseITChecklist">
+                    <i class="fas fa-tasks me-2" style="color: var(--primary-light);"></i>IT Setup Checklist
+                </button>
+            </h2>
+            <div id="collapseITChecklist" class="accordion-collapse collapse">
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0">
+                        <tbody>
+                            <tr><td class="ps-3">Physical Equipment Cleaned</td><td class="text-center">@(Model.CheckPhysicalClean ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">O365 Account Setup</td><td class="text-center">@(Model.CheckO365Setup ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Windows Login Configured</td><td class="text-center">@(Model.CheckWindowsLogin ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Email Profile Configured</td><td class="text-center">@(Model.CheckEmailSetup ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Specific Software Installed</td><td class="text-center">@(Model.CheckSpecificSoftware ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">General Software Installed</td><td class="text-center">@(Model.CheckGeneralSoftware ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">ABC Group Assigned</td><td class="text-center">@(Model.CheckAbcGroup ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Email Group Assigned</td><td class="text-center">@(Model.CheckEmailMailGroup ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Domain Joined</td><td class="text-center">@(Model.CheckDomainJoin ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">VPN Setup</td><td class="text-center">@(Model.CheckVPNSetup ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Shared Drives Mapped</td><td class="text-center">@(Model.CheckSharedDrive ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Printers Configured</td><td class="text-center">@(Model.CheckPrinterSetup ? "✅" : "—")</td></tr>
+                            <tr><td class="ps-3">Scan Folder Created</td><td class="text-center">@(Model.CheckScanFolder ? "✅" : "—")</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Signatures -->
+<div class="card animate-in mt-4 mb-5">
+    <div class="card-header">
+        <i class="bi bi-pen me-2" style="color: var(--primary-light);"></i>Sign Off & Approvals
+    </div>
+    <div class="card-body">
+        <div class="row g-4 text-center">
+            <div class="col-md-4 border-end">
+                <small class="text-uppercase fw-bold text-muted d-block mb-3">HR / Requestor</small>
+                @if (!string.IsNullOrEmpty(Model.RequesterSignature))
+                {
+                    <img src="@Model.RequesterSignature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
+                    <p class="small text-success mt-2 mb-0">Signed by @Model.RequesterSignerName</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@Model.RequesterSignedAt?.ToString("g")</p>
+                }
+                else
+                {
+                    @if (User.HasClaim("UserTitle", "HR") && Model.Status == RequestStatus.Draft)
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small mb-2" style="border-style: dashed !important;">Awaiting Signature</div>
+                        <form asp-action="SignOffHR" asp-route-id="@Model.Id" method="post" class="d-grid gap-2">
+                            @Html.AntiForgeryToken()
+                            @if (!string.IsNullOrEmpty(Model.CurrentUserSignature))
+                            {
+                                <input type="hidden" name="signatureBase64" value="@Model.CurrentUserSignature" />
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    Sign & Submit to IT
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-secondary" disabled>
+                                    Signature Not Found
+                                </button>
+                                <small class="text-muted">Set your signature in profile first.</small>
+                            }
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Awaiting Signature</div>
+                    }
+                }
+            </div>
+
+            <div class="col-md-4 border-end">
+                <small class="text-uppercase fw-bold text-muted d-block mb-3">IT Approval</small>
+                @if (!string.IsNullOrEmpty(Model.ITAdminSignature))
+                {
+                    <img src="@Model.ITAdminSignature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
+                    <p class="small text-success mt-2 mb-0">Signed by @Model.ITAdminSignerName</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@Model.ITAdminSignedAt?.ToString("g")</p>
+                }
+                else
+                {
+                    <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Awaiting IT Verification</div>
+                }
+            </div>
+
+            <div class="col-md-4">
+                <small class="text-uppercase fw-bold text-muted d-block mb-3">Employee Acknowledgment</small>
+                @if (!string.IsNullOrEmpty(Model.EmployeeSignature))
+                {
+                    <img src="@Model.EmployeeSignature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
+                    <p class="small text-success mt-2 mb-0">Signed by @Model.EmployeeSignerName</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@Model.EmployeeSignedAt?.ToString("g")</p>
+                }
+                else
+                {
+                    <div class="p-3 bg-light border rounded text-muted small" style="border-style: dashed !important;">Awaiting Employee Sign-off</div>
+
+                    @if (Model.Status == RequestStatus.PendingEmployeeSign && User.HasClaim("UserTitle", "HR"))
+                    {
+                        <div class="mt-2">
+                            <div id="sigLinkSection-onboarding" class="bg-white p-3 border rounded shadow-sm">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill w-100 mb-2 shadow-sm fw-bold" onclick="generateSignatureLink('onboarding', '@Model.AccessToken', 'Onboarding')">
+                                    <i class="bi bi-link-45deg me-1" aria-hidden="true"></i> Generate Link
+                                </button>
+                                <div id="sigLinkBox-onboarding" style="display: none;">
+                                    <div class="input-group shadow-sm mb-2">
+                                        <input type="text" class="form-control form-control-sm border-primary" id="sigLinkInput-onboarding" readonly style="font-size: 0.7rem;" />
+                                        <button class="btn btn-sm btn-primary px-2" type="button" onclick="copySigLink('onboarding')">
+                                            <i class="bi bi-clipboard" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <a asp-controller="Notification" asp-action="ComposeEmail" asp-route-id="@Model.Id" class="btn btn-sm btn-success rounded-pill w-100 mb-2">
+                                        <i class="bi bi-envelope-paper me-1" aria-hidden="true"></i> Send Link via Outlook
+                                    </a>
+                                    <p class="small text-muted mb-0" style="font-size: 0.7rem;">Share this link with employee.</p>
+                                </div>
+                                <form asp-action="RegenerateToken" asp-route-id="@Model.Id" method="post" class="mt-2 text-center">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-link p-0 text-muted" style="font-size: 0.7rem; text-decoration: none;" onclick="return confirm('This will invalidate the old signature link. Continue?');">
+                                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Regenerate Token
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Deletion -->
+<div class="modal fade" id="deleteFormModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title text-white">Confirm Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <i class="bi bi-trash-fill text-danger d-block mb-3" style="font-size: 3rem;"></i>
+                <h5>Are you sure?</h5>
+                <p class="text-muted">You are about to delete this request permanently.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Confirm Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function generateSignatureLink(sectionId, token, type) {
+            const baseUrl = window.location.origin;
+            const link = `${baseUrl}/Signature/Acknowledge?token=${token}&type=${type}`;
+            const input = document.getElementById(`sigLinkInput-${sectionId}`);
+            const box = document.getElementById(`sigLinkBox-${sectionId}`);
+            if (!input || !box) return;
+            input.value = link;
+            box.style.display = 'block';
+        }
+
+        function copySigLink(sectionId) {
+            const input = document.getElementById(`sigLinkInput-${sectionId}`);
+            if (!input) return;
+            const ta = document.createElement('textarea');
+            ta.value = input.value;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showCopyToast();
+            } catch (err) {
+                alert('Copy failed. Please select the link and copy manually.');
+            }
+            document.body.removeChild(ta);
+        }
+
+        function showCopyToast() {
+            let toast = document.getElementById('copyToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'copyToast';
+                toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:0.6rem 1.5rem;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(34,197,94,0.3);z-index:9999;display:flex;align-items:center;gap:8px;opacity:0;transition:opacity 0.3s ease;';
+                toast.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i> Link copied successfully!';
+                document.body.appendChild(toast);
+            }
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Re-append modals to body to prevent z-index issues
+            const deleteModal = document.getElementById('deleteFormModal');
+            if (deleteModal) document.body.appendChild(deleteModal);
+        });
+    </script>
+}

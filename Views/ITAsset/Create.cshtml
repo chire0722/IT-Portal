@@ -1,0 +1,262 @@
+@model IT_Form.Models.ITAsset
+@using IT_Form.Models.Enums
+
+@{
+    ViewData["Title"] = "Create IT Asset";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0" style="color: white !important;">Add New IT Asset</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-5 mb-3">
+                            <label asp-for="AssetTag" class="form-label fw-bold">Asset Tag *</label>
+                            <input asp-for="AssetTag" class="form-control" placeholder="e.g. PYT-LT-001" />
+                            <span asp-validation-for="AssetTag" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-7 mb-3">
+                            <label asp-for="SerialNumber" class="form-label fw-bold">Serial Number</label>
+                            <input asp-for="SerialNumber" class="form-control" />
+                            <span asp-validation-for="SerialNumber" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-5 mb-3">
+                            <label asp-for="AssetType" class="form-label fw-bold">Asset Type *</label>
+                            <select asp-for="AssetType" class="form-select"
+                                asp-items="Html.GetEnumSelectList<AssetType>()"></select>
+                            <span asp-validation-for="AssetType" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <!-- Other Asset Type (Conditional) -->
+                        <div class="col-md-7 mb-3" id="otherAssetTypeDiv" style="display: none;">
+                            <label asp-for="OtherAssetType" class="form-label fw-bold">Specify Other Type</label>
+                            <input asp-for="OtherAssetType" class="form-control" placeholder="e.g. Printer, Tablet, etc." />
+                            <span asp-validation-for="OtherAssetType" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-7 mb-3">
+                            <label asp-for="Status" class="form-label fw-bold">Current Status *</label>
+                            <select asp-for="Status" class="form-select"
+                                asp-items="Html.GetEnumSelectList<AssetStatus>()"></select>
+                            <span asp-validation-for="Status" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label asp-for="Model" class="form-label fw-bold">Model / Make</label>
+                            <input asp-for="Model" class="form-control" placeholder="e.g. Dell Latitude 7420" />
+                            <span asp-validation-for="Model" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Company" class="form-label fw-bold">Company</label>
+                            <select asp-for="Company" class="form-select" asp-items="ViewBag.Companies">
+                                <option value="">Select Company</option>
+                            </select>
+                            <span asp-validation-for="Company" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Location" class="form-label fw-bold">Location</label>
+                            <input asp-for="Location" class="form-control" placeholder="Enter location manually" />
+                            <span asp-validation-for="Location" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-5 mb-3">
+                            <label asp-for="PurchaseDate" class="form-label fw-bold">Purchase Date</label>
+                            <input asp-for="PurchaseDate" type="date" class="form-control" />
+                            <span asp-validation-for="PurchaseDate" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-7 mb-3">
+                            <label asp-for="WarrantyExpiry" class="form-label fw-bold">Warranty Expiry Date</label>
+                            <input asp-for="WarrantyExpiry" type="date" class="form-control" />
+                            <span asp-validation-for="WarrantyExpiry" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="NoExtendWarranty" class="form-check-input" />
+                                <label asp-for="NoExtendWarranty" class="form-check-label fw-bold">No Extend Warranty</label>
+                            </div>
+                            <small class="text-muted">Enable this if the company will not renew this warranty. The item will be excluded from extension reminder emails.</small>
+                        </div>
+                    </div>
+
+                    <!-- Assignment Section -->
+                    <div class="row g-3 border-top mt-3 pt-3">
+                        <h6 class="fw-bold mb-2 text-info"><i class="fas fa-user-check me-1" aria-hidden="true"></i>Employee Assignment
+                        </h6>
+                        
+                        <div id="assignmentDiv" style="display: none;" class="col-12 border p-3 bg-light rounded mb-3">
+                            <label for="EmployeeSearchInput" class="form-label fw-bold mb-1">Employee Name</label>
+                            <small class="text-muted d-block mb-3">Start typing to search existing employees from the directory.</small>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text"><i class="fas fa-search" aria-hidden="true"></i></span>
+                                <input type="text" id="EmployeeSearchInput" name="CustomEmployeeName" class="form-control" placeholder="Search directory..." list="employeeDatalist" autocomplete="off" oninput="populateHiddenId()" />
+                            </div>
+                            <span class="text-danger field-validation-valid" data-valmsg-for="CustomEmployeeName" data-valmsg-replace="true">
+                                @Html.ValidationMessage("CustomEmployeeName")
+                            </span>
+                            
+                            <input type="hidden" id="AssignedEmployeeId" name="AssignedEmployeeId" />
+                            <datalist id="employeeDatalist">
+                                @if (ViewBag.Employees != null)
+                                {
+                                    foreach (var emp in (SelectList)ViewBag.Employees)
+                                    {
+                                        <option data-id="@emp.Value" value="@emp.Text"></option>
+                                    }
+                                }
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <!-- Hardware Specifications (Conditional) -->
+                    <div id="specsSection" class="row g-3 border-top mt-3 pt-3" style="display: none;">
+                        <h6 class="fw-bold mb-2 text-primary"><i class="fas fa-microchip me-1" aria-hidden="true"></i>Hardware
+                            Specifications
+                        </h6>
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="RAM" class="form-label fw-bold">RAM Size</label>
+                            <input asp-for="RAM" class="form-control" placeholder="e.g. 16GB" />
+                            <span asp-validation-for="RAM" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="DDRType" class="form-label fw-bold">DDR Type</label>
+                            <input asp-for="DDRType" class="form-control" list="ddrDatalist" placeholder="Select or type..." />
+                            <datalist id="ddrDatalist">
+                                @if (ViewBag.DDRTypes != null)
+                                {
+                                    foreach (var ddr in (List<string>)ViewBag.DDRTypes)
+                                    {
+                                        <option value="@ddr">@ddr</option>
+                                    }
+                                }
+                            </datalist>
+                            <span asp-validation-for="DDRType" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="Storage" class="form-label fw-bold">Storage</label>
+                            <input asp-for="Storage" class="form-control" placeholder="e.g. 512GB SSD" />
+                            <span asp-validation-for="Storage" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="WindowsVersion" class="form-label fw-bold">Windows Version</label>
+                            <input asp-for="WindowsVersion" class="form-control" list="winDatalist" placeholder="Select or type..." />
+                            <datalist id="winDatalist">
+                                @if (ViewBag.WindowsVersions != null)
+                                {
+                                    foreach (var version in (List<string>)ViewBag.WindowsVersions)
+                                    {
+                                        <option value="@version">@version</option>
+                                    }
+                                }
+                            </datalist>
+                            <span asp-validation-for="WindowsVersion" class="text-danger" aria-live="polite" aria-atomic="true"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+                        <button type="submit" class="btn btn-primary px-4">Create Asset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const assetTypeSelect = document.getElementById('AssetType');
+            const statusSelect = document.getElementById('Status');
+            const specsSection = document.getElementById('specsSection');
+            const otherAssetTypeDiv = document.getElementById('otherAssetTypeDiv');
+            const assignmentDiv = document.getElementById('assignmentDiv');
+            const searchInput = document.getElementById('EmployeeSearchInput');
+
+            function toggleSpecs() {
+                const selectedValue = assetTypeSelect.value;
+                const selectedText = assetTypeSelect.options[assetTypeSelect.selectedIndex].text;
+
+                // Specs: Laptop (0) or DesktopPC (1)
+                if (selectedValue === "0" || selectedValue === "1") {
+                    specsSection.style.display = 'flex';
+                } else {
+                    specsSection.style.display = 'none';
+                }
+
+                // Other Asset Type: Others (15)
+                if (selectedText === "Others" || selectedValue === "15") {
+                    otherAssetTypeDiv.style.display = 'block';
+                } else {
+                    otherAssetTypeDiv.style.display = 'none';
+                }
+            }
+
+            function toggleAssignment() {
+                const status = statusSelect.value;
+                // AssetStatus.Issued = 1
+                if (status === "1") {
+                    assignmentDiv.style.display = 'block';
+                    if (searchInput) {
+                        searchInput.setAttribute('required', 'required');
+                    }
+                } else {
+                    assignmentDiv.style.display = 'none';
+                    if (searchInput) {
+                        searchInput.removeAttribute('required');
+                        searchInput.value = '';
+                    }
+                    const hiddenIdInput = document.getElementById('AssignedEmployeeId');
+                    if (hiddenIdInput) {
+                        hiddenIdInput.value = '';
+                    }
+                }
+            }
+
+            assetTypeSelect.addEventListener('change', toggleSpecs);
+            statusSelect.addEventListener('change', toggleAssignment);
+            
+            toggleSpecs(); // Initial check
+            toggleAssignment(); // Initial check
+        });
+
+        function populateHiddenId() {
+            var input = document.getElementById('EmployeeSearchInput');
+            var hidden = document.getElementById('AssignedEmployeeId');
+            var datalist = document.getElementById('employeeDatalist');
+            
+            if (!input || !hidden || !datalist) return;
+
+            var selectedOption = null;
+            for (var i = 0; i < datalist.options.length; i++) {
+                var option = datalist.options[i];
+                if (option.value === input.value) {
+                    selectedOption = option;
+                    break;
+                }
+            }
+            
+            if (selectedOption) {
+                hidden.value = selectedOption.getAttribute('data-id');
+            } else {
+                hidden.value = '';
+            }
+        }
+    </script>
+}
+
+

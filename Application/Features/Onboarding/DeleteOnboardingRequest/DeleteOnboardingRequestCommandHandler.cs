@@ -1,0 +1,77 @@
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Models;
+using IT_Form.Data;
+using IT_Form.Helpers;
+using IT_Form.Models;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace IT_Form.Application.Features.Onboarding.DeleteOnboardingRequest
+{
+    public sealed class DeleteOnboardingRequestCommandHandler
+        : IRequestHandler<DeleteOnboardingRequestCommand, ProcessResult<object>>
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly ILogger<DeleteOnboardingRequestCommandHandler> _logger;
+
+        public DeleteOnboardingRequestCommandHandler(
+            ApplicationDbContext context,
+            ICurrentUserAccessor currentUserAccessor,
+            ILogger<DeleteOnboardingRequestCommandHandler> logger)
+        {
+            _context = context;
+            _currentUserAccessor = currentUserAccessor;
+            _logger = logger;
+        }
+
+        public async Task<ProcessResult<object>> Handle(DeleteOnboardingRequestCommand request, CancellationToken cancellationToken)
+        {
+            var onboardingRequest = await _context.OnboardingRequests
+                .Include(r => r.IssuedAssets)
+                .Include(r => r.FolderPermissions)
+                .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
+
+            if (onboardingRequest == null)
+            {
+                return ProcessResult<object>.NotFound();
+            }
+
+            var user = _currentUserAccessor.User;
+            var currentUsername = _currentUserAccessor.UserName;
+            if (!CompanyScopeHelper.CanAccessCompany(user, onboardingRequest.Branch))
+            {
+                return ProcessResult<object>.Forbidden();
+            }
+
+            var isHr = user.HasClaim("UserTitle", "HR");
+            if (!onboardingRequest.CanBeDeletedBy(isHr))
+            {
+                return ProcessResult<object>.Failure(
+                    "Only Draft, Rejected, or HR-signed (awaiting others) requests can be deleted.",
+                    "Index",
+                    ajaxAware: true);
+            }
+
+            await _context.LogActionAsync(
+                nameof(OnboardingRequest),
+                request.Id.ToString(),
+                "Deleted",
+                $"Onboarding form for {onboardingRequest.FullName} was deleted by {currentUsername}. Status was: {onboardingRequest.Status}");
+
+            var employeeName = onboardingRequest.FullName;
+            _context.OnboardingRequests.Remove(onboardingRequest);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Onboarding request #{Id} for {Name} deleted.", request.Id, employeeName);
+
+            return new ProcessResult<object>
+            {
+                IsSuccess = true,
+                Message = $"Request for {employeeName} has been deleted.",
+                RedirectAction = "Index",
+                AjaxAware = true
+            };
+        }
+    }
+}

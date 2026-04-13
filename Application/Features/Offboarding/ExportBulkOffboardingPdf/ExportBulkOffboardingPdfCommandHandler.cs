@@ -32,8 +32,8 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
 
             var query = _context.OffboardingRequests
                 .AsNoTracking()
-                .Include(o => o.OnboardingRequest).ThenInclude(or => or!.IssuedAssets)
-                .Include(o => o.OnboardingRequest).ThenInclude(or => or!.FolderPermissions)
+                .AsSplitQuery()
+                .IncludeOffboardingPdfData()
                 .Where(r => request.Ids.Contains(r.Id));
 
             var user = _currentUserAccessor.User;

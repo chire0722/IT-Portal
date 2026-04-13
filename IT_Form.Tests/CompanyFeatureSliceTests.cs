@@ -27,9 +27,101 @@ public class CompanyFeatureSliceTests
     {
         var validator = new CreateCompanyCommandValidator();
 
-        var result = validator.Validate(new CreateCompanyCommand("Test", null, false, true, null));
+        var result = validator.Validate(new CreateCompanyCommand(
+            "Test",
+            null,
+            false,
+            true,
+            "Asia/Kuala_Lumpur",
+            new TimeSpan(8, 30, 0),
+            new TimeSpan(17, 30, 0),
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            null));
 
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void CreateCompanyValidator_Fails_WhenBusinessHoursInvalid()
+    {
+        var validator = new CreateCompanyCommandValidator();
+
+        var result = validator.Validate(new CreateCompanyCommand(
+            "Test",
+            null,
+            false,
+            true,
+            "Asia/Kuala_Lumpur",
+            new TimeSpan(17, 30, 0),
+            new TimeSpan(8, 30, 0),
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            Mock.Of<IFormFile>()));
+
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void CreateCompanyValidator_Fails_WhenNoBusinessDaySelected()
+    {
+        var validator = new CreateCompanyCommandValidator();
+
+        var result = validator.Validate(new CreateCompanyCommand(
+            "Test",
+            null,
+            false,
+            true,
+            "Asia/Kuala_Lumpur",
+            new TimeSpan(8, 30, 0),
+            new TimeSpan(17, 30, 0),
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            Mock.Of<IFormFile>()));
+
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void CreateCompanyValidator_Accepts_FullTzdbTimeZoneId()
+    {
+        var validator = new CreateCompanyCommandValidator();
+        var logo = new Mock<IFormFile>();
+        logo.SetupGet(file => file.Length).Returns(1);
+
+        var result = validator.Validate(new CreateCompanyCommand(
+            "Test",
+            null,
+            false,
+            true,
+            "America/New_York",
+            new TimeSpan(8, 30, 0),
+            new TimeSpan(17, 30, 0),
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            logo.Object));
+
+        Assert.True(result.IsValid);
     }
 
     [Fact]
@@ -42,7 +134,23 @@ public class CompanyFeatureSliceTests
         var handler = new UpdateCompanyCommandHandler(context, hostEnvironment.Object, syncService.Object);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            handler.Handle(new UpdateCompanyCommand(999, "Name", null, false, true, null), CancellationToken.None));
+            handler.Handle(new UpdateCompanyCommand(
+                999,
+                "Name",
+                null,
+                false,
+                true,
+                "Asia/Kuala_Lumpur",
+                new TimeSpan(8, 30, 0),
+                new TimeSpan(17, 30, 0),
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                false,
+                null), CancellationToken.None));
     }
 
     [Fact]

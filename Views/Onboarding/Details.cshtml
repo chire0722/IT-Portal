@@ -1,8 +1,10 @@
 @model IT_Form.ViewModels.OnboardingDetailsPageViewModel
 @using IT_Form.Models.Enums
+@using IT_Form.Helpers
 @inject IT_Form.Services.ILicenseEncryptionService EncryptionService
 @{
     ViewData["Title"] = $"Request — {Model.FullName}";
+    var companyTimeZoneId = Model.CompanyTimeZoneId;
 }
 
 <div class="details-hero animate-in mt-3 mb-4">
@@ -128,7 +130,7 @@
             {
                 var isOverdue = DateTime.UtcNow > deadline.Value;
                 <p class="mb-0 small @(isOverdue ? "text-danger fw-bold" : "text-primary")">
-                    <i class="bi bi-clock-history me-1"></i>Due: @deadline.Value.AddHours(8).ToString("dd/MM/yyyy HH:mm")
+                    <i class="bi bi-clock-history me-1"></i>Due: @CompanyTimeZoneHelper.FormatDateTime(deadline.Value, companyTimeZoneId)
                     @if (isOverdue)
                     {
                         <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">Overdue</span>
@@ -470,7 +472,7 @@
                 {
                     <img src="@Model.RequesterSignature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
                     <p class="small text-success mt-2 mb-0">Signed by @Model.RequesterSignerName</p>
-                    <p class="text-muted" style="font-size: 0.7rem;">@Model.RequesterSignedAt?.ToString("g")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@CompanyTimeZoneHelper.FormatDateTime(Model.RequesterSignedAt, companyTimeZoneId)</p>
                 }
                 else
                 {
@@ -508,7 +510,7 @@
                 {
                     <img src="@Model.ITAdminSignature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
                     <p class="small text-success mt-2 mb-0">Signed by @Model.ITAdminSignerName</p>
-                    <p class="text-muted" style="font-size: 0.7rem;">@Model.ITAdminSignedAt?.ToString("g")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@CompanyTimeZoneHelper.FormatDateTime(Model.ITAdminSignedAt, companyTimeZoneId)</p>
                 }
                 else
                 {
@@ -522,7 +524,7 @@
                 {
                     <img src="@Model.EmployeeSignature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
                     <p class="small text-success mt-2 mb-0">Signed by @Model.EmployeeSignerName</p>
-                    <p class="text-muted" style="font-size: 0.7rem;">@Model.EmployeeSignedAt?.ToString("g")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@CompanyTimeZoneHelper.FormatDateTime(Model.EmployeeSignedAt, companyTimeZoneId)</p>
                 }
                 else
                 {

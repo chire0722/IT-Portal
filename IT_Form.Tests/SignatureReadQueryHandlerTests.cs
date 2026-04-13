@@ -1,5 +1,3 @@
-using System.Security.Claims;
-using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.Signature;
 using IT_Form.Data;
@@ -122,72 +120,6 @@ public class SignatureReadQueryHandlerTests
         pdfService.Verify(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()), Times.Never);
     }
 
-    [Fact]
-    public async Task GetTransferSignaturePageQuery_ReturnsMappedViewModelForCurrentUser()
-    {
-        await using var context = CreateContext();
-
-        context.EmployeeTransfers.Add(new EmployeeTransfer
-        {
-            Id = 11,
-            FullName = "Alicia Tan",
-            EmployeeID = "E-11",
-            FromDepartment = "Operations",
-            ToDepartment = "Finance",
-            EffectiveDate = new DateTime(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc)
-        });
-        context.Users.Add(new ApplicationUser
-        {
-            Id = "u1",
-            UserName = "manager@alpha.test",
-            FullName = "Manager One",
-            Signature = "data:image/png;base64,SAVED"
-        });
-        await context.SaveChangesAsync();
-
-        var handler = new GetTransferSignaturePageQueryHandler(
-            context,
-            new TestCurrentUserAccessor("manager@alpha.test", "u1", "Manager"));
-
-        var result = await handler.Handle(new GetTransferSignaturePageQuery(11, "Manager"), CancellationToken.None);
-
-        Assert.Equal(GetTransferSignaturePageStatus.Ready, result.Status);
-        var model = Assert.IsType<TransferSignaturePageViewModel>(result.ViewModel);
-        Assert.Equal(11, model.Id);
-        Assert.Equal("Manager", model.Role);
-        Assert.Equal("Alicia Tan", model.EmployeeName);
-        Assert.Equal("E-11", model.EmployeeId);
-        Assert.Equal("Operations", model.CurrentDepartment);
-        Assert.Equal("Finance", model.NewDepartment);
-        Assert.Equal("Manager One", model.SignatoryName);
-        Assert.Equal("data:image/png;base64,SAVED", model.UserSignature);
-    }
-
-    [Fact]
-    public async Task GetTransferSignaturePageQuery_ReturnsUnauthorizedWhenCurrentUserMissing()
-    {
-        await using var context = CreateContext();
-
-        context.EmployeeTransfers.Add(new EmployeeTransfer
-        {
-            Id = 21,
-            FullName = "Una Tan",
-            EmployeeID = "E-21",
-            FromDepartment = "HR",
-            ToDepartment = "IT",
-            EffectiveDate = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)
-        });
-        await context.SaveChangesAsync();
-
-        var handler = new GetTransferSignaturePageQueryHandler(
-            context,
-            new TestCurrentUserAccessor(null, null));
-
-        var result = await handler.Handle(new GetTransferSignaturePageQuery(21, "HR"), CancellationToken.None);
-
-        Assert.Equal(GetTransferSignaturePageStatus.Unauthorized, result.Status);
-    }
-
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -202,31 +134,5 @@ public class SignatureReadQueryHandlerTests
         encryption.Setup(service => service.DecryptKey(It.IsAny<string>())).Returns((string value) => value);
 
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
-    }
-
-    private sealed class TestCurrentUserAccessor : ICurrentUserAccessor
-    {
-        public TestCurrentUserAccessor(string? userName, string? userId, params string[] titles)
-        {
-            var claims = new List<Claim>();
-
-            if (!string.IsNullOrWhiteSpace(userName))
-            {
-                claims.Add(new Claim(ClaimTypes.Name, userName));
-            }
-
-            if (!string.IsNullOrWhiteSpace(userId))
-            {
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
-            }
-
-            claims.AddRange(titles.Select(title => new Claim("UserTitle", title)));
-            User = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
-            UserName = userName;
-        }
-
-        public ClaimsPrincipal User { get; }
-
-        public string? UserName { get; }
     }
 }

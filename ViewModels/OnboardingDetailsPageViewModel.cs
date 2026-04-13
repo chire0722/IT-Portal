@@ -1,4 +1,5 @@
 using IT_Form.Models.Enums;
+using IT_Form.Helpers;
 
 namespace IT_Form.ViewModels
 {
@@ -83,6 +84,7 @@ namespace IT_Form.ViewModels
         public DateTime? SlaDeadline { get; set; }
         public string? IntegrityError { get; set; }
         public string? CompanyLogoPath { get; set; }
+        public string CompanyTimeZoneId { get; set; } = CompanyTimeZoneHelper.DefaultTimeZoneId;
         public IReadOnlyList<RequestAssetReadModel> IssuedAssets { get; set; } = [];
         public IReadOnlyList<RequestIssuedSoftwareReadModel> IssuedSoftware { get; set; } = [];
         public IReadOnlyList<RequestSoftwareReadModel> RequestSoftware { get; set; } = [];

@@ -12,6 +12,7 @@ using IT_Form.Attributes;
 using IT_Form.Services;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Helpers;
 
 namespace IT_Form.Data
 {
@@ -159,6 +160,47 @@ namespace IT_Form.Data
             builder.Entity<SlaSetting>()
                 .HasIndex(setting => setting.RequestType)
                 .IsUnique();
+
+            builder.Entity<Company>()
+                .Property(company => company.TimeZoneId)
+                .HasMaxLength(100)
+                .HasDefaultValue(CompanyTimeZoneHelper.DefaultTimeZoneId);
+
+            builder.Entity<Company>()
+                .Property(company => company.BusinessStartTime)
+                .HasDefaultValue(new TimeSpan(8, 30, 0));
+
+            builder.Entity<Company>()
+                .Property(company => company.BusinessEndTime)
+                .HasDefaultValue(new TimeSpan(17, 30, 0));
+
+            builder.Entity<Company>()
+                .Property(company => company.WorksOnMonday)
+                .HasDefaultValue(true);
+
+            builder.Entity<Company>()
+                .Property(company => company.WorksOnTuesday)
+                .HasDefaultValue(true);
+
+            builder.Entity<Company>()
+                .Property(company => company.WorksOnWednesday)
+                .HasDefaultValue(true);
+
+            builder.Entity<Company>()
+                .Property(company => company.WorksOnThursday)
+                .HasDefaultValue(true);
+
+            builder.Entity<Company>()
+                .Property(company => company.WorksOnFriday)
+                .HasDefaultValue(true);
+
+            builder.Entity<Company>()
+                .Property(company => company.WorksOnSaturday)
+                .HasDefaultValue(true);
+
+            builder.Entity<Company>()
+                .Property(company => company.WorksOnSunday)
+                .HasDefaultValue(false);
 
             builder.Entity<OnboardingRequest>()
                 .HasIndex(request => new { request.Status, request.RequestDate });

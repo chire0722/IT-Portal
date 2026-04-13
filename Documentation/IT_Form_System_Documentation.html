@@ -72,13 +72,12 @@
 <!-- ==================== 1. SYSTEM OVERVIEW ==================== -->
 <div class="section" id="sec1">
 <h1>1. System Overview</h1>
-<p>The <strong>IT Management Portal</strong> is a comprehensive internal web application designed to digitize and streamline the entire employee IT lifecycle — from onboarding through transfers to offboarding — while simultaneously managing IT assets, software licenses, and organizational configuration. The system replaces paper-based forms with a multi-step digital workflow featuring digital signatures, SLA tracking, email notifications, audit logging, and PDF document generation.</p>
+<p>The <strong>IT Management Portal</strong> is a comprehensive internal web application designed to digitize and streamline the employee IT lifecycle — from onboarding to offboarding — while simultaneously managing IT assets, software licenses, and organizational configuration. The system replaces paper-based forms with a multi-step digital workflow featuring digital signatures, SLA tracking, email notifications, audit logging, and PDF document generation.</p>
 
 <h3>Key Capabilities</h3>
 <ul>
   <li><strong>Employee Onboarding</strong> — Multi-step wizard for HR to request IT setup for new hires (accounts, assets, software, permissions).</li>
   <li><strong>Employee Offboarding</strong> — Structured clearance and deprovisioning workflow with hardware return tracking.</li>
-  <li><strong>Employee Transfer</strong> — Department/branch transfer management with return + re-provisioning checklists.</li>
   <li><strong>IT Asset Management</strong> — Full hardware inventory with lifecycle tracking, maintenance logs, warranty monitoring, and device verification.</li>
   <li><strong>Software License Management</strong> — Catalog of standard software, license editions, encrypted key vault, and assignment tracking.</li>
   <li><strong>Digital Signatures</strong> — HMAC-verified signature capture for HR, HOD, IT Admin, and Employee sign-off.</li>
@@ -173,8 +172,8 @@ graph TB
 <table>
   <tr><th>Role (Title)</th><th>Claim</th><th>Access Scope</th></tr>
   <tr><td><span class="badge badge-it">IT</span> IT Admin</td><td><code>UserTitle:IT</code></td><td>Full system access: asset management, license management, onboarding IT steps, offboarding IT checklist, configuration, user management, audit logs, dashboard analytics</td></tr>
-  <tr><td><span class="badge badge-hr">HR</span> HR Staff</td><td><code>UserTitle:HR</code></td><td>Create onboarding/offboarding/transfer requests, HR signing, HR dashboard with workforce analytics</td></tr>
-  <tr><td><span class="badge badge-mgr">MGR</span> Manager / HOD</td><td><code>UserTitle:Manager</code></td><td>HOD approval signing for offboarding, transfer approval, manager dashboard</td></tr>
+  <tr><td><span class="badge badge-hr">HR</span> HR Staff</td><td><code>UserTitle:HR</code></td><td>Create onboarding/offboarding requests, HR signing, HR dashboard with workforce analytics</td></tr>
+  <tr><td><span class="badge badge-mgr">MGR</span> Manager / HOD</td><td><code>UserTitle:Manager</code></td><td>HOD approval signing for offboarding, manager dashboard</td></tr>
   <tr><td><span class="badge badge-emp">EMP</span> Employee</td><td>(Authenticated)</td><td>Employee self-service signing via secure token link, email signature viewer</td></tr>
 </table>
 
@@ -183,7 +182,7 @@ graph TB
   <tr><th>Policy Name</th><th>Requirement</th><th>Used By</th></tr>
   <tr><td><code>RequireIT</code></td><td>User must have <code>UserTitle:IT</code> claim</td><td>Asset CRUD, License CRUD, User Management, Configuration, Audit Logs</td></tr>
   <tr><td><code>RequireHR</code></td><td>User must have <code>UserTitle:HR</code> claim</td><td>Onboarding Create, Offboarding Create</td></tr>
-  <tr><td><code>RequireHROrIT</code></td><td>User must have either <code>HR</code> or <code>IT</code></td><td>Shared views, Transfer management</td></tr>
+  <tr><td><code>RequireHROrIT</code></td><td>User must have either <code>HR</code> or <code>IT</code></td><td>Shared views</td></tr>
   <tr><td><code>RequireManager</code></td><td>User must have <code>UserTitle:Manager</code> claim</td><td>HOD signing endpoints</td></tr>
 </table>
 
@@ -217,16 +216,6 @@ graph TB
   <li>Hardware return tracking with damage assessment, photo upload, and missing item fines</li>
   <li>Four-party signature flow: HR → HOD → IT Admin → Employee</li>
   <li>Follow-up actions: data backup, email backup, license removal</li>
-</ul>
-
-<h2>5.3 Employee Transfer</h2>
-<p><strong>Controller:</strong> <code>EmployeeTransferController</code> | <strong>Model:</strong> <code>EmployeeTransfer</code></p>
-<p>Handles department/branch transfers with a dual-checklist approach:</p>
-<ul>
-  <li><strong>Return Checklist</strong> — Mirrors offboarding: deactivation of old department resources</li>
-  <li><strong>Setup Checklist</strong> — Mirrors onboarding: provisioning of new department resources</li>
-  <li>Hardware return tracking with clearance items</li>
-  <li>Re-assignment of email groups, shared mailboxes, software, and folder permissions</li>
 </ul>
 
 <h2>5.4 IT Asset Management</h2>
@@ -302,14 +291,6 @@ erDiagram
     
     OffboardingRequest o|--o| OnboardingRequest : "links to"
 
-    EmployeeTransfer o|--o| OnboardingRequest : "links to"
-    EmployeeTransfer ||--o{ IssuedAsset : "assigns"
-    EmployeeTransfer ||--o{ IssuedSoftware : "assigns"
-    EmployeeTransfer ||--o{ FolderPermission : "grants"
-    EmployeeTransfer ||--o{ RequestSoftware : "requests"
-    EmployeeTransfer ||--o{ RequestEmailGroup : "requests"
-    EmployeeTransfer ||--o{ RequestSharedMailbox : "requests"
-
     ITAsset ||--o{ IssuedAsset : "issued as"
     ITAsset ||--o{ MaintenanceLog : "has"
 
@@ -339,14 +320,6 @@ erDiagram
         DateTime LastDayOfWork
         RequestStatus Status
         int OnboardingRequestId FK
-    }
-    EmployeeTransfer {
-        int Id PK
-        string FullName
-        string FromDepartment
-        string ToDepartment
-        DateTime EffectiveDate
-        RequestStatus Status
     }
     ITAsset {
         int Id PK
@@ -465,7 +438,6 @@ erDiagram
   <tr><td>OnboardingRequest</td><td>RequestSoftware</td><td>1 : N</td><td>Cascade</td></tr>
   <tr><td>OnboardingRequest</td><td>RequestEmailGroup</td><td>1 : N</td><td>Cascade</td></tr>
   <tr><td>OnboardingRequest</td><td>RequestSharedMailbox</td><td>1 : N</td><td>Cascade</td></tr>
-  <tr><td>EmployeeTransfer</td><td>IssuedAsset / IssuedSoftware / FolderPermission</td><td>1 : N</td><td>Cascade</td></tr>
   <tr><td>ITAsset</td><td>IssuedAsset</td><td>1 : N</td><td>SetNull</td></tr>
   <tr><td>ITAsset</td><td>MaintenanceLog</td><td>1 : N</td><td>Cascade</td></tr>
   <tr><td>StandardSoftware</td><td>SoftwareLicense</td><td>1 : N</td><td>Cascade</td></tr>
@@ -544,36 +516,12 @@ flowchart TD
 </pre>
 </div>
 
-<h2>8.3 Employee Transfer Workflow</h2>
-<div class="diagram-container">
-<pre class="mermaid">
-flowchart TD
-    A["HR Creates Transfer Request"] --> B["Employee Details<br/>(From Dept/Branch → To Dept/Branch)"]
-    B --> C["Software & Access Checklist for New Dept"]
-    C --> D{"HR Signs & Submits"}
-    D -->|"Status: PendingHODApproval"| E["HOD Approval"]
-    E -->|"Approved"| F["Status: PendingITApproval"]
-    F --> G["IT Admin Processes Transfer"]
-    G --> H["Return Checklist<br/>(Deactivate old resources)"]
-    H --> I["Setup Checklist<br/>(Provision new resources)"]
-    I --> J["Asset Re-assignment"]
-    J --> K{"IT Signs Off"}
-    K --> L["Status: Completed ✓"]
-
-    E -->|"Rejected"| R["Status: Rejected"]
-
-    style A fill:#f59e0b,color:#fff
-    style L fill:#10b981,color:#fff
-    style R fill:#ef4444,color:#fff
-</pre>
-</div>
-
 <h2>8.4 IT Asset Lifecycle</h2>
 <div class="diagram-container">
 <pre class="mermaid">
 flowchart LR
     A["Purchase &<br/>Register Asset"] -->|"Status: Available"| B["Available<br/>in Inventory"]
-    B -->|"Onboarding / Transfer"| C["Issued<br/>to Employee"]
+    B -->|"Onboarding"| C["Issued<br/>to Employee"]
     C -->|"Offboarding / Return"| B
     C -->|"Hardware Issue"| D["Under Repair"]
     D -->|"Repaired"| B
@@ -633,7 +581,7 @@ flowchart TD
 <h1>9. Background Services</h1>
 <table>
   <tr><th>Service</th><th>Schedule</th><th>Function</th></tr>
-  <tr><td><code>SlaCheckerService</code></td><td>Periodic (hourly)</td><td>Scans all pending Onboarding, Offboarding, and Transfer requests. Sends SLA breach notifications at Tier 1 and Tier 2 thresholds.</td></tr>
+  <tr><td><code>SlaCheckerService</code></td><td>Periodic (hourly)</td><td>Scans all pending onboarding and offboarding requests. Sends SLA breach notifications at Tier 1 and Tier 2 thresholds.</td></tr>
   <tr><td><code>AssetLicenseExpiryService</code></td><td>Periodic (daily)</td><td>Checks ITAsset warranty dates and SoftwareLicense expiry dates. Sends email alerts for items expiring within 30/90 days.</td></tr>
   <tr><td><code>DatabaseBackupService</code></td><td>Periodic (daily)</td><td>Creates timestamped SQLite database backups in the App_Data directory.</td></tr>
   <tr><td><code>DataRetentionService</code></td><td>Periodic (daily)</td><td>PDPA compliance — purges PII data from completed requests older than the configured retention period.</td></tr>

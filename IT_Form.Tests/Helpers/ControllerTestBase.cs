@@ -10,11 +10,6 @@ using IT_Form.Application.Features.Company;
 using IT_Form.Application.Features.Department;
 using IT_Form.Application.Features.EmailContact;
 using IT_Form.Application.Features.EmailGroup;
-using IT_Form.Application.Features.EmployeeTransfer.Create;
-using IT_Form.Application.Features.EmployeeTransfer.Edit;
-using IT_Form.Application.Features.EmployeeTransfer.GetEmployeeTransferConfirmationPage;
-using IT_Form.Application.Features.EmployeeTransfer.GetEmployeeTransferDetails;
-using IT_Form.Application.Features.EmployeeTransfer.Shared;
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.ITAsset.EditItAsset;
 using IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup;
@@ -29,7 +24,6 @@ using IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep4;
 using IT_Form.Application.Features.Onboarding.UpdateManageAccess;
 using IT_Form.Application.Features.Signature;
 using IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature;
-using IT_Form.Application.Features.Signature.SignTransfer;
 using IT_Form.Application.Features.ServerFolder;
 using IT_Form.Application.Features.SharedMailbox;
 using IT_Form.Application.Features.StandardSoftware;
@@ -310,54 +304,6 @@ namespace IT_Form.Tests.Helpers
                         sender.Setup(s => s.Send(It.IsAny<GetStandardSoftwareEmployeesQuery>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((GetStandardSoftwareEmployeesQuery cmd, System.Threading.CancellationToken ct) =>
                                 new GetStandardSoftwareEmployeesQueryHandler(context).Handle(cmd, ct));
-                        sender.Setup(s => s.Send(It.IsAny<GetEmployeeTransferDetailsQuery>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((GetEmployeeTransferDetailsQuery cmd, System.Threading.CancellationToken ct) =>
-                            {
-                                var currentUser = new CurrentUserAccessor(MockHttpContextAccessor.Object);
-                                return new GetEmployeeTransferDetailsQueryHandler(context, currentUser, MockIntegrityService.Object).Handle(cmd, ct);
-                            });
-                        sender.Setup(s => s.Send(It.IsAny<GetEmployeeTransferConfirmationPageQuery>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((GetEmployeeTransferConfirmationPageQuery cmd, System.Threading.CancellationToken ct) =>
-                                new GetEmployeeTransferConfirmationPageQueryHandler(context).Handle(cmd, ct));
-                        sender.Setup(s => s.Send(It.IsAny<GetEmployeeTransferCreatePageQuery>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((GetEmployeeTransferCreatePageQuery cmd, System.Threading.CancellationToken ct) =>
-                                new GetEmployeeTransferCreatePageQueryHandler(context, scopedCurrentUser).Handle(cmd, ct));
-                        sender.Setup(s => s.Send(It.IsAny<GetEmployeeTransferEditPageQuery>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((GetEmployeeTransferEditPageQuery cmd, System.Threading.CancellationToken ct) =>
-                            {
-                                var currentUser = new CurrentUserAccessor(MockHttpContextAccessor.Object);
-                                return new GetEmployeeTransferEditPageQueryHandler(context, currentUser).Handle(cmd, ct);
-                            });
-                        sender.Setup(s => s.Send(It.IsAny<SubmitEmployeeTransferCreateCommand>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((SubmitEmployeeTransferCreateCommand cmd, System.Threading.CancellationToken ct) =>
-                            {
-                                var validator = new SubmitEmployeeTransferCreateCommandValidator();
-                                var validationResult = validator.Validate(cmd);
-                                if (!validationResult.IsValid)
-                                {
-                                    throw new ValidationException(validationResult.Errors);
-                                }
-
-                                var currentUser = new CurrentUserAccessor(MockHttpContextAccessor.Object);
-                                return new SubmitEmployeeTransferCreateCommandHandler(context, currentUser).Handle(cmd, ct);
-                            });
-                        sender.Setup(s => s.Send(It.IsAny<SubmitEmployeeTransferEditCommand>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((SubmitEmployeeTransferEditCommand cmd, System.Threading.CancellationToken ct) =>
-                            {
-                                var validator = new SubmitEmployeeTransferEditCommandValidator();
-                                var validationResult = validator.Validate(cmd);
-                                if (!validationResult.IsValid)
-                                {
-                                    throw new ValidationException(validationResult.Errors);
-                                }
-
-                                var currentUser = new CurrentUserAccessor(MockHttpContextAccessor.Object);
-                                return new SubmitEmployeeTransferEditCommandHandler(
-                                    context,
-                                    currentUser,
-                                    new Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>().Object,
-                                    MockIntegrityService.Object).Handle(cmd, ct);
-                            });
                         sender.Setup(s => s.Send(It.IsAny<CreateItAssetCommand>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((CreateItAssetCommand cmd, System.Threading.CancellationToken ct) =>
                                 new CreateItAssetCommandHandler(context, scopedCurrentUser).Handle(cmd, ct));
@@ -376,40 +322,9 @@ namespace IT_Form.Tests.Helpers
 
                                 return Task.FromResult(ProcessResult<object>.Success(message: "Acknowledgement completed successfully."));
                             });
-                        sender.Setup(s => s.Send(It.IsAny<SignTransferCommand>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((SignTransferCommand cmd, System.Threading.CancellationToken _) =>
-                            {
-                                var validator = new SignTransferCommandValidator();
-                                var validationResult = validator.Validate(cmd);
-                                if (!validationResult.IsValid)
-                                {
-                                    throw new ValidationException(validationResult.Errors);
-                                }
-
-                                return Task.FromResult(ProcessResult<object>.Success(
-                                    message: $"Successfully signed as {cmd.Role}.",
-                                    redirectAction: "Details",
-                                    requestId: cmd.Id));
-                            });
                         sender.Setup(s => s.Send(It.IsAny<GetSignatureAcknowledgePageQuery>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((GetSignatureAcknowledgePageQuery cmd, System.Threading.CancellationToken ct) =>
                                 new GetSignatureAcknowledgePageQueryHandler(context, MockIntegrityService.Object).Handle(cmd, ct));
-                        sender.Setup(s => s.Send(It.IsAny<GetTransferSignaturePageQuery>(), It.IsAny<System.Threading.CancellationToken>()))
-                            .Returns((GetTransferSignaturePageQuery cmd, System.Threading.CancellationToken ct) =>
-                            {
-                                var currentUser = new Mock<IT_Form.Application.Common.Abstractions.ICurrentUserAccessor>();
-                                currentUser.SetupGet(x => x.UserName).Returns(() => context.Users.Select(u => u.UserName).FirstOrDefault() ?? "testuser");
-                                currentUser.SetupGet(x => x.User).Returns(() =>
-                                {
-                                    var currentUserName = context.Users.Select(u => u.UserName).FirstOrDefault() ?? "testuser";
-                                    return new ClaimsPrincipal(new ClaimsIdentity(new[]
-                                    {
-                                        new Claim(ClaimTypes.Name, currentUserName)
-                                    }, "mock"));
-                                });
-
-                                return new GetTransferSignaturePageQueryHandler(context, currentUser.Object).Handle(cmd, ct);
-                            });
                         sender.Setup(s => s.Send(It.IsAny<GetSignaturePdfQuery>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((GetSignaturePdfQuery cmd, System.Threading.CancellationToken ct) =>
                                 new GetSignaturePdfQueryHandler(context, MockPdfService.Object, MockIntegrityService.Object).Handle(cmd, ct));

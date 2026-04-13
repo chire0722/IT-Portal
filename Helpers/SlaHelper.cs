@@ -4,84 +4,128 @@ namespace IT_Form.Helpers
 {
     public static class SlaHelper
     {
+        public static readonly TimeSpan DefaultBusinessStartTime = new(8, 30, 0);
+        public static readonly TimeSpan DefaultBusinessEndTime = new(17, 30, 0);
+        private static readonly DayOfWeek[] DefaultWorkingDaysValues =
+        [
+            DayOfWeek.Monday,
+            DayOfWeek.Tuesday,
+            DayOfWeek.Wednesday,
+            DayOfWeek.Thursday,
+            DayOfWeek.Friday,
+            DayOfWeek.Saturday
+        ];
+
+        public static HashSet<DayOfWeek> GetDefaultWorkingDays()
+            => [.. DefaultWorkingDaysValues];
+
         public static DateTime GetMalaysiaTime(DateTime utcDate)
         {
-            return DateTime.SpecifyKind(utcDate, DateTimeKind.Utc).AddHours(8);
+            return CompanyTimeZoneHelper.ConvertFromUtc(utcDate, CompanyTimeZoneHelper.DefaultTimeZoneId);
         }
 
         public static DateTime CalculateSlaDeadline(DateTime startUtc, int targetDays)
+            => CalculateSlaDeadline(startUtc, targetDays, DefaultBusinessStartTime, DefaultBusinessEndTime, GetDefaultWorkingDays());
+
+        public static DateTime CalculateSlaDeadline(
+            DateTime startUtc,
+            int targetDays,
+            TimeSpan businessStartTime,
+            TimeSpan businessEndTime)
+            => CalculateSlaDeadline(startUtc, targetDays, businessStartTime, businessEndTime, GetDefaultWorkingDays());
+
+        public static DateTime CalculateSlaDeadline(
+            DateTime startUtc,
+            int targetDays,
+            TimeSpan businessStartTime,
+            TimeSpan businessEndTime,
+            IEnumerable<DayOfWeek>? workingDays,
+            string? timeZoneId = null)
         {
-            double remainingHours = targetDays * 9.0;
-            DateTime currentMyt = GetMalaysiaTime(startUtc);
+            var businessSchedule = NormalizeBusinessSchedule(businessStartTime, businessEndTime, workingDays, timeZoneId);
+            double remainingHours = targetDays * businessSchedule.HoursPerDay;
+            DateTime currentLocal = CompanyTimeZoneHelper.ConvertFromUtc(startUtc, businessSchedule.TimeZoneId);
 
-            // Adjust start to within working hours (08:30 - 17:30 MYT)
-            if (currentMyt.TimeOfDay > new TimeSpan(17, 30, 0))
+            if (currentLocal.TimeOfDay >= businessSchedule.EndTime)
             {
-                currentMyt = currentMyt.Date.AddDays(1).Add(new TimeSpan(8, 30, 0));
+                currentLocal = currentLocal.Date.AddDays(1).Add(businessSchedule.StartTime);
             }
-            else if (currentMyt.TimeOfDay < new TimeSpan(8, 30, 0))
+            else if (currentLocal.TimeOfDay < businessSchedule.StartTime)
             {
-                currentMyt = currentMyt.Date.Add(new TimeSpan(8, 30, 0));
+                currentLocal = currentLocal.Date.Add(businessSchedule.StartTime);
             }
 
-            // Jump over Sundays for the adjusted start in MYT
-            while (currentMyt.DayOfWeek == DayOfWeek.Sunday)
-            {
-                currentMyt = currentMyt.AddDays(1);
-            }
+            currentLocal = MoveToNextWorkingDate(currentLocal, businessSchedule);
 
             while (remainingHours > 0)
             {
-                DateTime endOfToday = currentMyt.Date.Add(new TimeSpan(17, 30, 0));
-                double hoursLeftToday = (endOfToday - currentMyt).TotalHours;
+                DateTime endOfToday = currentLocal.Date.Add(businessSchedule.EndTime);
+                double hoursLeftToday = (endOfToday - currentLocal).TotalHours;
 
                 if (hoursLeftToday >= remainingHours)
                 {
-                    currentMyt = currentMyt.AddHours(remainingHours);
+                    currentLocal = currentLocal.AddHours(remainingHours);
                     remainingHours = 0;
                 }
                 else
                 {
                     remainingHours -= hoursLeftToday;
-                    currentMyt = currentMyt.Date.AddDays(1).Add(new TimeSpan(8, 30, 0));
-                    while (currentMyt.DayOfWeek == DayOfWeek.Sunday) currentMyt = currentMyt.AddDays(1);
+                    currentLocal = MoveToNextWorkingDate(
+                        currentLocal.Date.AddDays(1).Add(businessSchedule.StartTime),
+                        businessSchedule);
                 }
             }
-            // Return UTC to maintain consistency in transmission
-            return currentMyt.AddHours(-8);
+
+            return CompanyTimeZoneHelper.ConvertToUtc(currentLocal, businessSchedule.TimeZoneId);
         }
 
         public static double CalculateBusinessHoursSpent(DateTime startUtc, DateTime endUtc)
+            => CalculateBusinessHoursSpent(startUtc, endUtc, DefaultBusinessStartTime, DefaultBusinessEndTime, GetDefaultWorkingDays());
+
+        public static double CalculateBusinessHoursSpent(
+            DateTime startUtc,
+            DateTime endUtc,
+            TimeSpan businessStartTime,
+            TimeSpan businessEndTime)
+            => CalculateBusinessHoursSpent(startUtc, endUtc, businessStartTime, businessEndTime, GetDefaultWorkingDays());
+
+        public static double CalculateBusinessHoursSpent(
+            DateTime startUtc,
+            DateTime endUtc,
+            TimeSpan businessStartTime,
+            TimeSpan businessEndTime,
+            IEnumerable<DayOfWeek>? workingDays,
+            string? timeZoneId = null)
         {
             if (endUtc <= startUtc) return 0;
 
-            DateTime currentMyt = GetMalaysiaTime(startUtc);
-            DateTime endMyt = GetMalaysiaTime(endUtc);
+            var businessSchedule = NormalizeBusinessSchedule(businessStartTime, businessEndTime, workingDays, timeZoneId);
+            DateTime currentLocal = CompanyTimeZoneHelper.ConvertFromUtc(startUtc, businessSchedule.TimeZoneId);
+            DateTime endLocal = CompanyTimeZoneHelper.ConvertFromUtc(endUtc, businessSchedule.TimeZoneId);
             double totalHours = 0;
 
-            // Adjust start to within working hours (08:30 - 17:30 MYT)
-            if (currentMyt.TimeOfDay > new TimeSpan(17, 30, 0)) currentMyt = currentMyt.Date.AddDays(1).Add(new TimeSpan(8, 30, 0));
-            else if (currentMyt.TimeOfDay < new TimeSpan(8, 30, 0)) currentMyt = currentMyt.Date.Add(new TimeSpan(8, 30, 0));
-            while (currentMyt.DayOfWeek == DayOfWeek.Sunday) currentMyt = currentMyt.AddDays(1);
+            if (currentLocal.TimeOfDay >= businessSchedule.EndTime) currentLocal = currentLocal.Date.AddDays(1).Add(businessSchedule.StartTime);
+            else if (currentLocal.TimeOfDay < businessSchedule.StartTime) currentLocal = currentLocal.Date.Add(businessSchedule.StartTime);
+            currentLocal = MoveToNextWorkingDate(currentLocal, businessSchedule);
 
-            if (currentMyt >= endMyt) return 0;
+            if (currentLocal >= endLocal) return 0;
 
-            while (currentMyt.Date < endMyt.Date)
+            while (currentLocal.Date < endLocal.Date)
             {
-                DateTime endOfToday = currentMyt.Date.Add(new TimeSpan(17, 30, 0));
-                if (currentMyt < endOfToday) totalHours += (endOfToday - currentMyt).TotalHours;
+                DateTime endOfToday = currentLocal.Date.Add(businessSchedule.EndTime);
+                if (currentLocal < endOfToday) totalHours += (endOfToday - currentLocal).TotalHours;
 
-                currentMyt = currentMyt.Date.AddDays(1).Add(new TimeSpan(8, 30, 0));
-                while (currentMyt.DayOfWeek == DayOfWeek.Sunday) currentMyt = currentMyt.AddDays(1);
+                currentLocal = MoveToNextWorkingDate(
+                    currentLocal.Date.AddDays(1).Add(businessSchedule.StartTime),
+                    businessSchedule);
             }
 
-            // Remainder of the last day
-            DateTime startOfLastDay = currentMyt.Date.Add(new TimeSpan(8, 30, 0));
-            DateTime endOfLastDay = currentMyt.Date.Add(new TimeSpan(17, 30, 0));
-            DateTime actualStart = currentMyt > startOfLastDay ? currentMyt : startOfLastDay;
-            DateTime actualEnd = endMyt < endOfLastDay ? endMyt : endOfLastDay;
+            DateTime startOfLastDay = currentLocal.Date.Add(businessSchedule.StartTime);
+            DateTime endOfLastDay = currentLocal.Date.Add(businessSchedule.EndTime);
+            DateTime actualStart = currentLocal > startOfLastDay ? currentLocal : startOfLastDay;
+            DateTime actualEnd = endLocal < endOfLastDay ? endLocal : endOfLastDay;
 
-            if (actualEnd > actualStart && currentMyt.DayOfWeek != DayOfWeek.Sunday)
+            if (actualEnd > actualStart && businessSchedule.IsWorkingDay(currentLocal.DayOfWeek))
             {
                 totalHours += (actualEnd - actualStart).TotalHours;
             }
@@ -91,7 +135,69 @@ namespace IT_Form.Helpers
 
         public static bool IsSlaOverdue(DateTime startUtc, int targetDays)
         {
-            return DateTime.UtcNow > CalculateSlaDeadline(startUtc, targetDays);
+            return IsSlaOverdue(startUtc, targetDays, DefaultBusinessStartTime, DefaultBusinessEndTime, GetDefaultWorkingDays());
+        }
+
+        public static bool IsSlaOverdue(
+            DateTime startUtc,
+            int targetDays,
+            TimeSpan businessStartTime,
+            TimeSpan businessEndTime)
+            => IsSlaOverdue(startUtc, targetDays, businessStartTime, businessEndTime, GetDefaultWorkingDays());
+
+        public static bool IsSlaOverdue(
+            DateTime startUtc,
+            int targetDays,
+            TimeSpan businessStartTime,
+            TimeSpan businessEndTime,
+            IEnumerable<DayOfWeek>? workingDays,
+            string? timeZoneId = null)
+        {
+            return DateTime.UtcNow > CalculateSlaDeadline(startUtc, targetDays, businessStartTime, businessEndTime, workingDays, timeZoneId);
+        }
+
+        private static CompanyBusinessSchedule NormalizeBusinessSchedule(
+            TimeSpan businessStartTime,
+            TimeSpan businessEndTime,
+            IEnumerable<DayOfWeek>? workingDays,
+            string? timeZoneId = null)
+        {
+            var normalizedWorkingDays = workingDays?
+                .Distinct()
+                .ToHashSet()
+                ?? GetDefaultWorkingDays();
+
+            if (normalizedWorkingDays.Count == 0)
+            {
+                normalizedWorkingDays = GetDefaultWorkingDays();
+            }
+
+            if (businessEndTime <= businessStartTime)
+            {
+                return new CompanyBusinessSchedule(
+                    DefaultBusinessStartTime,
+                    DefaultBusinessEndTime,
+                    normalizedWorkingDays,
+                    CompanyTimeZoneHelper.NormalizeTimeZoneId(timeZoneId));
+            }
+
+            return new CompanyBusinessSchedule(
+                businessStartTime,
+                businessEndTime,
+                normalizedWorkingDays,
+                CompanyTimeZoneHelper.NormalizeTimeZoneId(timeZoneId));
+        }
+
+        private static DateTime MoveToNextWorkingDate(DateTime currentLocal, CompanyBusinessSchedule businessSchedule)
+        {
+            var next = currentLocal;
+
+            while (!businessSchedule.IsWorkingDay(next.DayOfWeek))
+            {
+                next = next.Date.AddDays(1).Add(businessSchedule.StartTime);
+            }
+
+            return next;
         }
     }
 }

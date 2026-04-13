@@ -319,7 +319,10 @@ namespace IT_Form.Controllers
 
             if (type == "Onboarding")
             {
-                var req = await _context.OnboardingRequests.Include(r => r.IssuedAssets).Include(r => r.FolderPermissions).FirstOrDefaultAsync(r => r.Id == id);
+                var req = await _context.OnboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOnboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == id);
                 if (req == null) return NotFound();
                 if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail)) return Forbid();
                 fullName = req.FullName ?? "";
@@ -329,7 +332,10 @@ namespace IT_Form.Controllers
             }
             else
             {
-                var req = await _context.OffboardingRequests.FirstOrDefaultAsync(r => r.Id == id);
+                var req = await _context.OffboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOffboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == id);
                 if (req == null) return NotFound();
                 if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId)) return Forbid();
                 fullName = req.FullName ?? "";
@@ -397,7 +403,10 @@ namespace IT_Form.Controllers
                 {
                     if (model.EmailType.StartsWith("SignatureAcknowledgement_Onboarding"))
                     {
-                        var req = await _context.OnboardingRequests.Include(r => r.IssuedAssets).Include(r => r.FolderPermissions).FirstOrDefaultAsync(r => r.Id == model.RequestId);
+                        var req = await _context.OnboardingRequests
+                            .AsSplitQuery()
+                            .IncludeOnboardingPdfData()
+                            .FirstOrDefaultAsync(r => r.Id == model.RequestId);
                         if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail)))
                         {
                             pdfBytes = _pdfService.GeneratePdf(req);
@@ -406,7 +415,10 @@ namespace IT_Form.Controllers
                     }
                     else if (model.EmailType.StartsWith("SignatureAcknowledgement_Offboarding"))
                     {
-                        var req = await _context.OffboardingRequests.FirstOrDefaultAsync(r => r.Id == model.RequestId);
+                        var req = await _context.OffboardingRequests
+                            .AsSplitQuery()
+                            .IncludeOffboardingPdfData()
+                            .FirstOrDefaultAsync(r => r.Id == model.RequestId);
                         if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId)))
                         {
                             pdfBytes = _pdfService.GenerateOffboardingPdf(req);
@@ -441,12 +453,18 @@ namespace IT_Form.Controllers
             byte[]? pdfBytes = null;
             if (type.StartsWith("SignatureAcknowledgement_Onboarding"))
             {
-                var req = await _context.OnboardingRequests.Include(r => r.IssuedAssets).Include(r => r.FolderPermissions).FirstOrDefaultAsync(r => r.Id == id);
+                var req = await _context.OnboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOnboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == id);
                 if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail))) pdfBytes = _pdfService.GeneratePdf(req);
             }
             else if (type.StartsWith("SignatureAcknowledgement_Offboarding"))
             {
-                var req = await _context.OffboardingRequests.FirstOrDefaultAsync(r => r.Id == id);
+                var req = await _context.OffboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOffboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == id);
                 if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId))) pdfBytes = _pdfService.GenerateOffboardingPdf(req);
             }
 

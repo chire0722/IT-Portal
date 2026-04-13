@@ -35,8 +35,8 @@ namespace IT_Form.Services
 
             var requests = await _context.OnboardingRequests
                 .AsNoTracking()
-                .Include(r => r.IssuedAssets)
-                .Include(r => r.FolderPermissions)
+                .AsSplitQuery()
+                .IncludeOnboardingPdfData()
                 .Where(r => ids.Contains(r.Id))
                 .ToListAsync(cancellationToken);
 
@@ -88,13 +88,8 @@ namespace IT_Form.Services
         {
             var request = await _context.OnboardingRequests
                 .AsNoTracking()
-                .Include(r => r.IssuedAssets)
-                .Include(r => r.FolderPermissions)
-                .Include(r => r.RequestEmailGroups)
-                .Include(r => r.RequestSharedMailboxes)
-                .Include(r => r.RequestSoftware)
-                .Include(r => r.IssuedSoftware)
-                    .ThenInclude(i => i.SoftwareLicense)
+                .AsSplitQuery()
+                .IncludeOnboardingPdfData()
                 .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
             if (request == null)

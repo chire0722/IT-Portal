@@ -61,6 +61,11 @@ public class DepartmentFeatureSliceTests
     public async Task CreateDepartmentHandler_CreatesDepartment_WithDescriptionAndCompanies()
     {
         using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        await context.SaveChangesAsync();
+
         var handler = new CreateDepartmentCommandHandler(context, new TestCurrentUserAccessor());
 
         var id = await handler.Handle(

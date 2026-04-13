@@ -70,20 +70,47 @@ namespace IT_Form.Services
             string appDomainSetting = config["AppDomain"] ?? "http://localhost:5063";
             var domains = appDomainSetting.Split(';', StringSplitOptions.RemoveEmptyEntries);
             string baseDomain = domains.FirstOrDefault(d => !d.Contains("localhost")) ?? domains.FirstOrDefault() ?? "http://localhost:5063";
+            var companies = await context.Companies
+                .AsNoTracking()
+                .ToListAsync(stoppingToken);
 
             // 1. Onboarding
-            await ProcessTiersAsync(context, slaSettings, "Onboarding", context.OnboardingRequests, r => r.RequestDate, r => r.FullName, outlookService, baseDomain, stoppingToken);
+            await ProcessTiersAsync(
+                context,
+                slaSettings,
+                companies,
+                "Onboarding",
+                context.OnboardingRequests,
+                r => r.RequesterSignedAt ?? r.RequestDate,
+                r => r.Branch,
+                r => r.FullName,
+                outlookService,
+                baseDomain,
+                stoppingToken);
 
             // 2. Offboarding
-            await ProcessTiersAsync(context, slaSettings, "Offboarding", context.OffboardingRequests, r => r.RequestDate, r => r.FullName, outlookService, baseDomain, stoppingToken);
+            await ProcessTiersAsync(
+                context,
+                slaSettings,
+                companies,
+                "Offboarding",
+                context.OffboardingRequests,
+                r => r.HRSignedAt ?? r.RequestDate,
+                r => r.Branch,
+                r => r.FullName,
+                outlookService,
+                baseDomain,
+                stoppingToken);
         }
 
         private async Task ProcessTiersAsync<T>(
             ApplicationDbContext context,
             List<SlaSetting> settings,
+            IReadOnlyCollection<Company> companies,
             string requestType,
             IQueryable<T> dbSet,
             Func<T, DateTime> dateSelector,
+            Func<T, string?> companySelector,
             Func<T, string?> nameSelector,
             IOutlookService outlook,
             string baseDomain,
@@ -99,6 +126,7 @@ namespace IT_Form.Services
             foreach (var req in pendingRequests)
             {
                 DateTime baseDate = dateSelector(req);
+                string? companyReference = companySelector(req);
                 string? name = nameSelector(req);
                 int reqId = req.Id;
 
@@ -108,7 +136,8 @@ namespace IT_Form.Services
                 // --- Level 0: Primary Notification ---
                 if (ShouldDispatch(req, SlaNotifyStatus.Pending, SlaNotifyStatus.PrimaryDispatchPending))
                 {
-                    if (SlaHelper.IsSlaOverdue(baseDate, setting.TargetDays) && !string.IsNullOrWhiteSpace(setting.NotifyEmail))
+                    if (CompanyBusinessHoursHelper.IsSlaOverdue(companies, companyReference, baseDate, setting.TargetDays) &&
+                        !string.IsNullOrWhiteSpace(setting.NotifyEmail))
                     {
                         var subject = $"SLA OVERDUE: {requestType} #{reqId} ({name})";
                         var detailsTable = CreateSlaDetailsTable(requestType, reqId, name, baseDate, setting.TargetDays, "Overdue");
@@ -135,7 +164,8 @@ namespace IT_Form.Services
                 // --- Level 1: Tier 1 Escalation ---
                 else if (ShouldDispatch(req, SlaNotifyStatus.Sent, SlaNotifyStatus.Tier1DispatchPending))
                 {
-                    if (SlaHelper.IsSlaOverdue(baseDate, setting.EscalationDaysTier1) && !string.IsNullOrWhiteSpace(setting.EscalationEmailTier1))
+                    if (CompanyBusinessHoursHelper.IsSlaOverdue(companies, companyReference, baseDate, setting.EscalationDaysTier1) &&
+                        !string.IsNullOrWhiteSpace(setting.EscalationEmailTier1))
                     {
                         var subject = $"SLA ESCALATION (Tier 1): {requestType} #{reqId} ({name})";
                         var detailsTable = CreateSlaDetailsTable(requestType, reqId, name, baseDate, setting.EscalationDaysTier1, "Tier 1 Escalation");
@@ -162,7 +192,8 @@ namespace IT_Form.Services
                 // --- Level 2: Tier 2 Escalation ---
                 else if (ShouldDispatch(req, SlaNotifyStatus.Tier1Sent, SlaNotifyStatus.Tier2DispatchPending))
                 {
-                    if (SlaHelper.IsSlaOverdue(baseDate, setting.EscalationDaysTier2) && !string.IsNullOrWhiteSpace(setting.EscalationEmailTier2))
+                    if (CompanyBusinessHoursHelper.IsSlaOverdue(companies, companyReference, baseDate, setting.EscalationDaysTier2) &&
+                        !string.IsNullOrWhiteSpace(setting.EscalationEmailTier2))
                     {
                         var subject = $"SLA CRITICAL ESCALATION (Tier 2): {requestType} #{reqId} ({name})";
                         var detailsTable = CreateSlaDetailsTable(requestType, reqId, name, baseDate, setting.EscalationDaysTier2, "CRITICAL Tier 2");

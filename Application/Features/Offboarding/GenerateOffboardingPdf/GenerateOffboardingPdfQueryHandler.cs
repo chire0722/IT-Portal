@@ -34,10 +34,8 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
         {
             var offboardingRequest = await _context.OffboardingRequests
                 .AsNoTracking()
-                .Include(r => r.OnboardingRequest).ThenInclude(o => o!.RequestEmailGroups)
-                .Include(r => r.OnboardingRequest).ThenInclude(o => o!.RequestSharedMailboxes)
-                .Include(r => r.OnboardingRequest).ThenInclude(o => o!.FolderPermissions)
-                .Include(r => r.OnboardingRequest).ThenInclude(o => o!.RequestSoftware)
+                .AsSplitQuery()
+                .IncludeOffboardingPdfData()
                 .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
 
             if (offboardingRequest == null)

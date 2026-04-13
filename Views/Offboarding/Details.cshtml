@@ -1,5 +1,6 @@
 ﻿@model IT_Form.ViewModels.OffboardingDetailsPageViewModel
 @using IT_Form.Models.Enums
+@using IT_Form.Helpers
 
 @{
     ViewData["Title"] = "Offboarding Details";
@@ -18,6 +19,7 @@
     bool hasHRSig = !string.IsNullOrEmpty(Model.HRSignature);
     bool hasManagerSig = !string.IsNullOrEmpty(Model.HODSignature);
     bool hasITSig = !string.IsNullOrEmpty(Model.ITAdminSignature);
+    var companyTimeZoneId = Model.CompanyTimeZoneId;
 
     var detailBadgeClass = Model.Status switch
     {
@@ -116,7 +118,7 @@
             {
                 var isOverdue = DateTime.UtcNow > deadline;
                 <p class="mb-0 small @(isOverdue ? "text-danger fw-bold" : "text-primary")">
-                    <i class="bi bi-clock-history me-1"></i>Due: @deadline.AddHours(8).ToString("dd/MM/yyyy HH:mm")
+                    <i class="bi bi-clock-history me-1"></i>Due: @CompanyTimeZoneHelper.FormatDateTime(deadline, companyTimeZoneId)
                     @if (isOverdue)
                     {
                         <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">Overdue</span>
@@ -702,7 +704,7 @@
                 {
                     <img src="@Model.HRSignature" alt="Requestor Signature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
                     <p class="small text-success mt-2 mb-0">Signed by @(Model.HRSignerName ?? "HR")</p>
-                    <p class="text-muted" style="font-size: 0.7rem;">@Model.HRSignedAt?.ToString("g")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@CompanyTimeZoneHelper.FormatDateTime(Model.HRSignedAt, companyTimeZoneId)</p>
                 }
                 else
                 {
@@ -746,7 +748,7 @@
                         <div class="border rounded bg-white p-3 text-primary fw-semibold">@Model.HODSignature</div>
                     }
                     <p class="small text-success mt-2 mb-0">Signed by @(Model.HODSignerName ?? "HOD")</p>
-                    <p class="text-muted" style="font-size: 0.7rem;">@Model.HODSignedAt?.ToString("g")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@CompanyTimeZoneHelper.FormatDateTime(Model.HODSignedAt, companyTimeZoneId)</p>
                 }
                 else
                 {
@@ -788,7 +790,7 @@
                 {
                     <img src="@Model.ITAdminSignature" alt="IT Admin Signature" class="img-fluid border rounded bg-white p-2" style="max-height: 80px;" />
                     <p class="small text-success mt-2 mb-0">Signed by @(Model.ITAdminSignerName ?? "IT Admin")</p>
-                    <p class="text-muted" style="font-size: 0.7rem;">@Model.ITAdminSignedAt?.ToString("g")</p>
+                    <p class="text-muted" style="font-size: 0.7rem;">@CompanyTimeZoneHelper.FormatDateTime(Model.ITAdminSignedAt, companyTimeZoneId)</p>
                 }
                 else
                 {
@@ -840,7 +842,7 @@
                         <div class="d-flex align-items-center justify-content-center border rounded bg-white p-2 shadow-sm mb-2 mx-auto" style="width: 300px; height: 120px; max-width: 100%;">
                             <img src="@Model.OnboardingRequest.EmployeeSignature" alt="Employee Onboarding Signature" class="img-fluid" style="max-height: 100px;" />
                         </div>
-                        <p class="text-success mt-1 mb-0 fw-medium" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Signed by @(Model.OnboardingRequest.EmployeeSignerName ?? Model.OnboardingRequest.FullName ?? "Employee") on @(Model.OnboardingRequest.EmployeeSignedAt?.ToString("dd/MM/yyyy HH:mm:ss"))</p>
+                        <p class="text-success mt-1 mb-0 fw-medium" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Signed by @(Model.OnboardingRequest.EmployeeSignerName ?? Model.OnboardingRequest.FullName ?? "Employee") on @CompanyTimeZoneHelper.FormatDateTime(Model.OnboardingRequest.EmployeeSignedAt, companyTimeZoneId, "dd/MM/yyyy HH:mm:ss")</p>
                     }
                     else
                     {
@@ -863,7 +865,7 @@
                         <div class="d-flex align-items-center justify-content-center border rounded bg-white p-2 shadow-sm mb-2 mx-auto" style="width: 300px; height: 120px; max-width: 100%;">
                             <img src="@Model.EmployeeSignature" alt="Employee Offboarding Signature" class="img-fluid" style="max-height: 100px;" />
                         </div>
-                        <p class="text-success mt-1 mb-0 fw-medium" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Signed by @(Model.EmployeeSignerName ?? Model.FullName ?? "Employee") on @(Model.EmployeeSignedAt?.ToString("dd/MM/yyyy HH:mm:ss"))</p>
+                        <p class="text-success mt-1 mb-0 fw-medium" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Signed by @(Model.EmployeeSignerName ?? Model.FullName ?? "Employee") on @CompanyTimeZoneHelper.FormatDateTime(Model.EmployeeSignedAt, companyTimeZoneId, "dd/MM/yyyy HH:mm:ss")</p>
                     }
                     else if (Model.Status == RequestStatus.PendingEmployeeSign)
                     {

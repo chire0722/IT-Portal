@@ -21,10 +21,9 @@ namespace IT_Form.Tests
 
             var viewResult = Assert.IsType<ViewResult>(result);
             var model = Assert.IsAssignableFrom<IEnumerable<SlaSetting>>(viewResult.ViewData.Model).ToList();
-            Assert.Equal(3, model.Count);
+            Assert.Equal(2, model.Count);
             Assert.Contains(model, s => s.RequestType == "Onboarding");
             Assert.Contains(model, s => s.RequestType == "Offboarding");
-            Assert.Contains(model, s => s.RequestType == "Transfer");
         }
 
         [Fact]
@@ -39,7 +38,7 @@ namespace IT_Form.Tests
 
             var viewResult = Assert.IsType<ViewResult>(result);
             var model = Assert.IsAssignableFrom<IEnumerable<SlaSetting>>(viewResult.ViewData.Model).ToList();
-            Assert.Equal(3, model.Count);
+            Assert.Equal(2, model.Count);
             Assert.Contains(model, s => s.RequestType == "Onboarding" && s.TargetDays == 5);
         }
 

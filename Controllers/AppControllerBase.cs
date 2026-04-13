@@ -13,7 +13,10 @@ namespace IT_Form.Controllers
         protected string GetValidationErrorMessage(ValidationException ex)
         {
             ModelState.AddFluentValidationErrors(ex);
-            return GetFirstModelStateErrorMessage();
+            var message = GetFirstModelStateErrorMessage();
+            AddModelLevelError(message);
+            TempData["ErrorMessage"] = message;
+            return message;
         }
 
         protected string GetFirstModelStateErrorMessage()
@@ -185,9 +188,29 @@ namespace IT_Form.Controllers
             }
 
             if (!result.IsSuccess && !string.IsNullOrWhiteSpace(result.Message))
+            {
+                AddModelLevelError(result.Message);
                 TempData["ErrorMessage"] = result.Message;
+            }
 
             return View(result.Data);
+        }
+
+        private void AddModelLevelError(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            var existingMessages = ModelState.TryGetValue(string.Empty, out var entry)
+                ? entry.Errors.Select(error => error.ErrorMessage)
+                : Enumerable.Empty<string>();
+
+            if (!existingMessages.Contains(message, StringComparer.Ordinal))
+            {
+                ModelState.AddModelError(string.Empty, message);
+            }
         }
 
         protected IActionResult HandleJsonProcessResult<T>(ProcessResult<T> result)

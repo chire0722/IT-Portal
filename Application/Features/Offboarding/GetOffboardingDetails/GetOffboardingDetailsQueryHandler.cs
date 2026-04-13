@@ -10,6 +10,7 @@ using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using CompanyEntity = IT_Form.Models.Company;
 
 namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
 {
@@ -75,6 +76,7 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.RequestType == "Offboarding", cancellationToken))?.TargetDays ?? 3;
             var slaStart = offboardingRequest.HRSignedAt ?? offboardingRequest.RequestDate;
+            var company = await ResolveCompanyAsync(offboardingRequest.Branch, cancellationToken);
             var viewModel = offboardingRequest.Adapt<OffboardingDetailsPageViewModel>();
             viewModel.OnboardingRequest = offboardingRequest.OnboardingRequest?.Adapt<OffboardingOnboardingSnapshotViewModel>();
 
@@ -94,9 +96,14 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
             viewModel.ManagerDisplayName = managerDisplayName;
             viewModel.SlaTargetDays = slaTargetDays;
             viewModel.SlaStartTime = slaStart;
-            viewModel.SlaDeadline = SlaHelper.CalculateSlaDeadline(slaStart, slaTargetDays);
+            viewModel.SlaDeadline = CompanyBusinessHoursHelper.CalculateSlaDeadline(
+                company == null ? Array.Empty<CompanyEntity>() : [company],
+                offboardingRequest.Branch,
+                slaStart,
+                slaTargetDays);
             viewModel.IntegrityError = VerifyIntegrity(offboardingRequest);
-            viewModel.CompanyLogoPath = await ResolveCompanyLogoAsync(offboardingRequest.Branch, cancellationToken);
+            viewModel.CompanyLogoPath = string.IsNullOrWhiteSpace(company?.LogoPath) ? null : company.LogoPath;
+            viewModel.CompanyTimeZoneId = CompanyTimeZoneHelper.NormalizeTimeZoneId(company?.TimeZoneId);
 
             return ProcessResult<OffboardingDetailsPageViewModel>.Success(viewModel);
         }
@@ -179,20 +186,18 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
             return null;
         }
 
-        private async Task<string?> ResolveCompanyLogoAsync(string? branchName, CancellationToken cancellationToken)
+        private async Task<CompanyEntity?> ResolveCompanyAsync(string? branchName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(branchName))
             {
                 return null;
             }
 
-            var company = await _context.Companies
+            var companies = await _context.Companies
                 .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    c => c.Name == branchName || (c.Name + " (" + c.Lot + ")") == branchName || branchName.StartsWith(c.Name + " ("),
-                    cancellationToken);
+                .ToListAsync(cancellationToken);
 
-            return string.IsNullOrWhiteSpace(company?.LogoPath) ? null : company.LogoPath;
+            return CompanyBusinessHoursHelper.ResolveCompany(companies, branchName);
         }
     }
 }

@@ -48,6 +48,7 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingIndex
             var slaSetting = await _context.SlaSettings
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.RequestType == "Onboarding", cancellationToken);
+            var targetDays = slaSetting?.TargetDays ?? 3;
 
             const int pageSize = 10;
             var paginatedList = await PaginatedList<OnboardingIndexListItem>.CreateAsync(
@@ -57,11 +58,26 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingIndex
                 request.Page,
                 pageSize);
 
+            var companies = await _context.Companies
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            foreach (var item in paginatedList)
+            {
+                item.CompanyTimeZoneId = CompanyTimeZoneHelper.ResolveTimeZoneId(companies, item.Branch);
+                var slaStart = item.RequesterSignedAt ?? item.RequestDate;
+                item.SlaDeadline = CompanyBusinessHoursHelper.CalculateSlaDeadline(
+                    companies,
+                    item.Branch,
+                    slaStart,
+                    targetDays);
+            }
+
             return new GetOnboardingIndexResult(
                 paginatedList,
                 request.SearchString,
                 request.Status,
-                slaSetting?.TargetDays ?? 3);
+                targetDays);
         }
 
     }

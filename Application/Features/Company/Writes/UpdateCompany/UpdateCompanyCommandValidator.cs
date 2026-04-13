@@ -1,5 +1,6 @@
 using FluentValidation;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Company.Writes.UpdateCompany;
@@ -21,6 +22,19 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
 
         RuleFor(x => x.Lot)
             .MaximumLength(100);
+
+        RuleFor(x => x.TimeZoneId)
+            .NotEmpty()
+            .Must(CompanyTimeZoneHelper.IsSupportedTimeZoneId)
+            .WithMessage("Please select a valid time zone.");
+
+        RuleFor(x => x.BusinessEndTime)
+            .GreaterThan(x => x.BusinessStartTime)
+            .WithMessage("Business end time must be later than the start time.");
+
+        RuleFor(x => x)
+            .Must(HasAnyBusinessDay)
+            .WithMessage("Select at least one business day.");
 
         RuleFor(x => x.IsLoginPageLogo)
             .CustomAsync(ValidateLoginPageLogoAsync);
@@ -60,4 +74,13 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
                 "A logo is required before using it on the login page.");
         }
     }
+
+    private static bool HasAnyBusinessDay(UpdateCompanyCommand command)
+        => command.WorksOnMonday ||
+           command.WorksOnTuesday ||
+           command.WorksOnWednesday ||
+           command.WorksOnThursday ||
+           command.WorksOnFriday ||
+           command.WorksOnSaturday ||
+           command.WorksOnSunday;
 }

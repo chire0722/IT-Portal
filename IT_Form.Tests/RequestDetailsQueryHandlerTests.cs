@@ -4,6 +4,7 @@ using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.Offboarding.GetOffboardingDetails;
 using IT_Form.Application.Features.Onboarding.GetOnboardingDetails;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
@@ -111,7 +112,10 @@ public class RequestDetailsQueryHandlerTests
             Id = 20,
             Name = "Alpha",
             Lot = "Lot 1",
-            LogoPath = "logos/alpha.png"
+            LogoPath = "logos/alpha.png",
+            BusinessStartTime = new TimeSpan(9, 30, 0),
+            BusinessEndTime = new TimeSpan(18, 30, 0),
+            WorksOnSaturday = false
         });
         await context.SaveChangesAsync();
 
@@ -128,7 +132,16 @@ public class RequestDetailsQueryHandlerTests
         Assert.Equal("Alicia Tan", model.FullName);
         Assert.Equal("signature://hr", model.CurrentUserSignature);
         Assert.Equal("logos/alpha.png", model.CompanyLogoPath);
+        Assert.Equal("Asia/Kuala_Lumpur", model.CompanyTimeZoneId);
         Assert.NotNull(model.SlaDeadline);
+        Assert.Equal(
+            SlaHelper.CalculateSlaDeadline(
+                new DateTime(2026, 4, 2, 8, 0, 0, DateTimeKind.Utc),
+                3,
+                new TimeSpan(9, 30, 0),
+                new TimeSpan(18, 30, 0),
+                [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday]),
+            model.SlaDeadline!.Value);
         Assert.Single(model.IssuedAssets);
         Assert.Equal("LT-10", model.IssuedAssets[0].AssetTag);
         Assert.Single(model.IssuedSoftware);
@@ -232,7 +245,10 @@ public class RequestDetailsQueryHandlerTests
             Id = 41,
             Name = "Alpha",
             Lot = "Lot 1",
-            LogoPath = "logos/alpha.png"
+            LogoPath = "logos/alpha.png",
+            BusinessStartTime = new TimeSpan(9, 30, 0),
+            BusinessEndTime = new TimeSpan(18, 30, 0),
+            WorksOnSaturday = false
         });
         await context.SaveChangesAsync();
 
@@ -249,6 +265,15 @@ public class RequestDetailsQueryHandlerTests
         Assert.Equal("Manager Alpha", model.ManagerDisplayName);
         Assert.Equal("signature://it", model.CurrentUserSignature);
         Assert.Equal("logos/alpha.png", model.CompanyLogoPath);
+        Assert.Equal("Asia/Kuala_Lumpur", model.CompanyTimeZoneId);
+        Assert.Equal(
+            SlaHelper.CalculateSlaDeadline(
+                new DateTime(2026, 4, 11, 8, 0, 0, DateTimeKind.Utc),
+                3,
+                new TimeSpan(9, 30, 0),
+                new TimeSpan(18, 30, 0),
+                [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday]),
+            model.SlaDeadline);
         Assert.NotNull(model.OnboardingRequest);
         Assert.Single(model.OnboardingRequest!.IssuedAssets);
         Assert.True(model.OnboardingRequest.IssuedAssets[0].IsReturned);

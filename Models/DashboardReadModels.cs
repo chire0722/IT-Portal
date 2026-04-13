@@ -8,7 +8,9 @@ namespace IT_Form.Models
         public string? FullName { get; set; }
         public string? Department { get; set; }
         public string? Designation { get; set; }
+        public string? Branch { get; set; }
         public DateTime RequestDate { get; set; }
+        public DateTime? RequesterSignedAt { get; set; }
         public RequestStatus Status { get; set; }
     }
 
@@ -17,7 +19,9 @@ namespace IT_Form.Models
         public int Id { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Department { get; set; } = string.Empty;
+        public string? Branch { get; set; }
         public DateTime RequestDate { get; set; }
+        public DateTime? HRSignedAt { get; set; }
         public DateTime LastDayOfWork { get; set; }
         public RequestStatus Status { get; set; }
     }

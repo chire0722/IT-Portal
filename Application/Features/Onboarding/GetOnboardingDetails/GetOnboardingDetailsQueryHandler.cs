@@ -8,6 +8,7 @@ using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using CompanyEntity = IT_Form.Models.Company;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
 {
@@ -63,15 +64,19 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
             var currentUser = await _userManager.GetUserAsync(user);
             var currentUserSignature = currentUser?.Signature;
 
+            var integrityError = VerifyIntegrity(onboardingRequest);
             var slaSetting = await _context.SlaSettings
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.RequestType == "Onboarding", cancellationToken);
             var targetDays = slaSetting?.TargetDays ?? 3;
             var slaStart = onboardingRequest.RequesterSignedAt ?? onboardingRequest.RequestDate;
-            var slaDeadline = SlaHelper.CalculateSlaDeadline(slaStart, targetDays);
-
-            var integrityError = VerifyIntegrity(onboardingRequest);
-            var companyLogo = await ResolveCompanyLogoAsync(onboardingRequest.Branch, cancellationToken);
+            var company = await ResolveCompanyAsync(onboardingRequest.Branch, cancellationToken);
+            var companyLogo = string.IsNullOrWhiteSpace(company?.LogoPath) ? null : company.LogoPath;
+            var slaDeadline = CompanyBusinessHoursHelper.CalculateSlaDeadline(
+                company == null ? Array.Empty<CompanyEntity>() : [company],
+                onboardingRequest.Branch,
+                slaStart,
+                targetDays);
             var viewModel = onboardingRequest.Adapt<OnboardingDetailsPageViewModel>();
             viewModel.IssuedAssets = onboardingRequest.IssuedAssets.Adapt<IReadOnlyList<RequestAssetReadModel>>();
             viewModel.IssuedSoftware = onboardingRequest.IssuedSoftware.Adapt<IReadOnlyList<RequestIssuedSoftwareReadModel>>();
@@ -85,6 +90,7 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
             viewModel.SlaDeadline = slaDeadline;
             viewModel.IntegrityError = integrityError;
             viewModel.CompanyLogoPath = companyLogo;
+            viewModel.CompanyTimeZoneId = CompanyTimeZoneHelper.NormalizeTimeZoneId(company?.TimeZoneId);
 
             return new GetOnboardingDetailsResult(
                 GetOnboardingDetailsStatus.Ready,
@@ -121,20 +127,18 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
             return null;
         }
 
-        private async Task<string?> ResolveCompanyLogoAsync(string? branchName, CancellationToken cancellationToken)
+        private async Task<CompanyEntity?> ResolveCompanyAsync(string? branchName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(branchName))
             {
                 return null;
             }
 
-            var company = await _context.Companies
+            var companies = await _context.Companies
                 .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    c => c.Name == branchName || (c.Name + " (" + c.Lot + ")") == branchName || branchName.StartsWith(c.Name + " ("),
-                    cancellationToken);
+                .ToListAsync(cancellationToken);
 
-            return string.IsNullOrEmpty(company?.LogoPath) ? null : company.LogoPath;
+            return CompanyBusinessHoursHelper.ResolveCompany(companies, branchName);
         }
 
         private static GetOnboardingDetailsResult Empty(GetOnboardingDetailsStatus status)

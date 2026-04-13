@@ -106,6 +106,7 @@
                         ? sw.SoftwareName!.Trim()
                         : sw.SoftwareLicense?.SoftwareName?.Trim())
                     .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name!)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .OrderBy(name => name)
                     .ToList();
@@ -115,9 +116,9 @@
                     assignedSoftwareNames = (Model.RequestSoftware ?? new List<IT_Form.Models.RequestSoftware>())
                         .Select(sw => sw.SoftwareName?.Trim())
                         .Where(name => !string.IsNullOrWhiteSpace(name))
+                        .Select(name => name!)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .OrderBy(name => name)
-                        .Cast<string>()
                         .ToList();
                 }
             }

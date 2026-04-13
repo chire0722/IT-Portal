@@ -1,5 +1,6 @@
 @model IT_Form.Helpers.PaginatedList<IT_Form.Application.Features.Onboarding.GetOnboardingIndex.OnboardingIndexListItem>
 @using IT_Form.Models.Enums
+@using IT_Form.Helpers
 @{
     ViewData["Title"] = "Dashboard";
     var currentFilter = ViewData["CurrentFilter"] as string;
@@ -152,10 +153,10 @@
                                                                         <td>
                                                                             @if (req.Status != RequestStatus.Completed && req.Status != RequestStatus.Rejected && req.Status != RequestStatus.Approved)
                                                                             {
-                                                                                var deadline = IT_Form.Helpers.SlaHelper.CalculateSlaDeadline(req.RequestDate, slaTargetDays);
-                                                                                var isOverdue = DateTime.UtcNow > deadline;
+                                                                                var deadline = req.SlaDeadline;
+                                                                                var isOverdue = deadline.HasValue && DateTime.UtcNow > deadline.Value;
                                                                                 <div class="@(isOverdue ? "text-danger fw-bold" : "")">
-                                                                                    @deadline.AddHours(8).ToString("dd/MM/yyyy HH:mm")
+                                                                                    @CompanyTimeZoneHelper.FormatDateTime(deadline, req.CompanyTimeZoneId)
                                                                                 </div>
                                                                                 if (isOverdue)
                                                                                 {

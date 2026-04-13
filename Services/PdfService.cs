@@ -1,3 +1,4 @@
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using QuestPDF.Fluent;
@@ -80,6 +81,7 @@ namespace IT_Form.Services
         public byte[] GeneratePdf(OnboardingRequest request)
         {
             var assignedSoftwareNames = GetAssignedSoftwareNames(request);
+            var companyTimeZoneId = GetCompanyTimeZoneId(request.Branch);
             var document = Document.Create(container =>
             {
                 // PAGE 1: IT EQUIPMENT ISSUANCE FORM
@@ -280,9 +282,9 @@ namespace IT_Form.Services
 
                         col.Item().PaddingTop(5).Row(row =>
                         {
-                            AddVerifiedSignatureBlock(row, "HR Signature", request.RequesterSignature, request.RequesterSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.RequesterSignerName ?? "Unknown", request.RequesterSignedAt);
+                            AddVerifiedSignatureBlock(row, "HR Signature", request.RequesterSignature, request.RequesterSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.RequesterSignerName ?? "Unknown", request.RequesterSignedAt, companyTimeZoneId);
                             row.ConstantItem(15);
-                            AddVerifiedSignatureBlock(row, "IT Department", request.ITAdminSignature, request.ITAdminSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt);
+                            AddVerifiedSignatureBlock(row, "IT Department", request.ITAdminSignature, request.ITAdminSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt, companyTimeZoneId);
                         });
                     });
 
@@ -469,9 +471,9 @@ namespace IT_Form.Services
 
                         col.Item().PaddingTop(5).Row(row =>
                         {
-                            AddVerifiedSignatureBlock(row, $"Employee Signature: {request.EmployeeSignerName ?? request.FullName ?? "Unknown"}", request.EmployeeSignature, request.EmployeeSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt);
+                            AddVerifiedSignatureBlock(row, $"Employee Signature: {request.EmployeeSignerName ?? request.FullName ?? "Unknown"}", request.EmployeeSignature, request.EmployeeSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt, companyTimeZoneId);
                             row.ConstantItem(15);
-                            AddVerifiedSignatureBlock(row, "Verified by IT", request.ITAdminSignature, request.ITAdminSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt);
+                            AddVerifiedSignatureBlock(row, "Verified by IT", request.ITAdminSignature, request.ITAdminSignatureHmac, "OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt, companyTimeZoneId);
                         });
                     });
 
@@ -493,23 +495,50 @@ namespace IT_Form.Services
                     ? sw.SoftwareName!.Trim()
                     : sw.SoftwareLicense?.SoftwareName?.Trim())
                 .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .ToList()
+                ?? new List<string>();
+
+            var requestSoftwareNames = request.RequestSoftware?
+                .Select(sw => sw.SoftwareName?.Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .ToList()
+                ?? new List<string>();
+
+            var legacySoftwareNames = GetLegacySoftwareNames(request);
+
+            return issuedSoftwareNames
+                .Concat(requestSoftwareNames)
+                .Concat(legacySoftwareNames)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(name => name)
                 .ToList();
+        }
 
-            if (issuedSoftwareNames != null && issuedSoftwareNames.Any())
-            {
-                return issuedSoftwareNames;
-            }
+        private static List<string> GetLegacySoftwareNames(OnboardingRequest request)
+        {
+            var softwareNames = new List<string>();
 
-            return request.RequestSoftware?
-                .Select(sw => sw.SoftwareName?.Trim())
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(name => name)
-                .Cast<string>()
-                .ToList()
-                ?? new List<string>();
+            if (request.HasAdobe) softwareNames.Add("Adobe");
+            if (request.HasMSProject) softwareNames.Add("MS Project");
+            if (request.HasAutoDesk) softwareNames.Add("AutoDesk");
+            if (request.HasGStarCAD) softwareNames.Add("G-Star CAD");
+            if (request.HasFortiClientVPN) softwareNames.Add("FortiClient VPN");
+            if (request.HasSQLAccounting) softwareNames.Add("SQL Accounting");
+            if (request.HasMSVisio) softwareNames.Add("MS Visio");
+            if (request.HasAutoCAD) softwareNames.Add("AutoCAD");
+            if (request.HasSketchUp) softwareNames.Add("SketchUp");
+            if (request.HasMSOffice) softwareNames.Add("MS Office");
+            if (request.HasGoogleChrome) softwareNames.Add("Google Chrome");
+            if (request.HasMSTeams) softwareNames.Add("MS Teams");
+            if (request.HasAntivirus) softwareNames.Add("Antivirus");
+            if (request.HasDWGTrueView) softwareNames.Add("DWG TrueView");
+            if (request.HasIFlexiHRMS) softwareNames.Add("i-Flexi HRMS");
+            if (request.HasEShare) softwareNames.Add("EShare");
+            if (request.HasOS) softwareNames.Add("Operating System");
+
+            return softwareNames;
         }
 
         private void AddInfoRow(TableDescriptor table, string label, string value)
@@ -519,7 +548,7 @@ namespace IT_Form.Services
             table.Cell().Border(1).Padding(3).Text(value ?? "—").FontSize(8);
         }
 
-        private void AddVerifiedSignatureBlock(RowDescriptor row, string label, string? signatureBase64, string? hmac, string entityType, string entityId, string signer, DateTime? signedAt)
+        private void AddVerifiedSignatureBlock(RowDescriptor row, string label, string? signatureBase64, string? hmac, string entityType, string entityId, string signer, DateTime? signedAt, string? timeZoneId)
         {
             row.RelativeItem().Column(c =>
             {
@@ -561,13 +590,14 @@ namespace IT_Form.Services
                 c.Item().PaddingTop(2).AlignCenter().Text(label).FontSize(7);
                 if (signedAt.HasValue)
                 {
-                    c.Item().AlignCenter().Text($"Date: {signedAt.Value:dd/MM/yyyy}").FontSize(6).FontColor(Colors.Grey.Medium);
+                    c.Item().AlignCenter().Text($"Date: {CompanyTimeZoneHelper.FormatDateTime(signedAt, timeZoneId)}").FontSize(6).FontColor(Colors.Grey.Medium);
                 }
             });
         }
 
         public byte[] GenerateOffboardingPdf(OffboardingRequest request)
         {
+            var companyTimeZoneId = GetCompanyTimeZoneId(request.Branch);
             var document = Document.Create(container =>
             {
                 // PAGE 1: OFFBOARDING CHECKLIST
@@ -689,28 +719,7 @@ namespace IT_Form.Services
                             {
                                 var oReq = request.OnboardingRequest;
 
-                                // Software
-                                var softwareList = new List<string>();
-                                if (oReq.HasAdobe) softwareList.Add("Adobe");
-                                if (oReq.HasMSProject) softwareList.Add("MS Project");
-                                if (oReq.HasAutoDesk) softwareList.Add("AutoDesk");
-                                if (oReq.HasGStarCAD) softwareList.Add("G-Star CAD");
-                                if (oReq.HasFortiClientVPN) softwareList.Add("FortiClient VPN");
-                                if (oReq.HasSQLAccounting) softwareList.Add("SQL Accounting");
-                                if (oReq.HasMSVisio) softwareList.Add("MS Visio");
-                                if (oReq.HasAutoCAD) softwareList.Add("AutoCAD");
-                                if (oReq.HasSketchUp) softwareList.Add("SketchUp");
-                                if (oReq.HasMSOffice) softwareList.Add("MS Office");
-                                if (oReq.HasGoogleChrome) softwareList.Add("Google Chrome");
-                                if (oReq.HasMSTeams) softwareList.Add("MS Teams");
-                                if (oReq.HasAntivirus) softwareList.Add("Antivirus");
-                                if (oReq.HasDWGTrueView) softwareList.Add("DWG TrueView");
-                                if (oReq.HasIFlexiHRMS) softwareList.Add("i-Flexi HRMS");
-                                if (oReq.HasEShare) softwareList.Add("EShare");
-                                if (oReq.HasOS) softwareList.Add("Operating System");
-
-                                if (oReq.RequestSoftware != null && oReq.RequestSoftware.Any())
-                                    softwareList.AddRange(oReq.RequestSoftware.Select(s => s.SoftwareName));
+                                var softwareList = GetAssignedSoftwareNames(oReq);
                                 if (!string.IsNullOrEmpty(oReq.OtherSoftwareDetails))
                                     softwareList.Add($"Other: {oReq.OtherSoftwareDetails}");
                                 AddInfoRow(table, "Assigned Software", softwareList.Any() ? string.Join(", ", softwareList) : "None");
@@ -879,18 +888,18 @@ namespace IT_Form.Services
                         {
                             sigCol.Item().Row(row =>
                             {
-                                AddVerifiedSignatureBlock(row, "HR Signature", request.HRSignature, request.HRSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.HRSignerName ?? "Unknown", request.HRSignedAt);
+                                AddVerifiedSignatureBlock(row, "HR Signature", request.HRSignature, request.HRSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.HRSignerName ?? "Unknown", request.HRSignedAt, companyTimeZoneId);
                                 row.ConstantItem(10);
-                                AddVerifiedSignatureBlock(row, "IT Personnel's Signature", request.ITAdminSignature, request.ITAdminSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt);
+                                AddVerifiedSignatureBlock(row, "IT Personnel's Signature", request.ITAdminSignature, request.ITAdminSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt, companyTimeZoneId);
                                 row.ConstantItem(10);
-                                AddVerifiedSignatureBlock(row, "Manager's Signature", request.HODSignature, request.HODSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.HODSignerName ?? "Unknown", request.HODSignedAt);
+                                AddVerifiedSignatureBlock(row, "Manager's Signature", request.HODSignature, request.HODSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.HODSignerName ?? "Unknown", request.HODSignedAt, companyTimeZoneId);
                             });
 
                             sigCol.Item().PaddingTop(15).Row(row =>
                             {
-                                AddVerifiedSignatureBlock(row, $"Onboarding Acknowledgement: {request.OnboardingRequest?.EmployeeSignerName ?? request.OnboardingRequest?.FullName ?? "Unknown"}", request.OnboardingRequest?.EmployeeSignature, request.OnboardingRequest?.EmployeeSignatureHmac, "OnboardingRequest", request.OnboardingRequest?.Id.ToString() ?? "0", request.OnboardingRequest?.EmployeeSignerName ?? "Employee", request.OnboardingRequest?.EmployeeSignedAt);
+                                AddVerifiedSignatureBlock(row, $"Onboarding Acknowledgement: {request.OnboardingRequest?.EmployeeSignerName ?? request.OnboardingRequest?.FullName ?? "Unknown"}", request.OnboardingRequest?.EmployeeSignature, request.OnboardingRequest?.EmployeeSignatureHmac, "OnboardingRequest", request.OnboardingRequest?.Id.ToString() ?? "0", request.OnboardingRequest?.EmployeeSignerName ?? "Employee", request.OnboardingRequest?.EmployeeSignedAt, companyTimeZoneId);
                                 row.ConstantItem(15);
-                                AddVerifiedSignatureBlock(row, $"Offboarding Acknowledgement: {request.EmployeeSignerName ?? request.FullName ?? "Unknown"}", request.EmployeeSignature, request.EmployeeSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt);
+                                AddVerifiedSignatureBlock(row, $"Offboarding Acknowledgement: {request.EmployeeSignerName ?? request.FullName ?? "Unknown"}", request.EmployeeSignature, request.EmployeeSignatureHmac, "OffboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt, companyTimeZoneId);
                             });
                         });
                     });
@@ -904,6 +913,20 @@ namespace IT_Form.Services
             var pdfBytes = document.GeneratePdf();
             _logger.LogInformation("Offboarding PDF generated successfully ({Size} bytes)", pdfBytes.Length);
             return pdfBytes;
+        }
+
+        private string GetCompanyTimeZoneId(string? branch)
+        {
+            if (string.IsNullOrWhiteSpace(branch))
+            {
+                return CompanyTimeZoneHelper.DefaultTimeZoneId;
+            }
+
+            var company = _context.Companies
+                .AsNoTracking()
+                .FirstOrDefault(c => c.Name == branch || (c.Name + " (" + c.Lot + ")") == branch || branch.StartsWith(c.Name + " ("));
+
+            return CompanyTimeZoneHelper.NormalizeTimeZoneId(company?.TimeZoneId);
         }
     }
 }

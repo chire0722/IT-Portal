@@ -78,20 +78,6 @@ public class ManageAccessQueryHandlerTests
             ]
         });
 
-        context.EmployeeTransfers.Add(new EmployeeTransfer
-        {
-            Id = 30,
-            OnboardingRequestId = 10,
-            FullName = "Alicia Tan",
-            FromDepartment = "Operations",
-            ToDepartment = "Finance",
-            FromBranch = "Alpha (Lot 1)",
-            ToBranch = "Alpha (Lot 1)",
-            Status = RequestStatus.Completed,
-            CreatedAt = new DateTime(2026, 3, 1, 8, 0, 0, DateTimeKind.Utc),
-            CompletedAt = new DateTime(2026, 3, 5, 8, 0, 0, DateTimeKind.Utc)
-        });
-
         context.EmailGroups.AddRange(
             new EmailGroup
             {
@@ -139,9 +125,8 @@ public class ManageAccessQueryHandlerTests
         Assert.NotNull(model);
         Assert.Equal(10, model!.OnboardingId);
         Assert.Equal("Alicia Tan", model.FullName);
-        Assert.Equal("Finance", model.CurrentDepartment);
+        Assert.Equal("Operations", model.CurrentDepartment);
         Assert.Equal("Alpha (Lot 1)", model.CurrentBranch);
-        Assert.Equal(new DateTime(2026, 3, 5, 8, 0, 0, DateTimeKind.Utc), model.LastTransferCompletedAt);
         Assert.Equal([11], model.SelectedEmailGroupIds);
         Assert.Equal([21], model.SelectedSharedMailboxIds);
         Assert.Equal(2, model.AvailableEmailGroups.Count);

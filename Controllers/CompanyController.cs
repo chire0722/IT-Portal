@@ -42,6 +42,16 @@ namespace IT_Form.Controllers
                         model.Lot,
                         model.IsLoginPageLogo,
                         model.IsActive,
+                        model.TimeZoneId,
+                        model.BusinessStartTime,
+                        model.BusinessEndTime,
+                        model.WorksOnMonday,
+                        model.WorksOnTuesday,
+                        model.WorksOnWednesday,
+                        model.WorksOnThursday,
+                        model.WorksOnFriday,
+                        model.WorksOnSaturday,
+                        model.WorksOnSunday,
                         logo));
 
                     TempData["SuccessMessage"] = "Company created.";
@@ -70,6 +80,16 @@ namespace IT_Form.Controllers
                         model.Lot,
                         model.IsLoginPageLogo,
                         model.IsActive,
+                        model.TimeZoneId,
+                        model.BusinessStartTime,
+                        model.BusinessEndTime,
+                        model.WorksOnMonday,
+                        model.WorksOnTuesday,
+                        model.WorksOnWednesday,
+                        model.WorksOnThursday,
+                        model.WorksOnFriday,
+                        model.WorksOnSaturday,
+                        model.WorksOnSunday,
                         logo));
 
                     TempData["SuccessMessage"] = syncedCount > 0

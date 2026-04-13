@@ -107,6 +107,9 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
             .OrderByDescending(offboarding => offboarding.RequestDate)
             .ProjectToType<DashboardOffboardingQueueItem>()
             .ToListAsync(cancellationToken);
+        var companies = await _context.Companies
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 
         var slaSettings = await _context.SlaSettings
             .AsNoTracking()
@@ -128,31 +131,41 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
 
             foreach (var onboarding in viewModel.PendingOnboarding.Where(request => request.Status == RequestStatus.PendingITApproval))
             {
+                var slaStart = onboarding.RequesterSignedAt ?? onboarding.RequestDate;
                 unifiedTasks.Add(new CombinedPendingTask
                 {
                     Id = onboarding.Id,
                     RequestType = "Onboarding",
                     EmployeeName = onboarding.FullName ?? "Unknown",
                     Department = onboarding.Department ?? "Unknown",
-                    RequestDate = onboarding.RequestDate,
+                    RequestDate = slaStart,
                     Status = onboarding.Status,
-                    DaysPending = (DateTime.UtcNow - onboarding.RequestDate).Days,
-                    IsOverdue = SlaHelper.IsSlaOverdue(onboarding.RequestDate, onboardingSlaDays)
+                    DaysPending = Math.Max((DateTime.UtcNow - slaStart).Days, 0),
+                    IsOverdue = CompanyBusinessHoursHelper.IsSlaOverdue(
+                        companies,
+                        onboarding.Branch,
+                        slaStart,
+                        onboardingSlaDays)
                 });
             }
 
             foreach (var offboarding in viewModel.PendingOffboarding.Where(request => request.Status == RequestStatus.PendingITApproval))
             {
+                var slaStart = offboarding.HRSignedAt ?? offboarding.RequestDate;
                 unifiedTasks.Add(new CombinedPendingTask
                 {
                     Id = offboarding.Id,
                     RequestType = "Offboarding",
                     EmployeeName = offboarding.FullName ?? "Unknown",
                     Department = offboarding.Department ?? "Unknown",
-                    RequestDate = offboarding.RequestDate,
+                    RequestDate = slaStart,
                     Status = offboarding.Status,
-                    DaysPending = (DateTime.UtcNow - offboarding.RequestDate).Days,
-                    IsOverdue = SlaHelper.IsSlaOverdue(offboarding.RequestDate, offboardingSlaDays)
+                    DaysPending = Math.Max((DateTime.UtcNow - slaStart).Days, 0),
+                    IsOverdue = CompanyBusinessHoursHelper.IsSlaOverdue(
+                        companies,
+                        offboarding.Branch,
+                        slaStart,
+                        offboardingSlaDays)
                 });
             }
 
@@ -165,9 +178,17 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
         viewModel.OnboardingSlaDays = onboardingSlaDays;
         viewModel.OffboardingSlaDays = offboardingSlaDays;
         viewModel.OverdueOnboardingCount = viewModel.PendingOnboarding
-            .Count(onboarding => SlaHelper.IsSlaOverdue(onboarding.RequestDate, onboardingSlaDays));
+            .Count(onboarding => CompanyBusinessHoursHelper.IsSlaOverdue(
+                companies,
+                onboarding.Branch,
+                onboarding.RequesterSignedAt ?? onboarding.RequestDate,
+                onboardingSlaDays));
         viewModel.OverdueOffboardingCount = viewModel.PendingOffboarding
-            .Count(offboarding => SlaHelper.IsSlaOverdue(offboarding.RequestDate, offboardingSlaDays));
+            .Count(offboarding => CompanyBusinessHoursHelper.IsSlaOverdue(
+                companies,
+                offboarding.Branch,
+                offboarding.HRSignedAt ?? offboarding.RequestDate,
+                offboardingSlaDays));
 
         if (isIt || isHr)
         {
@@ -764,6 +785,9 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .Where(setting => setting.RequestType == "Onboarding")
             .Select(setting => (int?)setting.TargetDays)
             .FirstOrDefaultAsync(cancellationToken) ?? 3;
+        var companies = await _context.Companies
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 
         var completedSlaSamples = await _context.OnboardingRequests
             .AsNoTracking()
@@ -773,6 +797,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                 onboarding.Status == RequestStatus.Completed)
             .Select(onboarding => new
             {
+                onboarding.Branch,
                 onboarding.RequestDate,
                 onboarding.RequesterSignedAt,
                 onboarding.ITAdminSignedAt,
@@ -785,15 +810,54 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
         {
             var hrDurations = completedSlaSamples
                 .Where(sample => sample.RequesterSignedAt.HasValue)
-                .Select(sample => SlaHelper.CalculateBusinessHoursSpent(sample.RequestDate, sample.RequesterSignedAt!.Value) / 9.0)
+                .Select(sample =>
+                {
+                    var hoursPerDay = CompanyBusinessHoursHelper.Resolve(companies, sample.Branch).HoursPerDay;
+                    if (hoursPerDay <= 0)
+                    {
+                        return 0d;
+                    }
+
+                    return CompanyBusinessHoursHelper.CalculateBusinessHoursSpent(
+                        companies,
+                        sample.Branch,
+                        sample.RequestDate,
+                        sample.RequesterSignedAt!.Value) / hoursPerDay;
+                })
                 .ToList();
             var itDurations = completedSlaSamples
                 .Where(sample => sample.RequesterSignedAt.HasValue && sample.ITAdminSignedAt.HasValue)
-                .Select(sample => SlaHelper.CalculateBusinessHoursSpent(sample.RequesterSignedAt!.Value, sample.ITAdminSignedAt!.Value) / 9.0)
+                .Select(sample =>
+                {
+                    var hoursPerDay = CompanyBusinessHoursHelper.Resolve(companies, sample.Branch).HoursPerDay;
+                    if (hoursPerDay <= 0)
+                    {
+                        return 0d;
+                    }
+
+                    return CompanyBusinessHoursHelper.CalculateBusinessHoursSpent(
+                        companies,
+                        sample.Branch,
+                        sample.RequesterSignedAt!.Value,
+                        sample.ITAdminSignedAt!.Value) / hoursPerDay;
+                })
                 .ToList();
             var employeeDurations = completedSlaSamples
                 .Where(sample => sample.ITAdminSignedAt.HasValue && (sample.EmployeeSignedAt.HasValue || sample.CompletedAt.HasValue))
-                .Select(sample => SlaHelper.CalculateBusinessHoursSpent(sample.ITAdminSignedAt!.Value, sample.EmployeeSignedAt ?? sample.CompletedAt!.Value) / 9.0)
+                .Select(sample =>
+                {
+                    var hoursPerDay = CompanyBusinessHoursHelper.Resolve(companies, sample.Branch).HoursPerDay;
+                    if (hoursPerDay <= 0)
+                    {
+                        return 0d;
+                    }
+
+                    return CompanyBusinessHoursHelper.CalculateBusinessHoursSpent(
+                        companies,
+                        sample.Branch,
+                        sample.ITAdminSignedAt!.Value,
+                        sample.EmployeeSignedAt ?? sample.CompletedAt!.Value) / hoursPerDay;
+                })
                 .ToList();
 
             viewModel.AvgHrPhaseDays = hrDurations.Count > 0 ? Math.Round(hrDurations.Average(), 1) : 0;
@@ -811,7 +875,11 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                     continue;
                 }
 
-                var deadline = SlaHelper.CalculateSlaDeadline(sample.RequestDate, onboardingTargetDays);
+                var deadline = CompanyBusinessHoursHelper.CalculateSlaDeadline(
+                    companies,
+                    sample.Branch,
+                    sample.RequesterSignedAt ?? sample.RequestDate,
+                    onboardingTargetDays);
                 if (finalDate.Value <= deadline)
                 {
                     onTrack++;

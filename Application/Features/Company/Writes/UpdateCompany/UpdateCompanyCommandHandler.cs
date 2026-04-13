@@ -37,7 +37,17 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
             Lot = entity.Lot,
             LogoPath = entity.LogoPath,
             IsLoginPageLogo = entity.IsLoginPageLogo,
-            IsActive = entity.IsActive
+            IsActive = entity.IsActive,
+            TimeZoneId = entity.TimeZoneId,
+            BusinessStartTime = entity.BusinessStartTime,
+            BusinessEndTime = entity.BusinessEndTime,
+            WorksOnMonday = entity.WorksOnMonday,
+            WorksOnTuesday = entity.WorksOnTuesday,
+            WorksOnWednesday = entity.WorksOnWednesday,
+            WorksOnThursday = entity.WorksOnThursday,
+            WorksOnFriday = entity.WorksOnFriday,
+            WorksOnSaturday = entity.WorksOnSaturday,
+            WorksOnSunday = entity.WorksOnSunday
         };
 
         request.Adapt(entity);

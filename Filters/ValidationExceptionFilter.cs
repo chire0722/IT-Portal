@@ -2,11 +2,20 @@ using FluentValidation;
 using IT_Form.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace IT_Form.Filters
 {
     public sealed class ValidationExceptionFilter : IAsyncExceptionFilter
     {
+        private readonly ITempDataDictionaryFactory _tempDataDictionaryFactory;
+
+        public ValidationExceptionFilter(ITempDataDictionaryFactory tempDataDictionaryFactory)
+        {
+            _tempDataDictionaryFactory = tempDataDictionaryFactory;
+        }
+
         public Task OnExceptionAsync(ExceptionContext context)
         {
             if (context.Exception is not ValidationException validationException)
@@ -15,6 +24,17 @@ namespace IT_Form.Filters
             }
 
             context.ModelState.AddFluentValidationErrors(validationException);
+            var firstError = context.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault() ?? "Validation failed.";
+
+            if (!HasModelLevelError(context, firstError))
+            {
+                context.ModelState.AddModelError(string.Empty, firstError);
+            }
+
+            _tempDataDictionaryFactory.GetTempData(context.HttpContext)["ErrorMessage"] = firstError;
 
             if (IsApiRequest(context))
             {
@@ -26,11 +46,6 @@ namespace IT_Form.Filters
             }
             else if (context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
-                var firstError = context.ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .FirstOrDefault() ?? "Validation failed.";
-
                 context.Result = new JsonResult(new { success = false, message = firstError })
                 {
                     StatusCode = StatusCodes.Status400BadRequest
@@ -40,15 +55,18 @@ namespace IT_Form.Filters
             {
                 context.Result = new ViewResult
                 {
-                    ViewData = new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(
-                        new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),
-                        context.ModelState)
+                    ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), context.ModelState),
+                    StatusCode = StatusCodes.Status400BadRequest
                 };
             }
 
             context.ExceptionHandled = true;
             return Task.CompletedTask;
         }
+
+        private static bool HasModelLevelError(ExceptionContext context, string message)
+            => context.ModelState.TryGetValue(string.Empty, out var entry) &&
+               entry.Errors.Any(error => string.Equals(error.ErrorMessage, message, StringComparison.Ordinal));
 
         private static bool IsApiRequest(ExceptionContext context)
             => context.HttpContext.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);

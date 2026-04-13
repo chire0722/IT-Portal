@@ -1,5 +1,6 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Services;
 using IT_Form.ViewModels;
 using Mapster;
@@ -202,13 +203,8 @@ public sealed class GetSignaturePdfQueryHandler
         {
             var onboardingRequest = await _context.OnboardingRequests
                 .AsNoTracking()
-                .Include(item => item.IssuedAssets)
-                .Include(item => item.FolderPermissions)
-                .Include(item => item.RequestEmailGroups)
-                .Include(item => item.RequestSharedMailboxes)
-                .Include(item => item.RequestSoftware)
-                .Include(item => item.IssuedSoftware)
-                    .ThenInclude(item => item.SoftwareLicense)
+                .AsSplitQuery()
+                .IncludeOnboardingPdfData()
                 .FirstOrDefaultAsync(item => item.AccessToken == request.Token, cancellationToken);
 
             if (onboardingRequest == null)
@@ -249,14 +245,8 @@ public sealed class GetSignaturePdfQueryHandler
         {
             var offboardingRequest = await _context.OffboardingRequests
                 .AsNoTracking()
-                .Include(item => item.OnboardingRequest)
-                    .ThenInclude(item => item!.RequestEmailGroups)
-                .Include(item => item.OnboardingRequest)
-                    .ThenInclude(item => item!.RequestSharedMailboxes)
-                .Include(item => item.OnboardingRequest)
-                    .ThenInclude(item => item!.FolderPermissions)
-                .Include(item => item.OnboardingRequest)
-                    .ThenInclude(item => item!.RequestSoftware)
+                .AsSplitQuery()
+                .IncludeOffboardingPdfData()
                 .FirstOrDefaultAsync(item => item.AccessToken == request.Token, cancellationToken);
 
             if (offboardingRequest == null)

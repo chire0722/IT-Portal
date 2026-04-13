@@ -1,4 +1,5 @@
 @model IEnumerable<IT_Form.Application.Features.Company.CompanyIndexListItem>
+@using IT_Form.Helpers
 @{
     ViewData["Title"] = "Company Management";
 }
@@ -25,6 +26,9 @@
                         <th style="width: 100px;">Logo</th>
                         <th>Name</th>
                         <th>Lot / Address</th>
+                        <th>Time Zone</th>
+                        <th>Business Hours</th>
+                        <th>Business Days</th>
                         <th>Login Page</th>
                         <th>Status</th>
                         <th class="text-end pe-3">Actions</th>
@@ -51,6 +55,20 @@
                             </td>
                             <td class="fw-semibold">@item.Name</td>
                             <td class="text-muted">@(item.Lot ?? "-")</td>
+                            <td class="text-muted small">@CompanyTimeZoneHelper.GetDisplayName(item.TimeZoneId)</td>
+                            <td class="text-muted">
+                                @item.BusinessStartTime.ToString(@"hh\:mm") - @item.BusinessEndTime.ToString(@"hh\:mm")
+                            </td>
+                            <td class="text-muted small">
+                                @IT_Form.Helpers.CompanyBusinessHoursHelper.FormatWorkingDays(
+                                    item.WorksOnMonday,
+                                    item.WorksOnTuesday,
+                                    item.WorksOnWednesday,
+                                    item.WorksOnThursday,
+                                    item.WorksOnFriday,
+                                    item.WorksOnSaturday,
+                                    item.WorksOnSunday)
+                            </td>
                             <td>
                                 @if (item.IsLoginPageLogo)
                                 {
@@ -84,7 +102,7 @@
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No companies yet. Add one to get started.</td>
+                            <td colspan="10" class="text-center text-muted py-4">No companies yet. Add one to get started.</td>
                         </tr>
                     }
                 </tbody>

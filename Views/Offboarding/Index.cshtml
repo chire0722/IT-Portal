@@ -1,5 +1,6 @@
 @model IT_Form.ViewModels.OffboardingIndexPageViewModel
 @using IT_Form.Models.Enums
+@using IT_Form.Helpers
 @{
     ViewData["Title"] = "Offboarding Dashboard";
     var currentFilter = Model.CurrentFilter;
@@ -162,10 +163,10 @@
                                         <td>
                                             @if (req.Status != RequestStatus.Completed && req.Status != RequestStatus.Rejected && req.Status != RequestStatus.Approved)
                                             {
-                                                var deadline = IT_Form.Helpers.SlaHelper.CalculateSlaDeadline(req.RequestDate, slaTargetDays);
-                                                var isOverdue = DateTime.UtcNow > deadline;
+                                                var deadline = req.SlaDeadline;
+                                                var isOverdue = deadline.HasValue && DateTime.UtcNow > deadline.Value;
                                                 <div class="@(isOverdue ? "text-danger fw-bold" : "text-primary fw-bold")">
-                                                    @deadline.AddHours(8).ToString("dd/MM/yyyy HH:mm")
+                                                    @CompanyTimeZoneHelper.FormatDateTime(deadline, req.CompanyTimeZoneId)
                                                 </div>
                                                 if (isOverdue)
                                                 {

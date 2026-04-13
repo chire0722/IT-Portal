@@ -119,7 +119,6 @@
   <li><a href="#s2">2. Dashboard</a></li>
   <li><a href="#s3">3. Onboarding — New Employee Setup</a></li>
   <li><a href="#s4">4. Offboarding — Employee Exit</a></li>
-  <li><a href="#s5">5. Employee Transfer</a></li>
   <li><a href="#s6">6. IT Asset Management</a></li>
   <li><a href="#s7">7. Software &amp; License Management</a></li>
   <li><a href="#s8">8. Directory &amp; Configuration</a></li>
@@ -167,9 +166,9 @@
 <p>The system shows different features depending on your assigned role(s):</p>
 <table>
   <tr><th>Role</th><th>Who</th><th>What You Can Do</th></tr>
-  <tr><td><span class="badge b-hr">HR</span></td><td>Human Resources staff</td><td>Create onboarding, offboarding, and transfer requests. View employee directory. Access HR analytics dashboard.</td></tr>
+  <tr><td><span class="badge b-hr">HR</span></td><td>Human Resources staff</td><td>Create onboarding and offboarding requests. View employee directory. Access HR analytics dashboard.</td></tr>
   <tr><td><span class="badge b-it">IT</span></td><td>IT Department staff</td><td>Everything HR can do, plus: manage IT assets, software licenses, system users, configuration, audit logs, and complete IT setup steps.</td></tr>
-  <tr><td><span class="badge b-mgr">Manager</span></td><td>Heads of Department</td><td>Review and approve/reject offboarding and transfer requests assigned to them.</td></tr>
+  <tr><td><span class="badge b-mgr">Manager</span></td><td>Heads of Department</td><td>Review and approve/reject offboarding requests assigned to them.</td></tr>
   <tr><td><span class="badge b-emp">Employee</span></td><td>All staff</td><td>Sign acknowledgement forms via secure email links. View email directory.</td></tr>
 </table>
 
@@ -192,7 +191,6 @@
     <div class="menu-header">Requests</div>
     <div class="menu-item"><span class="menu-icon">👤+</span> Onboarding</div>
     <div class="menu-item"><span class="menu-icon">👤−</span> Offboarding</div>
-    <div class="menu-item"><span class="menu-icon">↔️</span> Transfers</div>
   </div>
   <div class="menu-section">
     <div class="menu-header">Directory</div>
@@ -234,7 +232,7 @@
 
 <h3>For IT Admin Users</h3>
 <ul>
-  <li><strong>Unified Task Queue</strong> — All pending onboarding, offboarding, and transfer requests in one list, sorted by urgency.</li>
+  <li><strong>Unified Task Queue</strong> — All pending onboarding and offboarding requests in one list, sorted by urgency.</li>
   <li><strong>Overdue Alerts</strong> — Requests that have exceeded their SLA target days are highlighted in red.</li>
   <li><strong>System Health</strong> — Active users count, total audit log entries, total assets, total licenses.</li>
   <li><strong>Expiring Soon</strong> — Assets with warranties or licenses expiring within 30 days.</li>
@@ -242,7 +240,7 @@
 
 <h3>For Managers</h3>
 <ul>
-  <li><strong>Pending Approvals</strong> — Offboarding and transfer requests awaiting your HOD sign-off.</li>
+  <li><strong>Pending Approvals</strong> — Offboarding requests awaiting your HOD sign-off.</li>
 </ul>
 
 <div class="box box-green">
@@ -485,58 +483,6 @@
 </ul>
 </div>
 
-<!-- ════════════════════════ 5. TRANSFERS ════════════════════════ -->
-<div class="page section" id="s5">
-<h1>5. Employee Transfer</h1>
-<p>Use this module when an employee moves to a <strong>different department or branch</strong>. The system handles both removing old access and setting up new access.</p>
-
-<h2>5.1 Creating a Transfer Request <span class="badge b-hr">HR</span></h2>
-<div class="step">
-  <div class="step-num">1</div>
-  <div class="step-content">
-    <h4>Start New Transfer</h4>
-    <p>Go to <strong>Transfers</strong> → Click <strong>"+ New Transfer"</strong>. Search for the employee name to auto-fill their details.</p>
-  </div>
-</div>
-<div class="step">
-  <div class="step-num">2</div>
-  <div class="step-content">
-    <h4>Specify Transfer Details</h4>
-    <ul>
-      <li><strong>From</strong> — Current department &amp; branch</li>
-      <li><strong>To</strong> — New department &amp; branch</li>
-      <li><strong>Effective Date</strong> — When the transfer takes effect</li>
-      <li><strong>Reason</strong> — Brief explanation</li>
-    </ul>
-  </div>
-</div>
-<div class="step">
-  <div class="step-num">3</div>
-  <div class="step-content">
-    <h4>Select New Access Requirements</h4>
-    <p>Choose the software, email groups, and shared mailboxes for the employee's new role.</p>
-  </div>
-</div>
-<div class="step">
-  <div class="step-num">4</div>
-  <div class="step-content">
-    <h4>Submit for Approval</h4>
-    <p>Submit the request. It goes through HOD approval → IT processing, similar to offboarding.</p>
-  </div>
-</div>
-
-<h2>5.2 IT Processing <span class="badge b-it">IT</span></h2>
-<p>IT completes two checklists:</p>
-<table>
-  <tr><th>Return Checklist (Old Dept)</th><th>Setup Checklist (New Dept)</th></tr>
-  <tr><td>☐ Remove old email groups</td><td>☐ Add new email groups</td></tr>
-  <tr><td>☐ Remove old shared drives</td><td>☐ Add new shared drives</td></tr>
-  <tr><td>☐ Deactivate old software</td><td>☐ Install required software</td></tr>
-  <tr><td>☐ Remove VPN/WiFi if needed</td><td>☐ Configure new VPN/WiFi</td></tr>
-  <tr><td>☐ Remove folder permissions</td><td>☐ Set new folder permissions</td></tr>
-</table>
-</div>
-
 <!-- ════════════════════════ 6. IT ASSETS ════════════════════════ -->
 <div class="page section" id="s6">
 <h1>6. IT Asset Management <span class="badge b-it">IT Only</span></h1>
@@ -557,7 +503,7 @@
 <table>
   <tr><th>Status</th><th>Meaning</th></tr>
   <tr><td><span class="badge b-completed">Available</span></td><td>Ready to be assigned to a new employee</td></tr>
-  <tr><td><span class="badge b-approved">Issued</span></td><td>Currently assigned to an employee via an onboarding or transfer request</td></tr>
+  <tr><td><span class="badge b-approved">Issued</span></td><td>Currently assigned to an employee via an onboarding request</td></tr>
   <tr><td><span class="badge b-pending">Under Repair</span></td><td>Sent for maintenance — not available for assignment</td></tr>
   <tr><td><span class="badge b-draft">Disposed</span></td><td>End-of-life — permanently removed from inventory</td></tr>
   <tr><td><span class="badge b-rejected">Lost</span></td><td>Cannot be located — flagged for investigation</td></tr>
@@ -624,7 +570,7 @@
   <tr><td><strong>Email Groups</strong></td><td>Distribution lists</td><td>Add group name &amp; email address, assign to companies.</td></tr>
   <tr><td><strong>Shared Mailboxes</strong></td><td>Shared email accounts</td><td>Add mailbox name &amp; address, assign to companies.</td></tr>
   <tr><td><strong>Server Folders</strong></td><td>Network folder paths</td><td>Add folder name, assign to companies.</td></tr>
-  <tr><td><strong>Due Date Setup</strong></td><td>SLA targets</td><td>Set target days, Tier 1 and Tier 2 escalation thresholds and emails for Onboarding, Offboarding, and Transfer.</td></tr>
+  <tr><td><strong>Due Date Setup</strong></td><td>SLA targets</td><td>Set target days, Tier 1 and Tier 2 escalation thresholds and emails for onboarding and offboarding.</td></tr>
   <tr><td><strong>System Users</strong></td><td>Portal user accounts</td><td>Create users, set roles (IT/HR/Manager), assign companies.</td></tr>
 </table>
 
@@ -672,7 +618,6 @@
   <tr><th>Module</th><th>Signers (in order)</th></tr>
   <tr><td>Onboarding</td><td>① Requester (IT) → ② Employee</td></tr>
   <tr><td>Offboarding</td><td>① HR → ② HOD → ③ IT Admin → ④ Employee</td></tr>
-  <tr><td>Transfer</td><td>① HR → ② HOD → ③ IT Admin → ④ Employee</td></tr>
 </table>
 </div>
 
@@ -708,19 +653,6 @@
   <div class="flow-box success">Employee signs → ✅ Completed</div>
   <div class="flow-arrow">▼</div>
   <div class="flow-box">IT completes follow-up (backup, forwarding)</div>
-</div>
-
-<h2>10.3 Transfer Process</h2>
-<div class="flow no-break">
-  <div class="flow-box highlight">HR creates transfer (From → To dept/branch)</div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-box">HOD reviews & approves</div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-box highlight">IT: Return checklist (remove old access)</div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-box highlight">IT: Setup checklist (provision new access)</div>
-  <div class="flow-arrow">▼</div>
-  <div class="flow-box success">IT signs → ✅ Completed</div>
 </div>
 
 <h2>10.4 Request Status Lifecycle</h2>
@@ -759,9 +691,6 @@
 <h3>Q: I'm an HR user but I can't see the Onboarding menu?</h3>
 <p>Your account may not have the HR role assigned. Contact your IT administrator to verify your role under <strong>System Users</strong>.</p>
 
-<h3>Q: How are assets tracked when an employee is transferred?</h3>
-<p>During the transfer process, the old assets can be returned (return checklist) and new assets assigned (setup checklist). The asset status automatically updates in the IT Asset inventory.</p>
-
 <h3>Q: What is PDPA consent?</h3>
 <p>PDPA (Personal Data Protection Act) consent is a checkbox the employee must tick during signing to acknowledge that their personal data is collected and processed for IT management purposes.</p>
 
@@ -776,8 +705,7 @@
   <tr><th>Term</th><th>Definition</th></tr>
   <tr><td><strong>Onboarding</strong></td><td>The process of setting up IT resources for a new employee joining the company.</td></tr>
   <tr><td><strong>Offboarding</strong></td><td>The process of deactivating IT resources and collecting equipment when an employee leaves.</td></tr>
-  <tr><td><strong>Transfer</strong></td><td>The process of changing an employee's department/branch and updating their IT access accordingly.</td></tr>
-  <tr><td><strong>HOD</strong></td><td>Head of Department — the manager responsible for approving offboarding and transfer requests.</td></tr>
+  <tr><td><strong>HOD</strong></td><td>Head of Department — the manager responsible for approving offboarding requests.</td></tr>
   <tr><td><strong>SLA</strong></td><td>Service Level Agreement — the target number of days to complete a request. Exceeding this triggers alerts.</td></tr>
   <tr><td><strong>Asset Tag</strong></td><td>A unique identifier label attached to each piece of IT hardware.</td></tr>
   <tr><td><strong>PDPA</strong></td><td>Personal Data Protection Act — a legal framework governing the collection and use of personal data.</td></tr>

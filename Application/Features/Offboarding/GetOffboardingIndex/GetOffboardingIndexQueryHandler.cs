@@ -83,6 +83,21 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingIndex
                 request.Page,
                 10);
 
+            var companies = await _context.Companies
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            foreach (var item in paged)
+            {
+                item.CompanyTimeZoneId = CompanyTimeZoneHelper.ResolveTimeZoneId(companies, item.Branch);
+                var slaStart = item.HRSignedAt ?? item.RequestDate;
+                item.SlaDeadline = CompanyBusinessHoursHelper.CalculateSlaDeadline(
+                    companies,
+                    item.Branch,
+                    slaStart,
+                    slaTargetDays);
+            }
+
             return ProcessResult<OffboardingIndexPageViewModel>.Success(new OffboardingIndexPageViewModel
             {
                 Requests = paged,

@@ -1,10 +1,19 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
+using FluentValidation.Results;
+using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Company;
+using CreateCompanyWriteCommand = IT_Form.Application.Features.Company.Writes.CreateCompany.CreateCompanyCommand;
 using IT_Form.Controllers;
 using IT_Form.Models;
+using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Moq;
 using Xunit;
 using IT_Form.Tests.Helpers;
 
@@ -59,6 +68,45 @@ namespace IT_Form.Tests
             });
 
             Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task Create_Post_ShowsValidationFailureMessage_WhenCreateFails()
+        {
+            using var context = CreateContext();
+            var sender = new Mock<ISender>();
+            var model = new CompanyEditorPageViewModel
+            {
+                Name = "BranchA",
+                IsActive = true,
+                BusinessStartTime = new TimeSpan(8, 30, 0),
+                BusinessEndTime = new TimeSpan(17, 30, 0)
+            };
+
+            sender.Setup(s => s.Send(It.IsAny<CreateCompanyWriteCommand>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ValidationException(new[]
+                {
+                    new ValidationFailure(nameof(CompanyEditorPageViewModel.LogoPath), "Logo is required.")
+                }));
+            sender.Setup(s => s.Send(It.IsAny<GetCompanyCreatePageQuery>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ProcessResult<CompanyEditorPageViewModel>.Success(model));
+
+            var controller = new CompanyController(sender.Object)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext()
+                }
+            };
+            controller.TempData = new TempDataDictionary(controller.HttpContext, Mock.Of<ITempDataProvider>());
+
+            var result = await controller.Create(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.False(controller.ModelState.IsValid);
+            Assert.True(controller.ModelState.ContainsKey(string.Empty));
+            Assert.Contains(controller.ModelState[string.Empty]!.Errors, error => error.ErrorMessage == "Logo is required.");
+            Assert.Equal("Logo is required.", controller.TempData["ErrorMessage"]);
         }
     }
 }

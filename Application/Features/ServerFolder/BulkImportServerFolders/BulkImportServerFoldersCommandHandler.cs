@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -43,9 +44,9 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
                 var importErrors = new List<string>();
 
                 var allCompanies = await _context.Companies.ToListAsync(cancellationToken);
-                var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+                var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
                 var accessibleCompanyIds = scopedCompanies.Count > 0
-                    ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                    ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                     : null;
                 await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 

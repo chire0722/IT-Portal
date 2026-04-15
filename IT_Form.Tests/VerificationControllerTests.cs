@@ -245,6 +245,39 @@ namespace IT_Form.Tests
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
+        [Fact]
+        public async Task GetStatus_ReturnsFingerprintWarning_WhenVerifiedTokenHasMismatch()
+        {
+            using var context = CreateContext();
+            context.DeviceVerificationTokens.Add(new DeviceVerificationToken
+            {
+                Token = Guid.NewGuid().ToString("N"),
+                IsVerified = true,
+                HasHardwareFingerprintMismatch = true,
+                HardwareFingerprintWarning = "Hardware changed.",
+                VerifiedAssetTag = "LAP-900"
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>(),
+                "localhost",
+                5063);
+
+            var token = await context.DeviceVerificationTokens.FirstAsync();
+            var result = await controller.GetStatus(token.Token);
+
+            var json = Assert.IsType<JsonResult>(result);
+            Assert.NotNull(json.Value);
+
+            var valueType = json.Value.GetType();
+            Assert.True((bool)(valueType.GetProperty("isVerified")?.GetValue(json.Value) ?? false));
+            Assert.True((bool)(valueType.GetProperty("fingerprintMismatch")?.GetValue(json.Value) ?? false));
+            Assert.Equal("Hardware changed.", valueType.GetProperty("warningMessage")?.GetValue(json.Value) as string);
+            Assert.Equal("LAP-900", valueType.GetProperty("assetTag")?.GetValue(json.Value) as string);
+        }
+
         private static VerificationController CreateVerificationController(
             Data.ApplicationDbContext context,
             IDictionary<string, string?> configurationValues,

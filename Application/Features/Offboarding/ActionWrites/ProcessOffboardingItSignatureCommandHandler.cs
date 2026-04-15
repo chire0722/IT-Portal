@@ -1,6 +1,7 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Services;
 using MediatR;
@@ -33,6 +34,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
             var offboardingRequest = await _context.OffboardingRequests.FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
             if (offboardingRequest == null)
                 return new CommandResponse { IsNotFound = true };
+
+            if (!CompanyScopeHelper.CanAccessCompany(user, offboardingRequest.Branch))
+                return new CommandResponse { IsForbidden = true, RequestId = request.Id };
 
             var currentUser = await _userManager.GetUserAsync(user);
             var signedAt = DateTime.UtcNow;

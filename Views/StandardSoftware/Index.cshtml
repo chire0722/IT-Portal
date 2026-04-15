@@ -84,13 +84,13 @@
 <div class="card shadow-sm border-0 rounded-3 mb-4">
     <div class="card-body p-3">
         <form method="get" class="row g-2 align-items-center">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search" aria-hidden="true"></i></span>
                     <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="Search software or version..." value="@Model.CurrentSearch" />
                 </div>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-2">
                 <select name="isSubscription" class="form-select form-select-sm">
                     <option value="">-- All License Types --</option>
                     @if (Model.IsSubscription == true)
@@ -108,6 +108,22 @@
                     else
                     {
                         <option value="false">Perpetual (Key-based)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="companyId" class="form-select form-select-sm">
+                    <option value="">-- All Companies --</option>
+                    @foreach (var company in Model.CompanyOptions)
+                    {
+                        if (Model.SelectedCompanyId == company.Id)
+                        {
+                            <option value="@company.Id" selected>@company.DisplayName</option>
+                        }
+                        else
+                        {
+                            <option value="@company.Id">@company.DisplayName</option>
+                        }
                     }
                 </select>
             </div>
@@ -208,6 +224,14 @@
                                             {
                                                 <span class="text-muted"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>Expires @ver.ExpiryDate.Value.ToString("dd MMM yyyy")</span>
                                             }
+                                            @if (ver.Companies.Any())
+                                            {
+                                                <span class="text-muted"><i class="bi bi-buildings me-1" aria-hidden="true"></i>@string.Join(", ", ver.Companies)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted"><i class="bi bi-globe2 me-1" aria-hidden="true"></i>Global</span>
+                                            }
                                             @if (!string.IsNullOrEmpty(ver.VendorName))
                                             {
                                                 <span class="text-muted"><i class="bi bi-shop me-1" aria-hidden="true"></i>@ver.VendorName</span>
@@ -249,6 +273,7 @@
                                                     data-limit="@ver.ContractLimit"
                                                     data-vendor="@ver.VendorName"
                                                     data-support="@ver.SupportContact"
+                                                    data-company-ids="@string.Join(",", ver.CompanyIds)"
                                                     onclick="openEditVersionModal(this)"
                                                     style="font-size:0.75rem;" title="Edit Version Details">
                                                 <i class="bi bi-pencil-square" aria-hidden="true"></i>
@@ -375,6 +400,28 @@
                                     <div class="col-12 col-md-8">
                                         <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">Internal Notes (Optional)</label>
                                         <input type="text" name="description" class="form-control rounded-3 border-light-subtle shadow-sm px-3" placeholder="Reference purchase order or department..." />
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 0.72rem;">Assigned Companies</label>
+                                        <select name="selectedCompanyId"
+                                                id="companySelect_@item.Id"
+                                                class="form-select rounded-3 border-light-subtle shadow-sm px-3">
+                                            <option value="">Global (All Companies)</option>
+                                            @if (Model.CompanyOptions != null && Model.CompanyOptions.Any())
+                                            {
+                                                foreach (var company in Model.CompanyOptions)
+                                                {
+                                                    <option value="@company.Id">@company.DisplayName</option>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <option disabled>No active companies available</option>
+                                            }
+                                        </select>
+                                        <div class="form-text text-muted mt-2">
+                                            Select one company from the list, or keep it as Global if you have cross-company access.
+                                        </div>
                                     </div>
                                     <div class="col-12 col-md-4 d-flex align-items-end">
                                         <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow rounded-3" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
@@ -574,6 +621,27 @@
                             <label class="form-label small fw-bold">Seat Limit</label>
                             <input type="number" id="editVerContractLimit" name="contractLimit" class="form-control" min="0" />
                             <div class="form-text">Applies to subscription seats only.</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Assigned Companies</label>
+                            <select id="editVerCompanyIds"
+                                    name="selectedCompanyId"
+                                    class="form-select">
+                                <option value="">Global (All Companies)</option>
+                                @if (Model.CompanyOptions != null && Model.CompanyOptions.Any())
+                                {
+                                    foreach (var company in Model.CompanyOptions)
+                                    {
+                                        <option value="@company.Id">@company.DisplayName</option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option disabled>No active companies available</option>
+                                }
+                            </select>
+                            <div class="form-text">Select one company from the list, or keep it as Global if you have cross-company access.</div>
                         </div>
                     </div>
                     
@@ -1102,6 +1170,8 @@
             document.getElementById('editVerContractLimit').value = d.limit || 0;
             document.getElementById('editVerVendor').value = d.vendor || '';
             document.getElementById('editVerSupport').value = d.support || '';
+            const companyIds = (d.companyIds || '').split(',').filter(Boolean);
+            document.getElementById('editVerCompanyIds').value = companyIds[0] || '';
             
             document.getElementById('editVerError').classList.add('d-none');
             toggleEditVerFields();

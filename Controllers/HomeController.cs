@@ -24,9 +24,9 @@ namespace IT_Form.Controllers
             return View(result.ViewModel);
         }
 
-        public async Task<IActionResult> Analytics(int? year)
+        public async Task<IActionResult> Analytics(int? year, int? companyId)
         {
-            var result = await _sender.Send(new GetHomeAnalyticsQuery(year));
+            var result = await _sender.Send(new GetHomeAnalyticsQuery(year, companyId));
             if (result.IsForbidden)
             {
                 return Forbid();
@@ -65,6 +65,9 @@ namespace IT_Form.Controllers
         {
             ViewData["IsCurrentYear"] = result.IsCurrentYear;
             ViewData["StatsPeriodLabel"] = result.StatsPeriodLabel;
+            ViewData["CompanyOptions"] = result.CompanyOptions;
+            ViewData["SelectedCompanyId"] = result.SelectedCompanyId;
+            ViewData["SelectedCompanyDisplayName"] = result.SelectedCompanyDisplayName;
         }
     }
 }

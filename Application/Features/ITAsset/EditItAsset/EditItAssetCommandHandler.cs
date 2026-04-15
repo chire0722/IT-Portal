@@ -1,7 +1,7 @@
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
-using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using MediatR;
@@ -35,13 +35,13 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
                 };
             }
 
-            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, existingAsset.Company) ||
-                !CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, request.Asset.Company))
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(_currentUserAccessor.User, existingAsset.Company) ||
+                !ItAdminCompanyScopeSupport.CanAccessCompany(_currentUserAccessor.User, request.Asset.Company))
             {
                 return new CommandResponse
                 {
                     IsForbidden = true,
-                    Message = "You can only modify assets within your assigned company scope."
+                    Message = "You are not authorized to modify this asset."
                 };
             }
 
@@ -58,6 +58,11 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
             request.Asset.LastSeen = existingAsset.LastSeen;
             request.Asset.HardwareHash = existingAsset.HardwareHash;
             request.Asset.HardwareAuditJson = existingAsset.HardwareAuditJson;
+            request.Asset.LatestHardwareHash = existingAsset.LatestHardwareHash;
+            request.Asset.LatestHardwareAuditJson = existingAsset.LatestHardwareAuditJson;
+            request.Asset.HasHardwareFingerprintMismatch = existingAsset.HasHardwareFingerprintMismatch;
+            request.Asset.HardwareFingerprintMismatchDetectedAt = existingAsset.HardwareFingerprintMismatchDetectedAt;
+            request.Asset.HardwareFingerprintWarning = existingAsset.HardwareFingerprintWarning;
             request.Asset.ExpiryAttemptCount = existingAsset.ExpiryAttemptCount;
             request.Asset.IsDeleted = existingAsset.IsDeleted;
             request.Asset.DeletedAt = existingAsset.DeletedAt;

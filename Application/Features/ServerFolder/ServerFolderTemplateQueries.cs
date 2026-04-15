@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using MediatR;
@@ -23,7 +24,7 @@ namespace IT_Form.Application.Features.ServerFolder
 
         public async Task<ProcessResult<BinaryFilePayload>> Handle(DownloadServerFolderTemplateQuery request, CancellationToken cancellationToken)
         {
-            var companyDisplayNames = await CompanyScopeHelper.LoadAccessibleCompanyDisplayNamesAsync(
+            var companyDisplayNames = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(
                 _context,
                 _currentUserAccessor.User,
                 cancellationToken);

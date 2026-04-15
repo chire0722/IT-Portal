@@ -76,6 +76,41 @@ public class EmailGroupFeatureSliceTests
     }
 
     [Fact]
+    public async Task AddCurrentEmployeeHandler_AllowsItUserAcrossCompanies()
+    {
+        using var context = CreateContext();
+
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        context.EmailGroups.Add(new EmailGroup
+        {
+            Id = 12,
+            GroupName = "Beta Group",
+            GroupEmail = "beta.group@test.local",
+            IsActive = true,
+            EmailGroupCompanies = [new EmailGroupCompany { CompanyId = 2 }]
+        });
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 23,
+            FullName = "Beta User",
+            Branch = "Beta",
+            Status = RequestStatus.Completed
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new AddCurrentEmployeeToEmailGroupCommandHandler(
+            context,
+            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+
+        var result = await handler.Handle(new AddCurrentEmployeeToEmailGroupCommand(12, 23), CancellationToken.None);
+
+        Assert.Equal(AddCurrentEmployeeToEmailGroupStatus.Added, result.Status);
+        Assert.True(await context.RequestEmailGroups.AnyAsync(link => link.EmailGroupId == 12 && link.OnboardingRequestId == 23));
+    }
+
+    [Fact]
     public void ImportEmailGroupsValidator_Fails_WhenFileMissing()
     {
         var validator = new ImportEmailGroupsCommandValidator();

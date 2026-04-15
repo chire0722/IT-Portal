@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -38,6 +39,9 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
         var isIt = user.HasClaim("UserTitle", "IT");
         var isManager = user.HasClaim("UserTitle", "Manager") || user.HasClaim("UserTitle", "HOD");
         var isHr = user.HasClaim("UserTitle", "HR");
+        var itScopedCompanies = isIt && !isHr
+            ? CompanyScopeHelper.GetScopedCompanies(user)
+            : [];
         var cacheKey = BuildCacheKey(currentUserId, currentUserName, request.Year, isIt, isManager, isHr);
 
         if (_cache.TryGetValue<HomePageResult>(cacheKey, out var cachedResult) && cachedResult is not null)
@@ -63,6 +67,11 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
             if (isIt)
             {
                 onboardingQuery = onboardingQuery.Where(onboarding => onboarding.Status != RequestStatus.Draft);
+            }
+
+            if (itScopedCompanies.Count > 0)
+            {
+                onboardingQuery = CompanyScopeHelper.ApplyOnboardingCompanyScope(onboardingQuery, itScopedCompanies);
             }
         }
         else
@@ -101,6 +110,14 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
                   (offboarding.AssignedHodId == null &&
                    offboarding.HODEmail != null &&
                    hodEmails.Contains(offboarding.HODEmail.ToLower())))));
+
+            if (itScopedCompanies.Count > 0)
+            {
+                offboardingQuery = CompanyScopeHelper.ApplyCompanyScope(
+                    offboardingQuery,
+                    itScopedCompanies,
+                    offboarding => offboarding.Branch);
+            }
         }
 
         viewModel.PendingOffboarding = await offboardingQuery
@@ -304,17 +321,37 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
                     .CountAsync(offboarding => offboarding.Status == RequestStatus.PendingITApproval, cancellationToken);
         }
 
-        if (isHr)
+        if (isHr || isIt)
         {
-            viewModel.PendingEmployeeSignOnboarding = await _context.OnboardingRequests
+            var pendingEmployeeSignOnboardingQuery = _context.OnboardingRequests
                 .AsNoTracking()
                 .Where(onboarding => onboarding.Status == RequestStatus.PendingEmployeeSign)
+                .AsQueryable();
+            if (itScopedCompanies.Count > 0)
+            {
+                pendingEmployeeSignOnboardingQuery = CompanyScopeHelper.ApplyOnboardingCompanyScope(
+                    pendingEmployeeSignOnboardingQuery,
+                    itScopedCompanies);
+            }
+
+            viewModel.PendingEmployeeSignOnboarding = await pendingEmployeeSignOnboardingQuery
                 .OrderByDescending(onboarding => onboarding.CompletedAt)
                 .ProjectToType<DashboardRequestSummaryItem>()
                 .ToListAsync(cancellationToken);
-            viewModel.PendingEmployeeSignOffboarding = await _context.OffboardingRequests
+
+            var pendingEmployeeSignOffboardingQuery = _context.OffboardingRequests
                 .AsNoTracking()
                 .Where(offboarding => offboarding.Status == RequestStatus.PendingEmployeeSign)
+                .AsQueryable();
+            if (itScopedCompanies.Count > 0)
+            {
+                pendingEmployeeSignOffboardingQuery = CompanyScopeHelper.ApplyCompanyScope(
+                    pendingEmployeeSignOffboardingQuery,
+                    itScopedCompanies,
+                    offboarding => offboarding.Branch);
+            }
+
+            viewModel.PendingEmployeeSignOffboarding = await pendingEmployeeSignOffboardingQuery
                 .OrderByDescending(offboarding => offboarding.CompletedAt)
                 .ProjectToType<DashboardRequestSummaryItem>()
                 .ToListAsync(cancellationToken);
@@ -388,7 +425,13 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
             viewModel.MonthlyTrendOffboarding = trend.Offboarding;
         }
 
-        var result = new HomePageResult(viewModel, period.IsCurrentYear, period.StatsPeriodLabel);
+        var result = new HomePageResult(
+            viewModel,
+            period.IsCurrentYear,
+            period.StatsPeriodLabel,
+            Array.Empty<PageCompanyOption>(),
+            null,
+            null);
         _cache.Set(
             cacheKey,
             result,
@@ -439,8 +482,60 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
         var viewModel = new DashboardViewModel();
         var period = HomeDashboardSupport.CreatePeriodContext(request.Year);
         HomeDashboardSupport.ApplyPeriodContext(viewModel, period);
+        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(user);
+        var accessibleCompanyIds = scopedCompanies.Count > 0
+            ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, user, cancellationToken, activeOnly: true)
+            : null;
+        var companyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, user, cancellationToken);
 
-        var trend = await HomeDashboardSupport.BuildMonthlyTrendAsync(_context, period, cancellationToken);
+        PageCompanyOption? selectedCompany = null;
+        if (request.CompanyId.HasValue)
+        {
+            selectedCompany = companyOptions.FirstOrDefault(company => company.Id == request.CompanyId.Value);
+            if (selectedCompany is null)
+            {
+                return ProcessResult<HomePageResult>.Forbidden();
+            }
+        }
+
+        var companyDisplayFilters = selectedCompany is not null
+            ? new List<string> { selectedCompany.DisplayName }
+            : scopedCompanies;
+        var selectedCompanyIds = selectedCompany is not null
+            ? new HashSet<int> { selectedCompany.Id }
+            : accessibleCompanyIds;
+
+        IQueryable<OnboardingRequest> onboardingAnalyticsQuery = _context.OnboardingRequests
+            .AsNoTracking();
+        IQueryable<OffboardingRequest> offboardingAnalyticsQuery = _context.OffboardingRequests
+            .AsNoTracking();
+        IQueryable<IT_Form.Models.ITAsset> assetAnalyticsQuery = _context.ITAssets
+            .AsNoTracking();
+        IQueryable<MaintenanceLog> maintenanceAnalyticsQuery = _context.MaintenanceLogs
+            .AsNoTracking();
+        IQueryable<SoftwareLicense> licenseAnalyticsQuery = _context.SoftwareLicenses
+            .AsNoTracking();
+
+        if (companyDisplayFilters.Count > 0)
+        {
+            onboardingAnalyticsQuery = CompanyScopeHelper.ApplyOnboardingCompanyScope(onboardingAnalyticsQuery, companyDisplayFilters);
+            offboardingAnalyticsQuery = CompanyScopeHelper.ApplyCompanyScope(offboardingAnalyticsQuery, companyDisplayFilters, offboarding => offboarding.Branch);
+            assetAnalyticsQuery = CompanyScopeHelper.ApplyCompanyScope(assetAnalyticsQuery, companyDisplayFilters, asset => asset.Company);
+            maintenanceAnalyticsQuery = CompanyScopeHelper.ApplyCompanyScope(maintenanceAnalyticsQuery, companyDisplayFilters, log => log.ITAsset!.Company);
+        }
+
+        if (selectedCompanyIds != null)
+        {
+            licenseAnalyticsQuery = licenseAnalyticsQuery.Where(license =>
+                !license.SoftwareLicenseCompanies.Any() ||
+                license.SoftwareLicenseCompanies.Any(link => selectedCompanyIds.Contains(link.CompanyId)));
+        }
+
+        var trend = await HomeDashboardSupport.BuildMonthlyTrendAsync(
+            onboardingAnalyticsQuery,
+            offboardingAnalyticsQuery,
+            period,
+            cancellationToken);
         viewModel.MonthlyTrendLabels = trend.Labels;
         viewModel.MonthlyTrendOnboarding = trend.Onboarding;
         viewModel.MonthlyTrendOffboarding = trend.Offboarding;
@@ -448,8 +543,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .Zip(trend.Offboarding, (onboarding, offboarding) => onboarding - offboarding)
             .ToList();
 
-        viewModel.DepartmentOnboardingBreakdown = await _context.OnboardingRequests
-            .AsNoTracking()
+        viewModel.DepartmentOnboardingBreakdown = await onboardingAnalyticsQuery
             .Where(onboarding =>
                 onboarding.RequestDate >= period.YearStart &&
                 onboarding.RequestDate <= period.YearEnd &&
@@ -463,8 +557,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             })
             .ToDictionaryAsync(item => item.Department, item => item.Count, cancellationToken);
 
-        viewModel.DepartmentOffboardingBreakdown = await _context.OffboardingRequests
-            .AsNoTracking()
+        viewModel.DepartmentOffboardingBreakdown = await offboardingAnalyticsQuery
             .Where(offboarding =>
                 offboarding.RequestDate >= period.YearStart &&
                 offboarding.RequestDate <= period.YearEnd &&
@@ -478,8 +571,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             })
             .ToDictionaryAsync(item => item.Department, item => item.Count, cancellationToken);
 
-        viewModel.BranchOnboardingBreakdown = await _context.OnboardingRequests
-            .AsNoTracking()
+        viewModel.BranchOnboardingBreakdown = await onboardingAnalyticsQuery
             .Where(onboarding =>
                 onboarding.RequestDate >= period.YearStart &&
                 onboarding.RequestDate <= period.YearEnd &&
@@ -493,8 +585,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             })
             .ToDictionaryAsync(item => item.Branch, item => item.Count, cancellationToken);
 
-        viewModel.BranchOffboardingBreakdown = await _context.OffboardingRequests
-            .AsNoTracking()
+        viewModel.BranchOffboardingBreakdown = await offboardingAnalyticsQuery
             .Where(offboarding =>
                 offboarding.RequestDate >= period.YearStart &&
                 offboarding.RequestDate <= period.YearEnd &&
@@ -508,8 +599,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             })
             .ToDictionaryAsync(item => item.Branch, item => item.Count, cancellationToken);
 
-        viewModel.OnboardingStatusDistribution = (await _context.OnboardingRequests
-            .AsNoTracking()
+        viewModel.OnboardingStatusDistribution = (await onboardingAnalyticsQuery
             .Where(onboarding => onboarding.RequestDate >= period.YearStart && onboarding.RequestDate <= period.YearEnd)
             .GroupBy(onboarding => onboarding.Status)
             .Select(group => new
@@ -520,8 +610,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .ToListAsync(cancellationToken))
             .ToDictionary(item => item.Status.ToString(), item => item.Count);
 
-        viewModel.OffboardingStatusDistribution = (await _context.OffboardingRequests
-            .AsNoTracking()
+        viewModel.OffboardingStatusDistribution = (await offboardingAnalyticsQuery
             .Where(offboarding => offboarding.RequestDate >= period.YearStart && offboarding.RequestDate <= period.YearEnd)
             .GroupBy(offboarding => offboarding.Status)
             .Select(group => new
@@ -532,8 +621,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .ToListAsync(cancellationToken))
             .ToDictionary(item => item.Status.ToString(), item => item.Count);
 
-        var completedOnboarding = await _context.OnboardingRequests
-            .AsNoTracking()
+        var completedOnboarding = await onboardingAnalyticsQuery
             .Where(onboarding =>
                 onboarding.RequestDate >= period.YearStart &&
                 onboarding.RequestDate <= period.YearEnd &&
@@ -552,8 +640,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                 1);
         }
 
-        var completedOffboarding = await _context.OffboardingRequests
-            .AsNoTracking()
+        var completedOffboarding = await offboardingAnalyticsQuery
             .Where(offboarding =>
                 offboarding.RequestDate >= period.YearStart &&
                 offboarding.RequestDate <= period.YearEnd &&
@@ -572,11 +659,9 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                 1);
         }
 
-        var totalOnboardingInYear = await _context.OnboardingRequests
-            .AsNoTracking()
+        var totalOnboardingInYear = await onboardingAnalyticsQuery
             .CountAsync(onboarding => onboarding.RequestDate >= period.YearStart && onboarding.RequestDate <= period.YearEnd, cancellationToken);
-        var rejectedOnboardingInYear = await _context.OnboardingRequests
-            .AsNoTracking()
+        var rejectedOnboardingInYear = await onboardingAnalyticsQuery
             .CountAsync(onboarding =>
                 onboarding.RequestDate >= period.YearStart &&
                 onboarding.RequestDate <= period.YearEnd &&
@@ -588,11 +673,9 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             viewModel.OnboardingRejectRate = Math.Round((double)rejectedOnboardingInYear / totalOnboardingInYear * 100, 1);
         }
 
-        var totalOffboardingInYear = await _context.OffboardingRequests
-            .AsNoTracking()
+        var totalOffboardingInYear = await offboardingAnalyticsQuery
             .CountAsync(offboarding => offboarding.RequestDate >= period.YearStart && offboarding.RequestDate <= period.YearEnd, cancellationToken);
-        var rejectedOffboardingInYear = await _context.OffboardingRequests
-            .AsNoTracking()
+        var rejectedOffboardingInYear = await offboardingAnalyticsQuery
             .CountAsync(offboarding =>
                 offboarding.RequestDate >= period.YearStart &&
                 offboarding.RequestDate <= period.YearEnd &&
@@ -604,8 +687,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             viewModel.OffboardingRejectRate = Math.Round((double)rejectedOffboardingInYear / totalOffboardingInYear * 100, 1);
         }
 
-        viewModel.TopDesignations = (await _context.OnboardingRequests
-            .AsNoTracking()
+        viewModel.TopDesignations = (await onboardingAnalyticsQuery
             .Where(onboarding =>
                 onboarding.RequestDate >= period.YearStart &&
                 onboarding.RequestDate <= period.YearEnd &&
@@ -623,16 +705,13 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .ToDictionary(item => item.Designation, item => item.Count);
 
         viewModel.TotalExitsYear = totalOffboardingInYear;
-        viewModel.PendingEmployeeSignOnboardingCount = await _context.OnboardingRequests
-            .AsNoTracking()
+        viewModel.PendingEmployeeSignOnboardingCount = await onboardingAnalyticsQuery
             .CountAsync(onboarding => onboarding.Status == RequestStatus.PendingEmployeeSign, cancellationToken);
-        viewModel.PendingEmployeeSignOffboardingCount = await _context.OffboardingRequests
-            .AsNoTracking()
+        viewModel.PendingEmployeeSignOffboardingCount = await offboardingAnalyticsQuery
             .CountAsync(offboarding => offboarding.Status == RequestStatus.PendingEmployeeSign, cancellationToken);
         viewModel.PendingEmployeeSignCount = viewModel.PendingEmployeeSignOnboardingCount + viewModel.PendingEmployeeSignOffboardingCount;
 
-        var tenureData = await _context.OffboardingRequests
-            .AsNoTracking()
+        var tenureData = await offboardingAnalyticsQuery
             .Where(offboarding =>
                 offboarding.RequestDate >= period.YearStart &&
                 offboarding.RequestDate <= period.YearEnd &&
@@ -652,8 +731,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                 .Distinct()
                 .ToList();
 
-            var joinDates = await _context.OnboardingRequests
-                .AsNoTracking()
+            var joinDates = await onboardingAnalyticsQuery
                 .Where(onboarding => onboardingIds.Contains(onboarding.Id) && onboarding.JoinDate.HasValue)
                 .Select(onboarding => new
                 {
@@ -675,8 +753,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             }
         }
 
-        viewModel.AssetTypeDistribution = (await _context.ITAssets
-            .AsNoTracking()
+        viewModel.AssetTypeDistribution = (await assetAnalyticsQuery
             .GroupBy(asset => asset.AssetType)
             .Select(group => new
             {
@@ -686,8 +763,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .ToListAsync(cancellationToken))
             .ToDictionary(item => item.Type.ToString(), item => item.Count);
 
-        viewModel.AssetStatusBreakdown = (await _context.ITAssets
-            .AsNoTracking()
+        viewModel.AssetStatusBreakdown = (await assetAnalyticsQuery
             .GroupBy(asset => asset.Status)
             .Select(group => new
             {
@@ -697,9 +773,13 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .ToListAsync(cancellationToken))
             .ToDictionary(item => item.Status.ToString(), item => item.Count);
 
-        viewModel.WindowsVersionDistribution = await HomeDashboardSupport.BuildWindowsVersionDistributionAsync(_context, cancellationToken);
+        viewModel.WindowsVersionDistribution = await HomeDashboardSupport.BuildWindowsVersionDistributionAsync(
+            assetAnalyticsQuery,
+            cancellationToken);
 
-        var licenseUtilization = await HomeDashboardSupport.BuildLicenseUtilizationAsync(_context, cancellationToken);
+        var licenseUtilization = await HomeDashboardSupport.BuildLicenseUtilizationAsync(
+            licenseAnalyticsQuery,
+            cancellationToken);
         viewModel.LicenseUtilization = licenseUtilization.Items;
         viewModel.TotalSoftwareLicenses = licenseUtilization.TotalLicenses;
         viewModel.AssignedSoftwareLicenses = licenseUtilization.AssignedLicenses;
@@ -710,16 +790,14 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
         };
 
         var today = DateTime.UtcNow.Date;
-        viewModel.ExpiredWarrantyCount = await _context.ITAssets
-            .AsNoTracking()
+        viewModel.ExpiredWarrantyCount = await assetAnalyticsQuery
             .CountAsync(asset =>
                 !asset.IsDeleted &&
                 !asset.NoExtendWarranty &&
                 asset.WarrantyExpiry.HasValue &&
                 asset.WarrantyExpiry.Value < today,
                 cancellationToken);
-        viewModel.ExpiringWithin30Days = await _context.ITAssets
-            .AsNoTracking()
+        viewModel.ExpiringWithin30Days = await assetAnalyticsQuery
             .CountAsync(asset =>
                 !asset.IsDeleted &&
                 !asset.NoExtendWarranty &&
@@ -727,8 +805,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                 asset.WarrantyExpiry.Value >= today &&
                 asset.WarrantyExpiry.Value <= today.AddDays(30),
                 cancellationToken);
-        viewModel.ExpiringWithin90Days = await _context.ITAssets
-            .AsNoTracking()
+        viewModel.ExpiringWithin90Days = await assetAnalyticsQuery
             .CountAsync(asset =>
                 !asset.IsDeleted &&
                 !asset.NoExtendWarranty &&
@@ -737,15 +814,24 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                 asset.WarrantyExpiry.Value <= today.AddDays(90),
                 cancellationToken);
 
-        viewModel.TotalAssets = await _context.ITAssets
-            .AsNoTracking()
+        viewModel.TotalAssets = await assetAnalyticsQuery
             .CountAsync(cancellationToken);
-        viewModel.TotalLicenses = await _context.StandardSoftware
-            .AsNoTracking()
-            .CountAsync(software => !software.IsDeleted, cancellationToken);
-        viewModel.TotalActiveUsers = await _context.Users
-            .AsNoTracking()
-            .CountAsync(userEntry => userEntry.IsActive, cancellationToken);
+        viewModel.TotalLicenses = await licenseAnalyticsQuery
+            .Select(license => license.StandardSoftwareId)
+            .Distinct()
+            .CountAsync(cancellationToken);
+        viewModel.TotalActiveUsers = companyDisplayFilters.Count == 0
+            ? await _context.Users
+                .AsNoTracking()
+                .CountAsync(userEntry => userEntry.IsActive, cancellationToken)
+            : (await _context.Users
+                .AsNoTracking()
+                .Include(userEntry => userEntry.UserCompanies)
+                .Where(userEntry => userEntry.IsActive)
+                .ToListAsync(cancellationToken))
+                .Count(userEntry => CompanyScopeHelper.HasAnyAllowedCompany(
+                    companyDisplayFilters,
+                    userEntry.UserCompanies.Select(company => company.CompanyName)));
 
         await HomeDashboardSupport.PopulateAuditMetricsAsync(
             _context,
@@ -755,29 +841,24 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             cancellationToken);
 
         viewModel.PendingITApprovalCount =
-            await _context.OnboardingRequests
-                .AsNoTracking()
+            await onboardingAnalyticsQuery
                 .CountAsync(onboarding => onboarding.Status == RequestStatus.PendingITApproval, cancellationToken)
-            + await _context.OffboardingRequests
-                .AsNoTracking()
+            + await offboardingAnalyticsQuery
                 .CountAsync(offboarding => offboarding.Status == RequestStatus.PendingITApproval, cancellationToken);
         viewModel.RejectedThisMonth =
-            await _context.OnboardingRequests
-                .AsNoTracking()
+            await onboardingAnalyticsQuery
                 .CountAsync(onboarding =>
                     onboarding.Status == RequestStatus.Rejected &&
                     onboarding.UpdatedAt >= period.StatsStartDate &&
                     onboarding.UpdatedAt <= period.StatsEndDate,
                     cancellationToken)
-            + await _context.OffboardingRequests
-                .AsNoTracking()
+            + await offboardingAnalyticsQuery
                 .CountAsync(offboarding =>
                     offboarding.Status == RequestStatus.Rejected &&
                     offboarding.UpdatedAt >= period.StatsStartDate &&
                     offboarding.UpdatedAt <= period.StatsEndDate,
                     cancellationToken);
-        viewModel.MaintenanceCountYear = await _context.MaintenanceLogs
-            .AsNoTracking()
+        viewModel.MaintenanceCountYear = await maintenanceAnalyticsQuery
             .CountAsync(log => log.ServiceDate >= period.YearStart && log.ServiceDate <= period.YearEnd, cancellationToken);
 
         var onboardingTargetDays = await _context.SlaSettings
@@ -789,8 +870,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        var completedSlaSamples = await _context.OnboardingRequests
-            .AsNoTracking()
+        var completedSlaSamples = await onboardingAnalyticsQuery
             .Where(onboarding =>
                 onboarding.RequestDate >= period.YearStart &&
                 onboarding.RequestDate <= period.YearEnd &&
@@ -908,27 +988,23 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
         var previousYearStart = new DateTime(period.SelectedYear - 1, 1, 1);
         var previousYearEnd = new DateTime(period.SelectedYear - 1, 12, 31, 23, 59, 59);
 
-        viewModel.PrevYearOnboardingCount = await _context.OnboardingRequests
-            .AsNoTracking()
+        viewModel.PrevYearOnboardingCount = await onboardingAnalyticsQuery
             .CountAsync(onboarding =>
                 onboarding.RequestDate >= previousYearStart &&
                 onboarding.RequestDate <= previousYearEnd,
                 cancellationToken);
-        viewModel.PrevYearOffboardingCount = await _context.OffboardingRequests
-            .AsNoTracking()
+        viewModel.PrevYearOffboardingCount = await offboardingAnalyticsQuery
             .CountAsync(offboarding =>
                 offboarding.RequestDate >= previousYearStart &&
                 offboarding.RequestDate <= previousYearEnd,
                 cancellationToken);
-        viewModel.PrevYearTotalAssets = await _context.ITAssets
-            .AsNoTracking()
+        viewModel.PrevYearTotalAssets = await assetAnalyticsQuery
             .CountAsync(asset =>
                 asset.PurchaseDate != null &&
                 asset.PurchaseDate <= previousYearEnd,
                 cancellationToken);
 
-        var previousCompletedOnboarding = await _context.OnboardingRequests
-            .AsNoTracking()
+        var previousCompletedOnboarding = await onboardingAnalyticsQuery
             .Where(onboarding =>
                 onboarding.RequestDate >= previousYearStart &&
                 onboarding.RequestDate <= previousYearEnd &&
@@ -950,7 +1026,10 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
         return ProcessResult<HomePageResult>.Success(new HomePageResult(
             viewModel,
             period.IsCurrentYear,
-            period.StatsPeriodLabel));
+            period.StatsPeriodLabel,
+            companyOptions,
+            selectedCompany?.Id,
+            selectedCompany?.DisplayName));
     }
 }
 

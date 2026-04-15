@@ -6,6 +6,7 @@ using IT_Form.Models;
 using IT_Form.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.Account.Writes.ForceChangePassword;
@@ -15,17 +16,20 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _context;
     private readonly IEmailBackgroundQueue _emailBackgroundQueue;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<ForceChangePasswordCommandHandler> _logger;
 
     public ForceChangePasswordCommandHandler(
         UserManager<ApplicationUser> userManager,
         ApplicationDbContext context,
         IEmailBackgroundQueue emailBackgroundQueue,
+        IMemoryCache cache,
         ILogger<ForceChangePasswordCommandHandler> logger)
     {
         _userManager = userManager;
         _context = context;
         _emailBackgroundQueue = emailBackgroundQueue;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -42,6 +46,7 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
 
         user.MustChangePassword = false;
         (await _userManager.UpdateAsync(user)).EnsureSucceeded();
+        _cache.Remove($"claims-transform:{user.Id}");
 
         var auditTime = DateTime.UtcNow;
 

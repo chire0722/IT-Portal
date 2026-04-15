@@ -59,6 +59,19 @@ namespace IT_Form.Models
         // Stores full hardware fingerprint JSON payload from audit agent.
         public string? HardwareAuditJson { get; set; }
 
+        [StringLength(300)]
+        public string? LatestHardwareHash { get; set; }
+
+        // Stores the most recent hardware fingerprint JSON payload from the audit agent.
+        public string? LatestHardwareAuditJson { get; set; }
+
+        public bool HasHardwareFingerprintMismatch { get; set; }
+
+        public DateTime? HardwareFingerprintMismatchDetectedAt { get; set; }
+
+        [StringLength(500)]
+        public string? HardwareFingerprintWarning { get; set; }
+
         public DateTime? LastSeen { get; set; }
 
         public List<MaintenanceLog> MaintenanceLogs { get; set; } = new();

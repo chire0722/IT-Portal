@@ -436,7 +436,15 @@ public static class MapsterConfig
             .Map(destination => destination.Licenses, source => source.Licenses);
 
         config.NewConfig<SoftwareLicense, StandardSoftwareLicenseListItem>()
-            .Map(destination => destination.KeyCount, source => source.Keys.Count);
+            .Map(destination => destination.KeyCount, source => source.Keys.Count)
+            .Map(destination => destination.CompanyIds,
+                source => source.SoftwareLicenseCompanies
+                    .Select(link => link.CompanyId)
+                    .ToList())
+            .Map(destination => destination.Companies,
+                source => source.SoftwareLicenseCompanies
+                    .Select(link => link.Company.Name)
+                    .ToList());
 
         config.NewConfig<OnboardingRequest, StandardSoftwareEmployeeOptionDto>()
             .Map(destination => destination.Name, source => source.FullName ?? string.Empty);

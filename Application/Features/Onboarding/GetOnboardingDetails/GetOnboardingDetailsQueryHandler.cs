@@ -1,4 +1,5 @@
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -50,7 +51,7 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
             }
 
             var user = _currentUserAccessor.User;
-            if (!CompanyScopeHelper.CanAccessCompany(user, onboardingRequest.Branch))
+            if (!HrRecordReadCompanyScopeSupport.CanAccessCompany(user, onboardingRequest.Branch))
             {
                 return Empty(GetOnboardingDetailsStatus.Forbidden);
             }

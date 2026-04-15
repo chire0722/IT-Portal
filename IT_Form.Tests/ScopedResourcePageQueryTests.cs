@@ -451,6 +451,195 @@ public class ScopedResourcePageQueryTests
         Assert.Equal("Alpha (A1)", sharedMailboxWorkbook.Worksheet("Reference").Cell(2, 1).GetString());
     }
 
+    [Fact]
+    public async Task ItUserWithAssignedCompany_SeesCrossCompanyResourcePagesAndCompanyOptions()
+    {
+        await using var context = CreateContext();
+
+        var alpha = new Company { Id = 1, Name = "Alpha", IsActive = true };
+        var beta = new Company { Id = 2, Name = "Beta", Lot = "B2", IsActive = true };
+        context.Companies.AddRange(alpha, beta);
+
+        context.Departments.Add(new Department
+        {
+            Id = 101,
+            Name = "Operations",
+            IsActive = true,
+            DepartmentCompanies = [new DepartmentCompany { CompanyId = beta.Id, Company = beta }]
+        });
+        context.EmailGroups.Add(new EmailGroup
+        {
+            Id = 102,
+            GroupName = "Beta Staff",
+            GroupEmail = "beta.staff@test.local",
+            IsActive = true,
+            EmailGroupCompanies = [new EmailGroupCompany { CompanyId = beta.Id, Company = beta }]
+        });
+        context.SharedMailboxes.Add(new SharedMailbox
+        {
+            Id = 103,
+            MailboxName = "Beta Mailbox",
+            MailboxAddress = "beta.mailbox@test.local",
+            IsActive = true,
+            SharedMailboxCompanies = [new SharedMailboxCompany { CompanyId = beta.Id, Company = beta }]
+        });
+        context.ServerFolders.Add(new ServerFolder
+        {
+            Id = 104,
+            FolderName = "Beta_Share",
+            IsActive = true,
+            ServerFolderCompanies = [new ServerFolderCompany { CompanyId = beta.Id, Company = beta }]
+        });
+        await context.SaveChangesAsync();
+
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "it.user",
+            titles: ["IT"],
+            companies: ["Alpha"]);
+
+        var departmentIndex = await new GetDepartmentIndexPageQueryHandler(context, currentUser)
+            .Handle(new GetDepartmentIndexPageQuery(), CancellationToken.None);
+        var departmentCreate = await new GetDepartmentCreatePageQueryHandler(context, currentUser)
+            .Handle(new GetDepartmentCreatePageQuery(), CancellationToken.None);
+        var emailGroupIndex = await new GetEmailGroupIndexPageQueryHandler(context, currentUser)
+            .Handle(new GetEmailGroupIndexPageQuery(), CancellationToken.None);
+        var emailGroupCreate = await new GetEmailGroupCreatePageQueryHandler(context, currentUser)
+            .Handle(new GetEmailGroupCreatePageQuery(), CancellationToken.None);
+        var sharedMailboxIndex = await new GetSharedMailboxIndexPageQueryHandler(context, currentUser)
+            .Handle(new GetSharedMailboxIndexPageQuery(), CancellationToken.None);
+        var sharedMailboxCreate = await new GetSharedMailboxCreatePageQueryHandler(context, currentUser)
+            .Handle(new GetSharedMailboxCreatePageQuery(), CancellationToken.None);
+        var serverFolderIndex = await new GetServerFolderIndexPageQueryHandler(context, currentUser)
+            .Handle(new GetServerFolderIndexPageQuery(), CancellationToken.None);
+        var serverFolderCreate = await new GetServerFolderCreatePageQueryHandler(context, currentUser)
+            .Handle(new GetServerFolderCreatePageQuery(), CancellationToken.None);
+
+        Assert.True(departmentIndex.IsSuccess);
+        Assert.Contains(departmentIndex.Data!, item => item.Id == 101);
+        Assert.True(departmentCreate.IsSuccess);
+        Assert.Equal([1, 2], departmentCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+
+        Assert.True(emailGroupIndex.IsSuccess);
+        Assert.Contains(emailGroupIndex.Data!.Items, item => item.Id == 102);
+        Assert.True(emailGroupCreate.IsSuccess);
+        Assert.Equal([1, 2], emailGroupCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+
+        Assert.True(sharedMailboxIndex.IsSuccess);
+        Assert.Contains(sharedMailboxIndex.Data!.Items, item => item.Id == 103);
+        Assert.True(sharedMailboxCreate.IsSuccess);
+        Assert.Equal([1, 2], sharedMailboxCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+
+        Assert.True(serverFolderIndex.IsSuccess);
+        Assert.Contains(serverFolderIndex.Data!.Items, item => item.Id == 104);
+        Assert.True(serverFolderCreate.IsSuccess);
+        Assert.Equal([1, 2], serverFolderCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+    }
+
+    [Fact]
+    public async Task ResourceIndexQueries_FilterBySelectedCompany_WhileKeepingGlobalItems()
+    {
+        await using var context = CreateContext();
+
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+
+        context.EmailGroups.AddRange(
+            new EmailGroup
+            {
+                Id = 201,
+                GroupName = "Global Group",
+                GroupEmail = "global@test.local",
+                IsActive = true
+            },
+            new EmailGroup
+            {
+                Id = 202,
+                GroupName = "Alpha Group",
+                GroupEmail = "alpha@test.local",
+                IsActive = true,
+                EmailGroupCompanies = [new EmailGroupCompany { CompanyId = 1 }]
+            },
+            new EmailGroup
+            {
+                Id = 203,
+                GroupName = "Beta Group",
+                GroupEmail = "beta@test.local",
+                IsActive = true,
+                EmailGroupCompanies = [new EmailGroupCompany { CompanyId = 2 }]
+            });
+
+        context.SharedMailboxes.AddRange(
+            new SharedMailbox
+            {
+                Id = 211,
+                MailboxName = "Global Mailbox",
+                MailboxAddress = "global.mailbox@test.local",
+                IsActive = true
+            },
+            new SharedMailbox
+            {
+                Id = 212,
+                MailboxName = "Alpha Mailbox",
+                MailboxAddress = "alpha.mailbox@test.local",
+                IsActive = true,
+                SharedMailboxCompanies = [new SharedMailboxCompany { CompanyId = 1 }]
+            },
+            new SharedMailbox
+            {
+                Id = 213,
+                MailboxName = "Beta Mailbox",
+                MailboxAddress = "beta.mailbox@test.local",
+                IsActive = true,
+                SharedMailboxCompanies = [new SharedMailboxCompany { CompanyId = 2 }]
+            });
+
+        context.ServerFolders.AddRange(
+            new ServerFolder
+            {
+                Id = 221,
+                FolderName = "Global_Folder",
+                IsActive = true
+            },
+            new ServerFolder
+            {
+                Id = 222,
+                FolderName = "Alpha_Folder",
+                IsActive = true,
+                ServerFolderCompanies = [new ServerFolderCompany { CompanyId = 1 }]
+            },
+            new ServerFolder
+            {
+                Id = 223,
+                FolderName = "Beta_Folder",
+                IsActive = true,
+                ServerFolderCompanies = [new ServerFolderCompany { CompanyId = 2 }]
+            });
+
+        await context.SaveChangesAsync();
+
+        var currentUser = new TestCurrentUserAccessor("it-user", titles: ["IT"]);
+
+        var emailGroups = await new GetEmailGroupIndexPageQueryHandler(context, currentUser)
+            .Handle(new GetEmailGroupIndexPageQuery(1), CancellationToken.None);
+        var sharedMailboxes = await new GetSharedMailboxIndexPageQueryHandler(context, currentUser)
+            .Handle(new GetSharedMailboxIndexPageQuery(1), CancellationToken.None);
+        var serverFolders = await new GetServerFolderIndexPageQueryHandler(context, currentUser)
+            .Handle(new GetServerFolderIndexPageQuery(1), CancellationToken.None);
+
+        Assert.True(emailGroups.IsSuccess);
+        Assert.Equal([201, 202], emailGroups.Data!.Items.Select(item => item.Id).OrderBy(id => id).ToArray());
+        Assert.Equal(1, emailGroups.Data.SelectedCompanyId);
+
+        Assert.True(sharedMailboxes.IsSuccess);
+        Assert.Equal([211, 212], sharedMailboxes.Data!.Items.Select(item => item.Id).OrderBy(id => id).ToArray());
+        Assert.Equal(1, sharedMailboxes.Data.SelectedCompanyId);
+
+        Assert.True(serverFolders.IsSuccess);
+        Assert.Equal([221, 222], serverFolders.Data!.Items.Select(item => item.Id).OrderBy(id => id).ToArray());
+        Assert.Equal(1, serverFolders.Data.SelectedCompanyId);
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

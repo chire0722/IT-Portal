@@ -13,6 +13,13 @@ public sealed class ServerFolderIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+public sealed class ServerFolderIndexPageViewModel
+{
+    public int? SelectedCompanyId { get; init; }
+    public List<PageCompanyOption> CompanyOptions { get; init; } = [];
+    public List<ServerFolderIndexListItem> Items { get; init; } = [];
+}
+
 public sealed class ServerFolderEditorPageViewModel
 {
     public int Id { get; set; }

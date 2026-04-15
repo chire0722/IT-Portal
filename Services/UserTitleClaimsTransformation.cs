@@ -3,6 +3,7 @@ using IT_Form.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
 
 namespace IT_Form.Services
 {
@@ -27,10 +28,6 @@ namespace IT_Form.Services
 
             var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-                return principal;
-
-            // Skip if already transformed in this request
-            if (principal.HasClaim(c => c.Type == "UserTitle"))
                 return principal;
 
             var cacheKey = $"claims-transform:{userId}";
@@ -73,14 +70,33 @@ namespace IT_Form.Services
             {
                 if (snapshot!.MustChangePassword)
                 {
-                    identity.AddClaim(new Claim("MustChangePassword", "true"));
+                    if (!identity.HasClaim("MustChangePassword", "true"))
+                    {
+                        identity.AddClaim(new Claim("MustChangePassword", "true"));
+                    }
+                }
+                else
+                {
+                    foreach (var claim in identity.FindAll("MustChangePassword").ToList())
+                    {
+                        identity.RemoveClaim(claim);
+                    }
                 }
 
-                foreach (var title in snapshot.Titles)
+                var existingTitles = identity.FindAll("UserTitle")
+                    .Select(claim => claim.Value)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var title in snapshot.Titles.Where(title => !existingTitles.Contains(title)))
                 {
                     identity.AddClaim(new Claim("UserTitle", title));
                 }
-                foreach (var company in snapshot.Companies)
+
+                var existingCompanies = identity.FindAll("UserCompany")
+                    .Select(claim => claim.Value)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var company in snapshot.Companies.Where(company => !existingCompanies.Contains(company)))
                 {
                     identity.AddClaim(new Claim("UserCompany", company));
                 }

@@ -464,9 +464,10 @@ public class AccountFeatureSliceTests
         userManager.Setup(x => x.FindByEmailAsync("missing@example.com")).ReturnsAsync((ApplicationUser?)null);
 
         var queue = new Mock<IEmailBackgroundQueue>();
+        using var cache = new MemoryCache(new MemoryCacheOptions());
         var logger = Mock.Of<ILogger<ResetPasswordCommandHandler>>();
 
-        var handler = new ResetPasswordCommandHandler(userManager.Object, context, queue.Object, logger);
+        var handler = new ResetPasswordCommandHandler(userManager.Object, context, queue.Object, cache, logger);
 
         var result = await handler.Handle(
             new ResetPasswordCommand("missing@example.com", "token", "Password123!"),

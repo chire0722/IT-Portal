@@ -1,5 +1,7 @@
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Services;
 using IT_Form.ViewModels;
 using MediatR;
@@ -11,13 +13,16 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItSetup
     {
         private readonly ApplicationDbContext _context;
         private readonly IOnboardingWizardService _onboardingWizardService;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
         public GetOnboardingItSetupQueryHandler(
             ApplicationDbContext context,
-            IOnboardingWizardService onboardingWizardService)
+            IOnboardingWizardService onboardingWizardService,
+            ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
             _onboardingWizardService = onboardingWizardService;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         public async Task<ProcessResult<OnboardingViewModel>> Handle(GetOnboardingItSetupQuery request, CancellationToken cancellationToken)
@@ -29,6 +34,11 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItSetup
             if (onboardingRequest == null)
             {
                 return ProcessResult<OnboardingViewModel>.NotFound();
+            }
+
+            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, onboardingRequest.Branch))
+            {
+                return ProcessResult<OnboardingViewModel>.Forbidden();
             }
 
             if (!onboardingRequest.CanStartItSetup())

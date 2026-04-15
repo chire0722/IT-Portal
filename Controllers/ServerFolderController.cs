@@ -19,8 +19,8 @@ namespace IT_Form.Controllers
             _mediator = mediator;
         }
 
-        public async Task<IActionResult> Index()
-            => HandleProcessResult(await _mediator.Send(new GetServerFolderIndexPageQuery()));
+        public async Task<IActionResult> Index(int? companyId = null)
+            => HandleProcessResult(await _mediator.Send(new GetServerFolderIndexPageQuery(companyId)));
 
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _mediator.Send(new GetServerFolderCreatePageQuery()));

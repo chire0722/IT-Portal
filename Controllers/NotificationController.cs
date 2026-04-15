@@ -48,25 +48,15 @@ namespace IT_Form.Controllers
 
         private bool IsAuthorizedForBranch(string? requestBranch, string? createdBy)
         {
+            if (!CompanyScopeHelper.CanAccessCompany(User, requestBranch)) return false;
             if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR")) return true;
 
-            if (createdBy == User.Identity?.Name) return true;
-
-            var userCompanies = User.Claims
-                .Where(c => c.Type == "UserCompany")
-                .Select(c => c.Value)
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .ToList();
-
-            if (userCompanies.Any())
-            {
-                if (requestBranch != null && userCompanies.Contains(requestBranch)) return true;
-            }
-            return false;
+            return string.Equals(createdBy, User.Identity?.Name, StringComparison.OrdinalIgnoreCase);
         }
 
-        private async Task<bool> IsAuthorizedAsHOD(string? hodEmail, string? assignedHodId = null)
+        private async Task<bool> IsAuthorizedAsHOD(string? requestBranch, string? hodEmail, string? assignedHodId = null)
         {
+            if (!CompanyScopeHelper.CanAccessCompany(User, requestBranch)) return false;
             if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR")) return true;
 
             var username = User.Identity?.Name ?? "";
@@ -85,7 +75,7 @@ namespace IT_Form.Controllers
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (request == null) return NotFound();
-            if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) && !await IsAuthorizedAsHOD(request.HODEmail)) return Forbid();
+            if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) && !await IsAuthorizedAsHOD(request.Branch, request.HODEmail)) return Forbid();
 
             string nextSignerRole = "";
             string nextActionRequired = "";
@@ -162,7 +152,7 @@ namespace IT_Form.Controllers
         {
             var request = await _context.OffboardingRequests.FirstOrDefaultAsync(r => r.Id == id);
             if (request == null) return NotFound();
-            if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) && !await IsAuthorizedAsHOD(request.HODEmail, request.AssignedHodId)) return Forbid();
+            if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) && !await IsAuthorizedAsHOD(request.Branch, request.HODEmail, request.AssignedHodId)) return Forbid();
 
             string nextSignerRole = "";
             string nextActionRequired = "";
@@ -247,7 +237,7 @@ namespace IT_Form.Controllers
             {
                 var req = await _context.OnboardingRequests.FindAsync(id);
                 if (req == null) return NotFound();
-                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail)) return Forbid();
+                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.Branch, req.HODEmail)) return Forbid();
                 fullName = req.FullName ?? string.Empty;
                 reason = req.RejectionReason ?? "No reason provided.";
                 toEmail = req.CreatedByUserId ?? "hr@ytcprecast.com";
@@ -256,7 +246,7 @@ namespace IT_Form.Controllers
             {
                 var req = await _context.OffboardingRequests.FindAsync(id);
                 if (req == null) return NotFound();
-                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId)) return Forbid();
+                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)) return Forbid();
                 fullName = req.FullName ?? string.Empty;
                 reason = req.RejectionReason ?? "No reason provided.";
                 toEmail = req.CreatedByUserId ?? "hr@ytcprecast.com";
@@ -324,7 +314,7 @@ namespace IT_Form.Controllers
                     .IncludeOnboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
                 if (req == null) return NotFound();
-                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail)) return Forbid();
+                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.Branch, req.HODEmail)) return Forbid();
                 fullName = req.FullName ?? "";
                 toEmail = req.EmailAddress ?? "";
                 token = req.AccessToken;
@@ -337,7 +327,7 @@ namespace IT_Form.Controllers
                     .IncludeOffboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
                 if (req == null) return NotFound();
-                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId)) return Forbid();
+                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)) return Forbid();
                 fullName = req.FullName ?? "";
                 toEmail = req.EmailAddress ?? "";
                 token = req.AccessToken;
@@ -407,7 +397,7 @@ namespace IT_Form.Controllers
                             .AsSplitQuery()
                             .IncludeOnboardingPdfData()
                             .FirstOrDefaultAsync(r => r.Id == model.RequestId);
-                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail)))
+                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail)))
                         {
                             pdfBytes = _pdfService.GeneratePdf(req);
                             attachmentName = $"Onboarding_Acknowledgement_{(req.FullName ?? "Employee").Replace(" ", "_")}.pdf";
@@ -419,7 +409,7 @@ namespace IT_Form.Controllers
                             .AsSplitQuery()
                             .IncludeOffboardingPdfData()
                             .FirstOrDefaultAsync(r => r.Id == model.RequestId);
-                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId)))
+                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)))
                         {
                             pdfBytes = _pdfService.GenerateOffboardingPdf(req);
                             attachmentName = $"Offboarding_Acknowledgement_{(req.FullName ?? "Employee").Replace(" ", "_")}.pdf";
@@ -457,7 +447,7 @@ namespace IT_Form.Controllers
                     .AsSplitQuery()
                     .IncludeOnboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
-                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail))) pdfBytes = _pdfService.GeneratePdf(req);
+                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail))) pdfBytes = _pdfService.GeneratePdf(req);
             }
             else if (type.StartsWith("SignatureAcknowledgement_Offboarding"))
             {
@@ -465,7 +455,7 @@ namespace IT_Form.Controllers
                     .AsSplitQuery()
                     .IncludeOffboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
-                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId))) pdfBytes = _pdfService.GenerateOffboardingPdf(req);
+                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId))) pdfBytes = _pdfService.GenerateOffboardingPdf(req);
             }
 
             if (pdfBytes != null)
@@ -487,7 +477,7 @@ namespace IT_Form.Controllers
             {
                 var req = await _context.OnboardingRequests.FindAsync(id);
                 if (req == null) return NotFound();
-                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail)) return Forbid();
+                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.Branch, req.HODEmail)) return Forbid();
                 fullName = req.FullName ?? "";
                 toEmail = req.HODEmail ?? "";
                 returnUrl = Url.Action("Details", "Onboarding", new { id }) ?? "/";
@@ -507,7 +497,7 @@ namespace IT_Form.Controllers
             {
                 var req = await _context.OffboardingRequests.FindAsync(id);
                 if (req == null) return NotFound();
-                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.HODEmail, req.AssignedHodId)) return Forbid();
+                if (!IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) && !await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)) return Forbid();
                 fullName = req.FullName ?? "";
                 toEmail = req.HODEmail ?? "";
                 returnUrl = Url.Action("Details", "Offboarding", new { id }) ?? "/";

@@ -1,3 +1,5 @@
+using IT_Form.Application.Common.Models;
+
 namespace IT_Form.Application.Features.StandardSoftware;
 
 public sealed class StandardSoftwareIndexPageViewModel
@@ -10,6 +12,8 @@ public sealed class StandardSoftwareIndexPageViewModel
     public string? CurrentSearch { get; set; }
     public bool? IsMandatory { get; set; }
     public bool? IsSubscription { get; set; }
+    public int? SelectedCompanyId { get; set; }
+    public List<PageCompanyOption> CompanyOptions { get; set; } = [];
     public List<StandardSoftwareIndexItem> SoftwareList { get; set; } = [];
 
     public double UtilizationPercentage => TotalSeatCapacity > 0
@@ -40,6 +44,8 @@ public sealed class StandardSoftwareLicenseListItem
     public bool IsFree { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public int KeyCount { get; set; }
+    public List<int> CompanyIds { get; set; } = [];
+    public List<string> Companies { get; set; } = [];
 }
 
 public sealed class StandardSoftwareEditorPageViewModel

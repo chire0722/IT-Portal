@@ -118,17 +118,17 @@ namespace IT_Form.Helpers
                 asset.Storage = report.Storage;
                 asset.DDRType = report.DDRType;
                 asset.WindowsVersion = report.OS;
-                if (!string.IsNullOrWhiteSpace(report.HardwareHash))
-                {
-                    asset.HardwareHash = report.HardwareHash;
-                }
+                var hardwareAuditJson = report.Audit.HasValue &&
+                                        report.Audit.Value.ValueKind != JsonValueKind.Null &&
+                                        report.Audit.Value.ValueKind != JsonValueKind.Undefined
+                    ? report.Audit.Value.GetRawText()
+                    : null;
 
-                if (report.Audit.HasValue &&
-                    report.Audit.Value.ValueKind != JsonValueKind.Null &&
-                    report.Audit.Value.ValueKind != JsonValueKind.Undefined)
-                {
-                    asset.HardwareAuditJson = report.Audit.Value.GetRawText();
-                }
+                var fingerprintSync = ApplyHardwareFingerprintTelemetry(
+                    asset,
+                    report.HardwareHash,
+                    hardwareAuditJson,
+                    DateTime.UtcNow);
 
                 asset.LastSeen = DateTime.UtcNow;
 
@@ -136,6 +136,9 @@ namespace IT_Form.Helpers
                 {
                     dbToken.IsVerified = true;
                     dbToken.VerifiedAt = DateTime.UtcNow;
+                    dbToken.VerifiedAssetTag = asset.AssetTag;
+                    dbToken.HasHardwareFingerprintMismatch = fingerprintSync.IsMismatch;
+                    dbToken.HardwareFingerprintWarning = fingerprintSync.WarningMessage;
                     if (shouldAssignVerifiedAsset)
                     {
                         await ApplyVerificationAssignmentAsync(dbContext, asset, dbToken);
@@ -149,15 +152,17 @@ namespace IT_Form.Helpers
                 catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
                 {
                     var inner = ex.InnerException?.Message ?? ex.Message;
-                    return Results.Problem($"Conflict: {inner}", statusCode: 409);
-                }
+                return Results.Problem($"Conflict: {inner}", statusCode: 409);
+            }
 
-                return Results.Ok(new
-                {
-                    message = isNew ? "Asset registered and synchronized." : "Asset telemetry updated.",
-                    assetTag = asset.AssetTag
-                });
-            })
+            return Results.Ok(new
+            {
+                message = isNew ? "Asset registered and synchronized." : "Asset telemetry updated.",
+                assetTag = asset.AssetTag,
+                fingerprintMismatch = fingerprintSync.IsMismatch,
+                warningMessage = fingerprintSync.WarningMessage
+            });
+        })
             .AllowAnonymous()
             .WithName("SyncInventory")
             .RequireRateLimiting("strict");
@@ -206,9 +211,9 @@ namespace IT_Form.Helpers
             });
         }
 
-        public static async Task<InventoryVerificationAssignment?> ResolveVerificationAssignmentAsync(
-            ApplicationDbContext dbContext,
-            string? applicationUserId)
+    public static async Task<InventoryVerificationAssignment?> ResolveVerificationAssignmentAsync(
+        ApplicationDbContext dbContext,
+        string? applicationUserId)
         {
             if (string.IsNullOrWhiteSpace(applicationUserId))
             {
@@ -259,6 +264,74 @@ namespace IT_Form.Helpers
         private static bool HasExpiredVerificationToken(DeviceVerificationToken token, int tokenLifetimeMinutes)
             => !string.IsNullOrWhiteSpace(token.EmployeeId) &&
                token.CreatedAt.AddMinutes(tokenLifetimeMinutes) <= DateTime.UtcNow;
+
+        public static HardwareFingerprintSyncResult ApplyHardwareFingerprintTelemetry(
+            ITAsset asset,
+            string? incomingHardwareHash,
+            string? incomingHardwareAuditJson,
+            DateTime observedAtUtc)
+        {
+            ArgumentNullException.ThrowIfNull(asset);
+
+            var normalizedIncomingHash = NormalizeFingerprintValue(incomingHardwareHash);
+            var normalizedIncomingAuditJson = NormalizeFingerprintValue(incomingHardwareAuditJson);
+
+            if (!string.IsNullOrWhiteSpace(normalizedIncomingHash))
+            {
+                if (string.IsNullOrWhiteSpace(asset.HardwareHash))
+                {
+                    asset.HardwareHash = normalizedIncomingHash;
+                }
+
+                asset.LatestHardwareHash = normalizedIncomingHash;
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedIncomingAuditJson))
+            {
+                if (string.IsNullOrWhiteSpace(asset.HardwareAuditJson))
+                {
+                    asset.HardwareAuditJson = normalizedIncomingAuditJson;
+                }
+
+                asset.LatestHardwareAuditJson = normalizedIncomingAuditJson;
+            }
+
+            var hasComparableFingerprint =
+                !string.IsNullOrWhiteSpace(asset.HardwareHash) &&
+                !string.IsNullOrWhiteSpace(normalizedIncomingHash);
+
+            var isMismatch = hasComparableFingerprint &&
+                             !string.Equals(asset.HardwareHash, normalizedIncomingHash, StringComparison.OrdinalIgnoreCase);
+
+            if (isMismatch)
+            {
+                asset.HasHardwareFingerprintMismatch = true;
+                asset.HardwareFingerprintMismatchDetectedAt = observedAtUtc;
+                asset.HardwareFingerprintWarning = BuildHardwareFingerprintWarning(asset);
+            }
+            else if (hasComparableFingerprint || string.IsNullOrWhiteSpace(asset.HardwareHash))
+            {
+                asset.HasHardwareFingerprintMismatch = false;
+                asset.HardwareFingerprintMismatchDetectedAt = null;
+                asset.HardwareFingerprintWarning = null;
+            }
+
+            return new HardwareFingerprintSyncResult(
+                asset.HasHardwareFingerprintMismatch,
+                asset.HardwareFingerprintWarning);
+        }
+
+        private static string? NormalizeFingerprintValue(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private static string BuildHardwareFingerprintWarning(ITAsset asset)
+        {
+            var assetLabel = string.IsNullOrWhiteSpace(asset.AssetTag)
+                ? "this asset"
+                : $"asset {asset.AssetTag}";
+
+            return $"Warning: the latest hardware fingerprint does not match the first verified fingerprint stored for {assetLabel}. Review the device before trusting this verification.";
+        }
     }
 
     public record HardwareReport(
@@ -278,4 +351,8 @@ namespace IT_Form.Helpers
     public sealed record InventoryVerificationAssignment(
         int? OnboardingRequestId,
         string? CustomEmployeeName);
+
+    public sealed record HardwareFingerprintSyncResult(
+        bool IsMismatch,
+        string? WarningMessage);
 }

@@ -5,6 +5,7 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep4
         ReadyForStep5,
         DraftSaved,
         NotFound,
+        Forbidden,
         Locked
     }
 

@@ -25,8 +25,8 @@ namespace IT_Form.Controllers
 
         public StandardSoftwareController(ISender sender) => _sender = sender;
 
-        public async Task<IActionResult> Index(string? searchString, bool? isMandatory, bool? isSubscription)
-            => HandleProcessResult(await _sender.Send(new GetStandardSoftwareIndexPageQuery(searchString, isMandatory, isSubscription)));
+        public async Task<IActionResult> Index(string? searchString, bool? isMandatory, bool? isSubscription, int? companyId = null)
+            => HandleProcessResult(await _sender.Send(new GetStandardSoftwareIndexPageQuery(searchString, isMandatory, isSubscription, companyId)));
 
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _sender.Send(new GetStandardSoftwareCreatePageQuery()));
@@ -95,7 +95,7 @@ namespace IT_Form.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> AddLicense(int standardSoftwareId, string softwareName,
             string? description, bool isSubscription, bool isFree, DateTime? expiryDate, int? contractLimit,
-            string? vendorName, string? supportContact)
+            string? vendorName, string? supportContact, int? selectedCompanyId)
             => await ExecuteWithValidationRedirect(
                 async () =>
                 {
@@ -108,7 +108,8 @@ namespace IT_Form.Controllers
                     expiryDate,
                     contractLimit,
                     vendorName,
-                    supportContact));
+                    supportContact,
+                    selectedCompanyId.HasValue ? [selectedCompanyId.Value] : []));
                 ArgumentNullException.ThrowIfNull(result);
 
                 if (result.Status == AddSoftwareLicenseStatus.InvalidSubscriptionExpiry)
@@ -127,7 +128,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         public async Task<IActionResult> EditLicense(int id, string softwareName,
             string? description, bool isSubscription, bool isFree, DateTime? expiryDate, int? contractLimit,
-            string? vendorName, string? supportContact)
+            string? vendorName, string? supportContact, int? selectedCompanyId)
             => await ExecuteWithValidationResult(
                 async () =>
                 {
@@ -140,7 +141,8 @@ namespace IT_Form.Controllers
                     expiryDate,
                     contractLimit,
                     vendorName,
-                    supportContact));
+                    supportContact,
+                    selectedCompanyId.HasValue ? [selectedCompanyId.Value] : []));
                 ArgumentNullException.ThrowIfNull(result);
                 if (result.Status == EditSoftwareLicenseStatus.NotFound) return Json(new { success = false, message = "Version not found." });
                 if (result.Status == EditSoftwareLicenseStatus.InvalidSubscriptionExpiry) return Json(new { success = false, message = result.Message });

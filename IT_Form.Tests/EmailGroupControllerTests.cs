@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using IT_Form.Application.Features.EmailGroup;
 using IT_Form.Controllers;
@@ -22,8 +20,8 @@ namespace IT_Form.Tests
             var result = await controller.Index();
 
             var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsAssignableFrom<IEnumerable<EmailGroupIndexListItem>>(viewResult.ViewData.Model);
-            Assert.Single(model);
+            var model = Assert.IsType<EmailGroupIndexPageViewModel>(viewResult.ViewData.Model);
+            Assert.Single(model.Items);
         }
 
         [Fact]

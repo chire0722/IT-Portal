@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.Results;
+using IT_Form.Application.Common.Support;
 using IT_Form.Helpers;
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Data;
@@ -50,7 +51,7 @@ public sealed class DeleteUserManagementCommandHandler : IRequestHandler<DeleteU
             throw new ValidationException([new ValidationFailure(string.Empty, "You cannot delete your own account.")]);
         }
 
-        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(principal);
+        var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(principal);
         if (!CompanyScopeHelper.AreAllCompaniesAllowed(scopedCompanies, user.UserCompanies.Select(company => company.CompanyName)))
         {
             throw new ValidationException([new ValidationFailure(string.Empty, "You cannot delete users outside your assigned company scope.")]);

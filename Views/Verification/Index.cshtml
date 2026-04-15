@@ -1,3 +1,4 @@
+@using System.Text.Json
 @model IT_Form.Models.DeviceVerificationToken
 @{
     Layout = null;
@@ -6,6 +7,8 @@
     var description = employeeName == null
         ? "Please complete the hardware verification for this device so IT can safely record its hardware profile."
         : "Please complete the hardware verification for your assigned device to gain full network access.";
+    var initialWarningMessage = JsonSerializer.Serialize(Model.HardwareFingerprintWarning);
+    var initialAssetTag = JsonSerializer.Serialize(Model.VerifiedAssetTag);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -110,12 +113,30 @@
                 </div>
             </div>
 
+            <div id="warning-section" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                <div class="flex items-start gap-3">
+                    <div class="mt-0.5 text-amber-600">
+                        <i class="fas fa-triangle-exclamation text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-amber-800">Hardware fingerprint warning</p>
+                        <p id="warning-message" class="mt-1 text-sm text-amber-700"></p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
         let pollInterval;
         const token = '@Model.Token';
+        const initialStatus = {
+            isVerified: @Model.IsVerified.ToString().ToLowerInvariant(),
+            fingerprintMismatch: @Model.HasHardwareFingerprintMismatch.ToString().ToLowerInvariant(),
+            warningMessage: @Html.Raw(initialWarningMessage),
+            assetTag: @Html.Raw(initialAssetTag)
+        };
 
         function startPolling() {
             // Hide download button, show waiting spinner
@@ -133,7 +154,7 @@
                     const data = await response.json();
                     if (data.isVerified) {
                         clearInterval(pollInterval);
-                        showSuccess();
+                        showSuccess(data);
                     }
                 }
             } catch (error) {
@@ -141,7 +162,7 @@
             }
         }
 
-        function showSuccess() {
+        function showSuccess(status) {
             // Update Step 2 visuals
             const s2Icon = document.getElementById('step2-icon');
             s2Icon.classList.remove('bg-ytcBlue', 'shadow-blue-500/50', 'ring-blue-50');
@@ -159,14 +180,31 @@
 
             document.getElementById('step3-desc').classList.remove('text-gray-400');
             document.getElementById('step3-desc').classList.add('text-gray-600');
-            document.getElementById('step3-desc').innerText = "Telemetry received safely. It is now safe to close this page.";
+            const assetLabel = status && status.assetTag ? ` for ${status.assetTag}` : '';
+            document.getElementById('step3-desc').innerText = `Telemetry received safely${assetLabel}. It is now safe to close this page.`;
+
+            if (status && status.fingerprintMismatch && status.warningMessage) {
+                showWarning(status.warningMessage);
+            } else {
+                hideWarning();
+            }
+        }
+
+        function showWarning(message) {
+            document.getElementById('warning-message').innerText = message;
+            document.getElementById('warning-section').classList.remove('hidden');
+        }
+
+        function hideWarning() {
+            document.getElementById('warning-message').innerText = '';
+            document.getElementById('warning-section').classList.add('hidden');
         }
 
         // Auto-check on load just in case they refreshed the page after verifying
         @if (Model.IsVerified)
         {
             <text>
-                    showSuccess();
+                    showSuccess(initialStatus);
                     document.getElementById('download-section').classList.add('hidden');
             </text>
         }

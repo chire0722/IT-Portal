@@ -12,6 +12,12 @@ namespace IT_Form.Data
 {
     public static class DbInitializer
     {
+        private static readonly SeedUserDefinition[] SeedUsers =
+        [
+            new("itdept", "it@itportal.com", "IT Administrator", "IT", "IT", ["it@ytcprecast.com"]),
+            new("hrdept", "hr@itportal.com", "HR Administrator", "HR", "HR", ["hr@ytcprecast.com"])
+        ];
+
         private static readonly (string RequestType, int TargetDays, int EscalationDaysTier1, int EscalationDaysTier2)[] DefaultSlaSettings =
         {
             ("Onboarding", 3, 3, 7),
@@ -301,11 +307,68 @@ namespace IT_Form.Data
                 return;
             }
 
-            // Seed IT Admin
-            await SeedUserAsync(userManager, context, "itdept", "it@ytcprecast.com", "IT Administrator", "IT", "IT", seedPassword);
+            var users = await context.Users
+                .AsNoTracking()
+                .Select(user => new
+                {
+                    user.Id,
+                    user.UserName,
+                    user.Email
+                })
+                .ToListAsync();
 
-            // Seed HR Admin
-            await SeedUserAsync(userManager, context, "hrdept", "hr@ytcprecast.com", "HR Administrator", "HR", "HR", seedPassword);
+            if (users.Count == 0)
+            {
+                foreach (var seedUser in SeedUsers)
+                {
+                    await SeedUserAsync(
+                        userManager,
+                        context,
+                        seedUser.UserName,
+                        seedUser.Email,
+                        seedUser.FullName,
+                        seedUser.Department,
+                        seedUser.Title,
+                        seedPassword);
+                }
+
+                return;
+            }
+
+            var knownSeedEmails = SeedUsers
+                .SelectMany(seedUser => seedUser.AllEmails)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var knownSeedUserNames = SeedUsers
+                .Select(seedUser => seedUser.UserName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var hasNonSeedUsers = users.Any(user =>
+                !knownSeedUserNames.Contains(user.UserName ?? string.Empty) &&
+                !knownSeedEmails.Contains(user.Email ?? string.Empty));
+
+            if (!hasNonSeedUsers)
+            {
+                return;
+            }
+
+            foreach (var seedUser in SeedUsers)
+            {
+                foreach (var email in seedUser.AllEmails)
+                {
+                    var existingSeedUser = await userManager.FindByEmailAsync(email);
+                    if (existingSeedUser == null)
+                    {
+                        continue;
+                    }
+
+                    var deleteResult = await userManager.DeleteAsync(existingSeedUser);
+                    if (!deleteResult.Succeeded)
+                    {
+                        var errors = string.Join("; ", deleteResult.Errors.Select(error => error.Description));
+                        throw new InvalidOperationException($"Failed to remove seed user '{email}': {errors}");
+                    }
+                }
+            }
         }
 
         private static async Task SeedUserAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, string username, string email, string fullName, string department, string title, string password)
@@ -366,6 +429,17 @@ namespace IT_Form.Data
             }
 
             return trimmed;
+        }
+
+        private sealed record SeedUserDefinition(
+            string UserName,
+            string Email,
+            string FullName,
+            string Department,
+            string Title,
+            IReadOnlyCollection<string> LegacyEmails)
+        {
+            public IReadOnlyCollection<string> AllEmails => [Email, .. LegacyEmails];
         }
     }
 }

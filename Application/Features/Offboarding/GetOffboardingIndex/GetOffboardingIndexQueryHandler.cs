@@ -1,5 +1,6 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -35,7 +36,7 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingIndex
             var isIT = user.HasClaim("UserTitle", "IT");
             var isHR = user.HasClaim("UserTitle", "HR");
             var isHOD = user.HasClaim("UserTitle", "HOD");
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(user);
+            var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
 
             IQueryable<OffboardingRequest> query = _context.OffboardingRequests
                 .AsNoTracking()

@@ -13,6 +13,7 @@ using IT_Form.Services;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
 using IT_Form.Helpers;
+using IT_Form.Infrastructure.Notifications;
 
 namespace IT_Form.Data
 {
@@ -91,6 +92,7 @@ namespace IT_Form.Data
         public DbSet<EmailGroupCompany> EmailGroupCompanies { get; set; } = null!;
         public DbSet<SharedMailboxCompany> SharedMailboxCompanies { get; set; } = null!;
         public DbSet<ServerFolderCompany> ServerFolderCompanies { get; set; } = null!;
+        public DbSet<SoftwareLicenseCompany> SoftwareLicenseCompanies { get; set; } = null!;
 
         internal string EncryptionModelCacheKey => _encryptionService.GetType().FullName ?? _encryptionService.GetType().Name;
 
@@ -314,6 +316,15 @@ namespace IT_Form.Data
                 .WithMany()
                 .HasForeignKey(fc => fc.CompanyId);
 
+            builder.Entity<SoftwareLicenseCompany>()
+                .HasOne(sc => sc.SoftwareLicense)
+                .WithMany(license => license.SoftwareLicenseCompanies)
+                .HasForeignKey(sc => sc.SoftwareLicenseId);
+            builder.Entity<SoftwareLicenseCompany>()
+                .HasOne(sc => sc.Company)
+                .WithMany()
+                .HasForeignKey(sc => sc.CompanyId);
+
             // Index for OTP lookups
             builder.Entity<OtpRecord>()
                 .HasIndex(o => new { o.Email, o.Code });
@@ -426,6 +437,7 @@ namespace IT_Form.Data
             // Cascade Query Filters to satisfy EF Core required relationship warnings
             builder.Entity<RequestSoftware>().HasQueryFilter(e => !e.StandardSoftware!.IsDeleted);
             builder.Entity<IssuedSoftware>().HasQueryFilter(e => !e.SoftwareLicense.IsDeleted);
+            builder.Entity<SoftwareLicenseCompany>().HasQueryFilter(e => !e.SoftwareLicense.IsDeleted);
             builder.Entity<MaintenanceLog>().HasQueryFilter(e => !e.ITAsset!.IsDeleted);
         }
 
@@ -793,9 +805,7 @@ namespace IT_Form.Data
 
                 if (string.IsNullOrEmpty(auditEmail)) return;
                 
-                using var scope = _serviceProvider.CreateScope();
-                var outlookService = scope.ServiceProvider.GetService<IOutlookService>();
-                if (outlookService == null) return;
+                var queuedMessages = new List<EmailOutboxMessage>();
 
                 foreach (var log in entries.Where(l => 
                     (l.EntityName == "OnboardingRequest" || l.EntityName == "OffboardingRequest") &&
@@ -838,7 +848,7 @@ namespace IT_Form.Data
                             </td>
                         </tr>";
                     
-                    var config = scope.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+                    var config = _serviceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
                     string appDomainSetting = config?["AppDomain"] ?? "";
                     var domains = appDomainSetting.Split(';', StringSplitOptions.RemoveEmptyEntries);
                     string fallbackDomain = domains.FirstOrDefault(d => !d.Contains("localhost")) ?? domains.FirstOrDefault() ?? "http://localhost:5063";
@@ -863,14 +873,18 @@ namespace IT_Form.Data
                         "View Audit Record"
                     );
 
-                    try
-                    {
-                        outlookService.DisplayEmail(auditEmail, subject, htmlBody, bypassActiveCheck: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to send audit notification email to {Email}", auditEmail);
-                    }
+                    queuedMessages.Add(EmailOutboxMessageSerializer.Serialize(
+                        new RenderedEmailMessage(
+                            auditEmail,
+                            subject,
+                            htmlBody,
+                            BypassActiveCheck: true)));
+                }
+
+                if (queuedMessages.Count > 0)
+                {
+                    EmailOutboxMessages.AddRange(queuedMessages);
+                    await SaveChangesAsync(cancellationToken);
                 }
             }
             catch (Exception ex)

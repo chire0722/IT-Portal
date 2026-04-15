@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Features.Offboarding.Step2;
 using IT_Form.Application.Features.Offboarding.RegenerateOffboardingToken;
 using IT_Form.Application.Features.Offboarding.RejectOffboardingRequest;
 using IT_Form.Data;
@@ -41,12 +42,13 @@ public class OffboardingFeatureSliceTests
             Status = RequestStatus.PendingITApproval,
             FullName = "Emp A",
             LastDayOfWork = DateTime.Today,
+            Branch = "HQ",
             HODEmail = "hod@example.com"
         });
         await context.SaveChangesAsync();
 
         var currentUser = new Mock<ICurrentUserAccessor>();
-        currentUser.SetupGet(x => x.User).Returns(BuildUser("it-user", "IT"));
+        currentUser.SetupGet(x => x.User).Returns(BuildUser("it-user", "IT", "HQ"));
         currentUser.SetupGet(x => x.UserName).Returns("it-user");
 
         var userManager = CreateUserManager();
@@ -81,12 +83,13 @@ public class OffboardingFeatureSliceTests
             AccessToken = oldToken,
             FullName = "Emp B",
             LastDayOfWork = DateTime.Today,
+            Branch = "HQ",
             HODEmail = "hod@example.com"
         });
         await context.SaveChangesAsync();
 
         var currentUser = new Mock<ICurrentUserAccessor>();
-        currentUser.SetupGet(x => x.User).Returns(BuildUser("hr-user", "HR"));
+        currentUser.SetupGet(x => x.User).Returns(BuildUser("hr-user", "HR", "HQ"));
 
         var handler = new RegenerateOffboardingTokenCommandHandler(context, currentUser.Object);
         var result = await handler.Handle(new RegenerateOffboardingTokenCommand(12), CancellationToken.None);
@@ -100,11 +103,41 @@ public class OffboardingFeatureSliceTests
         Assert.NotEqual(oldToken, saved!.AccessToken);
     }
 
-    private static ClaimsPrincipal BuildUser(string username, string title)
+    [Fact]
+    public async Task GetStep2Handler_ReturnsForbidden_WhenItUserTargetsDifferentCompany()
+    {
+        using var context = CreateContext();
+        context.OffboardingRequests.Add(new OffboardingRequest
+        {
+            Id = 13,
+            Status = RequestStatus.PendingITApproval,
+            FullName = "Emp C",
+            LastDayOfWork = DateTime.Today,
+            Branch = "Beta",
+            HODEmail = "hod@example.com"
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new GetOffboardingStep2QueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["Alpha"]),
+            CreateUserManager().Object);
+
+        var result = await handler.Handle(new GetOffboardingStep2Query(13), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        Assert.False(result.IsSuccess);
+    }
+
+    private static ClaimsPrincipal BuildUser(string username, string title, string? company = null)
     {
         var identity = new ClaimsIdentity("mock");
         identity.AddClaim(new Claim(ClaimTypes.Name, username));
         identity.AddClaim(new Claim("UserTitle", title));
+        if (!string.IsNullOrWhiteSpace(company))
+        {
+            identity.AddClaim(new Claim("UserCompany", company));
+        }
         return new ClaimsPrincipal(identity);
     }
 

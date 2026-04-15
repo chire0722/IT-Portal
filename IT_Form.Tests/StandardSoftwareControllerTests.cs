@@ -128,7 +128,7 @@ namespace IT_Form.Tests
                 HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
             };
 
-            var result = await controller.EditLicense(1, "Office E3", null, true, false, null, 0, null, null);
+            var result = await controller.EditLicense(1, "Office E3", null, true, false, null, 0, null, null, null);
 
             var jsonResult = Assert.IsType<JsonResult>(result);
             Assert.False(GetAnonymousProperty<bool>(jsonResult.Value, "success"));

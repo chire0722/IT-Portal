@@ -82,6 +82,31 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    public async Task CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies()
+    {
+        using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        await context.SaveChangesAsync();
+
+        var handler = new CreateDepartmentCommandHandler(
+            context,
+            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+
+        var id = await handler.Handle(
+            new CreateDepartmentCommand("Regional Ops", null, true, [2]),
+            CancellationToken.None);
+
+        var entity = await context.Departments
+            .Include(department => department.DepartmentCompanies)
+            .SingleAsync(department => department.Id == id);
+
+        Assert.Equal("Regional Ops", entity.Name);
+        Assert.Equal([2], entity.DepartmentCompanies.Select(link => link.CompanyId).ToList());
+    }
+
+    [Fact]
     public async Task UpdateDepartmentHandler_ThrowsNotFound_WhenDepartmentMissing()
     {
         using var context = CreateContext();

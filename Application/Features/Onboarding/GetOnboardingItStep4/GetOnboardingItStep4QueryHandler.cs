@@ -1,4 +1,6 @@
 using IT_Form.Data;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Helpers;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
 using IT_Form.ViewModels;
@@ -10,13 +12,16 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep4
     {
         private readonly ApplicationDbContext _context;
         private readonly IOnboardingWizardService _onboardingWizardService;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
         public GetOnboardingItStep4QueryHandler(
             ApplicationDbContext context,
-            IOnboardingWizardService onboardingWizardService)
+            IOnboardingWizardService onboardingWizardService,
+            ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
             _onboardingWizardService = onboardingWizardService;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         public async Task<GetOnboardingItStep4Result> Handle(GetOnboardingItStep4Query request, CancellationToken cancellationToken)
@@ -35,6 +40,15 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep4
             if (dbRequest == null)
             {
                 return new GetOnboardingItStep4Result(GetOnboardingItStep4Status.NotFound, null, null, model.Id);
+            }
+
+            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, dbRequest.Branch))
+            {
+                return new GetOnboardingItStep4Result(
+                    GetOnboardingItStep4Status.Forbidden,
+                    null,
+                    "You can only access IT setup for requests in your assigned company scope.",
+                    model.Id);
             }
 
             if (dbRequest.Status != RequestStatus.PendingITApproval)

@@ -14,6 +14,13 @@ public sealed class EmailGroupIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+public sealed class EmailGroupIndexPageViewModel
+{
+    public int? SelectedCompanyId { get; init; }
+    public List<PageCompanyOption> CompanyOptions { get; init; } = [];
+    public List<EmailGroupIndexListItem> Items { get; init; } = [];
+}
+
 public sealed class EmailGroupEditorPageViewModel
 {
     public int Id { get; set; }

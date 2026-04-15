@@ -8,18 +8,23 @@ namespace IT_Form.Helpers;
 
 public static class CompanyScopeHelper
 {
+    private const string NoCompanyAccessSentinel = "__NO_COMPANY_ACCESS__";
+
     public static List<string> GetScopedCompanies(ClaimsPrincipal? user)
     {
-        if (user != null &&
-            (user.HasClaim("UserTitle", "IT") || user.HasClaim("UserTitle", "HR")))
-        {
-            return [];
-        }
-
-        return UserHelper.GetClaimValues(user, "UserCompany")
+        var companies = UserHelper.GetClaimValues(user, "UserCompany")
             .Where(company => !string.IsNullOrWhiteSpace(company))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        if (companies.Count > 0)
+        {
+            return companies;
+        }
+
+        return RequiresExplicitCompanyScope(user)
+            ? [NoCompanyAccessSentinel]
+            : [];
     }
 
     public static bool HasScopedCompanies(ClaimsPrincipal? user)
@@ -203,6 +208,12 @@ public static class CompanyScopeHelper
             .Where(company => !string.IsNullOrWhiteSpace(company))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+    private static bool RequiresExplicitCompanyScope(ClaimsPrincipal? user)
+        => user?.Identity?.IsAuthenticated == true &&
+           user.HasClaim(claim =>
+               claim.Type == "UserTitle" &&
+               !string.IsNullOrWhiteSpace(claim.Value));
 
     private static List<CompanyScopeQueryMatcher> BuildQueryMatchers(IEnumerable<string> scopedCompanies)
         => NormalizeCompanies(scopedCompanies)

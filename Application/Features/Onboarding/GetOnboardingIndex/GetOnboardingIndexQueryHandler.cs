@@ -1,4 +1,5 @@
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using Mapster;
@@ -23,7 +24,7 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingIndex
         public async Task<GetOnboardingIndexResult> Handle(GetOnboardingIndexQuery request, CancellationToken cancellationToken)
         {
             var user = _currentUserAccessor.User;
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(user);
+            var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
             var requests = _context.OnboardingRequests
                 .AsNoTracking()
                 .AsQueryable();

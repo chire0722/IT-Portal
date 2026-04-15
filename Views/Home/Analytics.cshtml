@@ -1,13 +1,19 @@
+@using IT_Form.Application.Common.Models
 @model IT_Form.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Strategic Analytics";
     var isIT = User.HasClaim("UserTitle", "IT");
     var isHR = User.HasClaim("UserTitle", "HR");
     var statsPeriodLabel = ViewData["StatsPeriodLabel"]?.ToString() ?? "Selected Period";
+    var companyOptions = ViewData["CompanyOptions"] as IReadOnlyList<PageCompanyOption> ?? Array.Empty<PageCompanyOption>();
+    var selectedCompanyId = ViewData["SelectedCompanyId"] is int companyId ? companyId : (int?)null;
+    var selectedCompanyDisplayName = ViewData["SelectedCompanyDisplayName"]?.ToString();
     var activeTab = Context.Request.Query["tab"].ToString();
     if (string.IsNullOrEmpty(activeTab)) activeTab = isHR ? "hr" : "it";
     if (activeTab == "hr" && !isHR) activeTab = "it";
     if (activeTab == "it" && !isIT) activeTab = "hr";
+    var companyQuerySuffix = selectedCompanyId.HasValue ? $"&companyId={selectedCompanyId.Value}" : string.Empty;
+    var companyPlaceholder = companyOptions.Count > 0 ? "All Accessible Companies" : "No companies available";
 
     string Ser(object o) => System.Text.Json.JsonSerializer.Serialize(o);
 }
@@ -17,13 +23,18 @@
         <h2 class="h3 mb-1 fw-bold text-dark">
             <i class="bi bi-graph-up-arrow me-2 text-primary" aria-hidden="true"></i>Strategic Analytics &amp; Insights
         </h2>
-        <span class="text-muted">Data-driven intelligence for @Model.SelectedYear.</span>
+        <span class="text-muted">Data-driven intelligence for @Model.SelectedYear@(string.IsNullOrWhiteSpace(selectedCompanyDisplayName) ? "." : $" / {selectedCompanyDisplayName}.")</span>
     </div>
-    <div class="d-flex align-items-center bg-white border rounded-pill px-3 py-1 shadow-sm">
-        <i class="bi bi-calendar-event text-primary me-2" aria-hidden="true"></i>
-        <label class="small fw-bold text-muted me-2 mb-0">Year:</label>
-        <select class="form-select form-select-sm border-0 fw-bold" style="width:auto;background:transparent;cursor:pointer;"
-            onchange="window.location.href='/Home/Analytics?tab=@activeTab&year='+this.value">
+    <form method="get" class="d-flex align-items-center flex-wrap gap-2 bg-white border rounded-pill px-3 py-1 shadow-sm">
+        <input type="hidden" name="tab" value="@activeTab" />
+
+        <i class="bi bi-calendar-event text-primary me-1" aria-hidden="true"></i>
+        <label class="small fw-bold text-muted mb-0" for="analyticsYear">Year:</label>
+        <select id="analyticsYear"
+                name="year"
+                class="form-select form-select-sm border-0 fw-bold"
+                style="width:auto;background:transparent;cursor:pointer;"
+                onchange="this.form.submit()">
             @foreach (var yr in Model.AvailableYears)
             {
                 @if (yr == Model.SelectedYear)
@@ -34,10 +45,32 @@
                 {
                     <option value="@yr">@yr</option>
                 }
-
             }
         </select>
-    </div>
+
+        <span class="text-muted small">|</span>
+
+        <i class="bi bi-building text-primary me-1" aria-hidden="true"></i>
+        <label class="small fw-bold text-muted mb-0" for="analyticsCompany">Company:</label>
+        <select id="analyticsCompany"
+                name="companyId"
+                class="form-select form-select-sm border-0 fw-bold"
+                style="width:auto;min-width:220px;background:transparent;cursor:pointer;"
+                onchange="this.form.submit()">
+            <option value="">@companyPlaceholder</option>
+            @foreach (var company in companyOptions)
+            {
+                @if (selectedCompanyId == company.Id)
+                {
+                    <option value="@company.Id" selected>@company.DisplayName</option>
+                }
+                else
+                {
+                    <option value="@company.Id">@company.DisplayName</option>
+                }
+            }
+        </select>
+    </form>
 </div>
 
 <!-- Navigation Tabs -->
@@ -45,7 +78,7 @@
     @if (isHR)
     {
         <li class="nav-item">
-            <a class="nav-link @(activeTab == "hr" ? "active fw-bold" : "text-muted")" href="?tab=hr&year=@Model.SelectedYear">
+            <a class="nav-link @(activeTab == "hr" ? "active fw-bold" : "text-muted")" href="?tab=hr&year=@Model.SelectedYear@companyQuerySuffix">
                 <i class="bi bi-people me-2" aria-hidden="true"></i>HR Intelligence
             </a>
         </li>
@@ -53,7 +86,7 @@
     @if (isIT)
     {
         <li class="nav-item">
-            <a class="nav-link @(activeTab == "it" ? "active fw-bold" : "text-muted")" href="?tab=it&year=@Model.SelectedYear">
+            <a class="nav-link @(activeTab == "it" ? "active fw-bold" : "text-muted")" href="?tab=it&year=@Model.SelectedYear@companyQuerySuffix">
                 <i class="bi bi-server me-2" aria-hidden="true"></i>IT Infrastructure
             </a>
         </li>
@@ -423,20 +456,20 @@ else if (activeTab == "it")
     <div class="row g-4 mb-4 animate-fade-in delay-300">
         <div class="col-lg-6">
             <div class="card glass-card border-0 shadow">
-                <div class="card-header bg-transparent border-0 pt-4 pb-2">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2 text-primary" aria-hidden="true"></i>Fleet Composition (Category)</h6>
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 text-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-primary" aria-hidden="true"></i>Fleet Composition (Category)</h6>
                 </div>
-                <div class="card-body px-4 pb-4 pt-1" style="height:300px">
+                <div class="card-body d-flex align-items-center justify-content-center" style="height:300px">
                     <canvas id="typeChart"></canvas>
                 </div>
             </div>
         </div>
         <div class="col-lg-6">
             <div class="card glass-card border-0 shadow">
-                <div class="card-header bg-transparent border-0 pt-4 pb-2">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-windows me-2 text-primary" aria-hidden="true"></i>OS Compliance — Windows Distribution</h6>
+                <div class="card-header bg-transparent border-0 pt-4 pb-0 text-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-primary" aria-hidden="true"></i>OS Compliance — Windows Distribution</h6>
                 </div>
-                <div class="card-body px-4 pb-4 pt-1" style="height:300px">
+                <div class="card-body d-flex align-items-center justify-content-center" style="height:300px">
                     <canvas id="osChart"></canvas>
                 </div>
             </div>
@@ -1128,8 +1161,8 @@ else if (activeTab == "it")
             <text>
             doughnut('assetDistChart', @Html.Raw(Ser(Model.AssetStatusBreakdown)), { legend: 'bottom' });
             doughnut('swDistChart',    @Html.Raw(Ser(Model.SoftwareLicenseBreakdown)), { legend: 'bottom' });
-            hBar('typeChart',    @Html.Raw(Ser(Model.AssetTypeDistribution)),        palette[0]);
-            hBar('osChart',      @Html.Raw(Ser(Model.WindowsVersionDistribution)),   palette[2]);
+            doughnut('typeChart', @Html.Raw(Ser(Model.AssetTypeDistribution)), { legend: 'bottom' });
+            doughnut('osChart',   @Html.Raw(Ser(Model.WindowsVersionDistribution)), { legend: 'bottom' });
             </text>
         }
         });

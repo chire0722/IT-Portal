@@ -40,6 +40,11 @@ namespace IT_Form.Application.Features.Offboarding.RejectOffboardingRequest
                 return ProcessResult<object>.NotFound();
             }
 
+            if (!CompanyScopeHelper.CanAccessCompany(user, offboardingRequest.Branch))
+            {
+                return ProcessResult<object>.Forbidden();
+            }
+
             if (!await IsUserAuthorizedForRequest(offboardingRequest))
             {
                 return ProcessResult<object>.Forbidden();

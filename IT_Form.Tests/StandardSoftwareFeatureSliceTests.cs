@@ -1,9 +1,13 @@
 using System;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense;
 using IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense;
 using IT_Form.Application.Features.StandardSoftware.DeleteSoftwareLicense;
+using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware;
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Features.StandardSoftware.Writes.CreateStandardSoftware;
@@ -23,6 +27,11 @@ namespace IT_Form.Tests;
 
 public class StandardSoftwareFeatureSliceTests
 {
+    public StandardSoftwareFeatureSliceTests()
+    {
+        MapsterConfig.RegisterMappings();
+    }
+
     [Fact]
     public void CreateStandardSoftwareValidator_Fails_WhenNameMissing()
     {
@@ -70,8 +79,10 @@ public class StandardSoftwareFeatureSliceTests
         context.StandardSoftware.Add(new StandardSoftware { Id = 10, SoftwareName = "Office" });
         await context.SaveChangesAsync();
 
-        var handler = new AddSoftwareLicenseCommandHandler(context);
-        var result = await handler.Handle(new AddSoftwareLicenseCommand(10, "Office E3", null, true, false, null, 10, null, null), CancellationToken.None);
+        var handler = new AddSoftwareLicenseCommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+        var result = await handler.Handle(new AddSoftwareLicenseCommand(10, "Office E3", null, true, false, null, 10, null, null, []), CancellationToken.None);
 
         Assert.Equal(AddSoftwareLicenseStatus.InvalidSubscriptionExpiry, result.Status);
     }
@@ -83,7 +94,9 @@ public class StandardSoftwareFeatureSliceTests
         context.StandardSoftware.Add(new StandardSoftware { Id = 11, SoftwareName = "Microsoft 365" });
         await context.SaveChangesAsync();
 
-        var handler = new AddSoftwareLicenseCommandHandler(context);
+        var handler = new AddSoftwareLicenseCommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
         var result = await handler.Handle(
             new AddSoftwareLicenseCommand(
                 11,
@@ -94,7 +107,8 @@ public class StandardSoftwareFeatureSliceTests
                 DateTime.UtcNow.AddDays(30),
                 3,
                 null,
-                null),
+                null,
+                []),
             CancellationToken.None);
 
         Assert.Equal(AddSoftwareLicenseStatus.Added, result.Status);
@@ -103,6 +117,35 @@ public class StandardSoftwareFeatureSliceTests
         Assert.Equal(3, license.ContractLimit);
         Assert.Equal(3, license.Keys.Count);
         Assert.All(license.Keys, key => Assert.False(key.IsAssigned));
+    }
+
+    [Fact]
+    public async Task AddSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToCreateGlobalVersion()
+    {
+        using var context = CreateContext();
+        context.StandardSoftware.Add(new StandardSoftware { Id = 12, SoftwareName = "Adobe Acrobat" });
+        await context.SaveChangesAsync();
+
+        var handler = new AddSoftwareLicenseCommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+        var result = await handler.Handle(
+            new AddSoftwareLicenseCommand(
+                12,
+                "Adobe Acrobat Pro",
+                null,
+                false,
+                false,
+                null,
+                5,
+                null,
+                null,
+                []),
+            CancellationToken.None);
+
+        Assert.Equal(AddSoftwareLicenseStatus.Added, result.Status);
+        var license = await context.SoftwareLicenses.Include(item => item.SoftwareLicenseCompanies).SingleAsync();
+        Assert.Empty(license.SoftwareLicenseCompanies);
     }
 
     [Fact]
@@ -123,7 +166,9 @@ public class StandardSoftwareFeatureSliceTests
         context.SoftwareLicenses.Add(license);
         await context.SaveChangesAsync();
 
-        var handler = new EditSoftwareLicenseCommandHandler(context);
+        var handler = new EditSoftwareLicenseCommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
         var result = await handler.Handle(
             new EditSoftwareLicenseCommand(
                 30,
@@ -134,11 +179,54 @@ public class StandardSoftwareFeatureSliceTests
                 DateTime.UtcNow.AddDays(60),
                 0,
                 null,
-                null),
+                null,
+                []),
             CancellationToken.None);
 
         Assert.Equal(EditSoftwareLicenseStatus.InvalidSeatLimit, result.Status);
         Assert.Contains("assigned seat", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task EditSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToEditScopedVersion()
+    {
+        using var context = CreateContext();
+        context.Companies.Add(new Company { Id = 3, Name = "Alpha", IsActive = true });
+        var license = new SoftwareLicense
+        {
+            Id = 33,
+            StandardSoftwareId = 1,
+            SoftwareName = "Office E3",
+            ContractLimit = 2,
+            SoftwareLicenseCompanies =
+            [
+                new SoftwareLicenseCompany { CompanyId = 3 }
+            ]
+        };
+        context.SoftwareLicenses.Add(license);
+        await context.SaveChangesAsync();
+
+        var handler = new EditSoftwareLicenseCommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+        var result = await handler.Handle(
+            new EditSoftwareLicenseCommand(
+                33,
+                "Office E5",
+                null,
+                false,
+                false,
+                null,
+                4,
+                null,
+                null,
+                []),
+            CancellationToken.None);
+
+        Assert.Equal(EditSoftwareLicenseStatus.Updated, result.Status);
+        var saved = await context.SoftwareLicenses.Include(item => item.SoftwareLicenseCompanies).SingleAsync(item => item.Id == 33);
+        Assert.Equal("Office E5", saved.SoftwareName);
+        Assert.Empty(saved.SoftwareLicenseCompanies);
     }
 
     [Fact]
@@ -154,6 +242,116 @@ public class StandardSoftwareFeatureSliceTests
         var result = await handler.Handle(new DeleteSoftwareLicenseCommand(20), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareLicenseStatus.HasAssignedKeys, result.Status);
+    }
+
+    [Fact]
+    public async Task StandardSoftwareIndexQuery_ShowsLicensesAcrossCompanies_ForCompanyScopedItUser()
+    {
+        using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        context.StandardSoftware.Add(new StandardSoftware
+        {
+            Id = 100,
+            SoftwareName = "Microsoft 365",
+            IsActive = true,
+            Licenses =
+            [
+                new SoftwareLicense
+                {
+                    Id = 101,
+                    SoftwareName = "Alpha License",
+                    StandardSoftwareId = 100,
+                    SoftwareLicenseCompanies =
+                    [
+                        new SoftwareLicenseCompany { CompanyId = 1 }
+                    ]
+                },
+                new SoftwareLicense
+                {
+                    Id = 102,
+                    SoftwareName = "Beta License",
+                    StandardSoftwareId = 100,
+                    SoftwareLicenseCompanies =
+                    [
+                        new SoftwareLicenseCompany { CompanyId = 2 }
+                    ]
+                }
+            ]
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new GetStandardSoftwareIndexPageQueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["Alpha"]));
+
+        var result = await handler.Handle(
+            new GetStandardSoftwareIndexPageQuery(null, null, null, null),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var software = Assert.Single(result.Data!.SoftwareList);
+        Assert.Equal([101, 102], software.Licenses.Select(license => license.Id).OrderBy(id => id).ToArray());
+        Assert.Equal(2, result.Data.CompanyOptions.Count);
+    }
+
+    [Fact]
+    public async Task StandardSoftwareIndexQuery_FiltersBySelectedCompany_WhileKeepingGlobalVersions()
+    {
+        using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        context.StandardSoftware.Add(new StandardSoftware
+        {
+            Id = 110,
+            SoftwareName = "Adobe Acrobat",
+            IsActive = true,
+            Licenses =
+            [
+                new SoftwareLicense
+                {
+                    Id = 111,
+                    SoftwareName = "Global License",
+                    StandardSoftwareId = 110
+                },
+                new SoftwareLicense
+                {
+                    Id = 112,
+                    SoftwareName = "Alpha License",
+                    StandardSoftwareId = 110,
+                    SoftwareLicenseCompanies =
+                    [
+                        new SoftwareLicenseCompany { CompanyId = 1 }
+                    ]
+                },
+                new SoftwareLicense
+                {
+                    Id = 113,
+                    SoftwareName = "Beta License",
+                    StandardSoftwareId = 110,
+                    SoftwareLicenseCompanies =
+                    [
+                        new SoftwareLicenseCompany { CompanyId = 2 }
+                    ]
+                }
+            ]
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new GetStandardSoftwareIndexPageQueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+
+        var result = await handler.Handle(
+            new GetStandardSoftwareIndexPageQuery(null, null, null, 1),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var software = Assert.Single(result.Data!.SoftwareList);
+        Assert.Equal([111, 112], software.Licenses.Select(license => license.Id).OrderBy(id => id).ToArray());
+        Assert.Equal(1, result.Data.SelectedCompanyId);
     }
 
     [Fact]
@@ -180,5 +378,13 @@ public class StandardSoftwareFeatureSliceTests
         encryption.Setup(x => x.DecryptKey(It.IsAny<string>())).Returns((string s) => s);
 
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
+    }
+
+    private static ICurrentUserAccessor CreateCurrentUserAccessor()
+    {
+        var mock = new Mock<ICurrentUserAccessor>();
+        mock.SetupGet(accessor => accessor.User).Returns(new ClaimsPrincipal(new ClaimsIdentity()));
+        mock.SetupGet(accessor => accessor.UserName).Returns((string?)null);
+        return mock.Object;
     }
 }

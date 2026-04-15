@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using IT_Form.Application.Common.Models;
 
 namespace IT_Form.Models.ViewModels
 {
@@ -11,5 +12,7 @@ namespace IT_Form.Models.ViewModels
         public int ExpiredWarrantyCount { get; set; }
         public int ExpiringSoonCount { get; set; }
         public IEnumerable<ITAsset> Assets { get; set; } = new List<ITAsset>();
+        public int? SelectedCompanyId { get; set; }
+        public List<PageCompanyOption> CompanyOptions { get; set; } = [];
     }
 }

@@ -19,7 +19,13 @@ public sealed class UserManagementCompanyOption
     public string DisplayName { get; init; } = string.Empty;
 }
 
+public sealed class UserManagementDepartmentOption
+{
+    public string Name { get; init; } = string.Empty;
+}
+
 public sealed class UserManagementEditorPageViewModel : UserManagementViewModel
 {
+    public List<UserManagementDepartmentOption> Departments { get; init; } = [];
     public List<UserManagementCompanyOption> Companies { get; init; } = [];
 }

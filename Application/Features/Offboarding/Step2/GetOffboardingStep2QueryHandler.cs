@@ -1,18 +1,28 @@
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Features.Offboarding.ActionWrites;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 
 namespace IT_Form.Application.Features.Offboarding.Step2
 {
     public sealed class GetOffboardingStep2QueryHandler : IRequestHandler<GetOffboardingStep2Query, ProcessResult<OffboardingRequest>>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public GetOffboardingStep2QueryHandler(ApplicationDbContext context)
+        public GetOffboardingStep2QueryHandler(
+            ApplicationDbContext context,
+            ICurrentUserAccessor currentUserAccessor,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
+            _userManager = userManager;
         }
 
         public async Task<ProcessResult<OffboardingRequest>> Handle(GetOffboardingStep2Query request, CancellationToken cancellationToken)
@@ -21,6 +31,16 @@ namespace IT_Form.Application.Features.Offboarding.Step2
             if (offboardingRequest == null)
             {
                 return ProcessResult<OffboardingRequest>.NotFound();
+            }
+
+            if (!await OffboardingActionWriteHelpers.IsUserAuthorizedForRequest(
+                    _context,
+                    _currentUserAccessor.User,
+                    _userManager,
+                    offboardingRequest,
+                    _currentUserAccessor.UserName))
+            {
+                return ProcessResult<OffboardingRequest>.Forbidden();
             }
 
             if (offboardingRequest.Status != RequestStatus.PendingITApproval)

@@ -1,6 +1,7 @@
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Application.Common.Validation;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -52,7 +53,7 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
         IEnumerable<string>? selectedCompanies,
         CancellationToken cancellationToken)
     {
-        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+        var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
         if (scopedCompanies.Count == 0)
         {
             return;
@@ -67,7 +68,7 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
             throw new ValidationException([new ValidationFailure(string.Empty, "You can only assign users to your own company scope.")]);
         }
 
-        var knownCompanies = await CompanyScopeHelper.LoadAccessibleCompanyDisplayNamesAsync(_context, _currentUserAccessor.User, cancellationToken);
+        var knownCompanies = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(_context, _currentUserAccessor.User, cancellationToken);
         if (!requestedCompanies.All(company => knownCompanies.Any(knownCompany => CompanyHelper.IsMatch(knownCompany, company))))
         {
             throw new ValidationException([new ValidationFailure(string.Empty, "One or more selected companies are not available in your company scope.")]);

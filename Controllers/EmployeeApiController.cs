@@ -31,20 +31,17 @@ namespace IT_Form.Controllers
         [HttpGet("import-template")]
         public async Task<IActionResult> DownloadTemplate()
         {
+            var cancellationToken = HttpContext?.RequestAborted ?? CancellationToken.None;
             var dbDepartments = await _context.Departments
                 .AsNoTracking()
                 .Where(d => d.IsActive)
                 .Select(d => d.Name)
                 .OrderBy(n => n)
                 .ToListAsync();
-            var dbCompanies = (await _context.Companies
-                .AsNoTracking()
-                .Where(c => c.IsActive)
-                .Select(c => new { c.Name, c.Lot })
-                .ToListAsync())
-                .Select(c => string.IsNullOrEmpty(c.Lot) ? c.Name : $"{c.Name} ({c.Lot})")
-                .OrderBy(n => n)
-                .ToList();
+            var dbCompanies = await CompanyScopeHelper.LoadAccessibleCompanyDisplayNamesAsync(
+                _context,
+                User,
+                cancellationToken);
 
             using (var workbook = new XLWorkbook())
             {
@@ -154,7 +151,10 @@ namespace IT_Form.Controllers
                 .Where(e => e.EmployeeID != null)
                 .Select(e => e.EmployeeID)
                 .ToListAsync();
-            var activeCompanies = await _context.Companies.Where(c => c.IsActive).ToListAsync();
+            var activeCompanies = await _context.Companies
+                .AsNoTracking()
+                .Where(c => c.IsActive)
+                .ToListAsync();
 
             using (var stream = new MemoryStream())
             {
@@ -225,6 +225,12 @@ namespace IT_Form.Controllers
                             company = matchedCompany.DisplayName;
                         }
 
+                        if (string.IsNullOrWhiteSpace(company) || !CompanyScopeHelper.CanAccessCompany(User, company))
+                        {
+                            invalidCompanyRows++;
+                            continue;
+                        }
+
                         var request = new OnboardingRequest
                         {
                             EmployeeID = empNum,
@@ -283,23 +289,9 @@ namespace IT_Form.Controllers
             if (employee == null)
                 return NotFound("Employee not found.");
 
-            if (!User.HasClaim("UserTitle", "IT") && !User.HasClaim("UserTitle", "HR"))
+            if (!CompanyScopeHelper.CanAccessCompany(User, employee.Branch))
             {
-                var userCompanies = User.Claims
-                    .Where(c => c.Type == "UserCompany")
-                    .Select(c => c.Value)
-                    .Where(c => !string.IsNullOrWhiteSpace(c))
-                    .ToList();
-
-                if (!userCompanies.Any())
-                {
-                    return Forbid("You are not authorized to view employee details (Missing Company Assignment).");
-                }
-
-                if (string.IsNullOrEmpty(employee.Branch) || !userCompanies.Contains(employee.Branch))
-                {
-                    return Forbid("You are not authorized to view employee details from this company branch.");
-                }
+                return Forbid("You are not authorized to view employee details from this company branch.");
             }
 
             var assets = employee.IssuedAssets.Select(a => new

@@ -1,5 +1,6 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Features.Offboarding;
 using IT_Form.Application.Features.Offboarding.ActionWrites;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -53,7 +54,7 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
                 return ProcessResult<OffboardingDetailsPageViewModel>.NotFound();
             }
 
-            if (!await OffboardingActionWriteHelpers.IsUserAuthorizedForRequest(
+            if (!await OffboardingReadAccessSupport.IsUserAuthorizedForRequest(
                     _context,
                     _currentUserAccessor.User,
                     _userManager,

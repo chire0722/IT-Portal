@@ -1,4 +1,5 @@
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -40,17 +41,9 @@ namespace IT_Form.Services
                 .Where(r => ids.Contains(r.Id))
                 .ToListAsync(cancellationToken);
 
-            if (!user.HasClaim("UserTitle", "IT"))
-            {
-                var userCompanies = UserHelper.GetClaimValues(user, "UserCompany");
-                if (userCompanies.Any())
-                {
-                    requests = requests.Where(r =>
-                        r.Branch != null &&
-                        userCompanies.Any(c => CompanyHelper.IsMatch(c, r.Branch)))
-                        .ToList();
-                }
-            }
+            requests = requests
+                .Where(request => HrRecordReadCompanyScopeSupport.CanAccessCompany(user, request.Branch))
+                .ToList();
 
             if (!requests.Any())
             {
@@ -99,14 +92,16 @@ namespace IT_Form.Services
 
             var currentUsername = user.Identity?.Name;
             var isCreator = request.CreatedByUserId == currentUsername;
+            var isPrivileged = user.HasClaim("UserTitle", "IT") || user.HasClaim("UserTitle", "HR");
 
-            if (!user.HasClaim("UserTitle", "IT") && !user.HasClaim("UserTitle", "HR") && !isCreator)
+            if (!HrRecordReadCompanyScopeSupport.CanAccessCompany(user, request.Branch))
             {
-                var userCompanies = UserHelper.GetClaimValues(user, "UserCompany");
-                if (request.Branch != null && userCompanies.Any() && !userCompanies.Any(c => CompanyHelper.IsMatch(c, request.Branch)))
-                {
-                    return ProcessResult<BinaryFilePayload>.Forbidden();
-                }
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
+            if (!isPrivileged && !isCreator)
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
             }
 
             if (request.RequesterSignedAt.HasValue && !string.IsNullOrEmpty(request.RequesterSignatureHmac))

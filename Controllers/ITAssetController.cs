@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using IT_Form.Data;
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.ITAsset.EditItAsset;
+using IT_Form.Application.Common.Support;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using System.Linq;
@@ -31,9 +32,26 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset
-        public async Task<IActionResult> Index(string searchString, AssetType? assetType, AssetStatus? status)
+        public async Task<IActionResult> Index(string searchString, AssetType? assetType, AssetStatus? status, int? companyId = null)
         {
+            var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, User, CancellationToken.None);
+            var selectedCompany = companyId.HasValue
+                ? companyOptions.FirstOrDefault(company => company.Id == companyId.Value)
+                : null;
+            if (companyId.HasValue && selectedCompany == null)
+            {
+                return Forbid();
+            }
+
             var assetsQuery = ApplyAssetCompanyScope(_context.ITAssets.AsQueryable());
+
+            if (selectedCompany != null)
+            {
+                assetsQuery = CompanyScopeHelper.ApplyCompanyScope(
+                    assetsQuery,
+                    [selectedCompany.DisplayName],
+                    asset => asset.Company);
+            }
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -56,6 +74,7 @@ namespace IT_Form.Controllers
             ViewData["CurrentFilter"] = searchString;
             ViewData["AssetTypeFilter"] = assetType;
             ViewData["StatusFilter"] = status;
+            ViewData["CompanyFilter"] = companyId;
 
             // Calculate Analytics
             var today = DateTime.Today;
@@ -68,7 +87,9 @@ namespace IT_Form.Controllers
                 UnderWarrantyCount = await assetsQuery.CountAsync(a => a.WarrantyExpiry != null && a.WarrantyExpiry >= today),
                 ExpiredWarrantyCount = await assetsQuery.CountAsync(a => a.WarrantyExpiry != null && a.WarrantyExpiry < today),
                 ExpiringSoonCount = await assetsQuery.CountAsync(a => a.WarrantyExpiry != null && a.WarrantyExpiry >= today && a.WarrantyExpiry <= thirtyDaysFromNow),
-                Assets = await assetsQuery.Include(a => a.IssuedHistory).ThenInclude(ih => ih.OnboardingRequest).OrderBy(a => a.AssetTag).ToListAsync()
+                Assets = await assetsQuery.Include(a => a.IssuedHistory).ThenInclude(ih => ih.OnboardingRequest).OrderBy(a => a.AssetTag).ToListAsync(),
+                SelectedCompanyId = companyId,
+                CompanyOptions = companyOptions
             };
 
             // Populate user list for the Device Verification Link Generator
@@ -78,7 +99,7 @@ namespace IT_Form.Controllers
                 .Where(u => u.IsActive)
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(User);
             ViewBag.UserList = scopedCompanies.Count == 0
                 ? activeUsers
                 : activeUsers
@@ -89,9 +110,26 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset/ExportCsv
-        public async Task<IActionResult> ExportCsv(string searchString, AssetType? assetType, AssetStatus? status)
+        public async Task<IActionResult> ExportCsv(string searchString, AssetType? assetType, AssetStatus? status, int? companyId = null)
         {
+            var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, User, CancellationToken.None);
+            var selectedCompany = companyId.HasValue
+                ? companyOptions.FirstOrDefault(company => company.Id == companyId.Value)
+                : null;
+            if (companyId.HasValue && selectedCompany == null)
+            {
+                return Forbid();
+            }
+
             var assets = ApplyAssetCompanyScope(_context.ITAssets.AsQueryable());
+
+            if (selectedCompany != null)
+            {
+                assets = CompanyScopeHelper.ApplyCompanyScope(
+                    assets,
+                    [selectedCompany.DisplayName],
+                    asset => asset.Company);
+            }
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -167,7 +205,7 @@ namespace IT_Form.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (itAsset == null) return NotFound();
-            if (!CompanyScopeHelper.CanAccessCompany(User, itAsset.Company)) return Forbid();
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(User, itAsset.Company)) return Forbid();
 
             // Log the Read action
             await _context.LogActionAsync(nameof(ITAsset), id.Value.ToString(), "Read", $"Viewed IT Asset details: {itAsset.AssetTag} ({itAsset.Model})");
@@ -188,7 +226,7 @@ namespace IT_Form.Controllers
         public async Task<IActionResult> Create([Bind("AssetTag,SerialNumber,AssetType,OtherAssetType,Status,Model,Company,Location,PurchaseDate,WarrantyExpiry,RAM,Storage,WindowsVersion,DDRType,NoExtendWarranty")] ITAsset itAsset, int? AssignedEmployeeId, string? CustomEmployeeName)
         {
             if (itAsset == null) return View(new ITAsset());
-            if (!CompanyScopeHelper.CanAccessCompany(User, itAsset.Company)) return Forbid();
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(User, itAsset.Company)) return Forbid();
 
             if (!ModelState.IsValid)
             {
@@ -221,7 +259,7 @@ namespace IT_Form.Controllers
 
             var itAsset = await _context.ITAssets.FindAsync(id);
             if (itAsset == null) return NotFound();
-            if (!CompanyScopeHelper.CanAccessCompany(User, itAsset.Company)) return Forbid();
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(User, itAsset.Company)) return Forbid();
 
             if (itAsset.Status == AssetStatus.Issued)
             {
@@ -255,7 +293,7 @@ namespace IT_Form.Controllers
         public async Task<IActionResult> Edit(int id, [Bind("Id,AssetTag,SerialNumber,AssetType,OtherAssetType,Status,Model,Company,Location,PurchaseDate,WarrantyExpiry,RAM,Storage,WindowsVersion,DDRType,NoExtendWarranty")] ITAsset itAsset, int? AssignedEmployeeId, string? CustomEmployeeName)
         {
             if (id != itAsset.Id) return NotFound();
-            if (!CompanyScopeHelper.CanAccessCompany(User, itAsset.Company)) return Forbid();
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(User, itAsset.Company)) return Forbid();
 
             if (!ModelState.IsValid)
             {
@@ -301,7 +339,7 @@ namespace IT_Form.Controllers
 
             var itAsset = await _context.ITAssets.FirstOrDefaultAsync(m => m.Id == id);
             if (itAsset == null) return NotFound();
-            if (!CompanyScopeHelper.CanAccessCompany(User, itAsset.Company)) return Forbid();
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(User, itAsset.Company)) return Forbid();
 
             return View(itAsset);
         }
@@ -347,7 +385,7 @@ namespace IT_Form.Controllers
         {
             var asset = await _context.ITAssets.FindAsync(id);
             if (asset == null) return NotFound();
-            if (!CompanyScopeHelper.CanAccessCompany(User, asset.Company)) return Forbid();
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(User, asset.Company)) return Forbid();
 
             asset.NoExtendWarranty = !asset.NoExtendWarranty;
             if (!asset.NoExtendWarranty)
@@ -581,7 +619,7 @@ namespace IT_Form.Controllers
 
         private async Task PopulateCreateEditViewBagsAsync(string? selectedCompany = null)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(User);
             ViewBag.WindowsVersions = await _context.SoftwareLicenses
                 .Where(s => s.SystemMappingKey == "OS")
                 .OrderBy(s => s.SoftwareName)
@@ -604,13 +642,13 @@ namespace IT_Form.Controllers
                 .ToListAsync();
             ViewBag.Employees = new SelectList(employees, "Id", "Name");
 
-            var companies = await CompanyScopeHelper.LoadAccessibleCompanyDisplayNamesAsync(_context, User, CancellationToken.None);
+            var companies = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(_context, User, CancellationToken.None);
             ViewBag.Companies = new SelectList(companies, selectedCompany);
         }
 
         private IQueryable<ITAsset> ApplyAssetCompanyScope(IQueryable<ITAsset> query)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(User);
             if (scopedCompanies.Count == 0)
             {
                 return query;

@@ -1,6 +1,8 @@
 using IT_Form.Data;
 using IT_Form.Application.DTOs.Options;
+using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Features.StandardSoftware;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.ViewModels;
@@ -13,10 +15,12 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
     public sealed class GetOnboardingItStep3QueryHandler : IRequestHandler<GetOnboardingItStep3Query, GetOnboardingItStep3Result>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public GetOnboardingItStep3QueryHandler(ApplicationDbContext context)
+        public GetOnboardingItStep3QueryHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         public async Task<GetOnboardingItStep3Result> Handle(GetOnboardingItStep3Query request, CancellationToken cancellationToken)
@@ -30,11 +34,16 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
             var dbRequest = await _context.OnboardingRequests
                 .AsNoTracking()
                 .Where(r => r.Id == model.Id)
-                .Select(r => new { r.Id, r.Status })
+                .Select(r => new { r.Id, r.Status, r.Branch })
                 .FirstOrDefaultAsync(cancellationToken);
             if (dbRequest == null)
             {
                 return Empty(GetOnboardingItStep3Status.NotFound);
+            }
+
+            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, dbRequest.Branch))
+            {
+                return Empty(GetOnboardingItStep3Status.Forbidden, "You can only access IT setup for requests in your assigned company scope.", model.Id);
             }
 
             if (dbRequest.Status != RequestStatus.PendingITApproval)
@@ -45,16 +54,37 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
             await EnsureIssuedAssetsLoadedAsync(model, cancellationToken);
             model.CurrentStep = 3;
 
-            var availableSoftware = await _context.SoftwareLicenses
+            var companyIds = await ResolveCompanyIdsAsync(dbRequest.Branch, cancellationToken);
+
+            var availableSoftwareQuery = _context.SoftwareLicenses
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (companyIds.Count > 0)
+            {
+                availableSoftwareQuery = availableSoftwareQuery.Where(license =>
+                    !license.SoftwareLicenseCompanies.Any() ||
+                    license.SoftwareLicenseCompanies.Any(link => companyIds.Contains(link.CompanyId)));
+            }
+            else
+            {
+                availableSoftwareQuery = availableSoftwareQuery.Where(license => !license.SoftwareLicenseCompanies.Any());
+            }
+
+            var availableSoftware = await availableSoftwareQuery
                 .AsNoTracking()
                 .OrderBy(s => s.StandardSoftware != null ? s.StandardSoftware.SoftwareName : s.SoftwareName)
                 .ThenBy(s => s.SoftwareName)
                 .ProjectToType<SoftwareLicenseOptionDto>()
                 .ToListAsync(cancellationToken);
 
+            var availableLicenseIds = availableSoftware
+                .Select(license => license.Id)
+                .ToArray();
+
             var standardSoftware = await _context.StandardSoftware
                 .AsNoTracking()
-                .Where(s => s.IsActive)
+                .Where(s => s.IsActive && s.Licenses.Any(license => availableLicenseIds.Contains(license.Id)))
                 .OrderBy(s => s.SoftwareName)
                 .ProjectToType<StandardSoftwareOptionDto>()
                 .ToListAsync(cancellationToken);
@@ -62,6 +92,7 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
             foreach (var software in standardSoftware)
             {
                 software.Licenses = software.Licenses
+                    .Where(license => availableLicenseIds.Contains(license.Id))
                     .OrderBy(license => license.SoftwareName)
                     .ToList();
             }
@@ -107,19 +138,38 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
 
             var emailGroups = await _context.EmailGroups
                 .AsNoTracking()
-                .Where(e => e.IsActive)
+                .Include(group => group.EmailGroupCompanies)
+                .Where(group => group.IsActive &&
+                                (companyIds.Count > 0
+                                    ? !group.EmailGroupCompanies.Any() || group.EmailGroupCompanies.Any(link => companyIds.Contains(link.CompanyId))
+                                    : !group.EmailGroupCompanies.Any()))
                 .OrderBy(e => e.GroupName)
                 .ProjectToType<EmailGroupOptionDto>()
                 .ToListAsync(cancellationToken);
             var sharedMailboxes = await _context.SharedMailboxes
                 .AsNoTracking()
-                .Where(m => m.IsActive)
+                .Include(mailbox => mailbox.SharedMailboxCompanies)
+                .Where(mailbox => mailbox.IsActive &&
+                                  (companyIds.Count > 0
+                                      ? !mailbox.SharedMailboxCompanies.Any() || mailbox.SharedMailboxCompanies.Any(link => companyIds.Contains(link.CompanyId))
+                                      : !mailbox.SharedMailboxCompanies.Any()))
                 .OrderBy(m => m.MailboxName)
                 .ProjectToType<SharedMailboxOptionDto>()
                 .ToListAsync(cancellationToken);
-            var availableAssets = await _context.ITAssets
+            var availableAssetsQuery = _context.ITAssets
                 .AsNoTracking()
                 .Where(a => a.Status == AssetStatus.Available)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(dbRequest.Branch))
+            {
+                availableAssetsQuery = CompanyScopeHelper.ApplyCompanyScope(
+                    availableAssetsQuery,
+                    [dbRequest.Branch],
+                    asset => asset.Company);
+            }
+
+            var availableAssets = await availableAssetsQuery
                 .OrderBy(a => a.AssetTag)
                 .ProjectToType<ITAssetOptionDto>()
                 .ToListAsync(cancellationToken);
@@ -195,6 +245,31 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
                     IsChecked = true
                 })
                 .ToListAsync(cancellationToken);
+        }
+
+        private async Task<List<int>> ResolveCompanyIdsAsync(string? companyName, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(companyName))
+            {
+                return [];
+            }
+
+            var companies = await _context.Companies
+                .AsNoTracking()
+                .Select(company => new
+                {
+                    company.Id,
+                    DisplayName = string.IsNullOrWhiteSpace(company.Lot)
+                        ? company.Name
+                        : company.Name + " (" + company.Lot + ")"
+                })
+                .ToListAsync(cancellationToken);
+
+            return companies
+                .Where(company => CompanyHelper.IsMatch(company.DisplayName, companyName))
+                .Select(company => company.Id)
+                .Distinct()
+                .ToList();
         }
     }
 }

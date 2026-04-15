@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.SharedMailbox
 {
-    public sealed record GetSharedMailboxIndexPageQuery() : IRequest<ProcessResult<List<SharedMailboxIndexListItem>>>;
+    public sealed record GetSharedMailboxIndexPageQuery(int? CompanyId = null) : IRequest<ProcessResult<SharedMailboxIndexPageViewModel>>;
     public sealed record GetSharedMailboxCreatePageQuery(SharedMailboxEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<SharedMailboxEditorPageViewModel>>;
     public sealed record GetSharedMailboxEditPageQuery(int Id, SharedMailboxEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<SharedMailboxEditorPageViewModel>>;
     public sealed record GetSharedMailboxMembersPageQuery(int Id, int? OnboardingRequestId = null) : IRequest<ProcessResult<SharedMailboxMembersPageViewModel>>;
 
-    public sealed class GetSharedMailboxIndexPageQueryHandler : IRequestHandler<GetSharedMailboxIndexPageQuery, ProcessResult<List<SharedMailboxIndexListItem>>>
+    public sealed class GetSharedMailboxIndexPageQueryHandler : IRequestHandler<GetSharedMailboxIndexPageQuery, ProcessResult<SharedMailboxIndexPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
@@ -25,11 +25,17 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
-        public async Task<ProcessResult<List<SharedMailboxIndexListItem>>> Handle(GetSharedMailboxIndexPageQuery request, CancellationToken cancellationToken)
+        public async Task<ProcessResult<SharedMailboxIndexPageViewModel>> Handle(GetSharedMailboxIndexPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
+            if (request.CompanyId.HasValue && !companyOptions.Any(company => company.Id == request.CompanyId.Value))
+            {
+                return ProcessResult<SharedMailboxIndexPageViewModel>.Forbidden();
+            }
+
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             var mailboxesQuery = _context.SharedMailboxes
@@ -40,14 +46,27 @@ namespace IT_Form.Application.Features.SharedMailbox
             if (accessibleCompanyIds is { Count: > 0 })
             {
                 mailboxesQuery = mailboxesQuery.Where(mailbox =>
+                    !mailbox.SharedMailboxCompanies.Any() ||
                     mailbox.SharedMailboxCompanies.Any(link => accessibleCompanyIds.Contains(link.CompanyId)));
+            }
+
+            if (request.CompanyId.HasValue)
+            {
+                mailboxesQuery = mailboxesQuery.Where(mailbox =>
+                    !mailbox.SharedMailboxCompanies.Any() ||
+                    mailbox.SharedMailboxCompanies.Any(link => link.CompanyId == request.CompanyId.Value));
             }
 
             var mailboxes = await mailboxesQuery
                 .ProjectToType<SharedMailboxIndexListItem>()
                 .ToListAsync(cancellationToken);
 
-            return ProcessResult<List<SharedMailboxIndexListItem>>.Success(mailboxes);
+            return ProcessResult<SharedMailboxIndexPageViewModel>.Success(new SharedMailboxIndexPageViewModel
+            {
+                SelectedCompanyId = request.CompanyId,
+                CompanyOptions = companyOptions,
+                Items = mailboxes
+            });
         }
     }
 
@@ -64,9 +83,9 @@ namespace IT_Form.Application.Features.SharedMailbox
 
         public async Task<ProcessResult<SharedMailboxEditorPageViewModel>> Handle(GetSharedMailboxCreatePageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken, activeOnly: true)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken, activeOnly: true)
                 : null;
 
             if (request.SelectedCompanyIds != null &&
@@ -78,7 +97,7 @@ namespace IT_Form.Application.Features.SharedMailbox
 
             var model = request.Model?.Adapt<SharedMailboxEditorPageViewModel>() ?? new SharedMailboxEditorPageViewModel();
             model.SelectedCompanyIds = request.SelectedCompanyIds?.ToList() ?? [];
-            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            model.CompanyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
             return ProcessResult<SharedMailboxEditorPageViewModel>.Success(model);
         }
     }
@@ -96,9 +115,9 @@ namespace IT_Form.Application.Features.SharedMailbox
 
         public async Task<ProcessResult<SharedMailboxEditorPageViewModel>> Handle(GetSharedMailboxEditPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             SharedMailboxEditorPageViewModel? model;
@@ -135,7 +154,7 @@ namespace IT_Form.Application.Features.SharedMailbox
                 model.SelectedCompanyIds = request.SelectedCompanyIds.ToList();
             }
 
-            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            model.CompanyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
             return ProcessResult<SharedMailboxEditorPageViewModel>.Success(model);
         }
     }
@@ -153,9 +172,9 @@ namespace IT_Form.Application.Features.SharedMailbox
 
         public async Task<ProcessResult<SharedMailboxMembersPageViewModel>> Handle(GetSharedMailboxMembersPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             var mailbox = await _context.SharedMailboxes
@@ -198,7 +217,7 @@ namespace IT_Form.Application.Features.SharedMailbox
                 .ProjectToType<SharedMailboxMemberListItem>()
                 .ToListAsync(cancellationToken);
 
-            var currentEmployees = await PageQueryLookupSupport.LoadCurrentEmployeesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            var currentEmployees = await ItAdminCompanyScopeSupport.LoadCurrentEmployeesAsync(_context, _currentUserAccessor.User, cancellationToken);
             var currentEmployeeDisplayName = request.OnboardingRequestId.HasValue &&
                                              currentEmployees.Any(employee => employee.Id == request.OnboardingRequestId.Value)
                 ? await PageQueryLookupSupport.LoadCurrentEmployeeDisplayNameAsync(_context, request.OnboardingRequestId, cancellationToken)

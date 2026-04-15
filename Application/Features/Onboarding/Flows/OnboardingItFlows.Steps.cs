@@ -35,6 +35,8 @@ namespace IT_Form.Application.Features.Onboarding.Flows
                 return ProcessResult<OnboardingStep3PageViewModel>.Failure(result.Message ?? "Session expired.", "Index");
             if (result.Status == GetOnboardingItStep3Status.NotFound)
                 return ProcessResult<OnboardingStep3PageViewModel>.NotFound();
+            if (result.Status == GetOnboardingItStep3Status.Forbidden)
+                return ProcessResult<OnboardingStep3PageViewModel>.Forbidden();
             if (result.Status == GetOnboardingItStep3Status.Locked)
                 return ProcessResult<OnboardingStep3PageViewModel>.Failure(result.Message ?? "IT setup can only be performed on pending requests.", "Details", result.RequestId);
 
@@ -59,6 +61,8 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             var result = await _sender.Send(new GetOnboardingItSetupQuery(request.Id), cancellationToken);
             if (result.IsNotFound)
                 return ProcessResult<object>.NotFound();
+            if (result.IsForbidden)
+                return ProcessResult<object>.Forbidden();
             if (!result.IsSuccess)
                 return ProcessResult<object>.Failure(result.Message ?? "This request is not awaiting IT setup.", result.RedirectAction ?? "Details", result.RequestId > 0 ? result.RequestId : request.Id);
 
@@ -90,6 +94,8 @@ namespace IT_Form.Application.Features.Onboarding.Flows
 
             if (result.Status == UpdateOnboardingItStep3Status.NotFound)
                 return ProcessResult<object>.NotFound();
+            if (result.Status == UpdateOnboardingItStep3Status.Forbidden)
+                return ProcessResult<object>.Forbidden();
             if (result.Status == UpdateOnboardingItStep3Status.Locked)
                 return ProcessResult<object>.Failure(result.Message, "Details", result.RequestId);
 
@@ -118,6 +124,8 @@ namespace IT_Form.Application.Features.Onboarding.Flows
                 return ProcessResult<OnboardingViewModel>.Failure(result.Message ?? "Session expired.", "Index");
             if (result.Status == GetOnboardingItStep4Status.NotFound)
                 return ProcessResult<OnboardingViewModel>.NotFound();
+            if (result.Status == GetOnboardingItStep4Status.Forbidden)
+                return ProcessResult<OnboardingViewModel>.Forbidden();
             if (result.Status == GetOnboardingItStep4Status.Locked)
                 return ProcessResult<OnboardingViewModel>.Failure(result.Message ?? "IT setup steps are locked.", "Details", result.RequestId);
 
@@ -149,6 +157,8 @@ namespace IT_Form.Application.Features.Onboarding.Flows
 
             if (result.Status == UpdateOnboardingItStep4Status.NotFound)
                 return ProcessResult<object>.NotFound();
+            if (result.Status == UpdateOnboardingItStep4Status.Forbidden)
+                return ProcessResult<object>.Forbidden();
             if (result.Status == UpdateOnboardingItStep4Status.Locked)
                 return ProcessResult<object>.Failure(result.Message, "Details", result.RequestId);
 

@@ -291,7 +291,7 @@ namespace IT_Form.Tests.Helpers
                                 new SearchEmailContactsQueryHandler(context).Handle(cmd, ct));
                         sender.Setup(s => s.Send(It.IsAny<GetStandardSoftwareIndexPageQuery>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((GetStandardSoftwareIndexPageQuery cmd, System.Threading.CancellationToken ct) =>
-                                new GetStandardSoftwareIndexPageQueryHandler(context).Handle(cmd, ct));
+                                new GetStandardSoftwareIndexPageQueryHandler(context, scopedCurrentUser).Handle(cmd, ct));
                         sender.Setup(s => s.Send(It.IsAny<GetStandardSoftwareCreatePageQuery>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((GetStandardSoftwareCreatePageQuery cmd, System.Threading.CancellationToken ct) =>
                                 new GetStandardSoftwareCreatePageQueryHandler().Handle(cmd, ct));

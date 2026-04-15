@@ -1,0 +1,11 @@
+Using launch settings from .\Properties\launchSettings.json...
+Building...
+[11:38:28 INF] Offboarding Auto-Sign Background Service is starting.
+[11:38:28 INF] AssetLicenseExpiryService started.
+[11:38:28 INF] Email dispatcher background service started.
+[11:38:28 INF] SLA Checker Background Service is starting.
+[11:38:28 INF] Database backup created successfully: C:\Users\User\Documents\IT-Portal\IT-Portal\App_Data\backups\IT_FormDB_20260414_113828.db
+[11:38:28 INF] DataRetentionService started. Retention window: 2555 days.
+[11:38:28 INF] Next scheduled backup at 04/15/2026 02:00:00. Waiting for 14:21:31.3600996...
+[11:38:51 WRN] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+[11:38:51 INF] HTTP GET /Account/Login responded 200 in 171.6654 ms

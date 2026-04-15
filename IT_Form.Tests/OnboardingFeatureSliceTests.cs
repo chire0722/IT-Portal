@@ -56,12 +56,13 @@ public class OnboardingFeatureSliceTests
         {
             Id = 101,
             Status = RequestStatus.PendingITApproval,
-            CreatedByUserId = "creator"
+            CreatedByUserId = "creator",
+            Branch = "HQ"
         });
         await context.SaveChangesAsync();
 
         var currentUser = new Mock<ICurrentUserAccessor>();
-        currentUser.SetupGet(x => x.User).Returns(BuildUser("hr-user", "HR"));
+        currentUser.SetupGet(x => x.User).Returns(BuildUser("hr-user", "HR", "HQ"));
         currentUser.SetupGet(x => x.UserName).Returns("hr-user");
 
         var userManager = CreateUserManager();
@@ -805,6 +806,7 @@ public class OnboardingFeatureSliceTests
         {
             Id = 1001,
             Status = RequestStatus.PendingITApproval,
+            Branch = "HQ",
             RequestSoftware = new List<RequestSoftware>(),
             RequestEmailGroups = new List<RequestEmailGroup>(),
             RequestSharedMailboxes = new List<RequestSharedMailbox>(),
@@ -813,7 +815,9 @@ public class OnboardingFeatureSliceTests
         });
         await context.SaveChangesAsync();
 
-        var handler = new UpdateOnboardingItStep3CommandHandler(context);
+        var handler = new UpdateOnboardingItStep3CommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
         var session = new OnboardingViewModel
         {
             Id = 1001,
@@ -867,6 +871,7 @@ public class OnboardingFeatureSliceTests
         {
             Id = 1002,
             Status = RequestStatus.PendingITApproval,
+            Branch = "HQ",
             RequestSoftware = new List<RequestSoftware>(),
             RequestEmailGroups = new List<RequestEmailGroup>(),
             RequestSharedMailboxes = new List<RequestSharedMailbox>(),
@@ -875,7 +880,9 @@ public class OnboardingFeatureSliceTests
         });
         await context.SaveChangesAsync();
 
-        var handler = new UpdateOnboardingItStep4CommandHandler(context);
+        var handler = new UpdateOnboardingItStep4CommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
         var session = new OnboardingViewModel
         {
             Id = 1002,

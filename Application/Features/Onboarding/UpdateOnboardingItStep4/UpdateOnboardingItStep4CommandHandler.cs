@@ -1,4 +1,6 @@
 using IT_Form.Data;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Helpers;
 using IT_Form.Models.Enums;
 using IT_Form.ViewModels;
 using MediatR;
@@ -10,10 +12,12 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep4
         : IRequestHandler<UpdateOnboardingItStep4Command, UpdateOnboardingItStep4Result>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public UpdateOnboardingItStep4CommandHandler(ApplicationDbContext context)
+        public UpdateOnboardingItStep4CommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         public async Task<UpdateOnboardingItStep4Result> Handle(UpdateOnboardingItStep4Command request, CancellationToken cancellationToken)
@@ -34,6 +38,14 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep4
                     UpdateOnboardingItStep4Status.NotFound,
                     session.Id,
                     "Request not found.");
+            }
+
+            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, onboardingRequest.Branch))
+            {
+                return new UpdateOnboardingItStep4Result(
+                    UpdateOnboardingItStep4Status.Forbidden,
+                    onboardingRequest.Id,
+                    "You can only access IT setup for requests in your assigned company scope.");
             }
 
             if (onboardingRequest.Status != RequestStatus.PendingITApproval)

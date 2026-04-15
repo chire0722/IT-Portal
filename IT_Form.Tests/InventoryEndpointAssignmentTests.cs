@@ -1,3 +1,4 @@
+using System;
 using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
@@ -142,5 +143,87 @@ public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
 
         Assert.Equal(AssetStatus.Available, updatedAsset.Status);
         Assert.Null(issue);
+    }
+
+    [Fact]
+    public void ApplyHardwareFingerprintTelemetry_CapturesFirstFingerprint_AsBaselineAndLatest()
+    {
+        var asset = new ITAsset
+        {
+            AssetTag = "LAP-001"
+        };
+        var observedAt = new DateTime(2026, 4, 14, 1, 0, 0, DateTimeKind.Utc);
+
+        var result = InventoryEndpoints.ApplyHardwareFingerprintTelemetry(
+            asset,
+            "HASH-001",
+            "{\"GeneratedAtUtc\":\"2026-04-14T01:00:00Z\"}",
+            observedAt);
+
+        Assert.False(result.IsMismatch);
+        Assert.Null(result.WarningMessage);
+        Assert.Equal("HASH-001", asset.HardwareHash);
+        Assert.Equal("HASH-001", asset.LatestHardwareHash);
+        Assert.Equal("{\"GeneratedAtUtc\":\"2026-04-14T01:00:00Z\"}", asset.HardwareAuditJson);
+        Assert.Equal("{\"GeneratedAtUtc\":\"2026-04-14T01:00:00Z\"}", asset.LatestHardwareAuditJson);
+        Assert.False(asset.HasHardwareFingerprintMismatch);
+        Assert.Null(asset.HardwareFingerprintMismatchDetectedAt);
+    }
+
+    [Fact]
+    public void ApplyHardwareFingerprintTelemetry_FlagsWarning_WhenLatestFingerprintDiffersFromBaseline()
+    {
+        var asset = new ITAsset
+        {
+            AssetTag = "LAP-002",
+            HardwareHash = "HASH-BASELINE",
+            HardwareAuditJson = "{\"GeneratedAtUtc\":\"2026-04-13T10:00:00Z\"}"
+        };
+        var observedAt = new DateTime(2026, 4, 14, 2, 30, 0, DateTimeKind.Utc);
+
+        var result = InventoryEndpoints.ApplyHardwareFingerprintTelemetry(
+            asset,
+            "HASH-CHANGED",
+            "{\"GeneratedAtUtc\":\"2026-04-14T02:30:00Z\"}",
+            observedAt);
+
+        Assert.True(result.IsMismatch);
+        Assert.NotNull(result.WarningMessage);
+        Assert.Contains("LAP-002", result.WarningMessage, StringComparison.Ordinal);
+        Assert.Equal("HASH-BASELINE", asset.HardwareHash);
+        Assert.Equal("HASH-CHANGED", asset.LatestHardwareHash);
+        Assert.Equal("{\"GeneratedAtUtc\":\"2026-04-14T02:30:00Z\"}", asset.LatestHardwareAuditJson);
+        Assert.True(asset.HasHardwareFingerprintMismatch);
+        Assert.Equal(observedAt, asset.HardwareFingerprintMismatchDetectedAt);
+    }
+
+    [Fact]
+    public void ApplyHardwareFingerprintTelemetry_ClearsExistingWarning_WhenLatestFingerprintMatchesBaseline()
+    {
+        var asset = new ITAsset
+        {
+            AssetTag = "LAP-003",
+            HardwareHash = "HASH-SAME",
+            HardwareAuditJson = "{\"GeneratedAtUtc\":\"2026-04-13T10:00:00Z\"}",
+            LatestHardwareHash = "HASH-CHANGED",
+            HasHardwareFingerprintMismatch = true,
+            HardwareFingerprintMismatchDetectedAt = new DateTime(2026, 4, 13, 10, 5, 0, DateTimeKind.Utc),
+            HardwareFingerprintWarning = "Old warning"
+        };
+        var observedAt = new DateTime(2026, 4, 14, 3, 15, 0, DateTimeKind.Utc);
+
+        var result = InventoryEndpoints.ApplyHardwareFingerprintTelemetry(
+            asset,
+            "HASH-SAME",
+            "{\"GeneratedAtUtc\":\"2026-04-14T03:15:00Z\"}",
+            observedAt);
+
+        Assert.False(result.IsMismatch);
+        Assert.Null(result.WarningMessage);
+        Assert.Equal("HASH-SAME", asset.LatestHardwareHash);
+        Assert.Equal("{\"GeneratedAtUtc\":\"2026-04-14T03:15:00Z\"}", asset.LatestHardwareAuditJson);
+        Assert.False(asset.HasHardwareFingerprintMismatch);
+        Assert.Null(asset.HardwareFingerprintMismatchDetectedAt);
+        Assert.Null(asset.HardwareFingerprintWarning);
     }
 }

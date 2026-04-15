@@ -19,7 +19,7 @@
             </button>
         }
         <a asp-action="ExportCsv" asp-route-searchString="@ViewData["CurrentFilter"]"
-            asp-route-assetType="@ViewData["AssetTypeFilter"]" asp-route-status="@ViewData["StatusFilter"]"
+            asp-route-assetType="@ViewData["AssetTypeFilter"]" asp-route-status="@ViewData["StatusFilter"]" asp-route-companyId="@ViewData["CompanyFilter"]"
             class="btn btn-secondary shadow-sm rounded-pill px-4 py-2 fw-bold">
             <i class="bi bi-filetype-csv me-1" aria-hidden="true"></i> Export CSV
         </a>
@@ -109,23 +109,41 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body" style="background: var(--bg-card);">
         <form asp-action="Index" method="get" class="row g-3 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label for="searchString" class="form-label">Search (Tag, S/N, Model)</label>
                 <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control"
                     placeholder="Search..." />
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label for="assetType" class="form-label">Asset Type</label>
                 <select name="assetType" class="form-select" asp-items="Html.GetEnumSelectList<AssetType>()">
                     <option value="">All Types</option>
                 </select>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label for="status" class="form-label">Status</label>
                 <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<AssetStatus>()">
                     <option value="">All Statuses</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="companyId" class="form-label">Company</label>
+                <select name="companyId" class="form-select">
+                    <option value="">All Companies</option>
+                    @foreach (var company in Model.CompanyOptions)
+                    {
+                        if (Model.SelectedCompanyId == company.Id)
+                        {
+                            <option value="@company.Id" selected>@company.DisplayName</option>
+                        }
+                        else
+                        {
+                            <option value="@company.Id">@company.DisplayName</option>
+                        }
+                    }
                 </select>
             </div>
 
@@ -156,7 +174,15 @@
                     @foreach (var item in Model.Assets)
                     {
                         <tr>
-                            <td class="fw-bold">@item.AssetTag</td>
+                            <td>
+                                <div class="fw-bold">@item.AssetTag</div>
+                                @if (item.HasHardwareFingerprintMismatch)
+                                {
+                                    <div class="small text-warning fw-semibold mt-1">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Fingerprint changed
+                                    </div>
+                                }
+                            </td>
                             <td>
                                 @if (item.AssetType == AssetType.Others && !string.IsNullOrEmpty(item.OtherAssetType))
                                 {

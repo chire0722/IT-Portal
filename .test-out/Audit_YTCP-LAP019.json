@@ -1,0 +1,62 @@
+﻿{
+    "GeneratedAtUtc":  "2026-04-05T05:27:15.6528438Z",
+    "HardwareHash":  "/1PM7R32/CN1296355N003A/|BFEBFBFF000306D4|19413V468214",
+    "Motherboard":  {
+                        "Manufacturer":  "Dell Inc.",
+                        "Product":  "00D1NF",
+                        "SerialNumber":  "/1PM7R32/CN1296355N003A/"
+                    },
+    "BIOS":  {
+                 "Manufacturer":  "Dell Inc.",
+                 "Version":  "A18",
+                 "SerialNumber":  "1PM7R32"
+             },
+    "CPU":  {
+                "Name":  "Intel(R) Core(TM) i5-5200U CPU @ 2.20GHz",
+                "NumberOfCores":  2,
+                "ProcessorId":  "BFEBFBFF000306D4"
+            },
+    "RAM":  [
+                {
+                    "Slot":  "DIMM A",
+                    "CapacityGB":  4,
+                    "SpeedMHz":  1600,
+                    "SerialNumber":  "AAEFE080"
+                },
+                {
+                    "Slot":  "DIMM B",
+                    "CapacityGB":  4,
+                    "SpeedMHz":  1600,
+                    "SerialNumber":  "E1C6E19C"
+                }
+            ],
+    "Storage":  [
+                    {
+                        "Index":  0,
+                        "Model":  "WDC WDS240G2G0A-00JH30",
+                        "SizeGB":  223.57,
+                        "SerialNumber":  "19413V468214"
+                    }
+                ],
+    "Network":  [
+                    {
+                        "Adapter":  "Intel(R) Dual Band Wireless-AC 3160",
+                        "MACAddress":  "34:E6:AD:6F:F6:30",
+                        "IPAddress":  [
+                                          "192.168.0.7",
+                                          "fe80::5106:30e8:ce93:395d",
+                                          "2001:e68:5432:16d0:51e2:7e3:62f4:f2c",
+                                          "2001:e68:5432:16d0:50de:e8e:efd2:3a9d"
+                                      ]
+                    }
+                ],
+    "OS":  {
+               "Caption":  "Microsoft Windows 10 Pro",
+               "Version":  "10.0.19045",
+               "InstallDate":  "2026-01-14T17:45:59.0000000Z"
+           },
+    "Identity":  {
+                     "ComputerName":  "YTCP-LAP019",
+                     "CurrentUser":  "YTCPRECAST\\it.dept"
+                 }
+}

@@ -28,6 +28,7 @@ namespace IT_Form.Models
         public string? SupportContact { get; set; }
 
         public virtual ICollection<SoftwareKey> Keys { get; set; } = new List<SoftwareKey>();
+        public virtual ICollection<SoftwareLicenseCompany> SoftwareLicenseCompanies { get; set; } = new List<SoftwareLicenseCompany>();
 
         // Link to StandardSoftware catalog entry
         [Required]

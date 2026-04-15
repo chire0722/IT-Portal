@@ -1,7 +1,7 @@
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
-using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using MediatR;
@@ -21,12 +21,12 @@ namespace IT_Form.Application.Features.ITAsset.CreateItAsset
 
         public async Task<CommandResponse> Handle(CreateItAssetCommand request, CancellationToken cancellationToken)
         {
-            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, request.Asset.Company))
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(_currentUserAccessor.User, request.Asset.Company))
             {
                 return new CommandResponse
                 {
                     IsForbidden = true,
-                    Message = "You can only create assets for your assigned company scope."
+                    Message = "You are not authorized to create this asset."
                 };
             }
 

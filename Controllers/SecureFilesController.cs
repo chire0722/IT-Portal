@@ -78,6 +78,11 @@ namespace IT_Form.Controllers
                 return false;
             }
 
+            if (!CompanyScopeHelper.CanAccessCompany(User, request.Branch))
+            {
+                return false;
+            }
+
             if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
             {
                 return true;

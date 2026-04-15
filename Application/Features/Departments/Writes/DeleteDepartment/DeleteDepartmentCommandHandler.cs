@@ -2,6 +2,7 @@ using IT_Form.Application.Common.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -43,14 +44,14 @@ public sealed class DeleteDepartmentCommandHandler : IRequestHandler<DeleteDepar
 
     private async Task EnsureExistingDepartmentIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
     {
-        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+        var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
         if (scopedCompanies.Count == 0)
         {
             return;
         }
 
-        var accessibleCompanyIds = await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken);
-        if (!existingCompanyIds.All(accessibleCompanyIds.Contains))
+        var accessibleCompanyIds = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken);
+        if (accessibleCompanyIds is null || !existingCompanyIds.All(accessibleCompanyIds.Contains))
         {
             throw new ValidationException([new ValidationFailure(string.Empty, "You can only delete departments within your own company scope.")]);
         }

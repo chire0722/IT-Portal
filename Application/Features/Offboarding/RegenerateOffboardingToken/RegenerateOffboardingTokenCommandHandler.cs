@@ -1,6 +1,7 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,6 +33,11 @@ namespace IT_Form.Application.Features.Offboarding.RegenerateOffboardingToken
             if (offboardingRequest == null)
             {
                 return ProcessResult<object>.NotFound();
+            }
+
+            if (!CompanyScopeHelper.CanAccessCompany(user, offboardingRequest.Branch))
+            {
+                return ProcessResult<object>.Forbidden();
             }
 
             if (!offboardingRequest.CanRegenerateToken())

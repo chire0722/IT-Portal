@@ -327,8 +327,19 @@ namespace IT_Form.Data.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("HardwareFingerprintWarning")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("HasHardwareFingerprintMismatch")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsVerified")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("VerifiedAssetTag")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("TEXT");
@@ -528,14 +539,31 @@ namespace IT_Form.Data.Migrations
                     b.Property<string>("HardwareAuditJson")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("HardwareFingerprintMismatchDetectedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HardwareFingerprintWarning")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("HardwareHash")
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("HasHardwareFingerprintMismatch")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("LastSeen")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LatestHardwareAuditJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LatestHardwareHash")
+                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Location")
@@ -1761,6 +1789,27 @@ namespace IT_Form.Data.Migrations
                     b.ToTable("SoftwareLicenses");
                 });
 
+            modelBuilder.Entity("IT_Form.Models.SoftwareLicenseCompany", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SoftwareLicenseId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("SoftwareLicenseId");
+
+                    b.ToTable("SoftwareLicenseCompanies");
+                });
+
             modelBuilder.Entity("IT_Form.Models.StandardSoftware", b =>
                 {
                     b.Property<int>("Id")
@@ -2262,6 +2311,25 @@ namespace IT_Form.Data.Migrations
                     b.Navigation("StandardSoftware");
                 });
 
+            modelBuilder.Entity("IT_Form.Models.SoftwareLicenseCompany", b =>
+                {
+                    b.HasOne("IT_Form.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IT_Form.Models.SoftwareLicense", "SoftwareLicense")
+                        .WithMany("SoftwareLicenseCompanies")
+                        .HasForeignKey("SoftwareLicenseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("SoftwareLicense");
+                });
+
             modelBuilder.Entity("IT_Form.Models.UserCompany", b =>
                 {
                     b.HasOne("IT_Form.Models.ApplicationUser", "User")
@@ -2387,6 +2455,8 @@ namespace IT_Form.Data.Migrations
             modelBuilder.Entity("IT_Form.Models.SoftwareLicense", b =>
                 {
                     b.Navigation("Keys");
+
+                    b.Navigation("SoftwareLicenseCompanies");
                 });
 
             modelBuilder.Entity("IT_Form.Models.StandardSoftware", b =>

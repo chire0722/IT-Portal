@@ -14,6 +14,13 @@ public sealed class SharedMailboxIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+public sealed class SharedMailboxIndexPageViewModel
+{
+    public int? SelectedCompanyId { get; init; }
+    public List<PageCompanyOption> CompanyOptions { get; init; } = [];
+    public List<SharedMailboxIndexListItem> Items { get; init; } = [];
+}
+
 public sealed class SharedMailboxEditorPageViewModel
 {
     public int Id { get; set; }

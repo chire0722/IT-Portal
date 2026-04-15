@@ -45,9 +45,19 @@ internal static class HomeDashboardSupport
         ApplicationDbContext context,
         DashboardPeriodContext period,
         CancellationToken cancellationToken)
+        => await BuildMonthlyTrendAsync(
+            context.OnboardingRequests.AsNoTracking(),
+            context.OffboardingRequests.AsNoTracking(),
+            period,
+            cancellationToken);
+
+    public static async Task<MonthlyTrendResult> BuildMonthlyTrendAsync(
+        IQueryable<OnboardingRequest> onboardingQuery,
+        IQueryable<OffboardingRequest> offboardingQuery,
+        DashboardPeriodContext period,
+        CancellationToken cancellationToken)
     {
-        var onboardingCounts = await context.OnboardingRequests
-            .AsNoTracking()
+        var onboardingCounts = await onboardingQuery
             .Where(request => request.RequestDate >= period.YearStart && request.RequestDate <= period.YearEnd)
             .GroupBy(request => request.RequestDate.Month)
             .Select(group => new
@@ -57,8 +67,7 @@ internal static class HomeDashboardSupport
             })
             .ToDictionaryAsync(item => item.Month, item => item.Count, cancellationToken);
 
-        var offboardingCounts = await context.OffboardingRequests
-            .AsNoTracking()
+        var offboardingCounts = await offboardingQuery
             .Where(request => request.RequestDate >= period.YearStart && request.RequestDate <= period.YearEnd)
             .GroupBy(request => request.RequestDate.Month)
             .Select(group => new
@@ -126,9 +135,15 @@ internal static class HomeDashboardSupport
     public static async Task<Dictionary<string, int>> BuildWindowsVersionDistributionAsync(
         ApplicationDbContext context,
         CancellationToken cancellationToken)
+        => await BuildWindowsVersionDistributionAsync(
+            context.ITAssets.AsNoTracking(),
+            cancellationToken);
+
+    public static async Task<Dictionary<string, int>> BuildWindowsVersionDistributionAsync(
+        IQueryable<IT_Form.Models.ITAsset> assetQuery,
+        CancellationToken cancellationToken)
     {
-        var windowsVersions = await context.ITAssets
-            .AsNoTracking()
+        var windowsVersions = await assetQuery
             .Where(asset => !string.IsNullOrWhiteSpace(asset.WindowsVersion))
             .Select(asset => asset.WindowsVersion!)
             .ToListAsync(cancellationToken);
@@ -146,9 +161,15 @@ internal static class HomeDashboardSupport
     public static async Task<LicenseUtilizationResult> BuildLicenseUtilizationAsync(
         ApplicationDbContext context,
         CancellationToken cancellationToken)
+        => await BuildLicenseUtilizationAsync(
+            context.SoftwareLicenses.AsNoTracking(),
+            cancellationToken);
+
+    public static async Task<LicenseUtilizationResult> BuildLicenseUtilizationAsync(
+        IQueryable<SoftwareLicense> softwareLicensesQuery,
+        CancellationToken cancellationToken)
     {
-        var softwareLicenses = await context.SoftwareLicenses
-            .AsNoTracking()
+        var softwareLicenses = await softwareLicensesQuery
             .Select(license => new SoftwareLicenseUsageSnapshot(
                 license.SoftwareName,
                 license.IsFree,

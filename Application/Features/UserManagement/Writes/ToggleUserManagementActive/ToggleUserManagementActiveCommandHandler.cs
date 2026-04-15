@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -40,7 +41,7 @@ public sealed class ToggleUserManagementActiveCommandHandler : IRequestHandler<T
             throw new NotFoundException(nameof(ApplicationUser), request.Id);
         }
 
-        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+        var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
         if (!CompanyScopeHelper.AreAllCompaniesAllowed(scopedCompanies, user.UserCompanies.Select(company => company.CompanyName)))
         {
             throw new ValidationException([new ValidationFailure(string.Empty, "You cannot modify users outside your assigned company scope.")]);

@@ -4,6 +4,7 @@ using IT_Form.Models;
 using IT_Form.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace IT_Form.Application.Features.Account.ResetPassword
 {
@@ -12,17 +13,20 @@ namespace IT_Form.Application.Features.Account.ResetPassword
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _context;
         private readonly IEmailBackgroundQueue _emailBackgroundQueue;
+        private readonly IMemoryCache _cache;
         private readonly ILogger<ResetPasswordCommandHandler> _logger;
 
         public ResetPasswordCommandHandler(
             UserManager<ApplicationUser> userManager,
             ApplicationDbContext context,
             IEmailBackgroundQueue emailBackgroundQueue,
+            IMemoryCache cache,
             ILogger<ResetPasswordCommandHandler> logger)
         {
             _userManager = userManager;
             _context = context;
             _emailBackgroundQueue = emailBackgroundQueue;
+            _cache = cache;
             _logger = logger;
         }
 
@@ -48,6 +52,7 @@ namespace IT_Form.Application.Features.Account.ResetPassword
 
             user.MustChangePassword = false;
             await _userManager.UpdateAsync(user);
+            _cache.Remove($"claims-transform:{user.Id}");
 
             _context.AuditLogs.Add(new AuditLog
             {

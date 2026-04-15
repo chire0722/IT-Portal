@@ -8,6 +8,7 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
         Ready,
         SessionExpired,
         NotFound,
+        Forbidden,
         Locked
     }
 

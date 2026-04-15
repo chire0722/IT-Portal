@@ -1,4 +1,5 @@
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -21,9 +22,9 @@ namespace IT_Form.Application.Features.ServerFolder.AddCurrentEmployeeToServerFo
 
         public async Task<AddCurrentEmployeeToServerFolderResult> Handle(AddCurrentEmployeeToServerFolderCommand request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             var folder = await _context.ServerFolders
@@ -52,7 +53,7 @@ namespace IT_Form.Application.Features.ServerFolder.AddCurrentEmployeeToServerFo
                 return new AddCurrentEmployeeToServerFolderResult(AddCurrentEmployeeToServerFolderStatus.InvalidEmployee, "Selected employee is not a current employee record.");
             }
 
-            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, employee.Branch))
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(_currentUserAccessor.User, employee.Branch))
             {
                 return new AddCurrentEmployeeToServerFolderResult(AddCurrentEmployeeToServerFolderStatus.Forbidden, "You can only add employees from your own company scope.");
             }

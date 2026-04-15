@@ -21,8 +21,8 @@ namespace IT_Form.Controllers
             _mediator = mediator;
         }
 
-        public async Task<IActionResult> Index()
-            => HandleProcessResult(await _mediator.Send(new GetSharedMailboxIndexPageQuery()));
+        public async Task<IActionResult> Index(int? companyId = null)
+            => HandleProcessResult(await _mediator.Send(new GetSharedMailboxIndexPageQuery(companyId)));
 
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _mediator.Send(new GetSharedMailboxCreatePageQuery()));

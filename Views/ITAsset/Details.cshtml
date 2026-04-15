@@ -5,20 +5,24 @@
     ViewData["Title"] = "Asset Details";
     if (Model == null) return;
 
-    JsonElement hardwareAuditRoot = default;
-    bool hasHardwareAudit = false;
-
-    if (!string.IsNullOrWhiteSpace(Model.HardwareAuditJson))
+    static bool TryParseJson(string? rawJson, out JsonElement root)
     {
+        root = default;
+
+        if (string.IsNullOrWhiteSpace(rawJson))
+        {
+            return false;
+        }
+
         try
         {
-            using var hardwareAuditDoc = JsonDocument.Parse(Model.HardwareAuditJson);
-            hardwareAuditRoot = hardwareAuditDoc.RootElement.Clone();
-            hasHardwareAudit = true;
+            using var document = JsonDocument.Parse(rawJson);
+            root = document.RootElement.Clone();
+            return true;
         }
         catch
         {
-            hasHardwareAudit = false;
+            return false;
         }
     }
 
@@ -59,6 +63,124 @@
         }
 
         return "-";
+    }
+
+    static string BuildRamSummary(JsonElement root)
+    {
+        if (!root.ValueKind.Equals(JsonValueKind.Object) || !root.TryGetProperty("RAM", out var ram) || ram.ValueKind != JsonValueKind.Array)
+        {
+            return "-";
+        }
+
+        var modules = ram.EnumerateArray().ToList();
+        var firstModule = modules.FirstOrDefault();
+        if (modules.Count == 0)
+        {
+            return "-";
+        }
+
+        return $"{modules.Count} module(s), first: {JsonTextOrDash(firstModule, "CapacityGB")} GB @ {JsonTextOrDash(firstModule, "SpeedMHz")} MHz";
+    }
+
+    static string BuildStorageSummary(JsonElement root)
+    {
+        if (!root.ValueKind.Equals(JsonValueKind.Object) || !root.TryGetProperty("Storage", out var storage) || storage.ValueKind != JsonValueKind.Array)
+        {
+            return "-";
+        }
+
+        var firstDisk = storage.EnumerateArray().FirstOrDefault();
+        if (firstDisk.ValueKind != JsonValueKind.Object)
+        {
+            return "-";
+        }
+
+        return $"{JsonTextOrDash(firstDisk, "Model")} ({JsonTextOrDash(firstDisk, "SizeGB")} GB)";
+    }
+
+    static string BuildNetworkSummary(JsonElement root)
+    {
+        if (!root.ValueKind.Equals(JsonValueKind.Object) || !root.TryGetProperty("Network", out var network) || network.ValueKind != JsonValueKind.Array)
+        {
+            return "-";
+        }
+
+        var firstAdapter = network.EnumerateArray().FirstOrDefault();
+        if (firstAdapter.ValueKind != JsonValueKind.Object)
+        {
+            return "-";
+        }
+
+        return $"{JsonTextOrDash(firstAdapter, "Adapter")} / {JsonTextOrDash(firstAdapter, "MACAddress")} / {JsonArrayFirstOrDash(firstAdapter, "IPAddress")}";
+    }
+
+    JsonElement baselineHardwareAuditRoot = default;
+    JsonElement latestHardwareAuditRoot = default;
+    var hasBaselineHardwareAudit = TryParseJson(Model.HardwareAuditJson, out baselineHardwareAuditRoot);
+    var hasLatestHardwareAudit = TryParseJson(Model.LatestHardwareAuditJson, out latestHardwareAuditRoot);
+
+    var hasAnyFingerprintData =
+        !string.IsNullOrWhiteSpace(Model.HardwareHash) ||
+        !string.IsNullOrWhiteSpace(Model.LatestHardwareHash) ||
+        hasBaselineHardwareAudit ||
+        hasLatestHardwareAudit;
+
+    var baselineGeneratedAt = "-";
+    var baselineMotherboard = "-";
+    var baselineBios = "-";
+    var baselineCpu = "-";
+    var baselineRam = "-";
+    var baselineStorage = "-";
+    var baselineNetwork = "-";
+    var baselineOperatingSystem = "-";
+    var baselineIdentity = "-";
+
+    if (hasBaselineHardwareAudit)
+    {
+        var motherboard = baselineHardwareAuditRoot.TryGetProperty("Motherboard", out var mb) ? mb : default;
+        var bios = baselineHardwareAuditRoot.TryGetProperty("BIOS", out var biosNode) ? biosNode : default;
+        var cpu = baselineHardwareAuditRoot.TryGetProperty("CPU", out var cpuNode) ? cpuNode : default;
+        var os = baselineHardwareAuditRoot.TryGetProperty("OS", out var osNode) ? osNode : default;
+        var identity = baselineHardwareAuditRoot.TryGetProperty("Identity", out var identityNode) ? identityNode : default;
+
+        baselineGeneratedAt = JsonTextOrDash(baselineHardwareAuditRoot, "GeneratedAtUtc");
+        baselineMotherboard = $"{JsonTextOrDash(motherboard, "Manufacturer")} {JsonTextOrDash(motherboard, "Product")} / SN: {JsonTextOrDash(motherboard, "SerialNumber")}";
+        baselineBios = $"{JsonTextOrDash(bios, "Manufacturer")} {JsonTextOrDash(bios, "Version")} / SN: {JsonTextOrDash(bios, "SerialNumber")}";
+        baselineCpu = $"{JsonTextOrDash(cpu, "Name")} / ID: {JsonTextOrDash(cpu, "ProcessorId")}";
+        baselineRam = BuildRamSummary(baselineHardwareAuditRoot);
+        baselineStorage = BuildStorageSummary(baselineHardwareAuditRoot);
+        baselineNetwork = BuildNetworkSummary(baselineHardwareAuditRoot);
+        baselineOperatingSystem = $"{JsonTextOrDash(os, "Caption")} ({JsonTextOrDash(os, "Version")})";
+        baselineIdentity = $"{JsonTextOrDash(identity, "ComputerName")} / {JsonTextOrDash(identity, "CurrentUser")}";
+    }
+
+    var latestGeneratedAt = "-";
+    var latestMotherboard = "-";
+    var latestBios = "-";
+    var latestCpu = "-";
+    var latestRam = "-";
+    var latestStorage = "-";
+    var latestNetwork = "-";
+    var latestOperatingSystem = "-";
+    var latestIdentity = "-";
+
+    if (hasLatestHardwareAudit)
+    {
+        var motherboard = latestHardwareAuditRoot.TryGetProperty("Motherboard", out var mb) ? mb : default;
+        var bios = latestHardwareAuditRoot.TryGetProperty("BIOS", out var biosNode) ? biosNode : default;
+        var cpu = latestHardwareAuditRoot.TryGetProperty("CPU", out var cpuNode) ? cpuNode : default;
+        var os = latestHardwareAuditRoot.TryGetProperty("OS", out var osNode) ? osNode : default;
+        var identity = latestHardwareAuditRoot.TryGetProperty("Identity", out var identityNode) ? identityNode : default;
+
+        latestGeneratedAt = JsonTextOrDash(latestHardwareAuditRoot, "GeneratedAtUtc");
+        latestMotherboard = $"{JsonTextOrDash(motherboard, "Manufacturer")} {JsonTextOrDash(motherboard, "Product")} / SN: {JsonTextOrDash(motherboard, "SerialNumber")}";
+        latestBios = $"{JsonTextOrDash(bios, "Manufacturer")} {JsonTextOrDash(bios, "Version")} / SN: {JsonTextOrDash(bios, "SerialNumber")}";
+        latestCpu = $"{JsonTextOrDash(cpu, "Name")} / ID: {JsonTextOrDash(cpu, "ProcessorId")}";
+        latestRam = BuildRamSummary(latestHardwareAuditRoot);
+        latestStorage = BuildStorageSummary(latestHardwareAuditRoot);
+        latestNetwork = BuildNetworkSummary(latestHardwareAuditRoot);
+        latestOperatingSystem = $"{JsonTextOrDash(os, "Caption")} ({JsonTextOrDash(os, "Version")})";
+        latestIdentity = $"{JsonTextOrDash(identity, "ComputerName")} / {JsonTextOrDash(identity, "CurrentUser")}";
     }
 }
 
@@ -132,7 +254,23 @@
                         <dd class="col-sm-8">@(Model.WindowsVersion ?? "-")</dd>
                     }
 
-                    <dt class="col-sm-4">Hardware Hash</dt>
+                    <dt class="col-sm-4">Fingerprint Status</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.HasHardwareFingerprintMismatch)
+                        {
+                            <span class="badge bg-warning text-dark">Mismatch Detected</span>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(Model.HardwareHash) || !string.IsNullOrWhiteSpace(Model.LatestHardwareHash))
+                        {
+                            <span class="badge bg-success">Matches Baseline</span>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Baseline Hardware Hash</dt>
                     <dd class="col-sm-8">
                         @if (!string.IsNullOrWhiteSpace(Model.HardwareHash))
                         {
@@ -143,6 +281,25 @@
                             <span>-</span>
                         }
                     </dd>
+
+                    <dt class="col-sm-4">Latest Hardware Hash</dt>
+                    <dd class="col-sm-8">
+                        @if (!string.IsNullOrWhiteSpace(Model.LatestHardwareHash))
+                        {
+                            <code>@Model.LatestHardwareHash</code>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(Model.HardwareHash))
+                        {
+                            <code>@Model.HardwareHash</code>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Mismatch Flagged At</dt>
+                    <dd class="col-sm-8">@(Model.HardwareFingerprintMismatchDetectedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</dd>
 
                     <dt class="col-sm-4">Last Seen</dt>
                     <dd class="col-sm-8">@(Model.LastSeen?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</dd>
@@ -214,82 +371,122 @@
     </div>
 </div>
 
-@if (hasHardwareAudit)
+@if (Model.HasHardwareFingerprintMismatch && !string.IsNullOrWhiteSpace(Model.HardwareFingerprintWarning))
 {
-    var generatedAt = JsonTextOrDash(hardwareAuditRoot, "GeneratedAtUtc");
-    var motherboard = hardwareAuditRoot.TryGetProperty("Motherboard", out var mb) ? mb : default;
-    var bios = hardwareAuditRoot.TryGetProperty("BIOS", out var biosNode) ? biosNode : default;
-    var cpu = hardwareAuditRoot.TryGetProperty("CPU", out var cpuNode) ? cpuNode : default;
-    var os = hardwareAuditRoot.TryGetProperty("OS", out var osNode) ? osNode : default;
-    var identity = hardwareAuditRoot.TryGetProperty("Identity", out var idNode) ? idNode : default;
-
-    var ram = hardwareAuditRoot.TryGetProperty("RAM", out var ramNode) ? ramNode : default;
-    var ramSummary = "-";
-    if (ram.ValueKind == JsonValueKind.Array)
-    {
-        var modules = ram.EnumerateArray().ToList();
-        var firstModule = modules.FirstOrDefault();
-        if (modules.Count > 0)
-        {
-            ramSummary = $"{modules.Count} module(s), first: {JsonTextOrDash(firstModule, "CapacityGB")} GB @ {JsonTextOrDash(firstModule, "SpeedMHz")} MHz";
-        }
-    }
-
-    var storage = hardwareAuditRoot.TryGetProperty("Storage", out var storageNode) ? storageNode : default;
-    var storageSummary = "-";
-    if (storage.ValueKind == JsonValueKind.Array)
-    {
-        var firstDisk = storage.EnumerateArray().FirstOrDefault();
-        if (firstDisk.ValueKind == JsonValueKind.Object)
-        {
-            storageSummary = $"{JsonTextOrDash(firstDisk, "Model")} ({JsonTextOrDash(firstDisk, "SizeGB")} GB)";
-        }
-    }
-
-    var network = hardwareAuditRoot.TryGetProperty("Network", out var networkNode) ? networkNode : default;
-    var networkSummary = "-";
-    if (network.ValueKind == JsonValueKind.Array)
-    {
-        var firstAdapter = network.EnumerateArray().FirstOrDefault();
-        if (firstAdapter.ValueKind == JsonValueKind.Object)
-        {
-            networkSummary = $"{JsonTextOrDash(firstAdapter, "Adapter")} / {JsonTextOrDash(firstAdapter, "MACAddress")} / {JsonArrayFirstOrDash(firstAdapter, "IPAddress")}";
-        }
-    }
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="card-title mb-0">Hardware Fingerprint Details</h5>
+    <div class="alert alert-warning shadow-sm d-flex align-items-start gap-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+        <div>
+            <div class="fw-semibold mb-1">Hardware fingerprint mismatch detected</div>
+            <div>@Model.HardwareFingerprintWarning</div>
         </div>
-        <div class="card-body">
-            <dl class="row mb-0">
-                <dt class="col-sm-3">Captured At (UTC)</dt>
-                <dd class="col-sm-9">@generatedAt</dd>
+    </div>
+}
 
-                <dt class="col-sm-3">Motherboard</dt>
-                <dd class="col-sm-9">@JsonTextOrDash(motherboard, "Manufacturer") @JsonTextOrDash(motherboard, "Product") / SN: @JsonTextOrDash(motherboard, "SerialNumber")</dd>
+@if (hasAnyFingerprintData)
+{
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">First Verified Fingerprint</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Captured At (UTC)</dt>
+                        <dd class="col-sm-8">@baselineGeneratedAt</dd>
 
-                <dt class="col-sm-3">BIOS</dt>
-                <dd class="col-sm-9">@JsonTextOrDash(bios, "Manufacturer") @JsonTextOrDash(bios, "Version") / SN: @JsonTextOrDash(bios, "SerialNumber")</dd>
+                        <dt class="col-sm-4">Hardware Hash</dt>
+                        <dd class="col-sm-8">
+                            @if (!string.IsNullOrWhiteSpace(Model.HardwareHash))
+                            {
+                                <code>@Model.HardwareHash</code>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </dd>
 
-                <dt class="col-sm-3">CPU</dt>
-                <dd class="col-sm-9">@JsonTextOrDash(cpu, "Name") / ID: @JsonTextOrDash(cpu, "ProcessorId")</dd>
+                        <dt class="col-sm-4">Motherboard</dt>
+                        <dd class="col-sm-8">@baselineMotherboard</dd>
 
-                <dt class="col-sm-3">RAM</dt>
-                <dd class="col-sm-9">@ramSummary</dd>
+                        <dt class="col-sm-4">BIOS</dt>
+                        <dd class="col-sm-8">@baselineBios</dd>
 
-                <dt class="col-sm-3">Storage</dt>
-                <dd class="col-sm-9">@storageSummary</dd>
+                        <dt class="col-sm-4">CPU</dt>
+                        <dd class="col-sm-8">@baselineCpu</dd>
 
-                <dt class="col-sm-3">Network</dt>
-                <dd class="col-sm-9">@networkSummary</dd>
+                        <dt class="col-sm-4">RAM</dt>
+                        <dd class="col-sm-8">@baselineRam</dd>
 
-                <dt class="col-sm-3">Operating System</dt>
-                <dd class="col-sm-9">@JsonTextOrDash(os, "Caption") (@JsonTextOrDash(os, "Version"))</dd>
+                        <dt class="col-sm-4">Storage</dt>
+                        <dd class="col-sm-8">@baselineStorage</dd>
 
-                <dt class="col-sm-3">Identity</dt>
-                <dd class="col-sm-9">@JsonTextOrDash(identity, "ComputerName") / @JsonTextOrDash(identity, "CurrentUser")</dd>
-            </dl>
+                        <dt class="col-sm-4">Network</dt>
+                        <dd class="col-sm-8">@baselineNetwork</dd>
+
+                        <dt class="col-sm-4">Operating System</dt>
+                        <dd class="col-sm-8">@baselineOperatingSystem</dd>
+
+                        <dt class="col-sm-4">Identity</dt>
+                        <dd class="col-sm-8">@baselineIdentity</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header @(Model.HasHardwareFingerprintMismatch ? "bg-warning text-dark" : "bg-success text-white")">
+                    <h5 class="card-title mb-0">Latest Verification Fingerprint</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Captured At (UTC)</dt>
+                        <dd class="col-sm-8">@latestGeneratedAt</dd>
+
+                        <dt class="col-sm-4">Hardware Hash</dt>
+                        <dd class="col-sm-8">
+                            @if (!string.IsNullOrWhiteSpace(Model.LatestHardwareHash))
+                            {
+                                <code>@Model.LatestHardwareHash</code>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(Model.HardwareHash))
+                            {
+                                <code>@Model.HardwareHash</code>
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Motherboard</dt>
+                        <dd class="col-sm-8">@latestMotherboard</dd>
+
+                        <dt class="col-sm-4">BIOS</dt>
+                        <dd class="col-sm-8">@latestBios</dd>
+
+                        <dt class="col-sm-4">CPU</dt>
+                        <dd class="col-sm-8">@latestCpu</dd>
+
+                        <dt class="col-sm-4">RAM</dt>
+                        <dd class="col-sm-8">@latestRam</dd>
+
+                        <dt class="col-sm-4">Storage</dt>
+                        <dd class="col-sm-8">@latestStorage</dd>
+
+                        <dt class="col-sm-4">Network</dt>
+                        <dd class="col-sm-8">@latestNetwork</dd>
+
+                        <dt class="col-sm-4">Operating System</dt>
+                        <dd class="col-sm-8">@latestOperatingSystem</dd>
+
+                        <dt class="col-sm-4">Identity</dt>
+                        <dd class="col-sm-8">@latestIdentity</dd>
+                    </dl>
+                </div>
+            </div>
         </div>
     </div>
 }

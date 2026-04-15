@@ -42,7 +42,10 @@ namespace IT_Form.Services
             // Add "SignatureHmac:Key" to appsettings.json or a "IT_FORM__SignatureHmac__Key" machine environment variable.
             var keyStr = configuration["SignatureHmac:Key"];
 
-            if (string.IsNullOrEmpty(keyStr) || keyStr.Contains("SET_VIA_ENV_VAR"))
+            if (string.IsNullOrWhiteSpace(keyStr) ||
+                keyStr.Contains("SET_VIA_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
+                keyStr.Contains("ROTATE_AND_USE_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
+                (keyStr.StartsWith('<') && keyStr.EndsWith('>')))
             {
                 throw new InvalidOperationException(
                     "SignatureHmac:Key is not configured. " +

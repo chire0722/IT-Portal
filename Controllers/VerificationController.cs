@@ -114,7 +114,13 @@ namespace IT_Form.Controllers
                 return BadRequest(new { isVerified = false, expired = true });
             }
 
-            return Json(new { isVerified = dbToken.IsVerified });
+            return Json(new
+            {
+                isVerified = dbToken.IsVerified,
+                fingerprintMismatch = dbToken.HasHardwareFingerprintMismatch,
+                warningMessage = dbToken.HardwareFingerprintWarning,
+                assetTag = dbToken.VerifiedAssetTag
+            });
         }
 
         [HttpGet("/api/inventory/download-universal")]

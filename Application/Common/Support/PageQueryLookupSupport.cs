@@ -24,12 +24,30 @@ internal static class PageQueryLookupSupport
         ApplicationDbContext context,
         ClaimsPrincipal? user,
         CancellationToken cancellationToken)
-        => (await CompanyScopeHelper.LoadAccessibleCompanyDisplayNamesAsync(context, user, cancellationToken))
+    {
+        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(user);
+        var companies = await context.Companies
+            .AsNoTracking()
+            .Where(company => company.IsActive)
+            .OrderBy(company => company.Name)
             .Select(company => new PageCompanyOption
             {
-                DisplayName = company
+                Id = company.Id,
+                DisplayName = string.IsNullOrWhiteSpace(company.Lot)
+                    ? company.Name
+                    : company.Name + " (" + company.Lot + ")"
             })
+            .ToListAsync(cancellationToken);
+
+        if (scopedCompanies.Count == 0)
+        {
+            return companies;
+        }
+
+        return companies
+            .Where(company => CompanyScopeHelper.CanAccessCompany(scopedCompanies, company.DisplayName))
             .ToList();
+    }
 
     public static async Task<List<PageCurrentEmployeeOption>> LoadCurrentEmployeesAsync(
         ApplicationDbContext context,

@@ -39,6 +39,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
             if (offboardingRequest == null)
                 return new CommandResponse { IsNotFound = true };
 
+            if (!CompanyScopeHelper.CanAccessCompany(user, offboardingRequest.Branch))
+                return new CommandResponse { IsForbidden = true, RequestId = request.Id };
+
             var currentUser = await _userManager.GetUserAsync(user);
             var userId = _userManager.GetUserId(user);
             if (string.IsNullOrWhiteSpace(userId))

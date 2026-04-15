@@ -123,7 +123,11 @@ public class RequestDetailsQueryHandlerTests
             context,
             CreateUserManager("signature://hr"),
             Mock.Of<ISignatureIntegrityService>(),
-            new TestCurrentUserAccessor("it@alpha.test", "it-1", "IT"));
+            new TestCurrentUserAccessor(
+                "it@alpha.test",
+                "it-1",
+                titles: ["IT"],
+                companies: ["Alpha (Lot 1)"]));
 
         var result = await handler.Handle(new GetOnboardingDetailsQuery(10), CancellationToken.None);
 
@@ -149,6 +153,81 @@ public class RequestDetailsQueryHandlerTests
         Assert.Single(model.RequestSoftware);
         Assert.Equal(7, model.RequestSoftware[0].Id);
         Assert.Single(model.FolderPermissions);
+    }
+
+    [Fact]
+    public async Task OnboardingDetailsHandler_AllowsHrToReadAcrossCompanies()
+    {
+        await using var context = CreateContext();
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 11,
+            FullName = "Beta Hire",
+            EmployeeID = "E-11",
+            Department = "Finance",
+            Branch = "Beta",
+            HODEmail = "manager@beta.test",
+            Status = RequestStatus.PendingITApproval,
+            RequestDate = new DateTime(2026, 4, 3, 8, 0, 0, DateTimeKind.Utc)
+        });
+        context.Companies.Add(new Company
+        {
+            Id = 21,
+            Name = "Beta",
+            LogoPath = "logos/beta.png"
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new GetOnboardingDetailsQueryHandler(
+            context,
+            CreateUserManager("signature://hr"),
+            Mock.Of<ISignatureIntegrityService>(),
+            new TestCurrentUserAccessor(
+                "hr@alpha.test",
+                "hr-1",
+                titles: ["HR"],
+                companies: ["Alpha"]));
+
+        var result = await handler.Handle(new GetOnboardingDetailsQuery(11), CancellationToken.None);
+
+        Assert.Equal(GetOnboardingDetailsStatus.Ready, result.Status);
+        Assert.Equal("Beta Hire", result.ViewModel!.FullName);
+        Assert.Equal("logos/beta.png", result.ViewModel.CompanyLogoPath);
+    }
+
+    [Fact]
+    public async Task OnboardingDetailsHandler_ReturnsForbidden_ForItOutsideCompany()
+    {
+        await using var context = CreateContext();
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 12,
+            FullName = "Beta Hire",
+            EmployeeID = "E-12",
+            Department = "Finance",
+            Branch = "Beta",
+            HODEmail = "manager@beta.test",
+            Status = RequestStatus.PendingITApproval,
+            RequestDate = new DateTime(2026, 4, 4, 8, 0, 0, DateTimeKind.Utc)
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new GetOnboardingDetailsQueryHandler(
+            context,
+            CreateUserManager("signature://it"),
+            Mock.Of<ISignatureIntegrityService>(),
+            new TestCurrentUserAccessor(
+                "it@alpha.test",
+                "it-1",
+                titles: ["IT"],
+                companies: ["Alpha"]));
+
+        var result = await handler.Handle(new GetOnboardingDetailsQuery(12), CancellationToken.None);
+
+        Assert.Equal(GetOnboardingDetailsStatus.Forbidden, result.Status);
+        Assert.Null(result.ViewModel);
     }
 
     [Fact]
@@ -256,7 +335,11 @@ public class RequestDetailsQueryHandlerTests
             context,
             CreateUserManager("signature://it"),
             Mock.Of<ISignatureIntegrityService>(),
-            new TestCurrentUserAccessor("it@alpha.test", "it-1", "IT"));
+            new TestCurrentUserAccessor(
+                "it@alpha.test",
+                "it-1",
+                titles: ["IT"],
+                companies: ["Alpha (Lot 1)"]));
 
         var result = await handler.Handle(new GetOffboardingDetailsQuery(40), CancellationToken.None);
 
@@ -280,6 +363,83 @@ public class RequestDetailsQueryHandlerTests
         Assert.Equal(AssetStatus.Available, model.OnboardingRequest.IssuedAssets[0].ITAsset!.Status);
         Assert.Single(model.OnboardingRequest.IssuedSoftware);
         Assert.Equal("Finance Suite", model.OnboardingRequest.IssuedSoftware[0].SoftwareName);
+    }
+
+    [Fact]
+    public async Task OffboardingDetailsHandler_AllowsHrToReadAcrossCompanies()
+    {
+        await using var context = CreateContext();
+
+        context.OffboardingRequests.Add(new OffboardingRequest
+        {
+            Id = 41,
+            FullName = "Beta Exit",
+            EmployeeID = "EMP-41",
+            Department = "Finance",
+            Branch = "Beta",
+            HODEmail = "manager@beta.test",
+            Status = RequestStatus.PendingHODApproval,
+            LastDayOfWork = new DateTime(2026, 4, 25, 0, 0, 0, DateTimeKind.Utc),
+            RequestDate = new DateTime(2026, 4, 15, 8, 0, 0, DateTimeKind.Utc)
+        });
+        context.Companies.Add(new Company
+        {
+            Id = 42,
+            Name = "Beta",
+            LogoPath = "logos/beta.png"
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new GetOffboardingDetailsQueryHandler(
+            context,
+            CreateUserManager("signature://hr"),
+            Mock.Of<ISignatureIntegrityService>(),
+            new TestCurrentUserAccessor(
+                "hr@alpha.test",
+                "hr-1",
+                titles: ["HR"],
+                companies: ["Alpha"]));
+
+        var result = await handler.Handle(new GetOffboardingDetailsQuery(41), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Beta Exit", result.Data!.FullName);
+        Assert.Equal("logos/beta.png", result.Data.CompanyLogoPath);
+    }
+
+    [Fact]
+    public async Task OffboardingDetailsHandler_ReturnsForbidden_ForItOutsideCompany()
+    {
+        await using var context = CreateContext();
+
+        context.OffboardingRequests.Add(new OffboardingRequest
+        {
+            Id = 42,
+            FullName = "Beta Exit",
+            EmployeeID = "EMP-42",
+            Department = "Finance",
+            Branch = "Beta",
+            HODEmail = "manager@beta.test",
+            Status = RequestStatus.PendingITApproval,
+            LastDayOfWork = new DateTime(2026, 4, 26, 0, 0, 0, DateTimeKind.Utc),
+            RequestDate = new DateTime(2026, 4, 16, 8, 0, 0, DateTimeKind.Utc)
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new GetOffboardingDetailsQueryHandler(
+            context,
+            CreateUserManager("signature://it"),
+            Mock.Of<ISignatureIntegrityService>(),
+            new TestCurrentUserAccessor(
+                "it@alpha.test",
+                "it-1",
+                titles: ["IT"],
+                companies: ["Alpha"]));
+
+        var result = await handler.Handle(new GetOffboardingDetailsQuery(42), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        Assert.Null(result.Data);
     }
 
     private static ApplicationDbContext CreateContext()
@@ -313,7 +473,11 @@ public class RequestDetailsQueryHandlerTests
 
     private sealed class TestCurrentUserAccessor : ICurrentUserAccessor
     {
-        public TestCurrentUserAccessor(string userName, string userId, params string[] titles)
+        public TestCurrentUserAccessor(
+            string userName,
+            string userId,
+            IEnumerable<string>? titles = null,
+            IEnumerable<string>? companies = null)
         {
             var claims = new List<Claim>
             {
@@ -321,7 +485,8 @@ public class RequestDetailsQueryHandlerTests
                 new(ClaimTypes.NameIdentifier, userId)
             };
 
-            claims.AddRange(titles.Select(title => new Claim("UserTitle", title)));
+            claims.AddRange((titles ?? Array.Empty<string>()).Select(title => new Claim("UserTitle", title)));
+            claims.AddRange((companies ?? Array.Empty<string>()).Select(company => new Claim("UserCompany", company)));
             User = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
             UserName = userName;
         }

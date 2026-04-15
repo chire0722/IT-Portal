@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroup
 {
-    public sealed record GetEmailGroupIndexPageQuery() : IRequest<ProcessResult<List<EmailGroupIndexListItem>>>;
+    public sealed record GetEmailGroupIndexPageQuery(int? CompanyId = null) : IRequest<ProcessResult<EmailGroupIndexPageViewModel>>;
     public sealed record GetEmailGroupCreatePageQuery(EmailGroupEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<EmailGroupEditorPageViewModel>>;
     public sealed record GetEmailGroupEditPageQuery(int Id, EmailGroupEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<EmailGroupEditorPageViewModel>>;
     public sealed record GetEmailGroupMembersPageQuery(int Id, int? OnboardingRequestId = null) : IRequest<ProcessResult<EmailGroupMembersPageViewModel>>;
 
-    public sealed class GetEmailGroupIndexPageQueryHandler : IRequestHandler<GetEmailGroupIndexPageQuery, ProcessResult<List<EmailGroupIndexListItem>>>
+    public sealed class GetEmailGroupIndexPageQueryHandler : IRequestHandler<GetEmailGroupIndexPageQuery, ProcessResult<EmailGroupIndexPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
@@ -25,11 +25,17 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
-        public async Task<ProcessResult<List<EmailGroupIndexListItem>>> Handle(GetEmailGroupIndexPageQuery request, CancellationToken cancellationToken)
+        public async Task<ProcessResult<EmailGroupIndexPageViewModel>> Handle(GetEmailGroupIndexPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
+            if (request.CompanyId.HasValue && !companyOptions.Any(company => company.Id == request.CompanyId.Value))
+            {
+                return ProcessResult<EmailGroupIndexPageViewModel>.Forbidden();
+            }
+
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             var groupsQuery = _context.EmailGroups
@@ -40,14 +46,27 @@ namespace IT_Form.Application.Features.EmailGroup
             if (accessibleCompanyIds is { Count: > 0 })
             {
                 groupsQuery = groupsQuery.Where(group =>
+                    !group.EmailGroupCompanies.Any() ||
                     group.EmailGroupCompanies.Any(link => accessibleCompanyIds.Contains(link.CompanyId)));
+            }
+
+            if (request.CompanyId.HasValue)
+            {
+                groupsQuery = groupsQuery.Where(group =>
+                    !group.EmailGroupCompanies.Any() ||
+                    group.EmailGroupCompanies.Any(link => link.CompanyId == request.CompanyId.Value));
             }
 
             var groups = await groupsQuery
                 .ProjectToType<EmailGroupIndexListItem>()
                 .ToListAsync(cancellationToken);
 
-            return ProcessResult<List<EmailGroupIndexListItem>>.Success(groups);
+            return ProcessResult<EmailGroupIndexPageViewModel>.Success(new EmailGroupIndexPageViewModel
+            {
+                SelectedCompanyId = request.CompanyId,
+                CompanyOptions = companyOptions,
+                Items = groups
+            });
         }
     }
 
@@ -64,9 +83,9 @@ namespace IT_Form.Application.Features.EmailGroup
 
         public async Task<ProcessResult<EmailGroupEditorPageViewModel>> Handle(GetEmailGroupCreatePageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken, activeOnly: true)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken, activeOnly: true)
                 : null;
 
             if (request.SelectedCompanyIds != null &&
@@ -78,7 +97,7 @@ namespace IT_Form.Application.Features.EmailGroup
 
             var model = request.Model?.Adapt<EmailGroupEditorPageViewModel>() ?? new EmailGroupEditorPageViewModel();
             model.SelectedCompanyIds = request.SelectedCompanyIds?.ToList() ?? [];
-            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            model.CompanyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
             return ProcessResult<EmailGroupEditorPageViewModel>.Success(model);
         }
     }
@@ -96,9 +115,9 @@ namespace IT_Form.Application.Features.EmailGroup
 
         public async Task<ProcessResult<EmailGroupEditorPageViewModel>> Handle(GetEmailGroupEditPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             EmailGroupEditorPageViewModel? model;
@@ -135,7 +154,7 @@ namespace IT_Form.Application.Features.EmailGroup
                 model.SelectedCompanyIds = request.SelectedCompanyIds.ToList();
             }
 
-            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            model.CompanyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
             return ProcessResult<EmailGroupEditorPageViewModel>.Success(model);
         }
     }
@@ -153,9 +172,9 @@ namespace IT_Form.Application.Features.EmailGroup
 
         public async Task<ProcessResult<EmailGroupMembersPageViewModel>> Handle(GetEmailGroupMembersPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             var group = await _context.EmailGroups
@@ -198,7 +217,7 @@ namespace IT_Form.Application.Features.EmailGroup
                 .ProjectToType<EmailGroupMemberListItem>()
                 .ToListAsync(cancellationToken);
 
-            var currentEmployees = await PageQueryLookupSupport.LoadCurrentEmployeesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            var currentEmployees = await ItAdminCompanyScopeSupport.LoadCurrentEmployeesAsync(_context, _currentUserAccessor.User, cancellationToken);
             var currentEmployeeDisplayName = request.OnboardingRequestId.HasValue &&
                                              currentEmployees.Any(employee => employee.Id == request.OnboardingRequestId.Value)
                 ? await PageQueryLookupSupport.LoadCurrentEmployeeDisplayNameAsync(_context, request.OnboardingRequestId, cancellationToken)

@@ -1,5 +1,10 @@
 using IT_Form.Data;
+using FluentValidation;
+using FluentValidation.Results;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Application.Features.StandardSoftware;
+using IT_Form.Models;
 using MediatR;
 
 namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
@@ -7,10 +12,12 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
     public sealed class AddSoftwareLicenseCommandHandler : IRequestHandler<AddSoftwareLicenseCommand, AddSoftwareLicenseResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public AddSoftwareLicenseCommandHandler(ApplicationDbContext context)
+        public AddSoftwareLicenseCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         public async Task<AddSoftwareLicenseResult> Handle(AddSoftwareLicenseCommand request, CancellationToken cancellationToken)
@@ -19,6 +26,8 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
             {
                 return new AddSoftwareLicenseResult(AddSoftwareLicenseStatus.InvalidSubscriptionExpiry, "Expiry Date is required for subscription version.");
             }
+
+            await EnsureRequestedCompaniesAreAllowedAsync(request.SelectedCompanyIds, cancellationToken);
 
             var parent = await _context.StandardSoftware.FindAsync(new object[] { request.StandardSoftwareId }, cancellationToken);
             if (parent == null)
@@ -36,7 +45,14 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
                 ExpiryDate = request.ExpiryDate,
                 ContractLimit = request.ContractLimit ?? 0,
                 VendorName = request.VendorName,
-                SupportContact = request.SupportContact
+                SupportContact = request.SupportContact,
+                SoftwareLicenseCompanies = request.SelectedCompanyIds
+                    .Distinct()
+                    .Select(companyId => new SoftwareLicenseCompany
+                    {
+                        CompanyId = companyId
+                    })
+                    .ToList()
             };
 
             SoftwareLicenseSeatSyncSupport.NormalizeLicenseSettings(newLicense);
@@ -48,6 +64,34 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
             await _context.SaveChangesAsync(cancellationToken);
 
             return new AddSoftwareLicenseResult(AddSoftwareLicenseStatus.Added, "License edition added.");
+        }
+
+        private async Task EnsureRequestedCompaniesAreAllowedAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
+        {
+            var requestedCompanyIds = selectedCompanyIds
+                .Distinct()
+                .ToArray();
+
+            if (requestedCompanyIds.Length == 0)
+            {
+                if (!ItAdminCompanyScopeSupport.HasGlobalAccess(_currentUserAccessor.User))
+                {
+                    throw new ValidationException([new ValidationFailure(string.Empty, "Select at least one company for this software version.")]);
+                }
+
+                return;
+            }
+
+            var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(
+                _context,
+                _currentUserAccessor.User,
+                requestedCompanyIds,
+                cancellationToken);
+
+            if (!isAssignable)
+            {
+                throw new ValidationException([new ValidationFailure(string.Empty, "You can only assign software versions to your own company scope.")]);
+            }
         }
     }
 }

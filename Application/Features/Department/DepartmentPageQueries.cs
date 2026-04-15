@@ -30,9 +30,9 @@ namespace IT_Form.Application.Features.Department
 
         public async Task<ProcessResult<List<DepartmentIndexListItem>>> Handle(GetDepartmentIndexPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             var departmentsQuery = _context.Departments
@@ -67,9 +67,9 @@ namespace IT_Form.Application.Features.Department
 
         public async Task<ProcessResult<DepartmentEditorPageViewModel>> Handle(GetDepartmentCreatePageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken, activeOnly: true)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken, activeOnly: true)
                 : null;
 
             if (request.SelectedCompanyIds != null &&
@@ -81,7 +81,7 @@ namespace IT_Form.Application.Features.Department
 
             var model = request.Model?.Adapt<DepartmentEditorPageViewModel>() ?? new DepartmentEditorPageViewModel();
             model.SelectedCompanyIds = request.SelectedCompanyIds?.ToList() ?? [];
-            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            model.CompanyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
             return ProcessResult<DepartmentEditorPageViewModel>.Success(model);
         }
     }
@@ -99,9 +99,9 @@ namespace IT_Form.Application.Features.Department
 
         public async Task<ProcessResult<DepartmentEditorPageViewModel>> Handle(GetDepartmentEditPageQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             DepartmentEditorPageViewModel? model;
@@ -138,7 +138,7 @@ namespace IT_Form.Application.Features.Department
                 model.SelectedCompanyIds = request.SelectedCompanyIds.ToList();
             }
 
-            model.CompanyOptions = await PageQueryLookupSupport.LoadActiveCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
+            model.CompanyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
             return ProcessResult<DepartmentEditorPageViewModel>.Success(model);
         }
     }
@@ -156,7 +156,7 @@ namespace IT_Form.Application.Features.Department
 
         public async Task<ProcessResult<BinaryFilePayload>> Handle(DownloadDepartmentTemplateQuery request, CancellationToken cancellationToken)
         {
-            var companyDisplayNames = await CompanyScopeHelper.LoadAccessibleCompanyDisplayNamesAsync(
+            var companyDisplayNames = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(
                 _context,
                 _currentUserAccessor.User,
                 cancellationToken);

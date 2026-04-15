@@ -6,14 +6,17 @@ namespace IT_Form.Application.Features.Home;
 
 public sealed record GetHomeDashboardQuery(int? Year) : IRequest<HomePageResult>;
 
-public sealed record GetHomeAnalyticsQuery(int? Year) : IRequest<ProcessResult<HomePageResult>>;
+public sealed record GetHomeAnalyticsQuery(int? Year, int? CompanyId) : IRequest<ProcessResult<HomePageResult>>;
 
 public sealed record GetHomeDiagAnalyticsQuery() : IRequest<HomeDiagAnalyticsResult>;
 
 public sealed record HomePageResult(
     DashboardViewModel ViewModel,
     bool IsCurrentYear,
-    string StatsPeriodLabel);
+    string StatsPeriodLabel,
+    IReadOnlyList<PageCompanyOption> CompanyOptions,
+    int? SelectedCompanyId,
+    string? SelectedCompanyDisplayName);
 
 public sealed record HomeDiagAnalyticsResult(
     IReadOnlyDictionary<string, int> AssetType,

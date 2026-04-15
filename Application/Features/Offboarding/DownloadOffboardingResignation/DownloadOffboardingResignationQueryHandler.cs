@@ -1,6 +1,7 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
+using IT_Form.Application.Features.Offboarding;
 using IT_Form.Helpers;
 using IT_Form.Models;
 using MediatR;
@@ -33,7 +34,7 @@ namespace IT_Form.Application.Features.Offboarding.DownloadOffboardingResignatio
             if (offboardingRequest == null || string.IsNullOrEmpty(offboardingRequest.ResignationLetterPath))
                 return ProcessResult<BinaryFilePayload>.NotFound();
 
-            if (!await ActionWrites.OffboardingActionWriteHelpers.IsUserAuthorizedForRequest(_context, _currentUserAccessor.User, _userManager, offboardingRequest, _currentUserAccessor.UserName))
+            if (!await OffboardingReadAccessSupport.IsUserAuthorizedForRequest(_context, _currentUserAccessor.User, _userManager, offboardingRequest, _currentUserAccessor.UserName))
                 return ProcessResult<BinaryFilePayload>.Forbidden();
 
             await _context.LogActionAsync(nameof(OffboardingRequest), request.Id.ToString(), "Read", $"Read resignation letter for: {offboardingRequest.FullName}");

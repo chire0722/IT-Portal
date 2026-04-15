@@ -1,4 +1,5 @@
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -21,9 +22,9 @@ namespace IT_Form.Application.Features.EmailGroup.AddCurrentEmployeeToEmailGroup
 
         public async Task<AddCurrentEmployeeToEmailGroupResult> Handle(AddCurrentEmployeeToEmailGroupCommand request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0
-                ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
+                ? await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(_context, _currentUserAccessor.User, cancellationToken)
                 : null;
 
             var group = await _context.EmailGroups
@@ -52,7 +53,7 @@ namespace IT_Form.Application.Features.EmailGroup.AddCurrentEmployeeToEmailGroup
                 return new AddCurrentEmployeeToEmailGroupResult(AddCurrentEmployeeToEmailGroupStatus.InvalidEmployee, "Selected employee is not a current employee record.");
             }
 
-            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, employee.Branch))
+            if (!ItAdminCompanyScopeSupport.CanAccessCompany(_currentUserAccessor.User, employee.Branch))
             {
                 return new AddCurrentEmployeeToEmailGroupResult(AddCurrentEmployeeToEmailGroupStatus.Forbidden, "You can only add employees from your own company scope.");
             }

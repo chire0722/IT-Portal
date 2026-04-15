@@ -1,6 +1,7 @@
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -35,7 +36,7 @@ public sealed class CreateDepartmentCommandHandler : IRequestHandler<CreateDepar
 
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
-        var isAssignable = await CompanyScopeHelper.AreRequestedCompanyIdsAssignableAsync(
+        var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(
             _context,
             _currentUserAccessor.User,
             selectedCompanyIds,

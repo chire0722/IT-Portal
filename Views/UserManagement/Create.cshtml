@@ -35,23 +35,10 @@
                     <label asp-for="Department" class="form-label"></label>
                     <select asp-for="Department" class="form-select">
                         <option value="">Select Department</option>
-                        <option>IT</option>
-                        <option>HR</option>
-                        <option>Account</option>
-                        <option>Admin</option>
-                        <option>Contract</option>
-                        <option>Drawing</option>
-                        <option>Logistic</option>
-                        <option>Marketing</option>
-                        <option>Production</option>
-                        <option>Project</option>
-                        <option>Purchasing</option>
-                        <option>QA/QC</option>
-                        <option>Safety</option>
-                        <option>Sales</option>
-                        <option>Store</option>
-                        <option>Technical</option>
-                        <option>Workshop</option>
+                        @foreach (var department in Model.Departments)
+                        {
+                            <option value="@department.Name">@department.Name</option>
+                        }
                     </select>
                     <span asp-validation-for="Department" class="text-danger" aria-live="polite" aria-atomic="true"></span>
                 </div>

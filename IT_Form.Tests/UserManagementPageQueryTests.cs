@@ -66,6 +66,10 @@ public class UserManagementPageQueryTests
     {
         await using var context = CreateContext();
 
+        context.Departments.AddRange(
+            new Department { Id = 1, Name = "Sales", IsActive = true },
+            new Department { Id = 2, Name = "IT", IsActive = true },
+            new Department { Id = 3, Name = "Dormant", IsActive = false });
         context.Companies.AddRange(
             new Company { Id = 1, Name = "Beta", Lot = "L2", IsActive = true },
             new Company { Id = 2, Name = "Alpha", Lot = "L1", IsActive = true },
@@ -89,6 +93,7 @@ public class UserManagementPageQueryTests
         Assert.Equal("draft", model.Username);
         Assert.Equal("draft@test.local", model.Email);
         Assert.Equal(["Alpha (L1)"], model.SelectedCompanies);
+        Assert.Equal(["IT", "Sales"], model.Departments.Select(d => d.Name).ToList());
         Assert.Equal(["Alpha (L1)", "Beta (L2)"], model.Companies.Select(c => c.DisplayName).ToList());
     }
 
@@ -114,6 +119,9 @@ public class UserManagementPageQueryTests
                 new UserCompany { CompanyName = "Gamma" }
             ]
         });
+        context.Departments.AddRange(
+            new Department { Id = 9, Name = "Operations", IsActive = true },
+            new Department { Id = 10, Name = "Inactive", IsActive = false });
         context.Companies.Add(new Company { Id = 9, Name = "Gamma", IsActive = true });
         await context.SaveChangesAsync();
 
@@ -132,8 +140,86 @@ public class UserManagementPageQueryTests
         Assert.Equal("manager@test.local", model.Email);
         Assert.Equal("Operations", model.Department);
         Assert.True(model.IsHOD);
+        Assert.Equal(["Operations"], model.Departments.Select(d => d.Name).ToList());
         Assert.Equal(["Gamma"], model.SelectedCompanies);
         Assert.Equal(["Gamma"], model.Companies.Select(c => c.DisplayName).ToList());
+    }
+
+    [Fact]
+    public async Task ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies()
+    {
+        await using var context = CreateContext();
+
+        context.Departments.AddRange(
+            new Department
+            {
+                Id = 11,
+                Name = "Alpha Only",
+                IsActive = true,
+                DepartmentCompanies = [new DepartmentCompany { CompanyId = 1 }]
+            },
+            new Department
+            {
+                Id = 12,
+                Name = "Global Dept",
+                IsActive = true
+            },
+            new Department
+            {
+                Id = 13,
+                Name = "Beta Only",
+                IsActive = true,
+                DepartmentCompanies = [new DepartmentCompany { CompanyId = 2 }]
+            });
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        context.Users.AddRange(
+            new ApplicationUser
+            {
+                Id = "u-alpha",
+                UserName = "alpha.user",
+                FullName = "Alpha User",
+                Email = "alpha@test.local",
+                IsActive = true,
+                UserCompanies = [new UserCompany { CompanyName = "Alpha" }]
+            },
+            new ApplicationUser
+            {
+                Id = "u-beta",
+                UserName = "beta.user",
+                FullName = "Beta User",
+                Email = "beta@test.local",
+                IsActive = true,
+                UserCompanies = [new UserCompany { CompanyName = "Beta" }]
+            });
+        await context.SaveChangesAsync();
+
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "it.user",
+            titles: ["IT"],
+            companies: ["Alpha"]);
+        var indexHandler = new GetUserManagementIndexPageQueryHandler(context, currentUser);
+        var createHandler = new GetUserManagementCreatePageQueryHandler(context, currentUser);
+        var editHandler = new GetUserManagementEditPageQueryHandler(context, currentUser);
+
+        var indexResult = await indexHandler.Handle(new GetUserManagementIndexPageQuery(), CancellationToken.None);
+        var createResult = await createHandler.Handle(new GetUserManagementCreatePageQuery(), CancellationToken.None);
+        var editResult = await editHandler.Handle(new GetUserManagementEditPageQuery("u-beta"), CancellationToken.None);
+
+        Assert.True(indexResult.IsSuccess);
+        Assert.Equal(2, indexResult.Data!.Count);
+        Assert.Contains(indexResult.Data, item => item.Id == "u-alpha");
+        Assert.Contains(indexResult.Data, item => item.Id == "u-beta");
+
+        Assert.True(createResult.IsSuccess);
+        Assert.Equal(["Alpha Only", "Beta Only", "Global Dept"], createResult.Data!.Departments.Select(department => department.Name).ToList());
+        Assert.Equal(["Alpha", "Beta"], createResult.Data!.Companies.Select(company => company.DisplayName).ToList());
+
+        Assert.True(editResult.IsSuccess);
+        Assert.Equal("u-beta", editResult.Data!.Id);
+        Assert.Equal(["Beta"], editResult.Data.SelectedCompanies);
+        Assert.Equal(["Alpha", "Beta"], editResult.Data.Companies.Select(company => company.DisplayName).ToList());
     }
 
     private static ApplicationDbContext CreateContext()

@@ -11,5 +11,6 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
         DateTime? ExpiryDate,
         int? ContractLimit,
         string? VendorName,
-        string? SupportContact) : IRequest<AddSoftwareLicenseResult>;
+        string? SupportContact,
+        int[] SelectedCompanyIds) : IRequest<AddSoftwareLicenseResult>;
 }

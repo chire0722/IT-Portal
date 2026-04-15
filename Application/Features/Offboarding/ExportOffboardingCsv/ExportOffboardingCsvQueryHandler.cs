@@ -1,5 +1,6 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -25,20 +26,11 @@ namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
         {
             var query = _context.OffboardingRequests.AsNoTracking().AsQueryable();
             var user = _currentUserAccessor.User;
+            var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
 
-            if (!user.HasClaim("UserTitle", "IT") && !user.HasClaim("UserTitle", "HR"))
+            if (scopedCompanies.Count > 0)
             {
-                var userCompanies = UserHelper.GetClaimValues(user, "UserCompany");
-                if (userCompanies.Any())
-                {
-                    var currentUserName = _currentUserAccessor.UserName;
-                    query = query.Where(r =>
-                        (r.Branch != null && userCompanies.Any(c =>
-                            c == r.Branch ||
-                            c.StartsWith(r.Branch + " (") ||
-                            r.Branch.StartsWith(c + " (")))
-                        || r.CreatedByUserId == currentUserName);
-                }
+                query = CompanyScopeHelper.ApplyCompanyScope(query, scopedCompanies, item => item.Branch);
             }
 
             query = ApplySearchFilter(query, request.SearchString, request.Status);

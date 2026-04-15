@@ -11,5 +11,6 @@ namespace IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense
         DateTime? ExpiryDate,
         int? ContractLimit,
         string? VendorName,
-        string? SupportContact) : IRequest<EditSoftwareLicenseResult>;
+        string? SupportContact,
+        int[] SelectedCompanyIds) : IRequest<EditSoftwareLicenseResult>;
 }

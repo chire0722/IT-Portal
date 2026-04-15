@@ -30,7 +30,8 @@ public class OnboardingStep3QueryHandlerTests
         context.OnboardingRequests.Add(new OnboardingRequest
         {
             Id = 10,
-            Status = RequestStatus.PendingITApproval
+            Status = RequestStatus.PendingITApproval,
+            Branch = "HQ"
         });
 
         context.StandardSoftware.Add(new StandardSoftware
@@ -82,12 +83,15 @@ public class OnboardingStep3QueryHandlerTests
             AssetType = AssetType.Laptop,
             Model = "Latitude 7440",
             SerialNumber = "SER-100",
-            Status = AssetStatus.Available
+            Status = AssetStatus.Available,
+            Company = "HQ"
         });
 
         await context.SaveChangesAsync();
 
-        var handler = new GetOnboardingItStep3QueryHandler(context);
+        var handler = new GetOnboardingItStep3QueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
         var sessionModel = new OnboardingViewModel
         {
             Id = 10,
@@ -138,7 +142,8 @@ public class OnboardingStep3QueryHandlerTests
         context.OnboardingRequests.Add(new OnboardingRequest
         {
             Id = 20,
-            Status = RequestStatus.PendingITApproval
+            Status = RequestStatus.PendingITApproval,
+            Branch = "HQ"
         });
 
         context.StandardSoftware.Add(new StandardSoftware
@@ -160,7 +165,9 @@ public class OnboardingStep3QueryHandlerTests
 
         await context.SaveChangesAsync();
 
-        var handler = new GetOnboardingItStep3QueryHandler(context);
+        var handler = new GetOnboardingItStep3QueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
         var result = await handler.Handle(
             new GetOnboardingItStep3Query(new OnboardingViewModel { Id = 20, CurrentStep = 2 }),
             CancellationToken.None);
@@ -169,6 +176,227 @@ public class OnboardingStep3QueryHandlerTests
         var viewModel = Assert.IsType<OnboardingStep3PageViewModel>(result.ViewModel);
         Assert.True(viewModel.AvailableSoftware[0].IsFree);
         Assert.Equal(int.MaxValue, viewModel.LicenseAvailability[22]);
+    }
+
+    [Fact]
+    public async Task Handle_FiltersSoftwareVersions_ByEmployeeCompany()
+    {
+        await using var context = CreateContext();
+
+        context.Companies.AddRange(
+            new Company { Id = 30, Name = "HQ", IsActive = true },
+            new Company { Id = 31, Name = "Factory", IsActive = true });
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 40,
+            Status = RequestStatus.PendingITApproval,
+            Branch = "HQ"
+        });
+
+        context.StandardSoftware.AddRange(
+            new StandardSoftware
+            {
+                Id = 41,
+                SoftwareName = "Adobe Acrobat",
+                IsActive = true,
+                Licenses =
+                [
+                    new SoftwareLicense
+                    {
+                        Id = 42,
+                        SoftwareName = "Adobe Global",
+                        StandardSoftwareId = 41
+                    },
+                    new SoftwareLicense
+                    {
+                        Id = 43,
+                        SoftwareName = "Adobe HQ",
+                        StandardSoftwareId = 41,
+                        SoftwareLicenseCompanies =
+                        [
+                            new SoftwareLicenseCompany
+                            {
+                                CompanyId = 30
+                            }
+                        ]
+                    },
+                    new SoftwareLicense
+                    {
+                        Id = 44,
+                        SoftwareName = "Adobe Factory",
+                        StandardSoftwareId = 41,
+                        SoftwareLicenseCompanies =
+                        [
+                            new SoftwareLicenseCompany
+                            {
+                                CompanyId = 31
+                            }
+                        ]
+                    }
+                ]
+            },
+            new StandardSoftware
+            {
+                Id = 45,
+                SoftwareName = "Factory Only",
+                IsActive = true,
+                Licenses =
+                [
+                    new SoftwareLicense
+                    {
+                        Id = 46,
+                        SoftwareName = "Factory Locked",
+                        StandardSoftwareId = 45,
+                        SoftwareLicenseCompanies =
+                        [
+                            new SoftwareLicenseCompany
+                            {
+                                CompanyId = 31
+                            }
+                        ]
+                    }
+                ]
+            });
+
+        context.EmailGroups.AddRange(
+            new EmailGroup
+            {
+                Id = 47,
+                GroupName = "All Staff",
+                GroupEmail = "all@global.test",
+                IsActive = true
+            },
+            new EmailGroup
+            {
+                Id = 48,
+                GroupName = "HQ Staff",
+                GroupEmail = "hq@alpha.test",
+                IsActive = true,
+                EmailGroupCompanies =
+                [
+                    new EmailGroupCompany
+                    {
+                        CompanyId = 30
+                    }
+                ]
+            },
+            new EmailGroup
+            {
+                Id = 49,
+                GroupName = "Factory Staff",
+                GroupEmail = "factory@beta.test",
+                IsActive = true,
+                EmailGroupCompanies =
+                [
+                    new EmailGroupCompany
+                    {
+                        CompanyId = 31
+                    }
+                ]
+            });
+
+        context.SharedMailboxes.AddRange(
+            new SharedMailbox
+            {
+                Id = 50,
+                MailboxName = "General",
+                MailboxAddress = "general@global.test",
+                IsActive = true
+            },
+            new SharedMailbox
+            {
+                Id = 51,
+                MailboxName = "HQ Ops",
+                MailboxAddress = "hq.ops@alpha.test",
+                IsActive = true,
+                SharedMailboxCompanies =
+                [
+                    new SharedMailboxCompany
+                    {
+                        CompanyId = 30
+                    }
+                ]
+            },
+            new SharedMailbox
+            {
+                Id = 52,
+                MailboxName = "Factory Ops",
+                MailboxAddress = "factory.ops@beta.test",
+                IsActive = true,
+                SharedMailboxCompanies =
+                [
+                    new SharedMailboxCompany
+                    {
+                        CompanyId = 31
+                    }
+                ]
+            });
+
+        context.ITAssets.AddRange(
+            new ITAsset
+            {
+                Id = 53,
+                AssetTag = "HQ-LT-1",
+                AssetType = AssetType.Laptop,
+                Status = AssetStatus.Available,
+                Company = "HQ"
+            },
+            new ITAsset
+            {
+                Id = 54,
+                AssetTag = "FAC-LT-1",
+                AssetType = AssetType.Laptop,
+                Status = AssetStatus.Available,
+                Company = "Factory"
+            });
+
+        await context.SaveChangesAsync();
+
+        var handler = new GetOnboardingItStep3QueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
+        var result = await handler.Handle(
+            new GetOnboardingItStep3Query(new OnboardingViewModel { Id = 40, CurrentStep = 2 }),
+            CancellationToken.None);
+
+        Assert.Equal(GetOnboardingItStep3Status.Ready, result.Status);
+        var viewModel = Assert.IsType<OnboardingStep3PageViewModel>(result.ViewModel);
+        Assert.Equal([42, 43], viewModel.AvailableSoftware.Select(license => license.Id).OrderBy(id => id).ToArray());
+        Assert.Single(viewModel.StandardSoftwareOptions);
+        Assert.Equal(41, viewModel.StandardSoftwareOptions[0].Id);
+        Assert.Equal([42, 43], viewModel.StandardSoftwareOptions[0].Licenses.Select(license => license.Id).OrderBy(id => id).ToArray());
+        Assert.Equal([47, 48], viewModel.EmailGroups.Select(group => group.Id).OrderBy(id => id).ToArray());
+        Assert.Equal([50, 51], viewModel.SharedMailboxes.Select(mailbox => mailbox.Id).OrderBy(id => id).ToArray());
+        Assert.Equal([53], viewModel.AvailableAssets.Select(asset => asset.Id).ToArray());
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsForbidden_WhenItUserTargetsDifferentCompany()
+    {
+        await using var context = CreateContext();
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 60,
+            Status = RequestStatus.PendingITApproval,
+            Branch = "Factory"
+        });
+
+        await context.SaveChangesAsync();
+
+        var handler = new GetOnboardingItStep3QueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
+
+        var result = await handler.Handle(
+            new GetOnboardingItStep3Query(new OnboardingViewModel { Id = 60, CurrentStep = 2 }),
+            CancellationToken.None);
+
+        Assert.Equal(GetOnboardingItStep3Status.Forbidden, result.Status);
+        Assert.Equal(60, result.RequestId);
+        Assert.Null(result.ViewModel);
+        Assert.Contains("assigned company scope", result.Message);
     }
 
     private static ApplicationDbContext CreateContext()

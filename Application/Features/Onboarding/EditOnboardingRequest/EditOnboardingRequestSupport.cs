@@ -1,4 +1,5 @@
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -113,10 +114,11 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
         internal static void ReplaceIssuedAssets(OnboardingRequest onboardingRequest, IReadOnlyCollection<IssuedAsset>? issuedAssets)
         {
             onboardingRequest.IssuedAssets = issuedAssets?
-                .Where(a => a.AssetType != AssetType.Others || !string.IsNullOrWhiteSpace(a.Description))
+                .Where(a => AssetCategoryHelper.HasSpecifiedCategory(a.AssetType, a.OtherAssetType, a.Description))
                 .Select(asset => new IssuedAsset
                 {
                     AssetType = asset.AssetType,
+                    OtherAssetType = asset.OtherAssetType,
                     Description = asset.Description,
                     SerialNumber = asset.SerialNumber,
                     AssetTag = asset.AssetTag,
@@ -129,10 +131,11 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
         internal static void ReplaceIssuedAssets(OnboardingRequest onboardingRequest, IReadOnlyCollection<IT_Form.ViewModels.AssetItemViewModel>? issuedAssets)
         {
             onboardingRequest.IssuedAssets = issuedAssets?
-                .Where(a => a.AssetType != AssetType.Others || !string.IsNullOrWhiteSpace(a.Description))
+                .Where(a => AssetCategoryHelper.HasSpecifiedCategory(a.AssetType, a.OtherAssetType, a.Description))
                 .Select(asset => new IssuedAsset
                 {
                     AssetType = asset.AssetType,
+                    OtherAssetType = asset.OtherAssetType,
                     Description = asset.Description,
                     SerialNumber = asset.SerialNumber,
                     AssetTag = asset.AssetTag,

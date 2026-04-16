@@ -78,6 +78,9 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
                 .FirstOrDefaultAsync(s => s.RequestType == "Offboarding", cancellationToken))?.TargetDays ?? 3;
             var slaStart = offboardingRequest.HRSignedAt ?? offboardingRequest.RequestDate;
             var company = await ResolveCompanyAsync(offboardingRequest.Branch, cancellationToken);
+            IEnumerable<CompanyEntity> slaCompanies = company is null
+                ? Array.Empty<CompanyEntity>()
+                : new[] { company };
             var viewModel = offboardingRequest.Adapt<OffboardingDetailsPageViewModel>();
             viewModel.OnboardingRequest = offboardingRequest.OnboardingRequest?.Adapt<OffboardingOnboardingSnapshotViewModel>();
 
@@ -98,7 +101,7 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
             viewModel.SlaTargetDays = slaTargetDays;
             viewModel.SlaStartTime = slaStart;
             viewModel.SlaDeadline = CompanyBusinessHoursHelper.CalculateSlaDeadline(
-                company == null ? Array.Empty<CompanyEntity>() : [company],
+                slaCompanies,
                 offboardingRequest.Branch,
                 slaStart,
                 slaTargetDays);

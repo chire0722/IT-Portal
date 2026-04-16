@@ -188,6 +188,7 @@ internal static class HomeDashboardSupport
                 return new SoftwareUtilizationViewModel
                 {
                     SoftwareName = license.SoftwareName,
+                    IsUnlimited = license.IsFree,
                     Total = total,
                     Used = used,
                     Percent = total > 0

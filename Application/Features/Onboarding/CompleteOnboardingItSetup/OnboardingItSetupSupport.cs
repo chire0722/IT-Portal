@@ -123,6 +123,7 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
                     var newAsset = new IssuedAsset
                     {
                         AssetType = asset.AssetType,
+                        OtherAssetType = asset.OtherAssetType,
                         Description = asset.Description,
                         Qty = asset.Qty,
                     };
@@ -133,6 +134,9 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
                         if (itAsset != null)
                         {
                             newAsset.ITAssetId = itAsset.Id;
+                            newAsset.OtherAssetType = !string.IsNullOrWhiteSpace(asset.OtherAssetType)
+                                ? asset.OtherAssetType
+                                : itAsset.OtherAssetType;
                             newAsset.AssetTag = itAsset.AssetTag;
                             newAsset.BrandModel = itAsset.Model ?? "N/A";
                             newAsset.SerialNumber = itAsset.SerialNumber ?? "N/A";

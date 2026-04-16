@@ -151,6 +151,7 @@ namespace IT_Form.Models
     public class SoftwareUtilizationViewModel
     {
         public string SoftwareName { get; set; } = string.Empty;
+        public bool IsUnlimited { get; set; }
         public int Total { get; set; }
         public int Used { get; set; }
         public double Percent { get; set; }

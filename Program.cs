@@ -151,7 +151,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequiredUniqueChars = 4;
     options.SignIn.RequireConfirmedEmail = false;
     options.User.RequireUniqueEmail = true;
-    // Account lockout: 5 failed attempts lock the account for 1 minute
+    // Identity lockout defaults; the login handler applies the configured escalating lockout schedule.
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1);
     options.Lockout.AllowedForNewUsers = true;

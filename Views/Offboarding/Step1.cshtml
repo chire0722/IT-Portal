@@ -1,4 +1,5 @@
 @model IT_Form.ViewModels.OffboardingStep1PageViewModel
+@using IT_Form.Helpers
 
 @{
     ViewData["Title"] = "Step 1 - Digital Access & Hardware";
@@ -244,7 +245,7 @@
                                             {
                                                 var isReturned = asset.ITAsset != null && asset.ITAsset.Status != IT_Form.Models.Enums.AssetStatus.Issued;
                                                         <li class="mb-1 ms-1">
-                                                            @asset.AssetType.ToString() - @(asset.AssetTag ?? "No Tag") <span
+                                                            @AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType) - @(asset.AssetTag ?? "No Tag") <span
                                                                     class="text-secondary" style="font-size: 0.8rem;">(@(asset.Description
                                                     ??
                                                     "N/A"))</span>
@@ -257,7 +258,7 @@
                                             @foreach (var asset in Model.OnboardingRequest.IssuedAssets.Where(a => !a.ITAssetId.HasValue))
                                             {
                                                         <li class="mb-1 ms-4">
-                                                    @asset.AssetType.ToString() <span
+                                                    @AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType) <span
                                                                     class="text-secondary" style="font-size: 0.8rem;">(@(asset.Description
                                                     ??
                                                     "N/A"))</span>

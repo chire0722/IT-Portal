@@ -85,6 +85,9 @@ namespace IT_Form.Application.Features.Account.LoginAccount
         private async Task<LoginAccountResult> HandleCoreAsync(LoginAccountCommand request, string userId, CancellationToken cancellationToken)
         {
             var maxAttempts = _securitySettings.MaxOtpAttempts;
+            var lockoutSchedule = _securitySettings.PasswordLockoutMinutes is { Count: > 0 }
+                ? _securitySettings.PasswordLockoutMinutes
+                : [5, 15, 30, 120];
             var user = await _context.Users.SingleAsync(u => u.Id == userId, cancellationToken);
 
             if (!user.IsActive)
@@ -154,13 +157,8 @@ namespace IT_Form.Application.Features.Account.LoginAccount
             if (user.AccessFailedCount >= maxAttempts)
             {
                 user.LockoutCount += 1;
-                int penaltyMinutes = user.LockoutCount switch
-                {
-                    1 => 1,
-                    2 => 5,
-                    3 => 15,
-                    _ => 60
-                };
+                var penaltyIndex = Math.Min(user.LockoutCount, lockoutSchedule.Count) - 1;
+                var penaltyMinutes = lockoutSchedule[penaltyIndex];
 
                 var lockoutTimestamp = DateTime.UtcNow;
                 var shouldQueueLockoutAlert = !string.IsNullOrWhiteSpace(user.Email) &&

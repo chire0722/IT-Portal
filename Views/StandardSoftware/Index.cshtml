@@ -19,8 +19,8 @@
 </div>
 
 <!-- Premium Analytics Dashboard -->
-<div class="row g-3 mb-4">
-    <div class="col-12 col-sm-5 col-lg-3">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-4">
+    <div class="col">
         <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -29,12 +29,12 @@
                     </div>
                     <span class="text-muted small fw-semibold">TOTAL SOFTWARE</span>
                 </div>
-                <h3 class="mb-0 fw-bold text-dark">@Model.TotalSoftwareCount</h3>
+                <h3 class="mb-0 fw-bold text-dark" style="font-size: 2rem; line-height: 1;">@Model.TotalSoftwareCount</h3>
                 <div class="text-muted small mt-1">Across @Model.TotalVersionCount versions</div>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-7 col-lg-3">
+    <div class="col">
         <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -43,12 +43,12 @@
                     </div>
                     <span class="text-muted small fw-semibold">LICENSE CAP</span>
                 </div>
-                <h3 class="mb-0 fw-bold text-dark">@Model.TotalSeatCapacity</h3>
+                <h3 class="mb-0 fw-bold text-dark" style="font-size: 2rem; line-height: 1;">@Model.TotalSeatCapacity</h3>
                 <div class="text-muted small mt-1">@Model.TotalAssignedSeats seats assigned</div>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-5 col-lg-3">
+    <div class="col">
         <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -57,14 +57,14 @@
                     </div>
                     <span class="text-muted small fw-semibold">UTILIZATION</span>
                 </div>
-                <h3 class="mb-0 fw-bold text-dark">@Model.UtilizationPercentage.ToString("F1")%</h3>
+                <h3 class="mb-0 fw-bold text-dark" style="font-size: 2rem; line-height: 1;">@Model.UtilizationPercentage.ToString("F1")%</h3>
                 <div class="progress mt-2" style="height: 6px;">
                     <div class="progress-bar bg-info" role="progressbar" style="width: @Model.UtilizationPercentage%"></div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-7 col-lg-3">
+    <div class="col">
         <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
@@ -73,8 +73,22 @@
                     </div>
                     <span class="text-muted small fw-semibold">EXPIRING SOON</span>
                 </div>
-                <h3 class="mb-0 fw-bold text-dark">@Model.ExpiringSoonCount</h3>
+                <h3 class="mb-0 fw-bold text-dark" style="font-size: 2rem; line-height: 1;">@Model.ExpiringSoonCount</h3>
                 <div class="text-muted small mt-1">Within next 30 days</div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8f9fa);">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-3">
+                        <i class="bi bi-exclamation-octagon text-danger fs-4" aria-hidden="true"></i>
+                    </div>
+                    <span class="text-muted small fw-semibold">EXPIRED LICENSES</span>
+                </div>
+                <h3 class="mb-0 fw-bold text-danger" style="font-size: 2rem; line-height: 1;">@Model.ExpiredCount</h3>
+                <div class="text-muted small mt-1">Expiry date reached or passed</div>
             </div>
         </div>
     </div>

@@ -37,6 +37,7 @@ public sealed class ITAssetOptionDto
 {
     public int Id { get; set; }
     public AssetType AssetType { get; set; }
+    public string? OtherAssetType { get; set; }
     public string AssetTag { get; set; } = string.Empty;
     public string? Model { get; set; }
     public string? SerialNumber { get; set; }

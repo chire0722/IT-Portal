@@ -91,6 +91,7 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep3
             {
                 for (var i = 0; i < Math.Min(request.Model.IssuedAssets.Count, session.IssuedAssets.Count); i++)
                 {
+                    session.IssuedAssets[i].OtherAssetType = request.Model.IssuedAssets[i].OtherAssetType ?? session.IssuedAssets[i].OtherAssetType;
                     session.IssuedAssets[i].ITAssetId = request.Model.IssuedAssets[i].ITAssetId;
                     session.IssuedAssets[i].Qty = request.Model.IssuedAssets[i].Qty;
                     session.IssuedAssets[i].Description = request.Model.IssuedAssets[i].Description;

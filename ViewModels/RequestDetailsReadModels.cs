@@ -5,6 +5,7 @@ namespace IT_Form.ViewModels
     public sealed class RequestAssetReadModel
     {
         public AssetType AssetType { get; set; }
+        public string? OtherAssetType { get; set; }
         public string? Description { get; set; }
         public string? AssetTag { get; set; }
         public string? SerialNumber { get; set; }

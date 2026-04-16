@@ -236,6 +236,7 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
                 .Select(asset => new AssetItemViewModel
                 {
                     AssetType = asset.AssetType,
+                    OtherAssetType = asset.OtherAssetType,
                     ITAssetId = asset.ITAssetId,
                     Description = asset.Description,
                     SerialNumber = asset.SerialNumber,

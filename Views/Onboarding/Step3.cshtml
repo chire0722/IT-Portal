@@ -1,4 +1,5 @@
 @model IT_Form.ViewModels.OnboardingStep3PageViewModel
+@using IT_Form.Helpers
 @{
     ViewData["Title"] = "Step 3 — Email Group, Shared Mailbox & Software";
 }
@@ -45,28 +46,36 @@
                             <tbody>
                                 @for (int i = 0; i < Model.IssuedAssets.Count; i++)
                                 {
+                                    var categoryLabel = AssetCategoryHelper.GetCategoryName(
+                                        Model.IssuedAssets[i].AssetType,
+                                        Model.IssuedAssets[i].OtherAssetType);
                                     <tr>
                                         <td class="text-center align-middle">@(i + 1)</td>
                                         <td class="align-middle">
                                             <input type="hidden" name="IssuedAssets[@i].AssetType" value="@((int)Model.IssuedAssets[i].AssetType)" />
+                                            <input type="hidden" name="IssuedAssets[@i].OtherAssetType" value="@Model.IssuedAssets[i].OtherAssetType" />
                                             <input type="hidden" name="IssuedAssets[@i].IsChecked" value="true" />
                                             <input type="hidden" name="IssuedAssets[@i].Qty" value="@(Model.IssuedAssets[i].Qty ?? 1)" />
-                                            <span class="badge bg-secondary">@Model.IssuedAssets[i].AssetType</span>
+                                            <span class="badge bg-secondary">@categoryLabel</span>
                                         </td>
                                         <td class="align-middle">
-                                            <small class="text-muted">@(Model.IssuedAssets[i].Description ?? "-")</small>
+                                            <small class="text-muted">@(Model.IssuedAssets[i].Description ?? categoryLabel)</small>
                                             <input type="hidden" name="IssuedAssets[@i].Description" value="@Model.IssuedAssets[i].Description" />
                                         </td>
                                         <td class="align-middle">
                                             @{
-                                                var isOther = Model.IssuedAssets[i].AssetType == IT_Form.Models.Enums.AssetType.Others;
                                                 var availAssets = Model.AvailableAssets ?? new List<IT_Form.Application.DTOs.Options.ITAssetOptionDto>();
-                                                var filteredAssets = isOther 
-                                                    ? availAssets.ToList() 
-                                                    : availAssets.Where(a => (int)a.AssetType == (int)Model.IssuedAssets[i].AssetType).ToList();
+                                                var filteredAssets = availAssets
+                                                    .Where(a => AssetCategoryHelper.MatchesCategory(
+                                                        a.AssetType,
+                                                        a.OtherAssetType,
+                                                        Model.IssuedAssets[i].AssetType,
+                                                        Model.IssuedAssets[i].OtherAssetType))
+                                                    .ToList();
+                                                var hasAvailableAssets = filteredAssets.Any();
                                             }
-                                            <select name="IssuedAssets[@i].ITAssetId" class="form-select form-select-sm" required>
-                                                <option value="">-- Select from Inventory --</option>
+                                            <select name="IssuedAssets[@i].ITAssetId" class="form-select form-select-sm" @(hasAvailableAssets ? "required" : null)>
+                                                <option value="">@(hasAvailableAssets ? "-- Select from Inventory --" : "-- No available inventory in this category --")</option>
                                                 @if (Model.IssuedAssets[i].ITAssetId.HasValue)
                                                 {
                                                     // In case it's already selected, it should stay there but we don't have the tag in the model easily, 
@@ -80,6 +89,10 @@
                                                     </option>
                                                 }
                                             </select>
+                                            @if (!hasAvailableAssets)
+                                            {
+                                                <div class="form-text text-warning mt-1">No available asset is currently in stock for this category.</div>
+                                            }
                                         </td>
                                     </tr>
                                 }

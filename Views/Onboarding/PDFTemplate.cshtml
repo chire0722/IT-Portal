@@ -1,4 +1,5 @@
 @model IT_Form.Models.OnboardingRequest
+@using IT_Form.Helpers
 @{
     Layout = null;
 }
@@ -80,7 +81,7 @@
                     {
                         <tr>
                             <td>@(i + 1)</td>
-                            <td style="text-align: left;">@Model.IssuedAssets[i].AssetType</td>
+                            <td style="text-align: left;">@AssetCategoryHelper.GetCategoryName(Model.IssuedAssets[i].AssetType, Model.IssuedAssets[i].OtherAssetType)</td>
                             <td style="text-align: left;">@Model.IssuedAssets[i].Description</td>
                             <td>@Model.IssuedAssets[i].SerialNumber</td>
                             <td>@Model.IssuedAssets[i].AssetTag</td>

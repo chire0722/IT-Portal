@@ -385,7 +385,7 @@
                                 {
                                                                                                             var isReturned = asset.ITAsset != null && asset.ITAsset.Status != IT_Form.Models.Enums.AssetStatus.Issued;
                                                                                                             <li>
-                                                                                                                @asset.AssetType.ToString() - @(asset.AssetTag ?? "No Tag") <span class="text-secondary" style="font-size: 0.8rem;">(@(asset.Description ?? "N/A"))</span>
+                                                                                                                @AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType) - @(asset.AssetTag ?? "No Tag") <span class="text-secondary" style="font-size: 0.8rem;">(@(asset.Description ?? "N/A"))</span>
                                                                                                                 @if(isReturned) { <span class="badge bg-success ms-1">Returned</span> }
                                                                                                             </li>
                                 }

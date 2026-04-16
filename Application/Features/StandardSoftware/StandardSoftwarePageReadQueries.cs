@@ -88,8 +88,13 @@ namespace IT_Form.Application.Features.StandardSoftware
                          !key.SoftwareLicense.SoftwareLicenseCompanies.Any() ||
                          key.SoftwareLicense.SoftwareLicenseCompanies.Any(link => accessibleCompanyIds.Contains(link.CompanyId))),
                         cancellationToken),
+                ExpiredCount = await scopedLicenseQuery
+                    .CountAsync(license => license.ExpiryDate.HasValue && license.ExpiryDate.Value <= today, cancellationToken),
                 ExpiringSoonCount = await scopedLicenseQuery
-                    .CountAsync(license => license.ExpiryDate.HasValue && license.ExpiryDate.Value <= today.AddDays(30), cancellationToken)
+                    .CountAsync(license =>
+                        license.ExpiryDate.HasValue &&
+                        license.ExpiryDate.Value > today &&
+                        license.ExpiryDate.Value <= today.AddDays(30), cancellationToken)
             };
 
             var softwareList = await _context.StandardSoftware

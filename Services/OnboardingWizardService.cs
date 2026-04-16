@@ -1,4 +1,5 @@
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.ViewModels;
@@ -99,6 +100,7 @@ namespace IT_Form.Services
             session.IssuedAssets = request.IssuedAssets?.Select(a => new AssetItemViewModel
             {
                 AssetType = a.AssetType,
+                OtherAssetType = a.OtherAssetType,
                 ITAssetId = a.ITAssetId,
                 Description = a.Description,
                 IsChecked = true,
@@ -136,18 +138,6 @@ namespace IT_Form.Services
         public OnboardingViewModel PrepareStep2Session(OnboardingViewModel model)
         {
             model.CurrentStep = 2;
-
-            if (model.IssuedAssets == null || model.IssuedAssets.Count == 0)
-            {
-                model.IssuedAssets = new List<AssetItemViewModel>
-                {
-                    new() { AssetType = AssetType.Laptop },
-                    new() { AssetType = AssetType.DesktopPC },
-                    new() { AssetType = AssetType.Monitor },
-                    new() { AssetType = AssetType.USBLANAdaptor }
-                };
-            }
-
             return model;
         }
 
@@ -206,6 +196,7 @@ namespace IT_Form.Services
                 .Select(a => new AssetItemViewModel
                 {
                     AssetType = a.AssetType,
+                    OtherAssetType = a.OtherAssetType,
                     Description = a.Description,
                     SerialNumber = a.SerialNumber,
                     AssetTag = a.AssetTag,
@@ -357,10 +348,11 @@ namespace IT_Form.Services
                 _context.IssuedAssets.RemoveRange(request.IssuedAssets);
             }
             request.IssuedAssets = session.IssuedAssets?
-                .Where(a => a.IsChecked && (a.AssetType != AssetType.Others || !string.IsNullOrWhiteSpace(a.Description)))
+                .Where(a => a.IsChecked && AssetCategoryHelper.HasSpecifiedCategory(a.AssetType, a.OtherAssetType, a.Description))
                 .Select(a => new IssuedAsset
                 {
                     AssetType = a.AssetType,
+                    OtherAssetType = a.OtherAssetType,
                     Description = a.Description,
                     SerialNumber = a.SerialNumber,
                     AssetTag = a.AssetTag,

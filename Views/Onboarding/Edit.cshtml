@@ -1,4 +1,5 @@
 @model IT_Form.ViewModels.EditOnboardingPageViewModel
+@using IT_Form.Helpers
 @{
     ViewData["Title"] = $"Edit — {Model.FullName}";
 }
@@ -267,7 +268,9 @@
                                             <td>
                                                 <input type="hidden" name="IssuedAssets[@i].AssetType"
                                                     value="@((int)Model.IssuedAssets[i].AssetType)" />
-                                                @Model.IssuedAssets[i].AssetType
+                                                <input type="hidden" name="IssuedAssets[@i].OtherAssetType"
+                                                    value="@Model.IssuedAssets[i].OtherAssetType" />
+                                                @AssetCategoryHelper.GetCategoryName(Model.IssuedAssets[i].AssetType, Model.IssuedAssets[i].OtherAssetType)
                                             </td>
                                             <td>
                                                 <input type="text" name="IssuedAssets[@i].Description"

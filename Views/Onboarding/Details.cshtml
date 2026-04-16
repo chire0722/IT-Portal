@@ -52,8 +52,25 @@
                 </span>
                 <span>Download PDF</span>
             </a>
+
+            @if (Model.Status == RequestStatus.Draft)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn details-action details-action--primary">
+                    <span class="details-action__icon">
+                        <i class="fas fa-edit"></i>
+                    </span>
+                    <span>Edit Form</span>
+                </a>
+
+                <button type="button" class="btn details-action details-action--danger" data-bs-toggle="modal" data-bs-target="#deleteFormModal">
+                    <span class="details-action__icon">
+                        <i class="bi bi-trash"></i>
+                    </span>
+                    <span>Delete Form</span>
+                </button>
+            }
             
-            @if (User.HasClaim("UserTitle", "HR") && !string.IsNullOrEmpty(Model.RequesterSignature) && string.IsNullOrEmpty(Model.ITAdminSignature))
+            @if (Model.Status != RequestStatus.Draft && User.HasClaim("UserTitle", "HR") && !string.IsNullOrEmpty(Model.RequesterSignature) && string.IsNullOrEmpty(Model.ITAdminSignature))
             {
                 <button type="button" class="btn details-action details-action--danger" data-bs-toggle="modal" data-bs-target="#deleteFormModal">
                     <span class="details-action__icon">
@@ -322,7 +339,7 @@
                         @foreach (var asset in Model.IssuedAssets)
                         {
                             <tr>
-                                <td><span class="badge bg-secondary">@asset.AssetType</span></td>
+                                <td><span class="badge bg-secondary">@AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType)</span></td>
                                 <td><strong>@asset.AssetTag</strong></td>
                                 <td>@asset.BrandModel</td>
                                 <td><code>@asset.SerialNumber</code></td>

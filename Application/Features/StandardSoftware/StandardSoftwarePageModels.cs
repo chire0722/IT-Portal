@@ -9,6 +9,7 @@ public sealed class StandardSoftwareIndexPageViewModel
     public int TotalSeatCapacity { get; set; }
     public int TotalAssignedSeats { get; set; }
     public int ExpiringSoonCount { get; set; }
+    public int ExpiredCount { get; set; }
     public string? CurrentSearch { get; set; }
     public bool? IsMandatory { get; set; }
     public bool? IsSubscription { get; set; }

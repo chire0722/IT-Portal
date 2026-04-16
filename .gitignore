@@ -1,10 +1,25 @@
 .vs/
 .vscode/
 .nuget/
+.dotnet/
+.dotnet_home/
+
+.build-obj/
+.build-out/
+.test-out/
+.test-out-release/
+TestResults/
+
 bin/
 obj/
 artifacts/
-.dotnet_home/
+IT_Form.Tests/.test-out/
+IT_Form.Tests/bin/
+IT_Form.Tests/obj/
+IT_Form.Tests/artifacts/
+IT_Form.AuditTests/bin/
+IT_Form.AuditTests/obj/
+IT_Form.AuditTests/artifacts/
 
 logs/
 App_Data/backups/
@@ -15,3 +30,16 @@ certificates/
 
 *.db
 *.sqlite
+*.db-shm
+*.db-wal
+*.db-journal
+*.log
+*.trx
+*.user
+
+/Audit_YTCP-LAP019.json
+/ui_data.json
+/sqlite.zip
+/sqlite3.exe
+/sqlite3_analyzer.exe
+/sqldiff.exe

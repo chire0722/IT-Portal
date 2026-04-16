@@ -24,7 +24,7 @@ public class AuditLoggingBehaviorTests
 
         var result = await behavior.Handle(
             new SampleSuccessCommand("Finance"),
-            async _ =>
+            async () =>
             {
                 context.Departments.Add(new Department { Name = "Finance" });
                 await context.SaveChangesAsync();
@@ -59,7 +59,7 @@ public class AuditLoggingBehaviorTests
 
         var result = await behavior.Handle(
             new SampleSuccessCommand("Ops"),
-            async _ =>
+            async () =>
             {
                 context.Departments.Add(new Department { Name = "Ops" });
                 await context.SaveChangesAsync();
@@ -85,7 +85,7 @@ public class AuditLoggingBehaviorTests
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             behavior.Handle(
                 new SampleFailureCommand("broken"),
-                _ => throw new InvalidOperationException("boom"),
+                () => throw new InvalidOperationException("boom"),
                 CancellationToken.None));
 
         Assert.Equal("boom", exception.Message);

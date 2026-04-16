@@ -504,14 +504,50 @@ else if (activeTab == "it")
                                     var badgeColor = item.Percent > 90 ? "danger" : (item.Percent > 70 ? "warning text-dark" : "success");
                                     <tr>
                                         <td class="fw-bold">@item.SoftwareName</td>
-                                        <td class="text-center">@item.Total</td>
+                                        <td class="text-center">
+                                            @if (item.IsUnlimited)
+                                            {
+                                                <span class="text-primary" title="Unlimited seats"><i class="bi bi-infinity fs-5" aria-label="Unlimited seats"></i></span>
+                                            }
+                                            else
+                                            {
+                                                @item.Total
+                                            }
+                                        </td>
                                         <td class="text-center">@item.Used</td>
-                                        <td class="text-center">@(item.Total - item.Used)</td>
-                                        <td class="text-center"><span class="badge bg-@badgeColor">@item.Percent%</span></td>
+                                        <td class="text-center">
+                                            @if (item.IsUnlimited)
+                                            {
+                                                <span class="text-primary" title="Unlimited seats available"><i class="bi bi-infinity fs-5" aria-label="Unlimited seats available"></i></span>
+                                            }
+                                            else
+                                            {
+                                                @(item.Total - item.Used)
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.IsUnlimited)
+                                            {
+                                                <span class="badge bg-primary-subtle text-primary-emphasis">Unlimited</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-@badgeColor">@item.Percent%</span>
+                                            }
+                                        </td>
                                         <td>
-                                            <div class="progress" style="height:8px; border-radius:10px;">
-                                                <div class="progress-bar rounded-pill bg-@(item.Percent > 90 ? "danger" : "primary")" style="width:@item.Percent%"></div>
-                                            </div>
+                                            @if (item.IsUnlimited)
+                                            {
+                                                <div class="d-flex align-items-center justify-content-center text-primary" title="Unlimited usage">
+                                                    <i class="bi bi-infinity fs-5" aria-label="Unlimited usage"></i>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="progress" style="height:8px; border-radius:10px;">
+                                                    <div class="progress-bar rounded-pill bg-@(item.Percent > 90 ? "danger" : "primary")" style="width:@item.Percent%"></div>
+                                                </div>
+                                            }
                                         </td>
                                     </tr>
                                 }

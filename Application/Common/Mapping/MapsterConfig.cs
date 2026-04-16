@@ -484,6 +484,7 @@ public static class MapsterConfig
             .Map(destination => destination.Status, source => source.Status.ToString());
 
         config.NewConfig<IssuedAsset, RequestAssetReadModel>()
+            .Map(destination => destination.OtherAssetType, source => source.OtherAssetType)
             .Map(destination => destination.AssetTag,
                 source => !string.IsNullOrWhiteSpace(source.AssetTag)
                     ? source.AssetTag
@@ -572,7 +573,7 @@ public static class MapsterConfig
             .Map(destination => destination.StageLabel, source => AuditLogClassifier.GetStageLabel(source));
 
         config.NewConfig<IssuedAsset, AssetApiItem>()
-            .Map(destination => destination.AssetType, source => source.AssetType.ToString());
+            .Map(destination => destination.AssetType, source => AssetCategoryHelper.GetCategoryName(source.AssetType, source.OtherAssetType));
 
         config.NewConfig<RequestSoftware, RequestedSoftwareApiItem>()
             .Map(destination => destination.Id, source => source.StandardSoftwareId)
@@ -591,7 +592,7 @@ public static class MapsterConfig
         config.NewConfig<FolderPermission, FolderPermissionApiItem>();
 
         config.NewConfig<RequestAssetReadModel, AssetApiItem>()
-            .Map(destination => destination.AssetType, source => source.AssetType.ToString());
+            .Map(destination => destination.AssetType, source => AssetCategoryHelper.GetCategoryName(source.AssetType, source.OtherAssetType));
 
         config.NewConfig<RequestSoftwareReadModel, RequestedSoftwareApiItem>()
             .Map(destination => destination.Name, source => source.SoftwareName);

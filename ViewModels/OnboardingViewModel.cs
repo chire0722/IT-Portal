@@ -99,6 +99,7 @@ namespace IT_Form.ViewModels
 
         // --- Step 2: IT Assets ---
         public List<AssetItemViewModel> IssuedAssets { get; set; } = new();
+        public List<OnboardingAssetCategoryOptionViewModel> AssetCategoryOptions { get; set; } = new();
 
         // --- Step 3: Software & Email ---
         public List<int> SelectedStandardSoftwareIds { get; set; } = new();
@@ -169,6 +170,7 @@ namespace IT_Form.ViewModels
     public class AssetItemViewModel
     {
         public AssetType AssetType { get; set; }
+        public string? OtherAssetType { get; set; }
         public int? ITAssetId { get; set; }
         public string? Description { get; set; }
         public string? SerialNumber { get; set; }
@@ -176,6 +178,13 @@ namespace IT_Form.ViewModels
         public int? Qty { get; set; }
         public string? BrandModel { get; set; }
         public bool IsChecked { get; set; }
+    }
+
+    public sealed class OnboardingAssetCategoryOptionViewModel
+    {
+        public AssetType AssetType { get; set; }
+        public string? OtherAssetType { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
     }
 
     public class FolderPermissionViewModel

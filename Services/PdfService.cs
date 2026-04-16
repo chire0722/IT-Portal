@@ -169,7 +169,7 @@ namespace IT_Form.Services
                                 {
                                     var asset = request.IssuedAssets[i];
                                     table.Cell().Border(1).Padding(2).Text($"{i + 1}").FontSize(8);
-                                    table.Cell().Border(1).Padding(2).Text(asset.AssetType.ToString()).FontSize(8);
+                                    table.Cell().Border(1).Padding(2).Text(AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType)).FontSize(8);
                                     table.Cell().Border(1).Padding(2).Text(asset.Qty?.ToString() ?? "").FontSize(8);
                                     table.Cell().Border(1).Padding(2).Text(asset.BrandModel ?? "").FontSize(8);
                                     table.Cell().Border(1).Padding(2).Text(asset.SerialNumber ?? "").FontSize(8);

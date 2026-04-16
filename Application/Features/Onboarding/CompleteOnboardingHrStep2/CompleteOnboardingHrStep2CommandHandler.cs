@@ -78,7 +78,7 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingHrStep2
             }
 
             session.IssuedAssets = request.Model.IssuedAssets?
-                .Where(a => a.IsChecked && (a.AssetType != AssetType.Others || !string.IsNullOrWhiteSpace(a.Description)))
+                .Where(a => a.IsChecked && AssetCategoryHelper.HasSpecifiedCategory(a.AssetType, a.OtherAssetType, a.Description))
                 .ToList() ?? new List<AssetItemViewModel>();
             session.AssetRemarks = request.Model.AssetRemarks;
             _onboardingWizardService.ClearHrRestrictedAccessFields(session);

@@ -4,6 +4,7 @@ namespace IT_Form.Models
     {
         public List<string> AllowedDomains { get; set; } = new();
         public int MaxOtpAttempts { get; set; } = 5;
+        public List<int> PasswordLockoutMinutes { get; set; } = [5, 15, 30, 120];
         public int OtpExpiryMinutes { get; set; } = 3;
         public int DeviceVerificationExpiryMinutes { get; set; } = 30;
         public bool AllowLegacyInventoryApiKey { get; set; } = false;

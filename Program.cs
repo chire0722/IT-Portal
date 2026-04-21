@@ -66,6 +66,7 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection", LogEventLevel.Error)
     .Enrich.FromLogContext()
     .WriteTo.Console()
     .WriteTo.File(
@@ -86,6 +87,12 @@ if (StartupUrlGuard.TryGetConflictingUrls(Environment.GetEnvironmentVariable("AS
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables(prefix: "IT_FORM__");
+
+if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
+{
+    // Default to listening on all interfaces for folder-published deployments.
+    builder.WebHost.UseUrls("http://0.0.0.0:5063");
+}
 
 MapsterConfig.RegisterMappings();
 
@@ -109,10 +116,14 @@ if (!Directory.Exists(dataDirectory))
 AppDomain.CurrentDomain.SetData("DataDirectory", dataDirectory);
 
 // --- Data Protection ---
-// Persist keys so auth/antiforgery cookies remain valid across restarts and launch profiles.
-var dataProtectionPath = Path.Combine(dataDirectory, "DataProtection-Keys");
+// Persist keys outside the publish folder so cookies remain valid across republishes on the same machine.
+var localAppDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+var dataProtectionRoot = string.IsNullOrWhiteSpace(localAppDataRoot)
+    ? dataDirectory
+    : Path.Combine(localAppDataRoot, "IT_Form");
+var dataProtectionPath = Path.Combine(dataProtectionRoot, "DataProtection-Keys");
 Directory.CreateDirectory(dataProtectionPath);
-builder.Services
+var dataProtectionBuilder = builder.Services
     .AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
     .SetApplicationName("IT_Form");
@@ -130,7 +141,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     // SQLite table rebuild migrations emit a one-time non-transactional warning
     // when EF toggles foreign key enforcement during schema changes.
     options.ConfigureWarnings(warnings =>
-        warnings.Ignore(RelationalEventId.NonTransactionalMigrationOperationWarning));
+        warnings
+            .Ignore(RelationalEventId.NonTransactionalMigrationOperationWarning)
+            .Ignore(CoreEventId.FirstWithoutOrderByAndFilterWarning));
 });
 
 // Required for ApplicationDbContext to capture the current user for audit logs
@@ -170,11 +183,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;           // SECURITY: Prevent CSRF via top-level navigation
-    options.Cookie.Name = "YTC.IT.Auth";                     // Rename from default to avoid fingerprinting
-    // Enforce HTTPS-only cookies in production; allow HTTP in dev (Kestrel HTTP only)
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
+    options.Cookie.Name = "YTC.IT.Auth.v2";                  // Rotate cookie name to avoid reading stale auth cookies
+    // Allow the app to run behind plain HTTP on the internal network.
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // Hardened: Global Forced Logout - check security stamp on EVERY request
@@ -191,7 +202,7 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Strict;           // SECURITY: Prevent session CSRF
-    options.Cookie.Name = "YTC.IT.Session";                  // Non-default name
+    options.Cookie.Name = "YTC.IT.Session.v2";               // Rotate cookie name to avoid reading stale session cookies
 });
 
 // --- Services ---
@@ -289,11 +300,9 @@ builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, Argon2idPasswordHas
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN"; // Support for AJAX/Fetch
-    options.Cookie.Name = ".ITPortal.XSRF";
+    options.Cookie.Name = ".ITPortal.XSRF.v2";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // Configure SmtpSettings
@@ -484,10 +493,12 @@ var app = builder.Build();
 // --- Middleware Pipeline ---
 app.UseForwardedHeaders();
 
-if (!app.Environment.IsDevelopment())
+/*if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-}
+}*/
+
+app.UseDeveloperExceptionPage();
 app.Use(async (context, next) =>
 {
     if (SensitiveFileStorage.IsLegacySensitiveUploadPath(context.Request.Path))
@@ -568,7 +579,10 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
         await DbInitializer.EnsureDefaultSlaSettingsAsync(context);
-        DbInitializer.Seed(context);
+        if (app.Environment.IsDevelopment())
+        {
+            DbInitializer.Seed(context);
+        }
 
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var configuration = services.GetRequiredService<IConfiguration>();

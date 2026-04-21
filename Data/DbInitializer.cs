@@ -12,10 +12,13 @@ namespace IT_Form.Data
 {
     public static class DbInitializer
     {
+        private const string HardcodedBootstrapPassword = "Abc123!xyz";
+
+        private static readonly string[] SeedAdminTitles = ["IT", "HR"];
+
         private static readonly SeedUserDefinition[] SeedUsers =
         [
-            new("itdept", "it@itportal.com", "IT Administrator", "IT", "IT", ["it@ytcprecast.com"]),
-            new("hrdept", "hr@itportal.com", "HR Administrator", "HR", "HR", ["hr@ytcprecast.com"])
+            new("itdept", "it@itportal.com", "IT Administrator", "IT", "IT", ["it@ytcprecast.com"])
         ];
 
         private static readonly (string RequestType, int TargetDays, int EscalationDaysTier1, int EscalationDaysTier2)[] DefaultSlaSettings =
@@ -301,7 +304,8 @@ namespace IT_Form.Data
 
         public static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration)
         {
-            var seedPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"]);
+            var seedPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"])
+                ?? HardcodedBootstrapPassword;
             if (string.IsNullOrWhiteSpace(seedPassword))
             {
                 return;
@@ -342,12 +346,34 @@ namespace IT_Form.Data
                 .Select(seedUser => seedUser.UserName)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var hasNonSeedUsers = users.Any(user =>
-                !knownSeedUserNames.Contains(user.UserName ?? string.Empty) &&
-                !knownSeedEmails.Contains(user.Email ?? string.Empty));
+            var hasNonSeedAdminUsers = await context.Users
+                .AsNoTracking()
+                .Where(user => user.IsActive)
+                .Where(user =>
+                    !knownSeedUserNames.Contains(user.UserName ?? string.Empty) &&
+                    !knownSeedEmails.Contains(user.Email ?? string.Empty))
+                .Join(
+                    context.UserTitles.AsNoTracking(),
+                    user => user.Id,
+                    title => title.UserId,
+                    (user, title) => title.Title)
+                .AnyAsync(title => SeedAdminTitles.Contains(title));
 
-            if (!hasNonSeedUsers)
+            if (!hasNonSeedAdminUsers)
             {
+                foreach (var seedUser in SeedUsers)
+                {
+                    await SeedUserAsync(
+                        userManager,
+                        context,
+                        seedUser.UserName,
+                        seedUser.Email,
+                        seedUser.FullName,
+                        seedUser.Department,
+                        seedUser.Title,
+                        seedPassword);
+                }
+
                 return;
             }
 
@@ -383,7 +409,8 @@ namespace IT_Form.Data
                     FullName = fullName,
                     Department = department,
                     EmailConfirmed = true,
-                    IsActive = true
+                    IsActive = true,
+                    MustChangePassword = true
                 };
                 var result = await userManager.CreateAsync(user, password);
                 if (result.Succeeded)
@@ -410,8 +437,10 @@ namespace IT_Form.Data
                     existingUser.UserName = username;
                     await userManager.RemovePasswordAsync(existingUser);
                     await userManager.AddPasswordAsync(existingUser, password);
-                    await userManager.UpdateAsync(existingUser);
                 }
+
+                existingUser.MustChangePassword = true;
+                await userManager.UpdateAsync(existingUser);
             }
         }
 

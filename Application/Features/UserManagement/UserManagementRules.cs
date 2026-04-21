@@ -5,15 +5,6 @@ namespace IT_Form.Application.Features.UserManagement
 {
     internal static class UserManagementRules
     {
-        public static bool IsAllowedDomain(string? email, SecuritySettings securitySettings)
-        {
-            if (securitySettings.AllowedDomains == null || !securitySettings.AllowedDomains.Any())
-                return true;
-
-            var emailParts = email?.Split('@');
-            return emailParts?.Length == 2 && securitySettings.AllowedDomains.Contains(emailParts[1].ToLower());
-        }
-
         public static async Task AssignTitlesAsync(ApplicationDbContext context, string userId, bool isIt, bool isHr, bool isHod)
         {
             if (isIt)

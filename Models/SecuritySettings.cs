@@ -2,7 +2,6 @@ namespace IT_Form.Models
 {
     public class SecuritySettings
     {
-        public List<string> AllowedDomains { get; set; } = new();
         public int MaxOtpAttempts { get; set; } = 5;
         public List<int> PasswordLockoutMinutes { get; set; } = [5, 15, 30, 120];
         public int OtpExpiryMinutes { get; set; } = 3;

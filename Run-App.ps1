@@ -4,7 +4,7 @@ param(
 )
 
 $projectPath = Join-Path $PSScriptRoot 'IT Form.csproj'
-$outputPath = Join-Path $PSScriptRoot 'bin\Debug\net10.0\IT Form.dll'
+$outputPath = Join-Path $PSScriptRoot 'bin\Debug\net10.0\IT_Form.dll'
 
 $env:DOTNET_CLI_HOME = $PSScriptRoot
 

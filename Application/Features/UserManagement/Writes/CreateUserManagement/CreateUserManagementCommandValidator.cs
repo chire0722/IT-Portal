@@ -1,21 +1,16 @@
 using FluentValidation;
 using IT_Form.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
 
 namespace IT_Form.Application.Features.UserManagement.Writes.CreateUserManagement;
 
 public sealed class CreateUserManagementCommandValidator : AbstractValidator<CreateUserManagementCommand>
 {
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SecuritySettings _securitySettings;
 
-    public CreateUserManagementCommandValidator(
-        UserManager<ApplicationUser> userManager,
-        IOptions<SecuritySettings> securityOptions)
+    public CreateUserManagementCommandValidator(UserManager<ApplicationUser> userManager)
     {
         _userManager = userManager;
-        _securitySettings = securityOptions.Value;
 
         RuleFor(x => x.FullName)
             .NotEmpty()
@@ -30,9 +25,7 @@ public sealed class CreateUserManagementCommandValidator : AbstractValidator<Cre
         RuleFor(x => x.Email)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .EmailAddress()
-            .Must(HasAllowedEmailDomain)
-            .WithMessage(_ => GetAllowedDomainMessage());
+            .EmailAddress();
 
         RuleFor(x => x.Department)
             .MaximumLength(50)
@@ -56,10 +49,4 @@ public sealed class CreateUserManagementCommandValidator : AbstractValidator<Cre
         var existingUser = await _userManager.FindByNameAsync(username);
         return existingUser == null;
     }
-
-    private bool HasAllowedEmailDomain(string? email)
-        => UserManagementRules.IsAllowedDomain(email, _securitySettings);
-
-    private string GetAllowedDomainMessage()
-        => $"Only emails from the following domains are allowed: {string.Join(", ", _securitySettings.AllowedDomains)}";
 }

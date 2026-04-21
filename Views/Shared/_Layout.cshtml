@@ -72,7 +72,7 @@
                         <i class="bi bi-house-door" aria-hidden="true"></i> Dashboard
                     </a>
                     
-                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR") || User.HasClaim("UserTitle", "HOD"))
+                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
                     {
                         <a class="sidebar-link @(currentController == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "active" : "")" asp-controller="Home"
                             asp-action="Analytics">
@@ -114,68 +114,50 @@
                         <i class="bi bi-person-rolodex" aria-hidden="true"></i> Email Directory
                     </a>
 
-                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
+                    @if (User.HasClaim("UserTitle", "IT"))
                     {
                         <div class="nav-item-header">ASSETS & SYSTEM</div>
-                        @if (User.HasClaim("UserTitle", "IT"))
-                        {
-                            <a class="sidebar-link @(currentController == "ITAsset" ? "active" : "")" asp-controller="ITAsset"
-                                asp-action="Index">
-                                <i class="bi bi-pc-display" aria-hidden="true"></i> IT Assets
-                            </a>
-                        }
-                        @if (User.HasClaim("UserTitle", "IT"))
-                        {
-                            <a class="sidebar-link @(currentController == "StandardSoftware" ? "active" : "")" asp-controller="StandardSoftware" asp-action="Index">
-                                <i class="bi bi-box-seam" aria-hidden="true"></i> Software List
-                            </a>
-                        }
-                        @if (User.HasClaim("UserTitle", "IT"))
-                        {
-                            <a class="sidebar-link @(currentController == "UserManagement" ? "active" : "")"
-                                asp-controller="UserManagement" asp-action="Index">
-                                <i class="bi bi-people-fill" aria-hidden="true"></i> System Users
-                            </a>
-                        }
+                        <a class="sidebar-link @(currentController == "ITAsset" ? "active" : "")" asp-controller="ITAsset"
+                            asp-action="Index">
+                            <i class="bi bi-pc-display" aria-hidden="true"></i> IT Assets
+                        </a>
+                        <a class="sidebar-link @(currentController == "StandardSoftware" ? "active" : "")" asp-controller="StandardSoftware" asp-action="Index">
+                            <i class="bi bi-box-seam" aria-hidden="true"></i> Software List
+                        </a>
+                        <a class="sidebar-link @(currentController == "UserManagement" ? "active" : "")"
+                            asp-controller="UserManagement" asp-action="Index">
+                            <i class="bi bi-people-fill" aria-hidden="true"></i> System Users
+                        </a>
                         <a class="sidebar-link @(currentController == "AuditLog" ? "active" : "")" asp-controller="AuditLog"
                             asp-action="Index">
                             <i class="bi bi-clock-history" aria-hidden="true"></i> Audit Logs
                         </a>
-                        @if (User.HasClaim("UserTitle", "IT"))
-                        {
-                            <a class="sidebar-link @(currentController == "SlaSettings" ? "active" : "")" asp-controller="SlaSettings"
-                                asp-action="Index">
-                                <i class="bi bi-stopwatch" aria-hidden="true"></i> Due Date Setup
-                            </a>
-                        }
+                        <a class="sidebar-link @(currentController == "SlaSettings" ? "active" : "")" asp-controller="SlaSettings"
+                            asp-action="Index">
+                            <i class="bi bi-stopwatch" aria-hidden="true"></i> Due Date Setup
+                        </a>
                         <div class="nav-item-header">CONFIGURATION</div>
-                        @if (User.HasClaim("UserTitle", "IT"))
-                        {
-                            <a class="sidebar-link @(currentController == "Company" ? "active" : "")" asp-controller="Company"
-                                asp-action="Index">
-                                <i class="bi bi-building" aria-hidden="true"></i> Companies
-                            </a>
-                        }
-                        @if (User.HasClaim("UserTitle", "IT"))
-                        {
-                            <a class="sidebar-link @(currentController == "Department" ? "active" : "")" asp-controller="Department"
-                                asp-action="Index">
-                                <i class="bi bi-diagram-3" aria-hidden="true"></i> Departments
-                            </a>
+                        <a class="sidebar-link @(currentController == "Company" ? "active" : "")" asp-controller="Company"
+                            asp-action="Index">
+                            <i class="bi bi-building" aria-hidden="true"></i> Companies
+                        </a>
+                        <a class="sidebar-link @(currentController == "Department" ? "active" : "")" asp-controller="Department"
+                            asp-action="Index">
+                            <i class="bi bi-diagram-3" aria-hidden="true"></i> Departments
+                        </a>
 
-                            <a class="sidebar-link @(currentController == "EmailGroup" ? "active" : "")" asp-controller="EmailGroup"
-                                asp-action="Index">
-                                <i class="bi bi-people" aria-hidden="true"></i> Email Groups
-                            </a>
-                            <a class="sidebar-link @(currentController == "SharedMailbox" ? "active" : "")" asp-controller="SharedMailbox"
-                                asp-action="Index">
-                                <i class="bi bi-envelope-at" aria-hidden="true"></i> Shared Mailboxes
-                            </a>
-                            <a class="sidebar-link @(currentController == "ServerFolder" ? "active" : "")" asp-controller="ServerFolder"
-                                asp-action="Index">
-                                <i class="bi bi-folder" aria-hidden="true"></i> Server Folders
-                            </a>
-                        }
+                        <a class="sidebar-link @(currentController == "EmailGroup" ? "active" : "")" asp-controller="EmailGroup"
+                            asp-action="Index">
+                            <i class="bi bi-people" aria-hidden="true"></i> Email Groups
+                        </a>
+                        <a class="sidebar-link @(currentController == "SharedMailbox" ? "active" : "")" asp-controller="SharedMailbox"
+                            asp-action="Index">
+                            <i class="bi bi-envelope-at" aria-hidden="true"></i> Shared Mailboxes
+                        </a>
+                        <a class="sidebar-link @(currentController == "ServerFolder" ? "active" : "")" asp-controller="ServerFolder"
+                            asp-action="Index">
+                            <i class="bi bi-folder" aria-hidden="true"></i> Server Folders
+                        </a>
                     }
                 }
                 else

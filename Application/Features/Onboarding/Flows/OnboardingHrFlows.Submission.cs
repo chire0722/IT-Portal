@@ -43,6 +43,23 @@ namespace IT_Form.Application.Features.Onboarding.Flows
                 })
                 .ToList();
 
+            var existingCategoryOptions = existingAssets
+                .Where(asset =>
+                    (asset.AssetType != AssetType.Others || !string.IsNullOrWhiteSpace(asset.OtherAssetType)) &&
+                    !AssetCategoryHelper.IsDefaultOnboardingRequestCategory(asset.AssetType, asset.OtherAssetType))
+                .GroupBy(asset => AssetCategoryHelper.GetCategoryKey(asset.AssetType, asset.OtherAssetType))
+                .Select(group => group.First())
+                .OrderBy(asset => AssetCategoryHelper.GetSortOrder(asset.AssetType, asset.OtherAssetType))
+                .ThenBy(asset => AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType))
+                .Select(asset => new OnboardingAssetCategoryOptionViewModel
+                {
+                    AssetType = asset.AssetType,
+                    OtherAssetType = asset.OtherAssetType,
+                    DisplayName = AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType)
+                });
+
+            model.AssetCategoryOptions.AddRange(existingCategoryOptions);
+
             var normalizedAssets = new List<AssetItemViewModel>();
             foreach (var option in model.AssetCategoryOptions)
             {
@@ -62,26 +79,7 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             }
 
             normalizedAssets.AddRange(existingAssets.Where(asset =>
-                (asset.AssetType == AssetType.Others && string.IsNullOrWhiteSpace(asset.OtherAssetType)) ||
-                !AssetCategoryHelper.IsDefaultOnboardingRequestCategory(asset.AssetType, asset.OtherAssetType))
-                .Select(asset =>
-                {
-                    if (asset.AssetType == AssetType.Others && string.IsNullOrWhiteSpace(asset.OtherAssetType))
-                    {
-                        return asset;
-                    }
-
-                    return new AssetItemViewModel
-                    {
-                        AssetType = AssetType.Others,
-                        OtherAssetType = null,
-                        Description = string.IsNullOrWhiteSpace(asset.Description)
-                            ? AssetCategoryHelper.GetCategoryName(asset.AssetType, asset.OtherAssetType)
-                            : asset.Description,
-                        Qty = asset.Qty ?? 1,
-                        IsChecked = asset.IsChecked
-                    };
-                }));
+                asset.AssetType == AssetType.Others && string.IsNullOrWhiteSpace(asset.OtherAssetType)));
 
             model.IssuedAssets = normalizedAssets;
         }

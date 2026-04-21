@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -28,9 +27,7 @@ public class UserManagementFeatureSliceTests
         userManager.Setup(x => x.FindByNameAsync("existing"))
             .ReturnsAsync(new ApplicationUser { Id = "u1", UserName = "existing", FullName = "Existing User" });
 
-        var validator = new CreateUserManagementCommandValidator(
-            userManager.Object,
-            Options.Create(new SecuritySettings { AllowedDomains = ["test.local"] }));
+        var validator = new CreateUserManagementCommandValidator(userManager.Object);
 
         var result = await validator.ValidateAsync(new CreateUserManagementCommand(
             "New User",

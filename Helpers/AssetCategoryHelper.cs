@@ -18,10 +18,18 @@ public static class AssetCategoryHelper
         (AssetType.Laptop, null),
         (AssetType.Others, "Power Adaptor"),
         (AssetType.Others, "Laptop Bag"),
+        (AssetType.Others, "Wireless Mouse"),
         (AssetType.Others, "Wired Mouse"),
         (AssetType.DesktopPC, null),
         (AssetType.Monitor, null),
-        (AssetType.USBLANAdaptor, null)
+        (AssetType.USB, null),
+        (AssetType.USBLANAdaptor, null),
+        (AssetType.Keyboard, null),
+        (AssetType.Headset, null),
+        (AssetType.DockingStation, null),
+        (AssetType.NetworkCable, null),
+        (AssetType.USBDrive, null),
+        (AssetType.Webcam, null)
     ];
 
     private static readonly Dictionary<string, int> CategorySortOrder = new(StringComparer.OrdinalIgnoreCase)

@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Portal — User Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --bg:#f6f8fb;
+    --paper:#ffffff;
+    --ink:#0f172a;
+    --muted:#475569;
+    --line:#dbe3ee;
+    --nav:#1e293b;
+    --nav-text:#e5edf8;
+    --accent:#2563eb;
+    --accent-soft:#eaf2ff;
+    --accent-dark:#1d4ed8;
+    --green:#059669;
+    --green-soft:#e8fbf6;
+    --info:#0f766e;
+    --info-soft:#e8fbf6;
+    --warn:#b45309;
+    --warn-soft:#fff4e5;
+    --danger:#dc2626;
+    --danger-soft:#fef2f2;
+    --shadow:0 8px 24px rgba(15,23,42,.06);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:"Inter","Segoe UI",sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;font-size:15px}
+
+  /* ─── Sidebar ─── */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:280px;padding:22px 16px;background:var(--nav);color:var(--nav-text);overflow-y:auto;z-index:20}
+  .brand{padding:18px;border:1px solid rgba(255,255,255,.12);border-radius:14px;margin-bottom:20px;background:rgba(255,255,255,.04)}
+  .brand small{display:block;margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#9fb2cf;font-weight:800}
+  .brand h1{margin:0 0 6px;font-size:22px;line-height:1.2}
+  .brand p{margin:0;font-size:13px;color:#cfdbed}
+  .nav-title{margin:18px 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#9fb2cf;font-weight:800;padding:0 4px}
+  .nav-links{display:flex;flex-direction:column;gap:3px}
+  .nav-links a{color:var(--nav-text);text-decoration:none;padding:9px 12px;border-radius:10px;font-size:13.5px;font-weight:500;transition:background .15s}
+  .nav-links a:hover,.nav-links a.active{background:rgba(255,255,255,.10);font-weight:700}
+  .side-note{margin-top:20px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.06);font-size:12px;color:#d9e4f5;line-height:1.6}
+  .nav-toggle{display:none;position:fixed;top:14px;right:14px;z-index:30;border:none;border-radius:10px;background:var(--nav);color:#fff;padding:10px 16px;font-weight:700;box-shadow:var(--shadow);cursor:pointer;font-size:14px}
+
+  /* ─── Content ─── */
+  .content{margin-left:280px;padding:28px 24px 60px}
+  .wrap{max-width:1000px;margin:0 auto}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 30px;margin-bottom:20px}
+  .hero{border-top:4px solid var(--accent)}
+  .hero h1{margin:0 0 10px;font-size:32px;line-height:1.15}
+  .eyebrow{margin:0 0 10px;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  h2{margin:0 0 14px;font-size:22px;line-height:1.2;color:var(--ink)}
+  h3{margin:20px 0 10px;font-size:17px;line-height:1.3;color:var(--ink)}
+  h4{margin:16px 0 8px;font-size:15px;font-weight:700}
+  p{margin:0 0 14px}
+  ul,ol{margin:0 0 14px;padding-left:22px}
+  li{margin-bottom:6px}
+
+  /* ─── Grid ─── */
+  .grid{display:grid;gap:14px}
+  .three-col{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .two-col{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .four-col{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+  /* ─── Cards ─── */
+  .card{border:1px solid var(--line);border-radius:12px;padding:18px;background:#fff}
+  .card strong{display:block;margin-bottom:6px;font-size:14px}
+  .card p{font-size:13.5px;color:var(--muted);margin:0}
+  .card-accent{border-left:4px solid var(--accent)}
+  .card-green{border-left:4px solid var(--green)}
+  .card-warn{border-left:4px solid var(--warn)}
+  .card-danger{border-left:4px solid var(--danger)}
+
+  /* ─── Note / Alert ─── */
+  .note{padding:16px 18px;border-radius:12px;border:1px solid var(--line);margin:16px 0;font-size:14px;line-height:1.65}
+  .note.info{background:var(--info-soft);border-color:#99e6d6}
+  .note.warn{background:var(--warn-soft);border-color:#fcd19c}
+  .note.danger{background:var(--danger-soft);border-color:#fca5a5}
+  .note.accent{background:var(--accent-soft);border-color:#93b8f8}
+  .label{display:inline-block;margin-bottom:8px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+  .label.info{background:#d6f5ee;color:#0f766e}
+  .label.warn{background:#ffe6c4;color:#9a3412}
+  .label.danger{background:#fecaca;color:#991b1b}
+  .label.accent{background:#c8dcf8;color:#1e40af}
+
+  /* ─── Tables ─── */
+  table{width:100%;border-collapse:collapse;margin:14px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;font-size:14px}
+  th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+  th{background:#eef4fb;font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  tr:nth-child(even){background:#f9fbfd}
+
+  /* ─── Steps ─── */
+  .steps{display:grid;gap:10px;margin:14px 0}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:14px;border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff}
+  .step-num{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0}
+  .step strong{display:block;margin-bottom:4px}
+  .step p{margin:0;font-size:13.5px;color:var(--muted)}
+
+  /* ─── Screenshot ─── */
+  .screenshot{margin:16px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.08)}
+  .screenshot img{display:block;width:100%;height:auto}
+  .screenshot-caption{padding:10px 16px;background:#f8fafc;font-size:12px;color:var(--muted);text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+
+  /* ─── Flow Diagrams ─── */
+  .flow{display:flex;align-items:center;gap:0;margin:16px 0;flex-wrap:wrap}
+  .flow-box{padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;white-space:nowrap}
+  .flow-arrow{font-size:20px;color:var(--muted);padding:0 6px}
+  .flow-hr{background:#eaf2ff;color:var(--accent);border:1px solid #bdd4f7}
+  .flow-it{background:#e8fbf6;color:#0f766e;border:1px solid #99e6d6}
+  .flow-emp{background:#fff4e5;color:#b45309;border:1px solid #fcd19c}
+  .flow-done{background:#e8fbf6;color:#059669;border:1px solid #6ee7b7}
+  .flow-hod{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+
+  /* ─── Checklist ─── */
+  .checklist{margin:10px 0 14px;padding:0;list-style:none}
+  .checklist li{padding:8px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:13.5px;background:#fff}
+  .checklist li::before{content:"☐ ";font-size:15px;color:var(--accent)}
+
+  /* ─── Divider ─── */
+  .divider{border:none;border-top:2px solid var(--line);margin:10px 0}
+
+  /* ─── Status Badge ─── */
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em}
+  .badge-draft{background:#f1f5f9;color:#475569}
+  .badge-pending{background:#fff4e5;color:#b45309}
+  .badge-green{background:#d6f5ee;color:#059669}
+  .badge-red{background:#fecaca;color:#dc2626}
+  .badge-blue{background:#dbeafe;color:#2563eb}
+
+  /* ─── Footer ─── */
+  .footer{text-align:center;color:var(--muted);font-size:13px;padding-top:8px}
+
+  /* ─── Responsive ─── */
+  @media (max-width:980px){
+    .sidebar{transform:translateX(-100%);transition:transform .2s ease}
+    .sidebar.open{transform:translateX(0)}
+    .nav-toggle{display:block}
+    .content{margin-left:0;padding-top:72px}
+    .three-col,.two-col,.four-col{grid-template-columns:1fr}
+    .flow{gap:8px}
+  }
+
+  /* ─── Print Button ─── */
+  .print-btn{position:fixed;bottom:24px;right:24px;z-index:50;border:none;border-radius:14px;background:var(--accent);color:#fff;padding:14px 24px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(37,99,235,.35);transition:all .2s;display:flex;align-items:center;gap:8px}
+  .print-btn:hover{background:var(--accent-dark);transform:translateY(-2px);box-shadow:0 8px 28px rgba(37,99,235,.45)}
+  .print-btn svg{width:18px;height:18px;fill:currentColor}
+
+  /* ─── Cover Page (screen) ─── */
+  .cover-page{display:none}
+  .print-toc{display:none}
+  .page-break{display:none}
+
+  /* ─── Print ─── */
+  @media print{
+    @page{
+      size:A4 portrait;
+      margin:0;
+    }
+
+    /* ── Reset ── */
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+    body{background:#fff;font-size:11pt;line-height:1.55;color:#0f172a;margin:18mm 16mm 22mm 16mm;}
+    a{color:inherit;text-decoration:none}
+
+    /* ── Hide screen elements ── */
+    .sidebar,.nav-toggle,.print-btn{display:none !important}
+    .content{margin:0;padding:0}
+    .wrap{max-width:100%}
+
+    /* ── Show print elements ── */
+    .cover-page{display:flex !important;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(160deg,#1e293b 0%,#0f172a 60%,#1e3a5f 100%);color:#fff;text-align:center;padding:60px 40px;page-break-after:always}
+    .cover-page .cover-logo{width:180px;margin-bottom:30px}
+    .cover-page h1{font-size:36pt;margin:0 0 12px;letter-spacing:-0.02em}
+    .cover-page .cover-subtitle{font-size:16pt;color:#94a3b8;margin:0 0 40px;font-weight:400}
+    .cover-page .cover-meta{font-size:10pt;color:#64748b;line-height:2;margin-top:auto}
+    .cover-page .cover-divider{width:80px;height:3px;background:linear-gradient(90deg,#2563eb,#06b6d4);border:none;margin:30px auto;border-radius:2px}
+
+    .print-toc{display:block !important;page-break-after:always;padding:40px 0}
+    .print-toc h2{font-size:20pt;margin:0 0 24px;color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:10px}
+    .print-toc .toc-list{list-style:none;padding:0;margin:0}
+    .print-toc .toc-list li{display:flex;align-items:baseline;padding:10px 0;border-bottom:1px dotted #cbd5e1;font-size:11pt}
+    .print-toc .toc-list li .toc-num{width:30px;color:#2563eb;font-weight:800;flex-shrink:0}
+    .print-toc .toc-list li .toc-label{flex:1}
+    .print-toc .toc-group{font-size:9pt;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;font-weight:800;padding:16px 0 4px;border-bottom:none}
+
+    .page-break{display:block !important;height:0;page-break-after:always;break-after:page}
+
+    /* ── Panel (section) styling ── */
+    .panel{border:none;border-radius:0;box-shadow:none;padding:0 0 16px;margin-bottom:0;page-break-before:always}
+    .panel:first-of-type{page-break-before:avoid}
+    .hero{border-top:3px solid #2563eb;padding-top:12px}
+
+    /* ── Typography ── */
+    .eyebrow{font-size:8pt}
+    .hero h1{font-size:22pt}
+    h2{font-size:16pt;margin:0 0 10px;page-break-after:avoid;color:#0f172a;border-bottom:1.5px solid #e2e8f0;padding-bottom:6px}
+    h3{font-size:12pt;margin:14px 0 8px;page-break-after:avoid;color:#1e293b}
+    h4{font-size:11pt;page-break-after:avoid}
+    p{margin:0 0 8px;font-size:10.5pt}
+    li{margin-bottom:4px;font-size:10.5pt}
+
+    /* ── Cards ── */
+    .card{box-shadow:none;border-color:#d1d5db;border-radius:8px;padding:12px 14px}
+    .card strong{font-size:10pt}
+    .card p{font-size:9.5pt}
+    .grid{gap:8px}
+    .three-col{grid-template-columns:repeat(3,1fr)}
+    .two-col{grid-template-columns:repeat(2,1fr)}
+    .four-col{grid-template-columns:repeat(4,1fr)}
+
+    /* ── Notes ── */
+    .note{border-radius:6px;padding:10px 14px;margin:10px 0;font-size:9.5pt;page-break-inside:avoid}
+    .label{font-size:8pt;padding:2px 8px}
+
+    /* ── Tables ── */
+    table{border-radius:0;font-size:9.5pt;margin:8px 0;page-break-inside:auto}
+    th{background:#eef4fb !important;font-size:8pt;padding:8px 10px}
+    td{padding:7px 10px}
+    tr{page-break-inside:avoid}
+
+    /* ── Steps ── */
+    .steps{gap:6px;margin:8px 0}
+    .step{border-radius:8px;padding:10px 12px;page-break-inside:avoid}
+    .step-num{width:32px;height:32px;font-size:12px}
+    .step strong{font-size:10pt}
+    .step p{font-size:9.5pt}
+
+    /* ── Screenshots ── */
+    .screenshot{border-radius:4px;box-shadow:none;border:1px solid #d1d5db;margin:10px 0;page-break-inside:avoid}
+    .screenshot img{max-height:300px;width:auto;max-width:100%;display:block;margin:0 auto}
+    .screenshot-caption{font-size:8pt;padding:6px 10px;background:#f8fafc}
+
+    /* ── Flow ── */
+    .flow{page-break-inside:avoid;margin:10px 0}
+    .flow-box{font-size:9pt;padding:6px 12px;border-radius:6px}
+    .flow-arrow{font-size:14px;padding:0 3px}
+
+    /* ── Checklists ── */
+    .checklist li{padding:5px 10px;font-size:9.5pt;border-radius:4px;margin-bottom:3px}
+
+    /* ── Badges ── */
+    .badge{font-size:8pt;padding:2px 7px;border:1px solid #d1d5db}
+
+    /* ── Dividers ── */
+    .divider{margin:8px 0}
+
+    /* ── Footer ── */
+    .footer{font-size:9pt}
+  }
+</style>
+</head>
+<body>
+  <!-- ══════ COVER PAGE (Print Only) ══════ -->
+  <div class="cover-page">
+    <img class="cover-logo" src="docs/screenshots/login_page.png" alt="IT Portal" style="display:none">
+    <hr class="cover-divider">
+    <h1>IT Portal</h1>
+    <p class="cover-subtitle">User Guide</p>
+    <hr class="cover-divider">
+    <div class="cover-meta">
+      <div><strong>Document Type:</strong> End-User Guide</div>
+      <div><strong>Version:</strong> 1.0</div>
+      <div><strong>Date:</strong> April 2026</div>
+      <div><strong>Classification:</strong> Internal — Confidential</div>
+      <div><strong>Audience:</strong> HR Staff, IT Staff, HOD, General Staff</div>
+    </div>
+  </div>
+
+  <!-- ══════ TABLE OF CONTENTS (Print Only) ══════ -->
+  <div class="print-toc">
+    <h2>Table of Contents</h2>
+    <ul class="toc-list">
+      <li class="toc-group">Getting Started</li>
+      <li><span class="toc-num">1</span><span class="toc-label">Introduction</span></li>
+      <li><span class="toc-num">2</span><span class="toc-label">Getting Started — Logging In</span></li>
+      <li><span class="toc-num">3</span><span class="toc-label">Dashboard Overview</span></li>
+      <li class="toc-group">Core Workflows</li>
+      <li><span class="toc-num">4</span><span class="toc-label">Onboarding — New Employee Setup</span></li>
+      <li><span class="toc-num">5</span><span class="toc-label">Offboarding — Employee Exit Process</span></li>
+      <li class="toc-group">Asset & Software</li>
+      <li><span class="toc-num">6</span><span class="toc-label">IT Asset Management</span></li>
+      <li><span class="toc-num">7</span><span class="toc-label">Software & License Management</span></li>
+      <li class="toc-group">Reference</li>
+      <li><span class="toc-num">8</span><span class="toc-label">Understanding Form Statuses</span></li>
+      <li><span class="toc-num">9</span><span class="toc-label">Digital Signatures & PDF Export</span></li>
+      <li><span class="toc-num">10</span><span class="toc-label">Email Notifications</span></li>
+      <li><span class="toc-num">11</span><span class="toc-label">User Roles & Permissions</span></li>
+      <li><span class="toc-num">12</span><span class="toc-label">Configuration (IT Admin Only)</span></li>
+      <li><span class="toc-num">13</span><span class="toc-label">Frequently Asked Questions (FAQ)</span></li>
+    </ul>
+  </div>
+
+  <!-- ══════ PRINT BUTTON (Screen Only) ══════ -->
+  <button class="print-btn" onclick="window.print()" title="Export to PDF">
+    <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+    Print / Save PDF
+  </button>
+
+  <button class="nav-toggle" id="navToggle" type="button">☰ Menu</button>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <small>IT Portal System</small>
+      <h1>User Guide</h1>
+      <p>A practical guide for HR, IT, HOD, and all staff members.</p>
+    </div>
+
+    <p class="nav-title">Getting Started</p>
+    <nav class="nav-links">
+      <a href="#intro">Introduction</a>
+      <a href="#login">Logging In</a>
+      <a href="#dashboard">Dashboard Overview</a>
+    </nav>
+
+    <p class="nav-title">Core Workflows</p>
+    <nav class="nav-links">
+      <a href="#onboarding">Onboarding</a>
+      <a href="#offboarding">Offboarding</a>
+    </nav>
+
+    <p class="nav-title">Asset & Software</p>
+    <nav class="nav-links">
+      <a href="#assets">IT Assets</a>
+      <a href="#software">Software & Licenses</a>
+    </nav>
+
+    <p class="nav-title">Reference</p>
+    <nav class="nav-links">
+      <a href="#statuses">Form Statuses</a>
+      <a href="#signatures">Signatures & PDF</a>
+      <a href="#email">Email Notifications</a>
+      <a href="#roles">Roles & Permissions</a>
+      <a href="#config">Configuration</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="side-note">
+      Press <strong>Ctrl + P</strong> to export a clean PDF. The sidebar is hidden automatically in print layout.
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="wrap">
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 1: INTRODUCTION                                       -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel hero" id="intro">
+        <p class="eyebrow">Version 1.0 · April 2026</p>
+        <h1>IT Portal — User Guide</h1>
+        <p>Welcome to the <strong>IT Portal System</strong> — your company's centralised platform for managing employee onboarding, offboarding, IT assets, and software licenses.</p>
+
+        <div class="grid three-col">
+          <div class="card card-accent">
+            <strong>🚀 Onboarding & Offboarding</strong>
+            <p>Streamlined multi-step wizards for setting up new joiners and securely off-boarding departing employees.</p>
+          </div>
+          <div class="card card-green">
+            <strong>💻 Asset & License Tracking</strong>
+            <p>Real-time inventory of every laptop, desktop, monitor, and software licence across the organisation.</p>
+          </div>
+          <div class="card card-warn">
+            <strong>📊 Analytics & Compliance</strong>
+            <p>SLA monitoring, audit trails, digital signatures, and trend analytics for leadership visibility.</p>
+          </div>
+        </div>
+
+        <div class="note accent">
+          <span class="label accent">Audience</span><br>
+          This guide is written for everyday users. You do <strong>not</strong> need any technical background to follow the steps described here.
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 2: LOGGING IN                                         -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="login">
+        <h2>Getting Started — Logging In</h2>
+        <p>Open your web browser and navigate to the IT Portal address provided by your IT department.</p>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/login_page.png" alt="Login Page">
+          <div class="screenshot-caption">Figure 1 — Login Page</div>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div><strong>Enter your Username</strong><p>Type your assigned username in the first field.</p></div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div><strong>Enter your Password</strong><p>Type your password. Click the 👁 icon to reveal it while typing.</p></div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div><strong>Remember Me (Optional)</strong><p>Tick this box to stay logged in on your device.</p></div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div><strong>Click Login</strong><p>You will be taken to the Dashboard.</p></div>
+          </div>
+        </div>
+
+        <h3>Forgot Your Password?</h3>
+        <ol>
+          <li>Click the <strong>Forgot Password?</strong> link on the login page.</li>
+          <li>Enter your <strong>Username</strong> and click <strong>Submit</strong>.</li>
+          <li>A one-time passcode (OTP) will be sent to your registered email.</li>
+          <li>Enter the OTP on the <strong>Verify OTP</strong> page within 5 minutes.</li>
+          <li>Set a new password on the <strong>Reset Password</strong> page.</li>
+        </ol>
+
+        <div class="note warn">
+          <span class="label warn">Important</span><br>
+          After 3 failed OTP attempts, the code is invalidated — click <strong>Resend OTP</strong> for a fresh code. After 5 failed login attempts, your account will be temporarily locked.
+        </div>
+
+        <h3>Your Profile</h3>
+        <p>Click your <strong>name</strong> at the bottom-left of the sidebar to access your <strong>Profile</strong> page, where you can:</p>
+        <ul>
+          <li>Update your <strong>display name</strong> and <strong>job title</strong></li>
+          <li>Upload an <strong>email signature image</strong> (logo block or QR code)</li>
+          <li>Draw your <strong>reusable digital signature</strong></li>
+        </ul>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 3: DASHBOARD                                          -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="dashboard">
+        <h2>Dashboard Overview</h2>
+        <p>After logging in, you are taken to the <strong>Dashboard</strong> — your personalised starting page showing key metrics and action items.</p>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/dashboard.png" alt="IT Admin Dashboard">
+          <div class="screenshot-caption">Figure 2 — IT Admin Dashboard</div>
+        </div>
+
+        <table>
+          <thead><tr><th>Section</th><th>What It Shows</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Needs Your Attention</strong></td><td>Requests awaiting employee acknowledgement signatures — listed by employee, department, and type.</td></tr>
+            <tr><td><strong>Core Metrics</strong></td><td>Monthly onboarding/offboarding counts, total assets, and expiry alerts.</td></tr>
+            <tr><td><strong>Assets & Software</strong></td><td>Asset distribution by type/status, software licence utilisation charts.</td></tr>
+            <tr><td><strong>System Health</strong></td><td>Active users, audit log entries, recent failed commands.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="note info">
+          <span class="label info">Tip</span><br>
+          Use the <strong>Year</strong> dropdown (top-right) to switch the reporting period. Click <strong>Analytics</strong> in the sidebar for advanced charts, department breakdowns, SLA bottleneck analysis, and year-over-year comparisons.
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 4: ONBOARDING                                         -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="onboarding">
+        <h2>Onboarding — New Employee Setup</h2>
+        <p>The onboarding process is a <strong>multi-step wizard</strong> that moves through these phases:</p>
+
+        <div class="flow">
+          <div class="flow-box flow-hr">HR Creates Request</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-hr">HR Signs Off</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-it">IT Provisions</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-it">IT Signs Off</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-emp">Employee Acknowledges</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-done">✓ Completed</div>
+        </div>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/onboarding.png" alt="Onboarding Dashboard">
+          <div class="screenshot-caption">Figure 3 — Onboarding Dashboard</div>
+        </div>
+
+        <h3>Step 1 — Employee Details (HR)</h3>
+        <div class="note accent">
+          <span class="label accent">HR Only</span><br>
+          Only users with the <strong>HR</strong> role can create new onboarding requests.
+        </div>
+        <ol>
+          <li>From the sidebar, click <strong>Onboarding</strong>, then <strong>+ New Onboarding</strong>.</li>
+          <li>Fill in the new employee's information:</li>
+        </ol>
+        <table>
+          <thead><tr><th>Field</th><th>Required?</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Full Name</td><td>Yes</td><td>Maximum 100 characters</td></tr>
+            <tr><td>Employee ID</td><td>No</td><td>Encrypted for security</td></tr>
+            <tr><td>Designation</td><td>No</td><td>Job title of the new joiner</td></tr>
+            <tr><td>Department</td><td>Yes</td><td>Select from dropdown or type custom</td></tr>
+            <tr><td>Company / Branch</td><td>Yes</td><td>Select from dropdown</td></tr>
+            <tr><td>Desk Number</td><td>No</td><td>Physical desk location</td></tr>
+            <tr><td>Join Date</td><td>Yes</td><td>Expected first day of work</td></tr>
+            <tr><td>Email Address</td><td>No</td><td>Used for acknowledgement email</td></tr>
+            <tr><td>Contact Number</td><td>No</td><td>Encrypted for security</td></tr>
+            <tr><td>HOD Email</td><td>No</td><td>Head of Department email</td></tr>
+          </tbody>
+        </table>
+        <p>Agree to the <strong>PDPA Consent</strong> checkbox, then click <strong>Next</strong>.</p>
+
+        <h3>Step 2 — Software, Email Groups & Shared Folders (HR)</h3>
+        <ol>
+          <li><strong>Software Checklist</strong> — Tick the required software (Microsoft Office, Adobe, VPN, etc.). Use "Other Software" for unlisted items.</li>
+          <li><strong>Email Groups</strong> — Select distribution groups the employee should join.</li>
+          <li><strong>Shared Mailboxes</strong> — Select shared mailboxes (Account, Logistic, Admin, etc.).</li>
+          <li><strong>Server Folder Permissions</strong> — Select shared folders. Use "Other Folder" for custom entries.</li>
+          <li>Click <strong>Save as Draft</strong> to save progress, or draw your <strong>Digital Signature</strong> and click <strong>Sign & Submit</strong>.</li>
+        </ol>
+
+        <div class="note info">
+          <span class="label info">Tip</span><br>
+          You can save a draft at any time and return to it later. Draft requests appear with a <span class="badge badge-draft">Draft</span> badge on the dashboard.
+        </div>
+
+        <hr class="divider">
+
+        <h3>Steps 3–5 — IT Setup Wizard (IT Staff)</h3>
+        <div class="note accent">
+          <span class="label accent">IT Only</span><br>
+          Only users with the <strong>IT</strong> role can perform IT setup steps.
+        </div>
+        <p>Once HR signs off, the request moves to <span class="badge badge-pending">Pending IT Approval</span>. IT staff can click <strong>Start IT Setup</strong> to begin a 3-step wizard:</p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <strong>Asset Assignment</strong>
+              <p>Assign physical IT assets (laptop, monitor, keyboard, etc.) from the inventory. Enter Asset Tag, Serial Number, Brand/Model, and quantity for each item.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div>
+              <strong>Software & Folder Setup</strong>
+              <p>Review the software checklist and mark each item as installed. Grant server folder permissions as requested. Add remarks for each section.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div>
+              <strong>IT Checklist & Sign-Off</strong>
+              <p>Complete the full IT setup checklist (see below), enter remarks, draw your IT Admin Signature, and click <strong>Complete Setup</strong>.</p>
+            </div>
+          </div>
+        </div>
+
+        <h4>IT Setup Checklist Items</h4>
+        <div class="grid two-col">
+          <ul class="checklist">
+            <li>Physical Cleaning — Device inspected</li>
+            <li>O365 Setup — Microsoft 365 configured</li>
+            <li>Windows Login — Domain account created</li>
+            <li>Email Setup — Email client configured</li>
+            <li>Specific Software — Specialised apps installed</li>
+            <li>General Software — Standard bundle installed</li>
+            <li>ABC Group — Added to company email group</li>
+          </ul>
+          <ul class="checklist">
+            <li>Email Mail Group — Department group added</li>
+            <li>Domain Join — Device joined to domain</li>
+            <li>Shared Drive — Network drives mapped</li>
+            <li>Wi-Fi Setup — Wireless configured</li>
+            <li>Printer Setup — Printers added</li>
+            <li>Scan Folder — Scan-to-folder configured</li>
+            <li>VPN Setup — VPN client configured</li>
+          </ul>
+        </div>
+
+        <hr class="divider">
+
+        <h3>Employee Acknowledgement</h3>
+        <p>After IT completes setup, the status becomes <span class="badge badge-pending">Pending Employee Sign</span>:</p>
+        <ol>
+          <li>The employee receives an email with a <strong>unique acknowledgement link</strong>.</li>
+          <li>They review the full onboarding summary and can <strong>download the PDF</strong>.</li>
+          <li>They draw their signature and click <strong>Submit Signature</strong>.</li>
+          <li>The request status changes to <span class="badge badge-green">Completed</span>.</li>
+        </ol>
+
+        <div class="note warn">
+          <span class="label warn">Important</span><br>
+          If the employee lost the email, HR can click <strong>Regenerate Token</strong> on the request details page to create a new link (the old link becomes invalid).
+        </div>
+
+        <hr class="divider">
+
+        <h3>Tracking Onboarding Progress</h3>
+        <p>From the <strong>Onboarding Dashboard</strong>, you can:</p>
+        <ul>
+          <li><strong>Search</strong> by employee name, ID, or department</li>
+          <li><strong>Filter by status</strong> using the dropdown</li>
+          <li><strong>Sort columns</strong> by clicking column headers</li>
+          <li><strong>View details</strong> — click the 👁 icon</li>
+          <li><strong>Download PDF</strong> — click the 📄 icon</li>
+          <li><strong>Export CSV</strong> and <strong>Bulk Export PDFs</strong> (HR only)</li>
+        </ul>
+        <p>Requests exceeding the SLA target display an <span class="badge badge-red">⏰ Overdue</span> badge.</p>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 5: OFFBOARDING                                        -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="offboarding">
+        <h2>Offboarding — Employee Exit Process</h2>
+        <p>The offboarding process handles the departure of an employee, ensuring all access is revoked and hardware is returned.</p>
+
+        <div class="flow">
+          <div class="flow-box flow-hr">HR Creates</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-hr">HR Signs</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-hod">HOD Signs</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-it">IT Processes</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-it">IT Signs</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-emp">Employee Signs</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box flow-done">✓ Done</div>
+        </div>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/offboarding.png" alt="Offboarding Dashboard">
+          <div class="screenshot-caption">Figure 4 — Offboarding Dashboard</div>
+        </div>
+
+        <h3>Creating an Offboarding Request (HR)</h3>
+        <ol>
+          <li>From the sidebar, click <strong>Offboarding</strong>, then <strong>+ New Offboarding</strong>.</li>
+          <li>Fill in the departing employee's details: <strong>Full Name</strong>, <strong>Employee ID</strong>, <strong>Department</strong>, <strong>Company/Branch</strong>, <strong>Last Day of Work</strong>, <strong>Email</strong>, <strong>HOD Email</strong>.</li>
+          <li><em>(Optional)</em> Upload a <strong>Resignation Letter</strong>.</li>
+          <li>Agree to <strong>PDPA Consent</strong> and click <strong>Create</strong>.</li>
+        </ol>
+
+        <div class="note info">
+          <span class="label info">Tip</span><br>
+          You can link the offboarding request to the employee's original onboarding record to auto-fill details and help IT know what was originally provisioned.
+        </div>
+
+        <h3>Approval & Signature Flow</h3>
+        <table>
+          <thead><tr><th>Step</th><th>Who Signs</th><th>Status After</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>HR Staff (Requester)</td><td><span class="badge badge-pending">Pending Approval</span></td></tr>
+            <tr><td>2</td><td>Second HR User (Checker)</td><td><span class="badge badge-pending">Pending HOD Approval</span></td></tr>
+            <tr><td>3</td><td>Head of Department</td><td><span class="badge badge-blue">Pending IT Approval</span></td></tr>
+            <tr><td>4</td><td>IT Staff</td><td><span class="badge badge-pending">Pending Employee Sign</span></td></tr>
+            <tr><td>5</td><td>Employee</td><td><span class="badge badge-green">Completed</span></td></tr>
+          </tbody>
+        </table>
+
+        <h3>IT Deprovisioning (IT Staff)</h3>
+        <p>Once the HOD has signed, IT can proceed by clicking <strong>Start IT Setup</strong>:</p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <strong>Hardware Return & IT Deactivation</strong>
+              <p>Record returned assets (laptop, accessories), note any damage with photos, complete the IT Deactivation Checklist (O365 deactivate, AD disable, email sign-out, VPN disable, etc.), and record any missing item fines.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <strong>Follow-Up & IT Sign-Off</strong>
+              <p>Confirm data backup, email backup, email forwarding, licence removal. Add remarks, draw your IT Admin Signature, and click <strong>Complete</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 6: IT ASSETS                                           -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="assets">
+        <h2>IT Asset Management</h2>
+
+        <div class="note accent">
+          <span class="label accent">IT Only</span><br>
+          Only users with the <strong>IT</strong> role can access the IT Asset module.
+        </div>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/it_assets.png" alt="IT Asset Inventory">
+          <div class="screenshot-caption">Figure 5 — IT Asset Inventory</div>
+        </div>
+
+        <h3>Asset Types</h3>
+        <div class="grid four-col">
+          <div class="card"><strong>💻 Laptop</strong><p>Portable computers</p></div>
+          <div class="card"><strong>🖥️ Desktop PC</strong><p>Stationary workstations</p></div>
+          <div class="card"><strong>🖵 Monitor</strong><p>Display screens</p></div>
+          <div class="card"><strong>⌨️ Keyboard</strong><p>External keyboards</p></div>
+          <div class="card"><strong>🎧 Headset</strong><p>Audio headsets</p></div>
+          <div class="card"><strong>📷 Webcam</strong><p>External cameras</p></div>
+          <div class="card"><strong>🔌 Docking Station</strong><p>Laptop docks</p></div>
+          <div class="card"><strong>📦 Others</strong><p>Any other equipment</p></div>
+        </div>
+
+        <h3>Asset Statuses</h3>
+        <table>
+          <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-green">Available</span></td><td>In stock and ready to be assigned to an employee.</td></tr>
+            <tr><td><span class="badge badge-blue">Issued</span></td><td>Currently assigned to an employee.</td></tr>
+            <tr><td><span class="badge badge-pending">Under Repair</span></td><td>Being serviced or repaired.</td></tr>
+            <tr><td><span class="badge badge-draft">Disposed</span></td><td>Retired and disposed of.</td></tr>
+            <tr><td><span class="badge badge-red">Lost</span></td><td>Reported lost or stolen.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Adding a New Asset</h3>
+        <ol>
+          <li>Click <strong>+ Add New Asset</strong>.</li>
+          <li>Fill in: <strong>Asset Tag</strong> (required, unique), <strong>Asset Type</strong>, <strong>Serial Number</strong>, <strong>Model</strong>, <strong>Company</strong>, <strong>Purchase Date</strong>, <strong>Warranty Expiry</strong>, <strong>RAM</strong>, <strong>DDR Type</strong>, <strong>Storage</strong>, <strong>Windows Version</strong>.</li>
+          <li>If status is <strong>Issued</strong>, select the assigned employee.</li>
+          <li>Click <strong>Create</strong>.</li>
+        </ol>
+
+        <h3>Bulk Import</h3>
+        <ol>
+          <li>Click <strong>Bulk Import</strong> → <strong>Download Template</strong> to get the Excel template.</li>
+          <li>Fill in the spreadsheet (includes dropdown validation for types and statuses).</li>
+          <li>Upload the completed file and click <strong>Import</strong>.</li>
+        </ol>
+        <div class="note warn">
+          <span class="label warn">Warning</span><br>
+          Each <strong>Asset Tag</strong> must be unique. Duplicate tags will be skipped during import.
+        </div>
+
+        <h3>Device Verification</h3>
+        <p>Remotely verify a device's hardware fingerprint:</p>
+        <ol>
+          <li>Click <strong>Generate Verification Link</strong> and select an employee.</li>
+          <li>Share the generated link or ZIP file with the employee.</li>
+          <li>They run the script, which captures the hardware fingerprint and sends it back to the portal.</li>
+          <li>A mismatch warning is flagged if the fingerprint differs from the recorded one.</li>
+        </ol>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 7: SOFTWARE                                            -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="software">
+        <h2>Software & License Management</h2>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/software.png" alt="Software Inventory">
+          <div class="screenshot-caption">Figure 6 — Software Inventory</div>
+        </div>
+
+        <h3>Software Catalog</h3>
+        <p>The Software Inventory page shows summary cards (Total Software, License Cap, Utilisation %, Expiring Soon, Expired), plus a searchable list of all software titles with badges (<span class="badge badge-blue">Mandatory</span>, <span class="badge badge-red">Free</span>, <span class="badge badge-green">Active</span>).</p>
+
+        <h3>Adding Software & Licences</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <strong>Add Software Title</strong>
+              <p>Click <strong>+ Add Software</strong>. Enter the name and set flags: Mandatory, Free, Active, Has Multiple Versions.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <strong>Add Licence Version</strong>
+              <p>Expand a software title and click <strong>Add Version</strong>. Enter version name, vendor, support contact, subscription flag, expiry date, contract limit, and company assignment.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <strong>Manage Keys</strong>
+              <p>Click <strong>Manage Keys</strong> to add, edit, or assign individual licence keys. Keys can be linked to specific employees. For subscriptions, use <strong>Quick Allocate Seat</strong>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="note info">
+          <span class="label info">Tip</span><br>
+          The utilisation percentage helps monitor contract limits. Licence keys are <strong>encrypted</strong> and only visible to IT staff. The system sends automatic email alerts when licences are about to expire.
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 8: STATUSES                                            -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="statuses">
+        <h2>Understanding Form Statuses</h2>
+        <p>Every request moves through a series of statuses. Here is what each one means in plain language:</p>
+
+        <table>
+          <thead><tr><th>Status</th><th style="width:140px">Badge</th><th>What It Means</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Draft</strong></td><td><span class="badge badge-draft">Draft</span></td><td>The form has been started but not yet submitted. Only the creator can see and edit it.</td></tr>
+            <tr><td><strong>Pending Approval</strong></td><td><span class="badge badge-pending">Pending Approval</span></td><td>(Offboarding) HR has signed; a second HR user (checker) must approve.</td></tr>
+            <tr><td><strong>Pending HOD Approval</strong></td><td><span class="badge badge-pending">Pending HOD</span></td><td>(Offboarding) Waiting for the Head of Department to review and sign.</td></tr>
+            <tr><td><strong>Pending IT Approval</strong></td><td><span class="badge badge-blue">Pending IT</span></td><td>Approved and waiting for IT to provision or deprovision resources.</td></tr>
+            <tr><td><strong>Pending Employee Sign</strong></td><td><span class="badge badge-pending">Pending Emp. Sign</span></td><td>IT completed their work; employee must sign the acknowledgement.</td></tr>
+            <tr><td><strong>Completed</strong></td><td><span class="badge badge-green">Completed</span></td><td>All signatures collected. The process is finished.</td></tr>
+            <tr><td><strong>Rejected</strong></td><td><span class="badge badge-red">Rejected</span></td><td>The request was rejected. The rejection reason is recorded.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="note warn">
+          <span class="label warn">Note</span><br>
+          <strong>Overdue</strong> is not a status — it is a visual indicator. When a request exceeds the SLA target days, an <span class="badge badge-red">⏰ Overdue</span> badge appears next to the due date.
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 9: SIGNATURES & PDF                                    -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="signatures">
+        <h2>Digital Signatures & PDF Export</h2>
+
+        <div class="grid two-col">
+          <div class="card card-accent">
+            <strong>✍️ Digital Signatures</strong>
+            <p>Each signature is drawn on a digital pad. The image, signer name, and timestamp are recorded with tamper detection (HMAC).</p>
+          </div>
+          <div class="card card-green">
+            <strong>📄 PDF Export</strong>
+            <p>Click the 📄 icon on any request to download a professional PDF. Select multiple rows for bulk PDF export.</p>
+          </div>
+        </div>
+
+        <h3>Who Signs What</h3>
+        <table>
+          <thead><tr><th>Form Type</th><th>Signature Chain</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Onboarding</strong></td><td>HR (Requester) → IT Admin → Employee</td></tr>
+            <tr><td><strong>Offboarding</strong></td><td>HR → HOD (Manager) → IT Admin → Employee</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 10: EMAIL NOTIFICATIONS                                -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="email">
+        <h2>Email Notifications</h2>
+        <p>The portal integrates with your company email to send professional notifications at key workflow milestones:</p>
+
+        <table>
+          <thead><tr><th>Event</th><th>Recipient</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>HR submits onboarding</td><td>IT Department</td><td>Notify IT to begin provisioning</td></tr>
+            <tr><td>IT completes onboarding</td><td>Employee</td><td>Send acknowledgement link</td></tr>
+            <tr><td>HR submits offboarding</td><td>HOD</td><td>Request manager sign-off</td></tr>
+            <tr><td>HOD signs offboarding</td><td>IT Department</td><td>Notify IT to begin deprovisioning</td></tr>
+            <tr><td>IT completes offboarding</td><td>Employee</td><td>Send acknowledgement link</td></tr>
+            <tr><td>Request rejected</td><td>Original submitter</td><td>Inform with rejection reason</td></tr>
+            <tr><td>HOD approval reminder</td><td>HOD</td><td>Follow-up for pending signatures</td></tr>
+          </tbody>
+        </table>
+
+        <div class="note info">
+          <span class="label info">How it works</span><br>
+          After signing, the system opens an <strong>Email Confirmation</strong> page where you can review and edit the pre-filled email (To, CC, Subject, Body). Click <strong>Preview Attachment</strong> to view any included PDF, then click <strong>Send Email</strong>.
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 11: ROLES                                              -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="roles">
+        <h2>User Roles & Permissions</h2>
+
+        <div class="grid three-col">
+          <div class="card card-accent">
+            <strong>👩‍💼 HR</strong>
+            <p>Create onboarding/offboarding requests, sign off, view employee directory, export CSV reports.</p>
+          </div>
+          <div class="card card-green">
+            <strong>🔧 IT</strong>
+            <p>IT setup, manage assets & software, system users, audit logs, settings.</p>
+          </div>
+          <div class="card card-warn">
+            <strong>👨‍💻 HOD</strong>
+            <p>Sign off offboarding requests for department employees, view the offboarding dashboard.</p>
+          </div>
+        </div>
+
+        <h3>Sidebar Visibility by Role</h3>
+        <table>
+          <thead><tr><th>Menu Item</th><th>HR</th><th>IT</th><th>HOD</th></tr></thead>
+          <tbody>
+            <tr><td>Dashboard</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td>Analytics</td><td>✅</td><td>✅</td><td>—</td></tr>
+            <tr><td>Onboarding</td><td>✅</td><td>✅</td><td>—</td></tr>
+            <tr><td>Offboarding</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td>Employees</td><td>✅</td><td>✅</td><td>—</td></tr>
+            <tr><td>Email Directory</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td>IT Assets</td><td>—</td><td>✅</td><td>—</td></tr>
+            <tr><td>Software List</td><td>—</td><td>✅</td><td>—</td></tr>
+            <tr><td>System Users</td><td>—</td><td>✅</td><td>—</td></tr>
+            <tr><td>Audit Logs</td><td>✅</td><td>✅</td><td>—</td></tr>
+            <tr><td>Due Date Setup</td><td>—</td><td>✅</td><td>—</td></tr>
+            <tr><td>Configuration (Companies, Depts, etc.)</td><td>—</td><td>✅</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 12: CONFIGURATION                                      -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="config">
+        <h2>Configuration (IT Admin Only)</h2>
+
+        <div class="grid two-col">
+          <div class="card">
+            <strong>🏢 Companies</strong>
+            <p>Manage companies/branches with logos, time zones, business hours, and working day schedules.</p>
+          </div>
+          <div class="card">
+            <strong>📂 Departments</strong>
+            <p>Add, edit, or remove departments linked to specific companies.</p>
+          </div>
+          <div class="card">
+            <strong>👥 Email Groups</strong>
+            <p>Manage email distribution groups shown in onboarding forms.</p>
+          </div>
+          <div class="card">
+            <strong>📧 Shared Mailboxes</strong>
+            <p>Manage shared mailbox entries (Account, Logistic, IT, etc.).</p>
+          </div>
+          <div class="card">
+            <strong>📁 Server Folders</strong>
+            <p>Manage shared folder paths presented during onboarding.</p>
+          </div>
+          <div class="card">
+            <strong>⏱️ Due Date Setup (SLA)</strong>
+            <p>Configure target days, Tier 1 & Tier 2 escalation, and notification emails.</p>
+          </div>
+          <div class="card">
+            <strong>👤 System Users</strong>
+            <p>Create, edit, activate/deactivate user accounts, assign roles and company scopes.</p>
+          </div>
+          <div class="card">
+            <strong>📋 Audit Logs</strong>
+            <p>Full action history with filtering, before/after comparisons, CSV export, and failure analytics.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- SECTION 13: FAQ                                                -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="faq">
+        <h2>Frequently Asked Questions</h2>
+
+        <h3>General</h3>
+        <table>
+          <thead><tr><th style="width:40%">Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td>I can't log in. What should I do?</td><td>Ensure you're typing your username and password correctly (case-sensitive). Use <strong>Forgot Password?</strong> if needed. If your account is locked, wait for the lockout to expire or contact IT.</td></tr>
+            <tr><td>I see "Access Denied" — why?</td><td>Your account doesn't have the required role for that page. Contact IT to request access.</td></tr>
+            <tr><td>Can I use this on my phone?</td><td>Yes! The portal is responsive. On smaller screens, the sidebar becomes a slide-out menu via the ☰ button.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Onboarding</h3>
+        <table>
+          <thead><tr><th style="width:40%">Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td>What fields are required?</td><td><strong>Full Name</strong>, <strong>Department</strong>, <strong>Company/Branch</strong>, and <strong>Join Date</strong>. All others are optional but recommended.</td></tr>
+            <tr><td>Can I edit after submission?</td><td>Yes, as long as the status hasn't reached <strong>Pending Employee Sign</strong> or <strong>Completed</strong>.</td></tr>
+            <tr><td>What if I save as draft?</td><td>The request is saved with Draft status. Return anytime to continue.</td></tr>
+            <tr><td>How does the employee sign without a portal account?</td><td>They receive a <strong>unique, secure link</strong> via email. No login required — they review, sign, and submit directly.</td></tr>
+            <tr><td>The employee lost the email?</td><td>Go to the request Details page, click <strong>Regenerate Token</strong>, then compose a new email.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Offboarding</h3>
+        <table>
+          <thead><tr><th style="width:40%">Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td>Can I link to a previous onboarding?</td><td>Yes. Select the employee from the link dropdown to auto-fill details.</td></tr>
+            <tr><td>What is "Checker Approval"?</td><td>A second HR user (different from the creator) must approve for dual-approval safeguard.</td></tr>
+            <tr><td>Can I upload a resignation letter?</td><td>Yes. Use the file upload field when creating the offboarding request.</td></tr>
+            <tr><td>Can I reject a request?</td><td>Yes, any approver can reject before the Pending Employee Sign stage. A reason is required.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>IT Assets & Software</h3>
+        <table>
+          <thead><tr><th style="width:40%">Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td>What is an "Asset Tag"?</td><td>A unique label physically attached to equipment (e.g., "YTCP-LAP001"). Must be unique system-wide.</td></tr>
+            <tr><td>Can I import from a spreadsheet?</td><td>Yes. Click <strong>Bulk Import</strong>, download the template, fill it in, and upload.</td></tr>
+            <tr><td>What does "No Extend Warranty" mean?</td><td>It stops warranty expiry reminders for that asset when you've decided not to renew.</td></tr>
+            <tr><td>What is "Mandatory" software?</td><td>Automatically pre-selected on every new onboarding form. Non-mandatory must be manually selected.</td></tr>
+            <tr><td>How do I know if licences are running out?</td><td>Check the <strong>Utilisation %</strong> on the Software page. Auto-alerts are sent before expiry.</td></tr>
+            <tr><td>Can I track individual licence keys?</td><td>Yes. Use <strong>Manage Keys</strong> to add, edit, or assign keys. Keys are encrypted for security.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Signatures & PDFs</h3>
+        <table>
+          <thead><tr><th style="width:40%">Question</th><th>Answer</th></tr></thead>
+          <tbody>
+            <tr><td>Is my digital signature legally binding?</td><td>Signatures are used for internal tracking with tamper-detection (HMAC). Consult your legal department for enforceability questions.</td></tr>
+            <tr><td>Can I download a PDF of any form?</td><td>Yes. Click the 📄 icon on any request. The PDF includes all details, assets, signatures, and timestamps.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!-- FOOTER                                                         -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" style="text-align:center;border-top:4px solid var(--accent)">
+        <p><strong>Need Help?</strong> Contact your IT Department for technical assistance or account-related queries.</p>
+        <p class="footer">© 2026 — IT Portal System · This guide is confidential and intended for internal use only.</p>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const navToggle = document.getElementById("navToggle");
+    const navLinks = Array.from(document.querySelectorAll(".nav-links a"));
+    const sections = Array.from(document.querySelectorAll("section[id]"));
+
+    navToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+
+    navLinks.forEach(link => {
+      link.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+      });
+    });
+
+    // Scroll spy
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      const id = visible.target.getAttribute("id");
+      navLinks.forEach(link => {
+        link.classList.toggle("active", link.getAttribute("href") === "#" + id);
+      });
+    }, {
+      rootMargin: "-20% 0px -60% 0px",
+      threshold: [0.15, 0.35, 0.6]
+    });
+
+    sections.forEach(section => observer.observe(section));
+  </script>
+</body>
+</html>

@@ -8,364 +8,1185 @@
     bool? isSuccess = Model.IsSuccess;
     string? startDate = Model.StartDate;
     string? endDate = Model.EndDate;
+
+    var entities = new[]
+    {
+        ("ApplicationUser", "User Accounts"),
+        ("UserTitle", "User Titles"),
+        ("UserCompany", "User Companies"),
+        ("OnboardingRequest", "Onboarding"),
+        ("OffboardingRequest", "Offboarding"),
+        ("SoftwareLicense", "Software License"),
+        ("StandardSoftware", "Software Catalogue"),
+        ("ITAsset", "IT Assets"),
+        ("MaintenanceLog", "Maintenance"),
+        ("Company", "Companies"),
+        ("Department", "Departments"),
+        ("EmailGroup", "Email Groups"),
+        ("SharedMailbox", "Shared Mailboxes"),
+        ("ServerFolder", "Server Folders"),
+        ("EmailContact", "Contacts"),
+        ("Command", "Command Pipeline")
+    }.OrderBy(x => x.Item2).ToArray();
+
+    var selectedEntityLabel = entities.FirstOrDefault(x => x.Item1 == entity).Item2 ?? "All entities";
+    var selectedActionLabel = string.IsNullOrWhiteSpace(action) ? "All actions" : action;
+    var selectedOutcomeLabel = isSuccess switch
+    {
+        true => "Success only",
+        false => "Failures only",
+        _ => "All outcomes"
+    };
+    var activeFilterCount = new[]
+    {
+        !string.IsNullOrWhiteSpace(entity),
+        !string.IsNullOrWhiteSpace(action),
+        isSuccess.HasValue,
+        !string.IsNullOrWhiteSpace(startDate),
+        !string.IsNullOrWhiteSpace(endDate),
+        !string.IsNullOrWhiteSpace(search)
+    }.Count(active => active);
     var maxFailedActionCount = Math.Max(Model.TopFailedActions.Any() ? Model.TopFailedActions.Max(x => x.Count) : 0, 1);
     var maxFailedActorCount = Math.Max(Model.TopFailedActors.Any() ? Model.TopFailedActors.Max(x => x.Count) : 0, 1);
     var maxTrendCount = Math.Max(Model.FailureTrend.Any() ? Model.FailureTrend.Max(x => x.Count) : 0, 1);
+    var riskStatus = Model.FilteredFailureCount > 0 ? "Review needed" : "No failures";
+    var riskStatusClass = Model.FilteredFailureCount > 0 ? "audit-state-danger" : "audit-state-success";
 }
 
-<div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div class="page-header-left">
-        <h2><i class="bi bi-clock-history me-2" aria-hidden="true"></i>Audit Log</h2>
-        <span class="subtitle">Track both entity-level changes and command-level business actions across HR, IT, and API workflows.</span>
-    </div>
-    <div class="d-flex align-items-center gap-2">
-        <a asp-action="Settings" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
-            <i class="bi bi-gear-fill me-1" aria-hidden="true"></i>Notification Settings
-        </a>
-        <a asp-action="ExportCsv" asp-route-search="@search" asp-route-entity="@entity" asp-route-auditAction="@action" asp-route-isSuccess="@isSuccess"
-           asp-route-startDate="@startDate" asp-route-endDate="@endDate"
-           class="btn btn-success fw-bold shadow-sm rounded-pill px-4 py-2 d-inline-flex align-items-center justify-content-center gap-2">
-            <i class="bi bi-download me-1" aria-hidden="true"></i>Export CSV
-        </a>
-        <span class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center justify-content-center gap-2" style="cursor: default;">
-            <i class="bi bi-collection me-1" aria-hidden="true"></i> @entries.TotalCount Total Entries
-        </span>
-    </div>
-</div>
+<style>
+    .audit-shell {
+        --audit-blue: #164f9f;
+        --audit-blue-strong: #0f3f83;
+        --audit-blue-soft: rgba(22, 79, 159, 0.08);
+        --audit-red: #dc3545;
+        --audit-red-soft: rgba(220, 53, 69, 0.09);
+        --audit-green: #0f9f6e;
+        --audit-green-soft: rgba(15, 159, 110, 0.1);
+        --audit-ink: #1f2937;
+        --audit-muted: #64748b;
+        --audit-line: rgba(100, 116, 139, 0.18);
+        --audit-panel: rgba(255, 255, 255, 0.92);
+        display: grid;
+        gap: 1.25rem;
+    }
 
-<form method="get" class="card shadow-sm mb-4 p-3">
-    <div class="row g-2 align-items-end">
-        <div class="col-md-2">
-            <label class="form-label small fw-bold">Entity Type</label>
-            <select name="entity" class="form-select form-select-sm">
-                <option value="">All Entities</option>
-                @{
-                    var entities = new[]
+    .audit-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: start;
+    }
+
+    .audit-title-wrap {
+        display: flex;
+        gap: 0.9rem;
+        align-items: flex-start;
+        min-width: 0;
+    }
+
+    .audit-title-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        color: var(--audit-blue);
+        border: 1px solid rgba(22, 79, 159, 0.16);
+        box-shadow: 0 10px 24px rgba(15, 63, 131, 0.08);
+        flex: 0 0 auto;
+    }
+
+    .audit-title {
+        margin: 0;
+        color: var(--audit-ink);
+        font-size: clamp(1.65rem, 2.8vw, 2.25rem);
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: 0;
+    }
+
+    .audit-subtitle {
+        margin: 0.45rem 0 0;
+        color: var(--audit-muted);
+        max-width: 62rem;
+        font-size: 0.96rem;
+    }
+
+    .audit-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.65rem;
+    }
+
+    .audit-btn {
+        min-height: 40px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        font-weight: 700;
+        padding: 0.6rem 0.95rem;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+        white-space: nowrap;
+    }
+
+    .audit-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .audit-btn-primary {
+        color: #fff;
+        background: var(--audit-blue);
+        box-shadow: 0 10px 18px rgba(22, 79, 159, 0.18);
+    }
+
+    .audit-btn-primary:hover {
+        color: #fff;
+        background: var(--audit-blue-strong);
+    }
+
+    .audit-btn-success {
+        color: #fff;
+        background: var(--audit-green);
+        box-shadow: 0 10px 18px rgba(15, 159, 110, 0.16);
+    }
+
+    .audit-btn-success:hover {
+        color: #fff;
+        filter: brightness(0.96);
+    }
+
+    .audit-btn-ghost {
+        color: var(--audit-blue);
+        background: #fff;
+        border-color: rgba(22, 79, 159, 0.2);
+    }
+
+    .audit-btn-ghost:hover {
+        color: var(--audit-blue-strong);
+        border-color: rgba(22, 79, 159, 0.38);
+        box-shadow: 0 10px 18px rgba(15, 23, 42, 0.07);
+    }
+
+    .audit-filter-panel,
+    .audit-metric,
+    .audit-insight-panel,
+    .audit-table-panel,
+    .audit-empty-state {
+        background: var(--audit-panel);
+        border: 1px solid var(--audit-line);
+        border-radius: 8px;
+        box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+    }
+
+    .audit-filter-panel {
+        padding: 1rem;
+    }
+
+    .audit-filter-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid rgba(100, 116, 139, 0.14);
+        margin-bottom: 1rem;
+    }
+
+    .audit-panel-title {
+        margin: 0;
+        color: var(--audit-ink);
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .audit-panel-subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--audit-muted);
+        font-size: 0.84rem;
+    }
+
+    .audit-active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.35rem;
+    }
+
+    .audit-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        min-height: 28px;
+        border-radius: 999px;
+        padding: 0.25rem 0.65rem;
+        color: #334155;
+        background: #f8fafc;
+        border: 1px solid rgba(100, 116, 139, 0.16);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .audit-chip-danger {
+        color: #b42335;
+        background: #fff1f3;
+        border-color: rgba(220, 53, 69, 0.22);
+    }
+
+    .audit-chip-blue {
+        color: var(--audit-blue);
+        background: var(--audit-blue-soft);
+        border-color: rgba(22, 79, 159, 0.18);
+    }
+
+    .audit-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 0.85rem;
+        align-items: end;
+    }
+
+    .audit-field {
+        min-width: 0;
+    }
+
+    .audit-field label {
+        margin-bottom: 0.35rem;
+        color: #475569;
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .audit-field .form-control,
+    .audit-field .form-select {
+        min-height: 42px;
+        border-radius: 8px;
+        border-color: rgba(100, 116, 139, 0.24);
+        font-size: 0.9rem;
+        box-shadow: none;
+    }
+
+    .audit-field .form-control:focus,
+    .audit-field .form-select:focus {
+        border-color: rgba(22, 79, 159, 0.55);
+        box-shadow: 0 0 0 0.2rem rgba(22, 79, 159, 0.12);
+    }
+
+    .audit-col-2 {
+        grid-column: span 2;
+    }
+
+    .audit-col-3 {
+        grid-column: span 3;
+    }
+
+    .audit-col-4 {
+        grid-column: span 4;
+    }
+
+    .audit-col-actions {
+        grid-column: span 2;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .audit-filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.85rem;
+    }
+
+    .audit-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .audit-metric {
+        padding: 1rem;
+        min-height: 132px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .audit-metric::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--metric-accent, var(--audit-blue));
+    }
+
+    .audit-metric-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .audit-metric-label {
+        color: var(--audit-muted);
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .audit-metric-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--metric-accent, var(--audit-blue));
+        background: color-mix(in srgb, var(--metric-accent, var(--audit-blue)) 10%, white);
+        flex: 0 0 auto;
+    }
+
+    .audit-metric-value {
+        margin-top: 0.55rem;
+        color: var(--audit-ink);
+        font-size: 2.1rem;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .audit-metric-note {
+        margin-top: 0.5rem;
+        color: var(--audit-muted);
+        font-size: 0.84rem;
+    }
+
+    .audit-state-danger {
+        color: #b42335;
+    }
+
+    .audit-state-success {
+        color: #087f5b;
+    }
+
+    .audit-insight-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(320px, 1.15fr);
+        gap: 1rem;
+    }
+
+    .audit-insight-panel {
+        min-height: 260px;
+        padding: 1rem;
+    }
+
+    .audit-insight-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .audit-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .audit-list-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .audit-list-main {
+        min-width: 0;
+    }
+
+    .audit-list-label {
+        display: block;
+        color: var(--audit-ink);
+        font-weight: 700;
+        font-size: 0.88rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .audit-bar-track {
+        height: 6px;
+        margin-top: 0.4rem;
+        border-radius: 999px;
+        background: rgba(100, 116, 139, 0.14);
+        overflow: hidden;
+    }
+
+    .audit-bar {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--bar-color, var(--audit-blue));
+    }
+
+    .audit-count {
+        min-width: 30px;
+        height: 26px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--audit-ink);
+        background: #f8fafc;
+        border: 1px solid rgba(100, 116, 139, 0.18);
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
+    .audit-trend-chart {
+        height: 184px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 0.55rem;
+        padding-top: 0.25rem;
+    }
+
+    .audit-trend-point {
+        flex: 1 1 0;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.4rem;
+    }
+
+    .audit-trend-value {
+        color: var(--audit-ink);
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
+    .audit-trend-bar-wrap {
+        width: 100%;
+        max-width: 30px;
+        height: 124px;
+        display: flex;
+        align-items: flex-end;
+        border-radius: 999px;
+        background: rgba(220, 53, 69, 0.08);
+        overflow: hidden;
+    }
+
+    .audit-trend-bar {
+        width: 100%;
+        min-height: 14px;
+        border-radius: 999px 999px 0 0;
+        background: var(--audit-red);
+    }
+
+    .audit-trend-label {
+        color: var(--audit-muted);
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+
+    .audit-muted-empty {
+        color: var(--audit-muted);
+        font-size: 0.9rem;
+        padding: 1.25rem 0;
+    }
+
+    .audit-table-panel {
+        overflow: hidden;
+    }
+
+    .audit-table-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1rem 0.85rem;
+        border-bottom: 1px solid rgba(100, 116, 139, 0.14);
+    }
+
+    .audit-table-count {
+        color: var(--audit-muted);
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
+    .audit-table {
+        margin: 0;
+    }
+
+    .audit-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid rgba(100, 116, 139, 0.16);
+        padding-top: 0.8rem;
+        padding-bottom: 0.8rem;
+        white-space: nowrap;
+    }
+
+    .audit-table tbody td {
+        padding-top: 0.95rem;
+        padding-bottom: 0.95rem;
+    }
+
+    .audit-time {
+        color: var(--audit-ink);
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .audit-time-sub,
+    .audit-entity-id,
+    .audit-user-sub {
+        color: var(--audit-muted);
+        font-size: 0.74rem;
+    }
+
+    .audit-badge {
+        min-width: 78px;
+        border-radius: 999px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.32rem 0.58rem;
+        font-size: 0.74rem;
+        font-weight: 800;
+        border: 1px solid transparent;
+    }
+
+    .audit-badge-success {
+        color: #087f5b;
+        background: var(--audit-green-soft);
+        border-color: rgba(15, 159, 110, 0.18);
+    }
+
+    .audit-badge-danger {
+        color: #b42335;
+        background: var(--audit-red-soft);
+        border-color: rgba(220, 53, 69, 0.2);
+    }
+
+    .audit-badge-warning {
+        color: #8a5a00;
+        background: #fff7d6;
+        border-color: rgba(252, 209, 22, 0.38);
+    }
+
+    .audit-badge-neutral {
+        color: #334155;
+        background: #f1f5f9;
+        border-color: rgba(100, 116, 139, 0.2);
+    }
+
+    .audit-entity-cell {
+        display: flex;
+        gap: 0.65rem;
+        align-items: flex-start;
+        min-width: 0;
+    }
+
+    .audit-entity-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--audit-blue-soft);
+        color: var(--audit-blue);
+        flex: 0 0 auto;
+    }
+
+    .audit-details-text {
+        max-width: 520px;
+        color: #334155;
+        font-size: 0.86rem;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .audit-error-text {
+        margin-top: 0.35rem;
+        color: #b42335;
+        font-size: 0.76rem;
+        font-weight: 700;
+    }
+
+    .audit-row-failed {
+        background: rgba(220, 53, 69, 0.025);
+    }
+
+    .audit-row-failed td:first-child {
+        box-shadow: inset 3px 0 0 rgba(220, 53, 69, 0.85);
+    }
+
+    .audit-row-correlated td:first-child {
+        box-shadow: inset 3px 0 0 rgba(22, 79, 159, 0.75);
+    }
+
+    .audit-row-failed.audit-row-correlated td:first-child {
+        box-shadow: inset 3px 0 0 rgba(220, 53, 69, 0.85);
+    }
+
+    .audit-empty-state {
+        text-align: center;
+        padding: 3.5rem 1.5rem;
+    }
+
+    .audit-empty-icon {
+        width: 64px;
+        height: 64px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        color: var(--audit-blue);
+        background: var(--audit-blue-soft);
+        font-size: 2rem;
+    }
+
+    @@media (max-width: 1199.98px) {
+        .audit-kpi-grid,
+        .audit-insight-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .audit-insight-panel:last-child {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        .audit-hero {
+            grid-template-columns: 1fr;
+        }
+
+        .audit-hero-actions {
+            justify-content: flex-start;
+        }
+
+        .audit-col-2,
+        .audit-col-3,
+        .audit-col-4,
+        .audit-col-actions {
+            grid-column: span 6;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .audit-kpi-grid,
+        .audit-insight-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .audit-filter-head,
+        .audit-table-head {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .audit-active-filters {
+            justify-content: flex-start;
+        }
+
+        .audit-col-2,
+        .audit-col-3,
+        .audit-col-4,
+        .audit-col-actions {
+            grid-column: 1 / -1;
+        }
+
+        .audit-col-actions {
+            flex-direction: column;
+        }
+
+        .audit-btn {
+            width: 100%;
+        }
+
+        .audit-insight-panel {
+            min-height: 0;
+        }
+
+        .audit-table {
+            width: 100%;
+            min-width: 0;
+            table-layout: fixed;
+        }
+
+        .audit-table th:nth-child(4),
+        .audit-table td:nth-child(4),
+        .audit-table th:nth-child(5),
+        .audit-table td:nth-child(5),
+        .audit-table th:nth-child(6),
+        .audit-table td:nth-child(6) {
+            display: none;
+        }
+
+        .audit-table thead th,
+        .audit-table tbody td {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        .audit-table th:nth-child(1),
+        .audit-table td:nth-child(1) {
+            width: 112px !important;
+        }
+
+        .audit-table th:nth-child(2),
+        .audit-table td:nth-child(2) {
+            width: 104px !important;
+        }
+
+        .audit-table th:nth-child(3),
+        .audit-table td:nth-child(3) {
+            width: auto !important;
+        }
+
+        .audit-table th:nth-child(7),
+        .audit-table td:nth-child(7) {
+            width: 46px !important;
+        }
+
+        .audit-badge {
+            display: inline-block;
+            min-width: 0;
+            max-width: 104px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            vertical-align: middle;
+        }
+    }
+</style>
+
+<div class="audit-shell">
+    <section class="audit-hero" aria-labelledby="audit-log-title">
+        <div class="audit-title-wrap">
+            <span class="audit-title-icon" aria-hidden="true">
+                <i class="bi bi-shield-check fs-4"></i>
+            </span>
+            <div>
+                <h1 class="audit-title" id="audit-log-title">Audit Log</h1>
+                <p class="audit-subtitle">
+                    Review entity changes, command executions, failures, and related user activity across HR, IT, and API workflows.
+                </p>
+            </div>
+        </div>
+        <div class="audit-hero-actions" aria-label="Audit log actions">
+            <a asp-action="Settings" class="audit-btn audit-btn-ghost">
+                <i class="bi bi-gear-fill" aria-hidden="true"></i>
+                <span>Notification Settings</span>
+            </a>
+            <a asp-action="ExportCsv" asp-route-search="@search" asp-route-entity="@entity" asp-route-auditAction="@action" asp-route-isSuccess="@isSuccess"
+               asp-route-startDate="@startDate" asp-route-endDate="@endDate"
+               class="audit-btn audit-btn-success">
+                <i class="bi bi-download" aria-hidden="true"></i>
+                <span>Export CSV</span>
+            </a>
+        </div>
+    </section>
+
+    <form method="get" class="audit-filter-panel" aria-label="Audit log filters">
+        <div class="audit-filter-head">
+            <div>
+                <h2 class="audit-panel-title">Investigate Activity</h2>
+                <p class="audit-panel-subtitle">Current scope: @selectedEntityLabel, @selectedActionLabel, @selectedOutcomeLabel.</p>
+            </div>
+            <div class="audit-active-filters" aria-label="Current filter summary">
+                <span class="audit-chip audit-chip-blue"><i class="bi bi-funnel" aria-hidden="true"></i>@activeFilterCount active</span>
+                <span class="audit-chip @riskStatusClass"><i class="bi bi-activity" aria-hidden="true"></i>@riskStatus</span>
+            </div>
+        </div>
+
+        <div class="audit-filter-grid">
+            <div class="audit-field audit-col-2">
+                <label for="auditEntity">Entity Type</label>
+                <select id="auditEntity" name="entity" class="form-select">
+                    <option value="">All Entities</option>
+                    @foreach (var (val, label) in entities)
                     {
-                        ("ApplicationUser", "User Accounts"),
-                        ("UserTitle", "User Titles"),
-                        ("UserCompany", "User Companies"),
-                        ("OnboardingRequest", "Onboarding"),
-                        ("OffboardingRequest", "Offboarding"),
-                        ("SoftwareLicense", "Software License"),
-                        ("StandardSoftware", "Software Catalogue"),
-                        ("ITAsset", "IT Assets"),
-                        ("MaintenanceLog", "Maintenance"),
-                        ("Company", "Companies"),
-                        ("Department", "Departments"),
-                        ("EmailGroup", "Email Groups"),
-                        ("SharedMailbox", "Shared Mailboxes"),
-                        ("ServerFolder", "Server Folders"),
-                        ("EmailContact", "Contacts"),
-                        ("Command", "Command Pipeline")
-                    }.OrderBy(x => x.Item2);
-                }
-                @foreach (var (val, label) in entities)
-                {
-                    <option value="@val" selected="@(entity == val)">@label</option>
-                }
-            </select>
+                        <option value="@val" selected="@(entity == val)">@label</option>
+                    }
+                </select>
+            </div>
+            <div class="audit-field audit-col-2">
+                <label for="auditAction">Action</label>
+                <select id="auditAction" name="auditAction" class="form-select">
+                    <option value="">All Actions</option>
+                    <option value="Created" selected="@(action == "Created")">Created</option>
+                    <option value="Updated" selected="@(action == "Updated")">Updated</option>
+                    <option value="Deleted" selected="@(action == "Deleted")">Deleted</option>
+                    <option value="Rejected" selected="@(action == "Rejected")">Rejected</option>
+                    <option value="Login" selected="@(action == "Login")">Login</option>
+                </select>
+            </div>
+            <div class="audit-field audit-col-2">
+                <label for="auditOutcome">Outcome</label>
+                <select id="auditOutcome" name="isSuccess" class="form-select">
+                    <option value="">All Outcomes</option>
+                    <option value="true" selected="@(isSuccess == true)">Success</option>
+                    <option value="false" selected="@(isSuccess == false)">Failed</option>
+                </select>
+            </div>
+            <div class="audit-field audit-col-2">
+                <label for="auditStartDate">Start Date</label>
+                <input id="auditStartDate" type="date" name="startDate" class="form-control" value="@startDate" />
+            </div>
+            <div class="audit-field audit-col-2">
+                <label for="auditEndDate">End Date</label>
+                <input id="auditEndDate" type="date" name="endDate" class="form-control" value="@endDate" />
+            </div>
+            <div class="audit-field audit-col-4">
+                <label for="auditSearch">Search</label>
+                <input id="auditSearch" type="text" name="search" class="form-control" value="@search"
+                       placeholder="User, ID, IP address, error, or details" />
+            </div>
+            <div class="audit-col-actions">
+                <button type="submit" class="audit-btn audit-btn-primary">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <span>Filter</span>
+                </button>
+                <a asp-action="Index" class="audit-btn audit-btn-ghost">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    <span>Reset</span>
+                </a>
+            </div>
         </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-bold">Action</label>
-            <select name="auditAction" class="form-select form-select-sm">
-                <option value="">All Actions</option>
-                <option value="Created" selected="@(action == "Created")">Created</option>
-                <option value="Updated" selected="@(action == "Updated")">Updated</option>
-                <option value="Deleted" selected="@(action == "Deleted")">Deleted</option>
-                <option value="Rejected" selected="@(action == "Rejected")">Rejected</option>
-                <option value="Login" selected="@(action == "Login")">Login</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-bold">Outcome</label>
-            <select name="isSuccess" class="form-select form-select-sm">
-                <option value="">All Outcomes</option>
-                <option value="true" selected="@(isSuccess == true)">Success</option>
-                <option value="false" selected="@(isSuccess == false)">Failed</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-bold">Start Date</label>
-            <input type="date" name="startDate" class="form-control form-control-sm" value="@startDate" />
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-bold">End Date</label>
-            <input type="date" name="endDate" class="form-control form-control-sm" value="@endDate" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small fw-bold">Search</label>
-            <input type="text" name="search" class="form-control form-control-sm" value="@search"
-                   placeholder="User, ID, error, details" />
-        </div>
-        <div class="col-md-1">
-            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search me-1" aria-hidden="true"></i>Filter</button>
-        </div>
-    </div>
-    <div class="d-flex flex-wrap gap-2 mt-3">
-        <a asp-action="Index" asp-route-entity="Command" asp-route-isSuccess="false" class="btn btn-sm btn-outline-danger rounded-pill">Failed Commands</a>
-        <a asp-action="Index" asp-route-entity="Command" class="btn btn-sm btn-outline-dark rounded-pill">All Command Audits</a>
-        <a asp-action="Index" asp-route-isSuccess="false" class="btn btn-sm btn-outline-secondary rounded-pill">All Failures</a>
-        <a asp-action="Index" class="btn btn-sm btn-light border rounded-pill">Reset</a>
-    </div>
-</form>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase fw-bold mb-2">Filtered Entries</div>
-                <div class="display-6 fw-bolder mb-1">@entries.TotalCount</div>
-                <div class="small text-muted">Current result set after filters.</div>
-            </div>
+        <div class="audit-filter-actions" aria-label="Common audit log views">
+            <a asp-action="Index" asp-route-entity="Command" asp-route-isSuccess="false" class="audit-chip audit-chip-danger">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Failed Commands
+            </a>
+            <a asp-action="Index" asp-route-entity="Command" class="audit-chip">
+                <i class="bi bi-diagram-3" aria-hidden="true"></i>Command Audits
+            </a>
+            <a asp-action="Index" asp-route-isSuccess="false" class="audit-chip">
+                <i class="bi bi-bug" aria-hidden="true"></i>All Failures
+            </a>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase fw-bold mb-2">Failures</div>
-                <div class="display-6 fw-bolder mb-1 text-danger">@Model.FilteredFailureCount</div>
-                <div class="small text-muted">@Model.FilteredSuccessCount success entries remain in scope.</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase fw-bold mb-2">Command Audits</div>
-                <div class="display-6 fw-bolder mb-1">@Model.FilteredCommandCount</div>
-                <div class="small text-muted">@Model.FailedCommandCount failed command executions.</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small text-uppercase fw-bold mb-2">Failure Rate</div>
-                <div class="display-6 fw-bolder mb-1">@(Model.FailureRate.ToString("0.0"))%</div>
-                <div class="small text-muted">Failure share across the filtered result set.</div>
-            </div>
-        </div>
-    </div>
-</div>
+    </form>
 
-<div class="row g-4 mb-4">
-    <div class="col-lg-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Top Failed Actions</h5>
-                    <a asp-action="Index" asp-route-isSuccess="false" class="btn btn-sm btn-outline-danger rounded-pill">Focus Failures</a>
+    <section class="audit-kpi-grid" aria-label="Audit summary">
+        <article class="audit-metric" style="--metric-accent: var(--audit-blue);">
+            <div class="audit-metric-top">
+                <span class="audit-metric-label">Filtered Entries</span>
+                <span class="audit-metric-icon" aria-hidden="true"><i class="bi bi-collection"></i></span>
+            </div>
+            <div class="audit-metric-value">@entries.TotalCount</div>
+            <div class="audit-metric-note">Records matching the current investigation scope.</div>
+        </article>
+        <article class="audit-metric" style="--metric-accent: var(--audit-red);">
+            <div class="audit-metric-top">
+                <span class="audit-metric-label">Failures</span>
+                <span class="audit-metric-icon" aria-hidden="true"><i class="bi bi-exclamation-octagon"></i></span>
+            </div>
+            <div class="audit-metric-value">@Model.FilteredFailureCount</div>
+            <div class="audit-metric-note">@Model.FilteredSuccessCount success entries remain in scope.</div>
+        </article>
+        <article class="audit-metric" style="--metric-accent: #7c3aed;">
+            <div class="audit-metric-top">
+                <span class="audit-metric-label">Command Audits</span>
+                <span class="audit-metric-icon" aria-hidden="true"><i class="bi bi-terminal"></i></span>
+            </div>
+            <div class="audit-metric-value">@Model.FilteredCommandCount</div>
+            <div class="audit-metric-note">@Model.FailedCommandCount failed command executions.</div>
+        </article>
+        <article class="audit-metric" style="--metric-accent: #f59f00;">
+            <div class="audit-metric-top">
+                <span class="audit-metric-label">Failure Rate</span>
+                <span class="audit-metric-icon" aria-hidden="true"><i class="bi bi-percent"></i></span>
+            </div>
+            <div class="audit-metric-value">@Model.FailureRate.ToString("0.0")%</div>
+            <div class="audit-metric-note">Failure share across filtered entries.</div>
+        </article>
+    </section>
+
+    <section class="audit-insight-grid" aria-label="Failure insights">
+        <article class="audit-insight-panel">
+            <div class="audit-insight-head">
+                <div>
+                    <h2 class="audit-panel-title">Top Failed Actions</h2>
+                    <p class="audit-panel-subtitle">Highest-volume failed operations.</p>
                 </div>
-                @if (Model.TopFailedActions.Any())
-                {
+                <a asp-action="Index" asp-route-isSuccess="false" class="audit-chip audit-chip-danger">Focus</a>
+            </div>
+            @if (Model.TopFailedActions.Any())
+            {
+                <div class="audit-list">
                     @foreach (var item in Model.TopFailedActions)
                     {
                         var width = Math.Max(10, (int)Math.Round(item.Count * 100.0 / maxFailedActionCount));
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span class="fw-semibold">@item.Action</span>
-                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">@item.Count</span>
+                        <div class="audit-list-row">
+                            <div class="audit-list-main">
+                                <span class="audit-list-label" title="@item.Action">@item.Action</span>
+                                <div class="audit-bar-track" aria-hidden="true">
+                                    <div class="audit-bar" style="--bar-color: var(--audit-red); width:@width%"></div>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-danger" style="width:@width%"></div>
-                            </div>
+                            <span class="audit-count">@item.Count</span>
                         </div>
                     }
-                }
-                else
-                {
-                    <div class="text-muted small">No failed actions in the current filter scope.</div>
-                }
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Top Failed Users</h5>
-                    <a asp-action="Index" asp-route-isSuccess="false" class="btn btn-sm btn-outline-secondary rounded-pill">View Failures</a>
                 </div>
-                @if (Model.TopFailedActors.Any())
-                {
+            }
+            else
+            {
+                <div class="audit-muted-empty">No failed actions in the current filter scope.</div>
+            }
+        </article>
+
+        <article class="audit-insight-panel">
+            <div class="audit-insight-head">
+                <div>
+                    <h2 class="audit-panel-title">Top Failed Users</h2>
+                    <p class="audit-panel-subtitle">Actors linked to failed records.</p>
+                </div>
+                <a asp-action="Index" asp-route-isSuccess="false" class="audit-chip">View</a>
+            </div>
+            @if (Model.TopFailedActors.Any())
+            {
+                <div class="audit-list">
                     @foreach (var item in Model.TopFailedActors)
                     {
                         var width = Math.Max(10, (int)Math.Round(item.Count * 100.0 / maxFailedActorCount));
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span class="fw-semibold text-truncate me-2" title="@item.Actor">@item.Actor</span>
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">@item.Count</span>
+                        <div class="audit-list-row">
+                            <div class="audit-list-main">
+                                <span class="audit-list-label" title="@item.Actor">@item.Actor</span>
+                                <div class="audit-bar-track" aria-hidden="true">
+                                    <div class="audit-bar" style="--bar-color: var(--audit-blue); width:@width%"></div>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-secondary" style="width:@width%"></div>
-                            </div>
+                            <span class="audit-count">@item.Count</span>
                         </div>
                     }
-                }
-                else
-                {
-                    <div class="text-muted small">No failed users in the current filter scope.</div>
-                }
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Failure Trend</h5>
-                    <span class="text-muted small">Most recent 14 days in scope</span>
                 </div>
-                @if (Model.FailureTrend.Any())
-                {
-                    <div class="d-flex align-items-end justify-content-between gap-2" style="height: 180px;">
-                        @foreach (var point in Model.FailureTrend)
-                        {
-                            var heightPx = Math.Max(14, (int)Math.Round(point.Count * 120.0 / maxTrendCount));
-                            <div class="flex-fill text-center">
-                                <div class="small fw-bold mb-2">@point.Count</div>
-                                <div class="mx-auto rounded-top bg-danger" style="width: 100%; max-width: 28px; height:@(heightPx)px;"></div>
-                                <div class="text-muted mt-2" style="font-size: 0.72rem;">@point.Label</div>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="text-muted small">No failed entries available to plot for the current filter scope.</div>
-                }
-            </div>
-        </div>
-    </div>
-</div>
+            }
+            else
+            {
+                <div class="audit-muted-empty">No failed users in the current filter scope.</div>
+            }
+        </article>
 
-@if (!entries.Any())
-{
-    <div class="alert alert-info text-center py-5">
-        <i class="bi bi-journal-x display-4 d-block mb-3 text-secondary" aria-hidden="true"></i>
-        <h5>No audit log entries found.</h5>
-        <p class="text-muted mb-0">Try adjusting the filters above.</p>
-    </div>
-}
-else
-{
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
+        <article class="audit-insight-panel">
+            <div class="audit-insight-head">
+                <div>
+                    <h2 class="audit-panel-title">Failure Trend</h2>
+                    <p class="audit-panel-subtitle">Most recent 14 days in scope.</p>
+                </div>
+                <span class="audit-chip audit-chip-blue">@Model.FilteredFailureCount total</span>
+            </div>
+            @if (Model.FailureTrend.Any())
+            {
+                <div class="audit-trend-chart" role="img" aria-label="Failure trend for the most recent 14 days in scope">
+                    @foreach (var point in Model.FailureTrend)
+                    {
+                        var heightPercent = Math.Max(12, (int)Math.Round(point.Count * 100.0 / maxTrendCount));
+                        <div class="audit-trend-point">
+                            <span class="audit-trend-value">@point.Count</span>
+                            <span class="audit-trend-bar-wrap" aria-hidden="true">
+                                <span class="audit-trend-bar" style="height:@heightPercent%"></span>
+                            </span>
+                            <span class="audit-trend-label">@point.Label</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="audit-muted-empty">No failed entries available to plot for the current filter scope.</div>
+            }
+        </article>
+    </section>
+
+    @if (!entries.Any())
+    {
+        <section class="audit-empty-state" aria-live="polite">
+            <span class="audit-empty-icon" aria-hidden="true">
+                <i class="bi bi-journal-x"></i>
+            </span>
+            <h2 class="audit-panel-title">No audit log entries found</h2>
+            <p class="audit-panel-subtitle">Try widening the date range, clearing the search term, or resetting filters.</p>
+        </section>
+    }
+    else
+    {
+        <section class="audit-table-panel" aria-labelledby="audit-table-title">
+            <div class="audit-table-head">
+                <div>
+                    <h2 class="audit-panel-title" id="audit-table-title">Audit Trail</h2>
+                    <p class="audit-panel-subtitle">Newest events first, grouped by correlation where available.</p>
+                </div>
+                <span class="audit-table-count">
+                    Showing @((entries.PageIndex - 1) * 25 + 1)-@((entries.PageIndex - 1) * 25 + entries.Count) of @entries.TotalCount
+                </span>
+            </div>
+
             <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light border-bottom">
+                <table class="table table-hover align-middle audit-table">
+                    <thead>
                         <tr>
-                            <th style="width: 150px;">Time (Local)</th>
-                            <th style="width: 90px;">Outcome</th>
-                            <th style="width: 110px;">Action</th>
-                            <th style="width: 180px;">Entity</th>
+                            <th style="width: 150px;">Time</th>
+                            <th style="width: 98px;">Outcome</th>
+                            <th style="width: 112px;">Action</th>
+                            <th style="width: 210px;">Entity</th>
                             <th>Details</th>
-                            <th style="width: 170px;">Performed By</th>
-                            <th style="width: 80px;"></th>
+                            <th style="width: 180px;">Actor</th>
+                            <th style="width: 72px;" class="text-end">Open</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @{
-                            Guid? lastCorrelationId = null;
-                            bool isEvenGroup = false;
-                        }
                         @foreach (var log in entries)
                         {
                             var auditTime = log.CreatedAt == default ? log.Timestamp : log.CreatedAt;
-                            var badgeClass = log.Action switch
+                            var actionClass = log.Action switch
                             {
-                                "Created" => "bg-success-subtle text-success border border-success-subtle",
-                                "Deleted" => "bg-danger-subtle text-danger border border-danger-subtle",
-                                "Rejected" => "bg-danger-subtle text-danger border border-danger-subtle",
-                                _ => "bg-warning-subtle text-warning-emphasis border border-warning-subtle"
+                                "Created" => "audit-badge-success",
+                                "Deleted" => "audit-badge-danger",
+                                "Rejected" => "audit-badge-danger",
+                                "Updated" => "audit-badge-warning",
+                                _ => "audit-badge-neutral"
                             };
+                            var rowClass = !log.IsSuccess ? "audit-row-failed" : (log.CorrelationId.HasValue ? "audit-row-correlated" : "");
 
-                            var outcomeClass = log.IsSuccess
-                                ? "bg-success-subtle text-success border border-success-subtle"
-                                : "bg-danger-subtle text-danger border border-danger-subtle";
-
-                            if (log.CorrelationId != lastCorrelationId)
-                            {
-                                isEvenGroup = !isEvenGroup;
-                                lastCorrelationId = log.CorrelationId;
-                            }
-
-                            <tr class="@(isEvenGroup ? "group-even" : "group-odd") @(log.CorrelationId != null ? "has-correlation" : "")">
-                                <td class="small text-muted">
-                                    <div class="fw-bold">@auditTime.ToLocalTime().ToString("dd MMM yyyy")</div>
-                                    <div>@auditTime.ToLocalTime().ToString("HH:mm:ss")</div>
+                            <tr class="@rowClass">
+                                <td>
+                                    <div class="audit-time">@auditTime.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                    <div class="audit-time-sub">@auditTime.ToLocalTime().ToString("HH:mm:ss")</div>
                                 </td>
                                 <td>
-                                    <span class="badge py-1 px-2 @outcomeClass" style="min-width: 70px;">@(log.IsSuccess ? "Success" : "Failed")</span>
+                                    <span class="audit-badge @(log.IsSuccess ? "audit-badge-success" : "audit-badge-danger")">
+                                        @(log.IsSuccess ? "Success" : "Failed")
+                                    </span>
                                 </td>
                                 <td>
-                                    <span class="badge py-1 px-2 @badgeClass" style="min-width: 70px;">@log.Action</span>
+                                    <span class="audit-badge @actionClass">@log.Action</span>
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center">
-                                        @switch (log.EntityName)
-                                        {
-                                            case "ApplicationUser":
-                                                <i class="bi bi-person-gear text-secondary me-2"></i><span>User Account</span>
-                                                break;
-                                            case "UserTitle":
-                                                <i class="bi bi-person-badge text-secondary me-2"></i><span>User Title</span>
-                                                break;
-                                            case "UserCompany":
-                                                <i class="bi bi-building-gear text-secondary me-2"></i><span>User Company</span>
-                                                break;
-                                            case "OnboardingRequest":
-                                                <i class="bi bi-person-plus text-success me-2"></i><span>Onboarding</span>
-                                                break;
-                                            case "OffboardingRequest":
-                                                <i class="bi bi-person-dash text-danger me-2"></i><span>Offboarding</span>
-                                                break;
-                                            case "SoftwareLicense":
-                                                <i class="bi bi-key text-info me-2"></i><span>License</span>
-                                                break;
-                                            case "ITAsset":
-                                                <i class="bi bi-pc-display text-primary me-2"></i><span>IT Asset</span>
-                                                break;
-                                            case "MaintenanceLog":
-                                                <i class="bi bi-wrench text-warning me-2"></i><span>Maintenance</span>
-                                                break;
-                                            case "EmailContact":
-                                                <i class="bi bi-person-rolodex text-primary me-2"></i><span>Contact</span>
-                                                break;
-                                            case "Command":
-                                                <i class="bi bi-diagram-3 text-dark me-2"></i><span>Command Pipeline</span>
-                                                break;
-                                            default:
-                                                <i class="bi bi-file-earmark-text text-secondary me-2"></i><span>@log.EntityName</span>
-                                                break;
-                                        }
+                                    <div class="audit-entity-cell">
+                                        <span class="audit-entity-icon" aria-hidden="true">
+                                            @switch (log.EntityName)
+                                            {
+                                                case "ApplicationUser":
+                                                    <i class="bi bi-person-gear"></i>
+                                                    break;
+                                                case "UserTitle":
+                                                    <i class="bi bi-person-badge"></i>
+                                                    break;
+                                                case "UserCompany":
+                                                    <i class="bi bi-building-gear"></i>
+                                                    break;
+                                                case "OnboardingRequest":
+                                                    <i class="bi bi-person-plus"></i>
+                                                    break;
+                                                case "OffboardingRequest":
+                                                    <i class="bi bi-person-dash"></i>
+                                                    break;
+                                                case "SoftwareLicense":
+                                                    <i class="bi bi-key"></i>
+                                                    break;
+                                                case "ITAsset":
+                                                    <i class="bi bi-pc-display"></i>
+                                                    break;
+                                                case "MaintenanceLog":
+                                                    <i class="bi bi-wrench"></i>
+                                                    break;
+                                                case "EmailContact":
+                                                    <i class="bi bi-person-rolodex"></i>
+                                                    break;
+                                                case "Command":
+                                                    <i class="bi bi-terminal"></i>
+                                                    break;
+                                                default:
+                                                    <i class="bi bi-file-earmark-text"></i>
+                                                    break;
+                                            }
+                                        </span>
+                                        <span class="min-w-0">
+                                            <span class="d-block fw-bold text-truncate" title="@log.EntityName">
+                                                @switch (log.EntityName)
+                                                {
+                                                    case "ApplicationUser":
+                                                        <text>User Account</text>
+                                                        break;
+                                                    case "UserTitle":
+                                                        <text>User Title</text>
+                                                        break;
+                                                    case "UserCompany":
+                                                        <text>User Company</text>
+                                                        break;
+                                                    case "OnboardingRequest":
+                                                        <text>Onboarding</text>
+                                                        break;
+                                                    case "OffboardingRequest":
+                                                        <text>Offboarding</text>
+                                                        break;
+                                                    case "SoftwareLicense":
+                                                        <text>License</text>
+                                                        break;
+                                                    case "ITAsset":
+                                                        <text>IT Asset</text>
+                                                        break;
+                                                    case "MaintenanceLog":
+                                                        <text>Maintenance</text>
+                                                        break;
+                                                    case "EmailContact":
+                                                        <text>Contact</text>
+                                                        break;
+                                                    case "Command":
+                                                        <text>Command Pipeline</text>
+                                                        break;
+                                                    default:
+                                                        @log.EntityName
+                                                        break;
+                                                }
+                                            </span>
+                                            <span class="audit-entity-id">ID: #@log.EntityId</span>
+                                        </span>
                                     </div>
-                                    <div class="text-muted extra-small">ID: #@log.EntityId</div>
                                 </td>
-                                <td class="small">
-                                    <div class="text-wrap" style="max-width: 420px; word-break: break-word;">
+                                <td>
+                                    <div class="audit-details-text">
                                         @(string.IsNullOrWhiteSpace(log.Details) ? log.ErrorMessage : log.Details)
                                     </div>
                                     @if (!string.IsNullOrWhiteSpace(log.ErrorMessage))
                                     {
-                                        <div class="text-danger extra-small mt-1">@log.ErrorMessage</div>
+                                        <div class="audit-error-text">@log.ErrorMessage</div>
                                     }
                                 </td>
-                                <td class="small">
+                                <td>
                                     <div class="fw-bold">@log.PerformedBy</div>
                                     @if (!string.IsNullOrWhiteSpace(log.UserId) && !string.Equals(log.UserId, log.PerformedBy, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        <div class="text-muted extra-small">@log.UserId</div>
+                                        <div class="audit-user-sub">@log.UserId</div>
                                     }
                                     @if (!string.IsNullOrEmpty(log.IpAddress))
                                     {
-                                        <div class="text-muted extra-small">@log.IpAddress</div>
+                                        <div class="audit-user-sub">@log.IpAddress</div>
                                     }
                                 </td>
                                 <td class="text-end">
-                                    <a asp-action="Details" asp-route-id="@log.Id" class="btn btn-action-circle btn-outline-secondary" title="View Details">
-                                        <i class="bi bi-arrow-right"></i>
+                                    <a asp-action="Details" asp-route-id="@log.Id" class="btn btn-action-circle btn-outline-secondary" title="View details" aria-label="View audit entry @log.Id details">
+                                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -373,43 +1194,41 @@ else
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
 
-    @if (entries.TotalPages > 1)
-    {
-        <div class="card-footer bg-transparent border-0 pt-0 pb-3">
-            <div class="pagination-wrapper">
-                <span class="pagination-info">
-                    Showing @((entries.PageIndex - 1) * 25 + 1)-@((entries.PageIndex - 1) * 25 + entries.Count) of @entries.TotalCount
-                </span>
-                <nav aria-label="Pagination">
-                    <ul class="pagination mb-0">
-                        <li class="page-item @(!entries.HasPreviousPage ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@(entries.PageIndex - 1)"
-                               asp-route-entity="@entity" asp-route-auditAction="@action" asp-route-search="@search"
-                               asp-route-isSuccess="@isSuccess" asp-route-startDate="@startDate" asp-route-endDate="@endDate" aria-label="Previous Page">
-                                <i class="bi bi-chevron-left" aria-hidden="true"></i>
-                            </a>
-                        </li>
-                        @for (int i = 1; i <= entries.TotalPages; i++)
-                        {
-                            <li class="page-item @(i == entries.PageIndex ? "active" : "")">
-                                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-entity="@entity"
-                                   asp-route-auditAction="@action" asp-route-search="@search"
-                                   asp-route-isSuccess="@isSuccess" asp-route-startDate="@startDate" asp-route-endDate="@endDate">@i</a>
+            @if (entries.TotalPages > 1)
+            {
+                <div class="pagination-wrapper">
+                    <span class="pagination-info">
+                        Page @entries.PageIndex of @entries.TotalPages
+                    </span>
+                    <nav aria-label="Pagination">
+                        <ul class="pagination mb-0">
+                            <li class="page-item @(!entries.HasPreviousPage ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@(entries.PageIndex - 1)"
+                                   asp-route-entity="@entity" asp-route-auditAction="@action" asp-route-search="@search"
+                                   asp-route-isSuccess="@isSuccess" asp-route-startDate="@startDate" asp-route-endDate="@endDate" aria-label="Previous Page">
+                                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                                </a>
                             </li>
-                        }
-                        <li class="page-item @(!entries.HasNextPage ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@(entries.PageIndex + 1)"
-                               asp-route-entity="@entity" asp-route-auditAction="@action" asp-route-search="@search"
-                               asp-route-isSuccess="@isSuccess" asp-route-startDate="@startDate" asp-route-endDate="@endDate" aria-label="Next Page">
-                                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
+                            @for (int i = 1; i <= entries.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == entries.PageIndex ? "active" : "")">
+                                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-entity="@entity"
+                                       asp-route-auditAction="@action" asp-route-search="@search"
+                                       asp-route-isSuccess="@isSuccess" asp-route-startDate="@startDate" asp-route-endDate="@endDate">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(!entries.HasNextPage ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@(entries.PageIndex + 1)"
+                                   asp-route-entity="@entity" asp-route-auditAction="@action" asp-route-search="@search"
+                                   asp-route-isSuccess="@isSuccess" asp-route-startDate="@startDate" asp-route-endDate="@endDate" aria-label="Next Page">
+                                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </section>
     }
-}
+</div>

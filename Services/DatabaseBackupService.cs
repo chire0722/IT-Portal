@@ -85,29 +85,7 @@ namespace IT_Form.Services
                 return;
             }
 
-            // Extract path from "Data Source=path/to/db"
-            var dbPath = connectionString.Replace("Data Source=", "").Trim();
-
-            // Resolve the legacy |DataDirectory| token before checking the file system.
-            const string dataDirectoryToken = "|DataDirectory|";
-            if (dbPath.Contains(dataDirectoryToken, StringComparison.OrdinalIgnoreCase))
-            {
-                var configuredDataDirectory = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
-                var dataDirectory = string.IsNullOrWhiteSpace(configuredDataDirectory)
-                    ? Path.Combine(_environment.ContentRootPath, "App_Data")
-                    : configuredDataDirectory;
-
-                var relativeDbPath = dbPath[(dbPath.IndexOf(dataDirectoryToken, StringComparison.OrdinalIgnoreCase) + dataDirectoryToken.Length)..]
-                    .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-                dbPath = Path.Combine(dataDirectory, relativeDbPath);
-            }
-            
-            // If it's a relative path, combine with ContentRootPath
-            if (!Path.IsPathRooted(dbPath))
-            {
-                dbPath = Path.Combine(_environment.ContentRootPath, dbPath);
-            }
+            var dbPath = ResolvePath(GetDataSourcePath(connectionString));
 
             if (!File.Exists(dbPath))
             {
@@ -124,14 +102,49 @@ namespace IT_Form.Services
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var fileName = Path.GetFileNameWithoutExtension(dbPath);
             var extension = Path.GetExtension(dbPath);
-            var backupPath = Path.Combine(backupDir, $"{fileName}_{timestamp}{extension}");
+            var backupFileName = $"{fileName}_{timestamp}{extension}";
 
-            // Perform Copy
+            CopyBackupToDirectory(dbPath, backupDir, backupFileName, fileName, extension);
+
+            foreach (var additionalBackupPath in GetAdditionalBackupPaths())
+            {
+                var additionalBackupDir = ResolvePath(additionalBackupPath);
+                _logger.LogInformation("Additional database backup path resolved to: {Path}", additionalBackupDir);
+                if (!Path.GetFullPath(additionalBackupDir).Equals(Path.GetFullPath(backupDir), StringComparison.OrdinalIgnoreCase))
+                {
+                    CopyBackupToDirectory(dbPath, additionalBackupDir, backupFileName, fileName, extension);
+                }
+            }
+        }
+
+        private IEnumerable<string> GetAdditionalBackupPaths()
+        {
+            var configuredPaths = new[]
+            {
+                _configuration["DatabaseBackup:AdditionalBackupPath"],
+                _configuration["DatabaseBackup2:AdditionalBackupPath"]
+            };
+
+            return configuredPaths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => path!)
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private void CopyBackupToDirectory(string dbPath, string backupDir, string backupFileName, string fileName, string extension)
+        {
+            Directory.CreateDirectory(backupDir);
+
+            var backupPath = Path.Combine(backupDir, backupFileName);
             File.Copy(dbPath, backupPath);
             _logger.LogInformation("Database backup created successfully: {Path}", backupPath);
 
-            // Rotation logic: Keep last 10
-            var files = new DirectoryInfo(backupDir).GetFiles($"*{extension}")
+            RotateBackups(backupDir, fileName, extension);
+        }
+
+        private void RotateBackups(string backupDir, string fileName, string extension)
+        {
+            var files = new DirectoryInfo(backupDir).GetFiles($"{fileName}_*{extension}")
                 .OrderByDescending(f => f.CreationTime)
                 .Skip(10)
                 .ToList();
@@ -149,6 +162,40 @@ namespace IT_Form.Services
                     // Non-critical failure, no need to alert everyone
                 }
             }
+        }
+
+        private string GetDataSourcePath(string connectionString)
+        {
+            const string dataSourcePrefix = "Data Source=";
+            var dataSourceStart = connectionString.IndexOf(dataSourcePrefix, StringComparison.OrdinalIgnoreCase) + dataSourcePrefix.Length;
+            var separatorIndex = connectionString.IndexOf(';', dataSourceStart);
+            var dataSourceEnd = separatorIndex >= 0 ? separatorIndex : connectionString.Length;
+
+            return connectionString[dataSourceStart..dataSourceEnd].Trim();
+        }
+
+        private string ResolvePath(string path)
+        {
+            const string dataDirectoryToken = "|DataDirectory|";
+            if (path.Contains(dataDirectoryToken, StringComparison.OrdinalIgnoreCase))
+            {
+                var configuredDataDirectory = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
+                var dataDirectory = string.IsNullOrWhiteSpace(configuredDataDirectory)
+                    ? Path.Combine(_environment.ContentRootPath, "App_Data")
+                    : configuredDataDirectory;
+
+                var relativePath = path[(path.IndexOf(dataDirectoryToken, StringComparison.OrdinalIgnoreCase) + dataDirectoryToken.Length)..]
+                    .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                path = Path.Combine(dataDirectory, relativePath);
+            }
+
+            if (!Path.IsPathRooted(path))
+            {
+                path = Path.Combine(_environment.ContentRootPath, path);
+            }
+
+            return path;
         }
 
         private async Task NotifyITAsync(string errorMessage)

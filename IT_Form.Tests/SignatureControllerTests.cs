@@ -63,5 +63,37 @@ namespace IT_Form.Tests
                 error => error.ErrorMessage == "Please provide your signature.");
             Assert.Equal("Acknowledge", viewResult.ViewName);
         }
+
+        [Fact]
+        public async Task Acknowledge_Post_MissingPdpaConsent_RedisplaysViewWithValidationError()
+        {
+            using var context = CreateContext();
+            var req = new OnboardingRequest
+            {
+                Id = 1,
+                AccessToken = Guid.NewGuid(),
+                FullName = "Test Employee",
+                Department = "IT",
+                Branch = "HQ",
+                Status = RequestStatus.PendingEmployeeSign
+            };
+            context.OnboardingRequests.Add(req);
+            await context.SaveChangesAsync();
+
+            var controller = GetController<SignatureController>(context);
+
+            var result = await controller.Acknowledge(
+                req.AccessToken,
+                "Onboarding",
+                "data:image/png;base64,VALID",
+                pdpaConsent: false);
+
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.True(controller.ModelState.ContainsKey("PdpaConsent"));
+            Assert.Contains(
+                controller.ModelState["PdpaConsent"]!.Errors,
+                error => error.ErrorMessage == "Please confirm the PDPA privacy notice before submitting.");
+            Assert.Equal("Acknowledge", viewResult.ViewName);
+        }
     }
 }

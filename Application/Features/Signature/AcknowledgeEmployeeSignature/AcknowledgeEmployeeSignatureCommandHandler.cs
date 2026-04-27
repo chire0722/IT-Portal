@@ -5,6 +5,7 @@ using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
+using IT_Form.Application.Features.Signature;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -69,8 +70,12 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 return ProcessResult<object>.NotFound();
             }
 
-            var refDate = onboardingRequest.CompletedAt ?? onboardingRequest.UpdatedAt ?? onboardingRequest.CreatedAt;
-            if ((DateTime.UtcNow - refDate).TotalDays > 7)
+            if (SignatureLinkExpiry.IsExpired(
+                onboardingRequest.CreatedAt,
+                onboardingRequest.UpdatedAt,
+                onboardingRequest.CompletedAt,
+                SignatureLinkExpiry.EmployeeSignatureLifetime,
+                DateTime.UtcNow))
             {
                 return ProcessResult<object>.Failure("This link has expired (older than 7 days).");
             }
@@ -85,17 +90,21 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 return ProcessResult<object>.Failure("This document has already been signed.");
             }
 
+            var signedAt = DateTime.UtcNow;
             onboardingRequest.EmployeeSignature = request.SignatureData;
-            onboardingRequest.EmployeeSignedAt = DateTime.UtcNow;
+            onboardingRequest.EmployeeSignedAt = signedAt;
             onboardingRequest.EmployeeSignerName = onboardingRequest.FullName ?? "Employee";
             onboardingRequest.EmployeeSignatureHmac = _integrityService.ComputeHmac(
                 "OnboardingRequest",
                 onboardingRequest.Id.ToString(),
                 onboardingRequest.EmployeeSignerName,
-                onboardingRequest.EmployeeSignedAt.Value,
+                signedAt,
                 request.SignatureData);
+            onboardingRequest.IsPdpaConsented = true;
+            onboardingRequest.PdpaConsentedAt = signedAt;
             onboardingRequest.Status = RequestStatus.Completed;
-            onboardingRequest.UpdatedAt = DateTime.UtcNow;
+            onboardingRequest.CompletedAt = signedAt;
+            onboardingRequest.UpdatedAt = signedAt;
 
             await QueueCompletionNotificationAsync(
                 onboardingRequest.FullName ?? "Employee",
@@ -119,8 +128,12 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 return ProcessResult<object>.NotFound();
             }
 
-            var refDate = offboardingRequest.CompletedAt ?? offboardingRequest.UpdatedAt ?? offboardingRequest.CreatedAt;
-            if ((DateTime.UtcNow - refDate).TotalDays > 7)
+            if (SignatureLinkExpiry.IsExpired(
+                offboardingRequest.CreatedAt,
+                offboardingRequest.UpdatedAt,
+                offboardingRequest.CompletedAt,
+                SignatureLinkExpiry.EmployeeSignatureLifetime,
+                DateTime.UtcNow))
             {
                 return ProcessResult<object>.Failure("This link has expired (older than 7 days).");
             }
@@ -135,18 +148,21 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 return ProcessResult<object>.Failure("This document has already been signed.");
             }
 
+            var signedAt = DateTime.UtcNow;
             offboardingRequest.EmployeeSignature = request.SignatureData;
-            offboardingRequest.EmployeeSignedAt = DateTime.UtcNow;
+            offboardingRequest.EmployeeSignedAt = signedAt;
             offboardingRequest.EmployeeSignerName = offboardingRequest.FullName ?? "Employee";
             offboardingRequest.EmployeeSignatureHmac = _integrityService.ComputeHmac(
                 "OffboardingRequest",
                 offboardingRequest.Id.ToString(),
                 offboardingRequest.EmployeeSignerName,
-                offboardingRequest.EmployeeSignedAt.Value,
+                signedAt,
                 request.SignatureData);
-            offboardingRequest.CompletedAt = DateTime.UtcNow;
+            offboardingRequest.IsPdpaConsented = true;
+            offboardingRequest.PdpaConsentedAt = signedAt;
+            offboardingRequest.CompletedAt = signedAt;
             offboardingRequest.Status = RequestStatus.Completed;
-            offboardingRequest.UpdatedAt = DateTime.UtcNow;
+            offboardingRequest.UpdatedAt = signedAt;
 
             if (offboardingRequest.OnboardingRequestId.HasValue)
             {

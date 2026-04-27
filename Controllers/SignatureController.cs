@@ -20,12 +20,12 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Acknowledge(Guid token, string type, string signatureData)
+        public async Task<IActionResult> Acknowledge(Guid token, string type, string signatureData, bool pdpaConsent = false)
         {
             return await ExecuteWithValidationResult(
                 async () =>
                 {
-                    var result = await _sender.Send(new AcknowledgeEmployeeSignatureCommand(token, type, signatureData));
+                    var result = await _sender.Send(new AcknowledgeEmployeeSignatureCommand(token, type, signatureData, pdpaConsent));
                     if (result.IsNotFound)
                     {
                         return NotFound();

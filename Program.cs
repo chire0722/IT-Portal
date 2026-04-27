@@ -42,9 +42,17 @@ QuestPDF.Settings.License = LicenseType.Community;
 if (args.Contains("--seed-check"))
 {
     var tempBuilder = WebApplication.CreateBuilder(args);
+    var tempDataDirectory = Path.Combine(tempBuilder.Environment.ContentRootPath, "App_Data");
+    Directory.CreateDirectory(tempDataDirectory);
+    AppDomain.CurrentDomain.SetData("DataDirectory", tempDataDirectory);
+
     tempBuilder.Services.AddLogging();
     tempBuilder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(tempBuilder.Configuration.GetConnectionString("DefaultConnection"),
+        options.UseSqlite(
+            ResolveSqliteConnectionString(
+                tempBuilder.Configuration.GetConnectionString("DefaultConnection"),
+                tempBuilder.Environment.ContentRootPath,
+                tempDataDirectory),
             o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
     tempBuilder.Services.AddHttpContextAccessor();
     var tempApp = tempBuilder.Build();
@@ -133,9 +141,12 @@ var dataProtectionBuilder = builder.Services
 // --- Database ---
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    var contentRoot = builder.Environment.ContentRootPath;
-    var dbPath = Path.Combine(contentRoot, "App_Data", "IT_FormDB.db");
-    options.UseSqlite($"Data Source={dbPath}",
+    var connectionString = ResolveSqliteConnectionString(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        builder.Environment.ContentRootPath,
+        dataDirectory);
+
+    options.UseSqlite(connectionString,
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
 
     // SQLite table rebuild migrations emit a one-time non-transactional warning
@@ -285,10 +296,11 @@ builder.Services.AddScoped<IMapper, ServiceMapper>();
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining<Program>();
+    // Keep request logging first so command failures from validation and handlers reach the rolling file log.
+    cfg.AddOpenBehavior(typeof(RequestLoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
     cfg.AddOpenBehavior(typeof(AuditLoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
-    cfg.AddOpenBehavior(typeof(RequestLoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(PerformanceBehavior<,>));
 });
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
@@ -308,6 +320,7 @@ builder.Services.AddAntiforgery(options =>
 // Configure SmtpSettings
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.Configure<SecuritySettings>(builder.Configuration.GetSection("SecuritySettings"));
+builder.Services.Configure<PdpaComplianceOptions>(builder.Configuration.GetSection("PdpaCompliance"));
 builder.Services.AddScoped<IOutlookService, OutlookService>();
 builder.Services.AddSingleton<SecureOtpGenerator>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Authentication.IClaimsTransformation, UserTitleClaimsTransformation>();
@@ -605,6 +618,41 @@ using (var scope = app.Services.CreateScope())
 app.MapInventoryEndpoints();
 
 app.Run();
+
+static string ResolveSqliteConnectionString(string? connectionString, string contentRootPath, string dataDirectory)
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
+    }
+
+    const string dataSourcePrefix = "Data Source=";
+    if (!connectionString.Contains(dataSourcePrefix, StringComparison.OrdinalIgnoreCase))
+    {
+        return connectionString;
+    }
+
+    var dataSourceIndex = connectionString.IndexOf(dataSourcePrefix, StringComparison.OrdinalIgnoreCase);
+    var dataSourceStart = dataSourceIndex + dataSourcePrefix.Length;
+    var separatorIndex = connectionString.IndexOf(';', dataSourceStart);
+    var dataSourceEnd = separatorIndex >= 0 ? separatorIndex : connectionString.Length;
+    var dbPath = connectionString[dataSourceStart..dataSourceEnd].Trim();
+
+    const string dataDirectoryToken = "|DataDirectory|";
+    if (dbPath.Contains(dataDirectoryToken, StringComparison.OrdinalIgnoreCase))
+    {
+        var relativeDbPath = dbPath[(dbPath.IndexOf(dataDirectoryToken, StringComparison.OrdinalIgnoreCase) + dataDirectoryToken.Length)..]
+            .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        dbPath = Path.Combine(dataDirectory, relativeDbPath);
+    }
+    else if (!Path.IsPathRooted(dbPath))
+    {
+        dbPath = Path.Combine(contentRootPath, dbPath);
+    }
+
+    return connectionString[..dataSourceStart] + dbPath + connectionString[dataSourceEnd..];
+}
 
 internal static class StartupUrlGuard
 {

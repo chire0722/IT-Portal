@@ -81,7 +81,9 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                     item.EmployeeSignedAt,
                     item.EmployeeSignatureHmac,
                     item.EmployeeSignerName,
-                    ReferenceDate = item.CompletedAt ?? item.UpdatedAt ?? item.CreatedAt
+                    item.CreatedAt,
+                    item.UpdatedAt,
+                    item.CompletedAt
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -112,7 +114,12 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 Department = record.Department,
                 Company = record.Company,
                 AlreadySigned = !string.IsNullOrEmpty(record.EmployeeSignature),
-                Expired = (DateTime.UtcNow - record.ReferenceDate).TotalDays > 7
+                Expired = SignatureLinkExpiry.IsExpired(
+                    record.CreatedAt,
+                    record.UpdatedAt,
+                    record.CompletedAt,
+                    SignatureLinkExpiry.EmployeeSignatureLifetime,
+                    DateTime.UtcNow)
             };
 
             return new(GetSignatureAcknowledgePageStatus.Ready, model);
@@ -134,7 +141,9 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                     item.EmployeeSignedAt,
                     item.EmployeeSignatureHmac,
                     item.EmployeeSignerName,
-                    ReferenceDate = item.CompletedAt ?? item.UpdatedAt ?? item.CreatedAt
+                    item.CreatedAt,
+                    item.UpdatedAt,
+                    item.CompletedAt
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -165,7 +174,12 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 Department = record.Department,
                 Company = record.Company,
                 AlreadySigned = !string.IsNullOrEmpty(record.EmployeeSignature),
-                Expired = (DateTime.UtcNow - record.ReferenceDate).TotalDays > 7
+                Expired = SignatureLinkExpiry.IsExpired(
+                    record.CreatedAt,
+                    record.UpdatedAt,
+                    record.CompletedAt,
+                    SignatureLinkExpiry.EmployeeSignatureLifetime,
+                    DateTime.UtcNow)
             };
 
             return new(GetSignatureAcknowledgePageStatus.Ready, model);
@@ -212,8 +226,12 @@ public sealed class GetSignaturePdfQueryHandler
                 return new(GetSignaturePdfStatus.NotFound);
             }
 
-            var referenceDate = onboardingRequest.CompletedAt ?? onboardingRequest.UpdatedAt ?? onboardingRequest.CreatedAt;
-            if ((DateTime.UtcNow - referenceDate).TotalDays > 30)
+            if (SignatureLinkExpiry.IsExpired(
+                onboardingRequest.CreatedAt,
+                onboardingRequest.UpdatedAt,
+                onboardingRequest.CompletedAt,
+                SignatureLinkExpiry.PdfLifetime,
+                DateTime.UtcNow))
             {
                 return new(
                     GetSignaturePdfStatus.Expired,
@@ -254,8 +272,12 @@ public sealed class GetSignaturePdfQueryHandler
                 return new(GetSignaturePdfStatus.NotFound);
             }
 
-            var referenceDate = offboardingRequest.CompletedAt ?? offboardingRequest.UpdatedAt ?? offboardingRequest.CreatedAt;
-            if ((DateTime.UtcNow - referenceDate).TotalDays > 30)
+            if (SignatureLinkExpiry.IsExpired(
+                offboardingRequest.CreatedAt,
+                offboardingRequest.UpdatedAt,
+                offboardingRequest.CompletedAt,
+                SignatureLinkExpiry.PdfLifetime,
+                DateTime.UtcNow))
             {
                 return new(GetSignaturePdfStatus.Expired, Message: "This access link has expired (30 day limit).");
             }

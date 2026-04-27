@@ -1,41 +1,45 @@
-using IT_Form.Data;
 using IT_Form.Application.Common.Support;
+using IT_Form.Data;
+using IT_Form.Helpers;
+using IT_Form.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace IT_Form.Services
 {
     /// <summary>
-    /// Background service that enforces the data retention policy.
-    /// Runs once per day and anonymizes completed/rejected offboarding and onboarding records 
-    /// older than the configured retention period (default: 2555 days / 7 years per Malaysian 
-    /// Employment Act 1955 Section 61 and PDPA 2010 Principle 5 - Retention).
-    /// 
-    /// "Anonymization" replaces PII fields with "[REDACTED]" while preserving the record 
-    /// structure for audit/statistical purposes. It does NOT hard-delete records.
+    /// Enforces retention by anonymising old HR/IT request records, deleting sensitive uploads,
+    /// purging expired security tokens, and redacting old audit payloads.
     /// </summary>
     public class DataRetentionService : BackgroundService
     {
-        private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<DataRetentionService> _logger;
-
-        // Default retention: 7 years (Malaysian Employment Act)
-        private static readonly TimeSpan RetentionPeriod = TimeSpan.FromDays(2555);
-
-        // Run once per day at 02:00 local time
         private static readonly TimeSpan RunInterval = TimeSpan.FromDays(1);
 
-        public DataRetentionService(IServiceScopeFactory scopeFactory, ILogger<DataRetentionService> logger)
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<DataRetentionService> _logger;
+        private readonly IWebHostEnvironment _environment;
+        private readonly PdpaComplianceOptions _options;
+
+        public DataRetentionService(
+            IServiceScopeFactory scopeFactory,
+            ILogger<DataRetentionService> logger,
+            IWebHostEnvironment environment,
+            IOptions<PdpaComplianceOptions> options)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
+            _environment = environment;
+            _options = options.Value;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("DataRetentionService started. Retention window: {Days} days.", RetentionPeriod.TotalDays);
+            _logger.LogInformation(
+                "DataRetentionService started. Record retention={RecordDays} days; token retention={TokenDays} days; audit retention={AuditDays} days.",
+                RecordRetentionPeriod.TotalDays,
+                SecurityTokenRetentionPeriod.TotalDays,
+                AuditLogRetentionPeriod.TotalDays);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -46,17 +50,21 @@ namespace IT_Form.Services
                 }
                 catch (OperationCanceledException)
                 {
-                    // Host is shutting down — this is expected, exit cleanly
                     break;
                 }
                 catch (Exception ex) when (!CriticalExceptionDetector.IsCritical(ex))
                 {
                     _logger.LogError(ex, "DataRetentionService encountered an error during retention pass.");
-                    // Wait a short back-off before retrying so we don't tight-loop on repeated errors
-                    try { await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); } catch (OperationCanceledException) { break; }
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
-
         }
 
         private async Task RunRetentionPass(CancellationToken ct)
@@ -64,49 +72,93 @@ namespace IT_Form.Services
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var cutoff = DateTime.UtcNow - RetentionPeriod;
-            int anonymized = 0;
+            var cutoff = DateTime.UtcNow - RecordRetentionPeriod;
+            var anonymized = await AnonymizeExpiredOffboardingAsync(db, cutoff, ct);
+            anonymized += await AnonymizeExpiredOnboardingAsync(db, cutoff, ct);
 
-            // -----------------------------------------------------------------
-            // 1. Offboarding Requests — anonymize Completed/Rejected records past cutoff
-            //    LI-07 fix: Use UpdatedAt as fallback for Rejected records (CompletedAt is never set on rejection)
-            // -----------------------------------------------------------------
+            if (anonymized > 0)
+            {
+                await db.SaveChangesAsync(ct);
+                _logger.LogInformation(
+                    "DataRetentionService: anonymized {Count} records older than {Cutoff:yyyy-MM-dd}.",
+                    anonymized,
+                    cutoff);
+            }
+            else
+            {
+                _logger.LogDebug(
+                    "DataRetentionService: no records require anonymization (cutoff: {Cutoff:yyyy-MM-dd}).",
+                    cutoff);
+            }
+
+            await PurgeExpiredTokensAsync(db, ct);
+            await RedactExpiredAuditLogsAsync(db, ct);
+        }
+
+        private async Task<int> AnonymizeExpiredOffboardingAsync(
+            ApplicationDbContext db,
+            DateTime cutoff,
+            CancellationToken ct)
+        {
             var staleOffboarding = await db.OffboardingRequests
                 .Where(r =>
                     (r.Status == IT_Form.Models.Enums.RequestStatus.Completed ||
                      r.Status == IT_Form.Models.Enums.RequestStatus.Rejected) &&
-                    (r.CompletedAt.HasValue && r.CompletedAt.Value < cutoff ||
-                     !r.CompletedAt.HasValue && r.UpdatedAt < cutoff))
+                    (r.CompletedAt ?? r.UpdatedAt ?? r.CreatedAt) < cutoff)
                 .ToListAsync(ct);
 
             foreach (var req in staleOffboarding)
             {
+                SensitiveFileStorage.DeleteStoredFile(_environment, req.ResignationLetterPath);
+                SensitiveFileStorage.DeleteStoredFile(_environment, req.HardwareDamageImagePath);
+                SensitiveFileStorage.DeleteStoredFile(_environment, req.HardwareReturnImagePath);
+
                 req.FullName = "[REDACTED]";
                 req.EmployeeID = "[REDACTED]";
                 req.EmailAddress = "redacted@redacted.com";
-                req.Department = req.Department;  // retain for statistical reporting
+                req.HODEmail = "redacted@redacted.com";
+                req.ProjectCode = null;
+                req.ForwardToEmail = null;
+                req.EmailForwardName = null;
                 req.HRSignature = null;
+                req.HRSignatureHmac = null;
+                req.HRSignerName = null;
                 req.HODSignature = null;
+                req.HODSignatureHmac = null;
+                req.HODSignerName = null;
                 req.ITAdminSignature = null;
+                req.ITAdminSignatureHmac = null;
+                req.ITAdminSignerName = null;
                 req.EmployeeSignature = null;
+                req.EmployeeSignatureHmac = null;
+                req.EmployeeSignerName = null;
                 req.ResignationLetterPath = null;
+                req.HardwareDamageImagePath = null;
+                req.HardwareReturnImagePath = null;
                 req.HardwareNotes = null;
                 req.ClearanceRemarks = null;
                 req.ChecklistRemarks = null;
                 req.FollowUpRemarks = null;
-                anonymized++;
+                req.FinesRemarks = null;
+                req.OtherDepartmentDetails = null;
+                req.OtherBranchDetails = null;
+                req.RejectionReason = null;
+                req.AccessToken = Guid.NewGuid();
             }
 
-            // -----------------------------------------------------------------
-            // 2. Onboarding Requests — anonymize Completed/Rejected records past cutoff
-            //    LI-07 fix: Use UpdatedAt as fallback for Rejected records
-            // -----------------------------------------------------------------
+            return staleOffboarding.Count;
+        }
+
+        private async Task<int> AnonymizeExpiredOnboardingAsync(
+            ApplicationDbContext db,
+            DateTime cutoff,
+            CancellationToken ct)
+        {
             var staleOnboarding = await db.OnboardingRequests
                 .Where(r =>
                     (r.Status == IT_Form.Models.Enums.RequestStatus.Completed ||
                      r.Status == IT_Form.Models.Enums.RequestStatus.Rejected) &&
-                    (r.CompletedAt.HasValue && r.CompletedAt.Value < cutoff ||
-                     !r.CompletedAt.HasValue && r.UpdatedAt < cutoff))
+                    (r.CompletedAt ?? r.UpdatedAt ?? r.CreatedAt) < cutoff)
                 .ToListAsync(ct);
 
             foreach (var req in staleOnboarding)
@@ -116,50 +168,112 @@ namespace IT_Form.Services
                 req.EmailAddress = "redacted@redacted.com";
                 req.ContactNumber = "[REDACTED]";
                 req.HODEmail = "redacted@redacted.com";
+                req.DeskNumber = null;
                 req.RequesterSignature = null;
+                req.RequesterSignatureHmac = null;
+                req.RequesterSignerName = null;
                 req.ITAdminSignature = null;
+                req.ITAdminSignatureHmac = null;
+                req.ITAdminSignerName = null;
                 req.EmployeeSignature = null;
-                anonymized++;
+                req.EmployeeSignatureHmac = null;
+                req.EmployeeSignerName = null;
+                req.AssetRemarks = null;
+                req.SoftwareRemarks = null;
+                req.FolderRemarks = null;
+                req.OtherGroupDetails = null;
+                req.OtherSoftwareDetails = null;
+                req.OtherBranchDetails = null;
+                req.OtherDepartmentDetails = null;
+                req.OtherSharedMailboxDetails = null;
+                req.OtherFolderDetails = null;
+                req.ChecklistRemarks = null;
+                req.RejectionReason = null;
+                req.AccessToken = Guid.NewGuid();
             }
 
-            if (anonymized > 0)
-            {
-                await db.SaveChangesAsync(ct);
-                _logger.LogInformation("DataRetentionService: anonymized {Count} records older than {Cutoff:yyyy-MM-dd}.", anonymized, cutoff);
-            }
-            else
-            {
-                _logger.LogDebug("DataRetentionService: no records require anonymization (cutoff: {Cutoff:yyyy-MM-dd}).", cutoff);
-            }
-
-            // -----------------------------------------------------------------
-            // 3. Temporary Tokens — Purge expired tokens older than 30 days
-            // -----------------------------------------------------------------
-            await PurgeExpiredTokensAsync(db, ct);
+            return staleOnboarding.Count;
         }
 
         private async Task PurgeExpiredTokensAsync(ApplicationDbContext db, CancellationToken ct)
         {
-            var tokenCutoff = DateTime.UtcNow.AddDays(-30);
-            int purged = 0;
+            var tokenCutoff = DateTime.UtcNow - SecurityTokenRetentionPeriod;
+            var purged = 0;
 
-            // Purge OTPs
             var staleOtps = await db.OtpRecords.Where(t => t.ExpiresAt < tokenCutoff).ToListAsync(ct);
-            if (staleOtps.Any()) { db.OtpRecords.RemoveRange(staleOtps); purged += staleOtps.Count; }
+            if (staleOtps.Count > 0)
+            {
+                db.OtpRecords.RemoveRange(staleOtps);
+                purged += staleOtps.Count;
+            }
 
-            // Purge Signing Tokens
             var staleSigning = await db.SigningTokens.Where(t => t.ExpiresAt < tokenCutoff).ToListAsync(ct);
-            if (staleSigning.Any()) { db.SigningTokens.RemoveRange(staleSigning); purged += staleSigning.Count; }
+            if (staleSigning.Count > 0)
+            {
+                db.SigningTokens.RemoveRange(staleSigning);
+                purged += staleSigning.Count;
+            }
 
-            // Purge Device Tokens
             var staleDevice = await db.DeviceVerificationTokens.Where(t => t.CreatedAt < tokenCutoff).ToListAsync(ct);
-            if (staleDevice.Any()) { db.DeviceVerificationTokens.RemoveRange(staleDevice); purged += staleDevice.Count; }
+            if (staleDevice.Count > 0)
+            {
+                db.DeviceVerificationTokens.RemoveRange(staleDevice);
+                purged += staleDevice.Count;
+            }
 
             if (purged > 0)
             {
                 await db.SaveChangesAsync(ct);
-                _logger.LogInformation("DataRetentionService: purged {Count} expired security tokens older than 30 days.", purged);
+                _logger.LogInformation(
+                    "DataRetentionService: purged {Count} expired security tokens older than {Cutoff:yyyy-MM-dd}.",
+                    purged,
+                    tokenCutoff);
             }
         }
+
+        private async Task RedactExpiredAuditLogsAsync(ApplicationDbContext db, CancellationToken ct)
+        {
+            var auditCutoff = DateTime.UtcNow - AuditLogRetentionPeriod;
+            var staleAuditLogs = await db.AuditLogs
+                .Where(log => log.CreatedAt < auditCutoff &&
+                              (log.Changes != null ||
+                               log.Payload != null ||
+                               log.IpAddress != null ||
+                               log.ActorName != null ||
+                               log.ErrorMessage != null ||
+                               log.UserId != "[REDACTED]" ||
+                               log.PerformedBy != "[REDACTED]"))
+                .ToListAsync(ct);
+
+            foreach (var log in staleAuditLogs)
+            {
+                log.UserId = "[REDACTED]";
+                log.PerformedBy = "[REDACTED]";
+                log.ActorName = null;
+                log.Details = "Audit metadata retained; personal data redacted by PDPA retention policy.";
+                log.Changes = null;
+                log.Payload = null;
+                log.ErrorMessage = null;
+                log.IpAddress = null;
+            }
+
+            if (staleAuditLogs.Count > 0)
+            {
+                await db.SaveChangesAsync(ct);
+                _logger.LogInformation(
+                    "DataRetentionService: redacted {Count} audit logs older than {Cutoff:yyyy-MM-dd}.",
+                    staleAuditLogs.Count,
+                    auditCutoff);
+            }
+        }
+
+        private TimeSpan RecordRetentionPeriod =>
+            TimeSpan.FromDays(Math.Max(1, _options.RecordRetentionDays));
+
+        private TimeSpan SecurityTokenRetentionPeriod =>
+            TimeSpan.FromDays(Math.Max(1, _options.SecurityTokenRetentionDays));
+
+        private TimeSpan AuditLogRetentionPeriod =>
+            TimeSpan.FromDays(Math.Max(1, _options.AuditLogRetentionDays));
     }
 }

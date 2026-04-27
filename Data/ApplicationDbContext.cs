@@ -475,6 +475,63 @@ namespace IT_Form.Data
             nameof(FolderPermission)
         };
 
+        private static readonly HashSet<string> PersonalDataAuditFields = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "FullName",
+            "EmployeeID",
+            "Email",
+            "NormalizedEmail",
+            "EmailAddress",
+            "ContactNumber",
+            "PhoneNumber",
+            "HODEmail",
+            "ForwardToEmail",
+            "EmailForwardName",
+            "DeskNumber",
+            "ProjectCode",
+            "HardwareNotes",
+            "FinesRemarks",
+            "ClearanceRemarks",
+            "ChecklistRemarks",
+            "FollowUpRemarks",
+            "AssetRemarks",
+            "SoftwareRemarks",
+            "FolderRemarks",
+            "OtherGroupDetails",
+            "OtherSoftwareDetails",
+            "OtherBranchDetails",
+            "OtherDepartmentDetails",
+            "OtherSharedMailboxDetails",
+            "OtherFolderDetails",
+            "RejectionReason",
+            "RequesterSignerName",
+            "HRSignerName",
+            "HODSignerName",
+            "ITAdminSignerName",
+            "EmployeeSignerName",
+            "UserName",
+            "NormalizedUserName",
+            "PasswordHash",
+            "SecurityStamp",
+            "ConcurrencyStamp",
+            "EmailSignatureImage",
+            "ResignationLetterPath",
+            "HardwareDamageImagePath",
+            "HardwareReturnImagePath"
+        };
+
+        private static readonly string[] SecretAuditFieldFragments =
+        {
+            "Token",
+            "Password",
+            "SecurityStamp",
+            "ConcurrencyStamp",
+            "Signature",
+            "Hmac",
+            "Hash",
+            "KeyValue"
+        };
+
         // Re-entry guard — prevents the audit-log save from triggering another audit pass
         private bool _saving = false;
 
@@ -537,6 +594,22 @@ namespace IT_Form.Data
                 VALUES
                     ({log.UserId}, {log.Timestamp}, {log.CreatedAt}, {log.EntityName}, {log.EntityId}, {log.Action}, {log.PerformedBy}, {log.ActorName}, {log.Details}, {log.Changes}, {log.Payload}, {log.IsSuccess}, {log.ErrorMessage}, {log.IpAddress}, {log.CorrelationId})",
                 cancellationToken);
+        }
+
+        private static bool IsSensitiveAuditField(Type entityType, string propertyName)
+        {
+            if (PersonalDataAuditFields.Contains(propertyName))
+            {
+                return true;
+            }
+
+            if (SecretAuditFieldFragments.Any(fragment =>
+                    propertyName.Contains(fragment, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            return entityType.GetProperty(propertyName)?.GetCustomAttribute<EncryptColumnAttribute>() != null;
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -686,26 +759,25 @@ namespace IT_Form.Data
                     if (propName.Contains("Signature", StringComparison.OrdinalIgnoreCase))
                     {
                         if (prop.IsModified)
-                            changes[propName] = prop.CurrentValue is null ? null : "<signature updated>";
+                            changes[propName] = prop.CurrentValue is null ? null : "<secret updated>";
                         continue;
                     }
 
-                    // Mask encrypted PII columns
-                    bool isEncrypted = entry.Entity.GetType().GetProperty(propName)?.GetCustomAttribute<EncryptColumnAttribute>() != null;
+                    var isSensitiveAuditValue = IsSensitiveAuditField(entry.Entity.GetType(), propName);
 
                     if (entry.State == EntityState.Added)
                     {
-                        changes[propName] = isEncrypted ? "***ENCRYPTED PII***" : prop.CurrentValue;
+                        changes[propName] = isSensitiveAuditValue ? "***REDACTED***" : prop.CurrentValue;
                     }
                     else if (entry.State == EntityState.Modified && prop.IsModified)
                     {
-                        changes[propName] = isEncrypted
-                            ? new { From = "***ENCRYPTED PII***", To = "***ENCRYPTED PII***" }
+                        changes[propName] = isSensitiveAuditValue
+                            ? new { From = "***REDACTED***", To = "***REDACTED***" }
                             : new { From = prop.OriginalValue, To = prop.CurrentValue };
                     }
                     else if (entry.State == EntityState.Deleted)
                     {
-                        changes[propName] = isEncrypted ? "***ENCRYPTED PII***" : prop.OriginalValue;
+                        changes[propName] = isSensitiveAuditValue ? "***REDACTED***" : prop.OriginalValue;
                     }
                 }
 
@@ -717,8 +789,8 @@ namespace IT_Form.Data
                     {
                         nameof(ITAsset) => $"Asset: {entry.Property("AssetTag").CurrentValue ?? entry.Property("AssetTag").OriginalValue} ({(entry.Property("Model").CurrentValue ?? entry.Property("Model").OriginalValue)})",
                         nameof(SoftwareLicense) => $"Software: {entry.Property("SoftwareName").CurrentValue ?? entry.Property("SoftwareName").OriginalValue}",
-                        nameof(OnboardingRequest) => $"Onboarding: {entry.Property("FullName").CurrentValue ?? entry.Property("FullName").OriginalValue} ({entry.Property("Department").CurrentValue ?? entry.Property("Department").OriginalValue})",
-                        nameof(OffboardingRequest) => $"Offboarding: {entry.Property("FullName").CurrentValue ?? entry.Property("FullName").OriginalValue} ({entry.Property("Department").CurrentValue ?? entry.Property("Department").OriginalValue})",
+                        nameof(OnboardingRequest) => $"Onboarding request #{key} ({entry.Property("Department").CurrentValue ?? entry.Property("Department").OriginalValue})",
+                        nameof(OffboardingRequest) => $"Offboarding request #{key} ({entry.Property("Department").CurrentValue ?? entry.Property("Department").OriginalValue})",
                         nameof(MaintenanceLog) => $"Maintenance: {entry.Property("Description").CurrentValue ?? entry.Property("Description").OriginalValue}",
                         nameof(Company) => $"Company: {entry.Property("Name").CurrentValue ?? entry.Property("Name").OriginalValue}",
                         nameof(Department) => $"Department: {entry.Property("Name").CurrentValue ?? entry.Property("Name").OriginalValue}",
@@ -726,10 +798,10 @@ namespace IT_Form.Data
                         nameof(EmailGroup) => $"Email Group: {entry.Property("GroupName").CurrentValue ?? entry.Property("GroupName").OriginalValue}",
                         nameof(SharedMailbox) => $"Shared Mailbox: {entry.Property("MailboxName").CurrentValue ?? entry.Property("MailboxName").OriginalValue}",
                         nameof(ServerFolder) => $"Server Folder: {entry.Property("FolderName").CurrentValue ?? entry.Property("FolderName").OriginalValue}",
-                        nameof(EmailContact) => $"Contact: {entry.Property("Name").CurrentValue ?? entry.Property("Name").OriginalValue} ({entry.Property("Email").CurrentValue ?? entry.Property("Email").OriginalValue})",
+                        nameof(EmailContact) => $"Contact record #{key}",
                         nameof(UserTitle) => $"User Role: {entry.Property("Title").CurrentValue ?? entry.Property("Title").OriginalValue} for {entry.Property("UserId").CurrentValue ?? entry.Property("UserId").OriginalValue}",
                         nameof(UserCompany) => $"User Branch: {entry.Property("CompanyName").CurrentValue ?? entry.Property("CompanyName").OriginalValue} for {entry.Property("UserId").CurrentValue ?? entry.Property("UserId").OriginalValue}",
-                        nameof(ApplicationUser) => $"Account: {entry.Property("FullName").CurrentValue ?? entry.Property("FullName").OriginalValue} ({entry.Property("UserName").CurrentValue ?? entry.Property("UserName").OriginalValue})",
+                        nameof(ApplicationUser) => $"User account #{key}",
                         nameof(SoftwareKey) => $"Software Key ID: {key}",
                         nameof(RequestSoftware) => $"Mapped Software: {entry.Property("SoftwareName").CurrentValue ?? entry.Property("SoftwareName").OriginalValue}",
                         nameof(RequestEmailGroup) => $"Mapped Email Group: {entry.Property("GroupName").CurrentValue ?? entry.Property("GroupName").OriginalValue}",

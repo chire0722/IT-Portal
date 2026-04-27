@@ -1,6 +1,107 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Privacy Notice";
+    var controllerName = Configuration["PdpaCompliance:DataControllerName"] ?? "YTC / PYT Group";
+    var privacyEmail = Configuration["PdpaCompliance:PrivacyContactEmail"] ?? "itdept@ytcprecast.com";
+    var breachEmail = Configuration["PdpaCompliance:BreachResponseEmail"] ?? privacyEmail;
+    var recordRetentionDays = Configuration.GetValue<int?>("PdpaCompliance:RecordRetentionDays") ?? 2555;
+    var tokenRetentionDays = Configuration.GetValue<int?>("PdpaCompliance:SecurityTokenRetentionDays") ?? 30;
+    var retentionYears = Math.Round(recordRetentionDays / 365.0, 1);
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container py-4" style="max-width: 980px;">
+    <div class="mb-4">
+        <h1 class="h3 fw-bold mb-2">Privacy Notice</h1>
+        <p class="text-muted mb-0">
+            This notice explains how @controllerName processes personal data in the IT Portal for IT asset, access,
+            onboarding, offboarding, audit, and support purposes.
+        </p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100 bg-white">
+                <div class="fw-semibold mb-1">Data Controller</div>
+                <div class="text-muted">@controllerName</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100 bg-white">
+                <div class="fw-semibold mb-1">Privacy Requests</div>
+                <a href="mailto:@privacyEmail">@privacyEmail</a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100 bg-white">
+                <div class="fw-semibold mb-1">Security Incidents</div>
+                <a href="mailto:@breachEmail">@breachEmail</a>
+            </div>
+        </div>
+    </div>
+
+    <section class="mb-4">
+        <h2 class="h5 fw-bold">Personal Data Collected</h2>
+        <p>
+            The portal may collect employee name, employee ID, company, department, designation, work email, contact
+            number, HOD email, IT assets, software and mailbox access, server folder permissions, offboarding return
+            details, uploaded supporting documents or photos, signatures, timestamps, user account details, and audit
+            records.
+        </p>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5 fw-bold">Purposes</h2>
+        <ul>
+            <li>Provision, manage, recover, and audit IT equipment, software, accounts, and access rights.</li>
+            <li>Run onboarding and offboarding workflows and obtain required approvals or acknowledgements.</li>
+            <li>Meet internal control, employment record, audit, security, and legal obligations.</li>
+            <li>Investigate system misuse, security events, support requests, and data integrity issues.</li>
+        </ul>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5 fw-bold">Disclosure</h2>
+        <p>
+            Access is limited by role to authorised IT, HR, HOD, manager, and system administrators. Personal data is not
+            sold. It may be disclosed to approved service providers, auditors, legal advisers, regulators, or authorities
+            when needed for the purposes above or when required by law.
+        </p>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5 fw-bold">Security</h2>
+        <p>
+            The system uses authenticated access, role-based authorization, CSRF protection, rate limiting, audit logs,
+            secure upload storage, signature integrity checks, encrypted sensitive fields, and short-lived signing and
+            verification tokens. Users must keep credentials confidential and report suspected unauthorised access.
+        </p>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5 fw-bold">Retention</h2>
+        <p>
+            Completed or rejected onboarding and offboarding records are anonymised after about @retentionYears years
+            (@recordRetentionDays days), unless a longer period is required for legal, employment, audit, or dispute
+            reasons. Expired security tokens are purged after @tokenRetentionDays days. Supporting documents and
+            sensitive uploaded files are deleted when the related record is anonymised.
+        </p>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5 fw-bold">Access And Correction</h2>
+        <p>
+            Employees may request access to, or correction of, their personal data by contacting
+            <a href="mailto:@privacyEmail">@privacyEmail</a>. The request should include enough information to identify
+            the relevant employee and IT request record.
+        </p>
+    </section>
+
+    <section>
+        <h2 class="h5 fw-bold">Incident Reporting</h2>
+        <p>
+            Suspected loss, misuse, unauthorised disclosure, unauthorised access, or accidental destruction of personal
+            data must be reported immediately to <a href="mailto:@breachEmail">@breachEmail</a> so the organisation can
+            assess notification duties and containment steps.
+        </p>
+    </section>
+</div>

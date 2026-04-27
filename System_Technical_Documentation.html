@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Portal — System Technical Documentation v1.92</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'default',
+  flowchart: { useMaxWidth: false, htmlLabels: false, curve: 'linear' },
+  er: { useMaxWidth: false },
+  stateDiagram: { useMaxWidth: false }
+});
+</script>
+<style>
+:root{--primary:#1a1a2e;--accent:#4361ee;--accent2:#3f37c9;--bg:#f8f9fa;--card:#ffffff;--border:#dee2e6;--text:#212529;--muted:#6c757d;--success:#198754;--warning:#fd7e14;--danger:#dc3545;--info:#0dcaf0;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;font-size:14px;}
+.cover{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 40%,#0f3460 100%);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;page-break-after:always;}
+.cover-inner{max-width:700px;padding:30px;}
+.cover h1{font-size:2.4rem;font-weight:800;letter-spacing:-1px;margin-bottom:6px;}
+.cover .subtitle{font-size:1.2rem;color:#a8b2d1;margin-bottom:24px;}
+.cover .meta{display:inline-block;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:16px 24px;margin-top:12px;}
+.cover .meta p{margin:3px 0;font-size:.95rem;color:#ccd6f6;}
+.cover .badge{display:inline-block;background:var(--accent);color:#fff;padding:4px 14px;border-radius:20px;font-size:.85rem;font-weight:600;margin-bottom:18px;}
+.container{max-width:1100px;margin:0 auto;padding:20px 16px;}
+h2{font-size:1.5rem;font-weight:700;color:var(--primary);margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--accent);page-break-after:avoid;}
+h3{font-size:1.2rem;font-weight:700;color:var(--accent2);margin:20px 0 8px;page-break-after:avoid;}
+h4{font-size:1.05rem;font-weight:600;color:var(--primary);margin:14px 0 6px;}
+p,li{margin-bottom:4px;}
+ul,ol{padding-left:20px;}
+table{width:100%;border-collapse:collapse;margin:10px 0 16px;font-size:.85rem;page-break-inside:auto;}
+th{background:var(--primary);color:#fff;padding:6px 10px;text-align:left;font-weight:600;white-space:nowrap;}
+td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:nth-child(even){background:#f4f6fb;}
+tr{page-break-inside:avoid;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:12px 0;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.badge-sm{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:600;}
+.badge-green{background:#d1fae5;color:#065f46;}
+.badge-blue{background:#dbeafe;color:#1e40af;}
+.badge-orange{background:#ffedd5;color:#9a3412;}
+.badge-red{background:#fee2e2;color:#991b1b;}
+.badge-purple{background:#ede9fe;color:#5b21b6;}
+.mermaid{margin:12px 0;text-align:center;}
+.toc{columns:2;column-gap:24px;list-style:none;padding:0;}
+.toc li{padding:3px 0;border-bottom:1px dotted var(--border);break-inside:avoid;}
+.toc a{color:var(--accent);text-decoration:none;font-weight:500;}
+.toc a:hover{text-decoration:underline;}
+.note{background:#e8f4fd;border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 6px 6px 0;margin:12px 0;font-size:.85rem;}
+.warn{background:#fff3cd;border-left:4px solid var(--warning);padding:10px 14px;border-radius:0 6px 6px 0;margin:12px 0;font-size:.85rem;}
+code{background:#eef;padding:1px 4px;border-radius:4px;font-size:.85em;font-family:'Cascadia Code','Fira Code',monospace;}
+pre{background:#1e1e2e;color:#cdd6f4;padding:12px 16px;border-radius:6px;overflow-x:auto;font-size:.8rem;margin:10px 0;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:768px){.grid2{grid-template-columns:1fr;}.toc{columns:1;}}
+@media print{
+  @page{size:A4;margin:0;}
+  body{font-size:11px;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:15mm;}
+  .cover{min-height:auto;padding:80px 20px;page-break-after:always;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 40%,#0f3460 100%) !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .cover h1{font-size:2rem;}
+  .cover .subtitle{font-size:1rem;}
+  .container{padding:0;max-width:100%;}
+  h2{margin-top:24px;padding-bottom:6px;border-bottom-width:2px;page-break-after:avoid;font-size:1.35rem;}
+  h3{page-break-after:avoid;font-size:1.1rem;margin-top:18px;}
+  h4{page-break-after:avoid;}
+  .card{page-break-inside:avoid;box-shadow:none;border:1px solid #ccc;margin:10px 0;padding:14px 16px;}
+  table{font-size:.78rem;page-break-inside:auto;}
+  tr{page-break-inside:avoid;page-break-after:auto;}
+  th{background:#1a1a2e !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .mermaid{page-break-inside:avoid;margin:12px 0;width:100%;text-align:center;}
+  .mermaid svg{max-width:100% !important;height:auto !important;page-break-inside:avoid;display:inline-block;}
+  .grid2{display:block;}
+  .grid2 > .card{margin-bottom:12px;}
+  .note,.warn{page-break-inside:avoid;}
+  pre{page-break-inside:avoid;font-size:.75rem;white-space:pre-wrap;word-break:break-all;}
+  .toc{columns:2;page-break-after:always;}
+  .toc a{color:#000;text-decoration:none;}
+  .badge-sm{border:1px solid #999;}
+  a{color:#000;text-decoration:none;}
+  .section-icon{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+.section-icon{display:inline-block;width:32px;height:32px;background:var(--accent);color:#fff;border-radius:8px;text-align:center;line-height:32px;font-weight:700;margin-right:10px;font-size:.9rem;vertical-align:middle;}
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER PAGE ==================== -->
+<div class="cover">
+<div class="cover-inner">
+<div class="badge">CONFIDENTIAL — INTERNAL USE ONLY</div>
+<h1>IT Portal System</h1>
+<p class="subtitle">System Architecture &amp; Technical Documentation</p>
+<div class="meta">
+<p><strong>Version:</strong> 1.92</p>
+<p><strong>Framework:</strong> ASP.NET Core (.NET 10.0)</p>
+<p><strong>Date:</strong> 23 April 2026</p>
+<p><strong>Classification:</strong> Internal Technical Reference</p>
+</div>
+</div>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="container">
+
+<h2>Table of Contents</h2>
+<ul class="toc">
+<li><a href="#sec1">1. System Architecture &amp; Design</a></li>
+<li><a href="#sec1-1">1.1 High-Level Architecture Diagram</a></li>
+<li><a href="#sec1-2">1.2 Core Technologies &amp; Patterns</a></li>
+<li><a href="#sec1-3">1.3 MediatR CQRS Pipeline</a></li>
+<li><a href="#sec1-4">1.4 Multi-Company Data Isolation</a></li>
+<li><a href="#sec1-5">1.5 Architecture Rationale &amp; Design Decisions</a></li>
+<li><a href="#sec2">2. Security &amp; Data Integrity</a></li>
+<li><a href="#sec2-1">2.1 Authentication Mechanisms</a></li>
+<li><a href="#sec2-2">2.2 Role-Based Access Control (RBAC)</a></li>
+<li><a href="#sec2-3">2.3 Cryptographic Implementations</a></li>
+<li><a href="#sec2-4">2.4 Security Headers &amp; Middleware</a></li>
+<li><a href="#sec3">3. Technical Documentation</a></li>
+<li><a href="#sec3-1">3.1 Environment Setup &amp; Deployment</a></li>
+<li><a href="#sec3-2">3.2 Database Schema &amp; Data Dictionary</a></li>
+<li><a href="#sec3-3">3.3 Entity-Relationship Diagram (ERD)</a></li>
+<li><a href="#sec3-4">3.4 API Specifications</a></li>
+<li><a href="#sec3-5">3.5 Third-Party Dependencies</a></li>
+<li><a href="#sec4">4. Workflow Flowcharts</a></li>
+<li><a href="#sec4-1">4.1 Onboarding Workflow</a></li>
+<li><a href="#sec4-2">4.2 Offboarding Workflow</a></li>
+<li><a href="#sec4-3">4.3 MediatR Command Pipeline</a></li>
+<li><a href="#sec4-4">4.4 Digital Signature Verification</a></li>
+<li><a href="#sec5">5. Background Services &amp; Hosted Workers</a></li>
+</ul>
+
+<!-- ============================================================ -->
+<!-- SECTION 1: SYSTEM ARCHITECTURE & DESIGN                      -->
+<!-- ============================================================ -->
+<h2 id="sec1"><span class="section-icon">1</span>System Architecture &amp; Design</h2>
+
+<h3 id="sec1-1">1.1 High-Level Architecture Diagram</h3>
+<p>The IT Portal is a <strong>monolithic ASP.NET Core MVC + Web API</strong> application with a hybrid rendering model. Server-rendered Razor Views handle all interactive UI, while a parallel RESTful API surface serves programmatic consumers.</p>
+
+<div class="mermaid">
+graph TB
+    subgraph "Client Layer"
+        B["Browser (Razor Views + JS)"]
+        API_C["API Consumer (OpenAPI / Scalar)"]
+        AGENT["Hardware Audit Agent (PowerShell)"]
+    end
+    subgraph "ASP.NET Core Host (.NET 10.0)"
+        direction TB
+        MW["Middleware Pipeline\nSecurityHeaders · RateLimiter · Auth · Session"]
+        MVC["MVC/API Controllers\n26 controller classes"]
+        MAPI["API Controllers\nOnboarding · Offboarding · Employees · AuditLog · Departments"]
+        MINI["Minimal API\n/api/inventory/sync"]
+        MED["MediatR Pipeline\nValidation → Audit → Transaction → Logging → Performance → Handler"]
+        SVC["Services Layer\nPdfService · OnboardingWizard · SlaChecker\nOutlookService SMTP wrapper · SignatureIntegrity"]
+        BG["Background Services\nEmailDispatcher · SlaChecker\nAssetLicenseExpiry · DatabaseBackup\nDataRetention · OffboardingAutoSign"]
+    end
+    subgraph "Data Layer"
+        EF["Entity Framework Core 10.0\nApplicationDbContext (939 lines)"]
+        DB[("SQLite Database\nIT_FormDB.db")]
+    end
+    subgraph "External"
+        SMTP["Office 365 SMTP\nsmtp.office365.com:587"]
+        FS["File System\nApp_Data · Sensitive Uploads"]
+    end
+
+    B --> MW
+    API_C --> MW
+    AGENT --> MW
+    MW --> MVC
+    MW --> MAPI
+    MW --> MINI
+    MVC --> MED
+    MVC --> SVC
+    MAPI --> MED
+    MAPI --> SVC
+    MED --> SVC
+    MINI --> EF
+    SVC --> EF
+    BG --> EF
+    EF --> DB
+    SVC --> SMTP
+    SVC --> FS
+</div>
+
+<h3 id="sec1-2">1.2 Core Technologies &amp; Patterns</h3>
+<table>
+<tr><th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr>
+<tr><td>Runtime</td><td>.NET</td><td>10.0</td><td>Application framework and host</td></tr>
+<tr><td>Web Framework</td><td>ASP.NET Core MVC</td><td>10.0</td><td>Server-side Razor views + REST API</td></tr>
+<tr><td>Database</td><td>SQLite</td><td>via EF Core 10.0</td><td>Embedded relational database — zero-config deployment</td></tr>
+<tr><td>ORM</td><td>Entity Framework Core</td><td>10.0.6</td><td>Code-first migrations, change tracking, audit logging</td></tr>
+<tr><td>Identity</td><td>ASP.NET Identity</td><td>10.0.6</td><td>User management, authentication, lockout</td></tr>
+<tr><td>CQRS / Mediator</td><td>MediatR</td><td>12.2.0</td><td>Command/Query separation with pipeline behaviors</td></tr>
+<tr><td>State Machine</td><td>Stateless</td><td>5.20.1</td><td>Onboarding request lifecycle state transitions</td></tr>
+<tr><td>Validation</td><td>FluentValidation + DI extensions</td><td>12.1.1</td><td>Request-level validation via MediatR pipeline</td></tr>
+<tr><td>Object Mapping</td><td>Mapster</td><td>10.0.7</td><td>DTO / ViewModel projection</td></tr>
+<tr><td>PDF Generation</td><td>QuestPDF</td><td>2026.2.4</td><td>Onboarding/Offboarding form PDF export</td></tr>
+<tr><td>Logging</td><td>Serilog</td><td>10.0.0</td><td>Structured logging with rolling file sink</td></tr>
+<tr><td>Excel I/O</td><td>ClosedXML</td><td>0.105.0</td><td>Bulk employee import/export</td></tr>
+<tr><td>Email</td><td>System.Net.Mail SmtpClient</td><td>.NET 10.0 BCL</td><td>SMTP email dispatch through the historical <code>OutlookService</code> wrapper</td></tr>
+<tr><td>Cryptography</td><td>Konscious.Security.Cryptography.Argon2</td><td>1.3.1</td><td>Argon2id password hashing</td></tr>
+<tr><td>API Docs</td><td>Microsoft.AspNetCore.OpenApi + Scalar.AspNetCore</td><td>10.0.6 / 2.14.1</td><td>Interactive API reference at <code>/scalar/v1</code> in Development</td></tr>
+<tr><td>Time Zones</td><td>NodaTime</td><td>3.3.1</td><td>Business-hours SLA calculation across time zones</td></tr>
+<tr><td>Legacy Reference</td><td>Microsoft.Office.Interop.Outlook</td><td>15.0.4797.1004</td><td>Referenced legacy package; current notification sender uses SMTP, not COM automation</td></tr>
+</table>
+
+<h3 id="sec1-3">1.3 MediatR CQRS Pipeline</h3>
+<p>MediatR-backed controllers and actions route operations through the following pipeline. Some legacy/direct API surfaces, such as <code>EmployeeApiController</code> and inventory verification endpoints, use <code>ApplicationDbContext</code> directly and do not pass through these behaviors.</p>
+
+<table>
+<tr><th>#</th><th>Behavior</th><th>File</th><th>Responsibility</th></tr>
+<tr><td>1</td><td><span class="badge-sm badge-blue">ValidationBehavior</span></td><td>ValidationBehavior.cs</td><td>Runs FluentValidation validators; throws <code>ValidationException</code> on failure</td></tr>
+<tr><td>2</td><td><span class="badge-sm badge-purple">AuditLoggingBehavior</span></td><td>AuditLoggingBehavior.cs</td><td>Captures command metadata (actor, IP, payload) into <code>AuditLogs</code></td></tr>
+<tr><td>3</td><td><span class="badge-sm badge-green">TransactionBehavior</span></td><td>TransactionBehavior.cs</td><td>Wraps eligible <code>*Command</code> handlers in a database transaction; auto-rollback on failure</td></tr>
+<tr><td>4</td><td><span class="badge-sm badge-orange">RequestLoggingBehavior</span></td><td>RequestLoggingBehavior.cs</td><td>Debug/error logging around MediatR request handling</td></tr>
+<tr><td>5</td><td><span class="badge-sm badge-red">PerformanceBehavior</span></td><td>PerformanceBehavior.cs</td><td>Logs slow requests exceeding a threshold</td></tr>
+</table>
+
+<div class="card">
+<h4>Code Example: ValidationBehavior.cs — Request Validation Gate</h4>
+<p>This behavior intercepts every MediatR request <em>before</em> it reaches the handler. It runs all registered <code>FluentValidation</code> validators in parallel and rejects the request if any rule fails.</p>
+<pre>
+public sealed class ValidationBehavior&lt;TRequest, TResponse&gt;
+    : IPipelineBehavior&lt;TRequest, TResponse&gt;    // MediatR cross-cutting concern interface
+    where TRequest : notnull
+{
+    private readonly IValidator&lt;TRequest&gt;[] _validators;
+
+    public async Task&lt;TResponse&gt; Handle(
+        TRequest request,
+        RequestHandlerDelegate&lt;TResponse&gt; next,     // next() invokes the actual handler
+        CancellationToken cancellationToken)
+    {
+        if (_validators.Length == 0)
+            return await next();                      // No validators registered → skip
+
+        var context = new ValidationContext&lt;TRequest&gt;(request);
+        var results = await Task.WhenAll(             // Run ALL validators in parallel
+            _validators.Select(v =&gt; v.ValidateAsync(context, cancellationToken)));
+
+        var failures = results
+            .SelectMany(r =&gt; r.Errors)
+            .Where(e =&gt; e != null).ToList();
+
+        if (failures.Count &gt; 0)
+            throw new ValidationException(failures);  // ❌ Returns 400 Bad Request
+
+        return await next();                           // ✅ Proceed to handler
+    }
+}
+</pre>
+<p><strong>Key Points:</strong></p>
+<ul>
+<li><code>IPipelineBehavior</code> wraps the <code>next()</code> delegate, forming a chain identical to ASP.NET Core middleware.</li>
+<li><strong>Parallel validation</strong> via <code>Task.WhenAll</code> — returns all errors in one round-trip instead of fail-fast.</li>
+<li><strong>Zero-validator fast path</strong> — Query requests skip the validation context entirely.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Code Example: TransactionBehavior.cs — Automatic Transaction Management</h4>
+<p>Wraps eligible <strong>Command</strong> handlers in a database transaction. The <code>PostCommitActionQueue</code> ensures queued side effects only run after a successful commit.</p>
+<pre>
+public async Task&lt;TResponse&gt; Handle(TRequest request,
+    RequestHandlerDelegate&lt;TResponse&gt; next, CancellationToken ct)
+{
+    if (!ShouldWrapInTransaction(request))       // Only *Command types
+        return await next();
+
+    await using var transaction =
+        await _context.Database.BeginTransactionAsync(ct);
+    try
+    {
+        var response = await next();                  // Execute handler
+        await transaction.CommitAsync(ct);            // ✅ Commit
+        await _postCommitActionQueue.FlushAsync(ct);  // Run queued side effects
+        return response;
+    }
+    catch
+    {
+        _postCommitActionQueue.Clear();               // Discard pending side effects
+        await transaction.RollbackAsync(ct);           // ❌ Rollback
+        throw;
+    }
+}
+
+// Convention: type name ending in "Command" → wrap in transaction
+private static bool ShouldWrapInTransaction(TRequest request)
+{
+    var name = request.GetType().Name;
+    if (!name.EndsWith("Command")) return false;
+    if (name.Contains("Import")) return false;  // Imports manage own txn
+    return true;
+}
+</pre>
+<p><strong>Key Points:</strong></p>
+<ul>
+<li><strong>Convention-based:</strong> Transaction wrapping determined by the request type name suffix, keeping commands free of infrastructure concerns.</li>
+<li><strong>PostCommitActionQueue:</strong> Prevents "phantom" notifications from rolled-back operations.</li>
+</ul>
+</div>
+
+<h3 id="sec1-4">1.4 Multi-Company Data Isolation</h3>
+<p>The system implements a <strong>logical multi-company (multi-tenant)</strong> architecture. Each user is associated with one or more companies via the <code>UserCompany</code> join table. Data isolation is enforced at the application layer:</p>
+
+<div class="card">
+<h4>Tenant Resolution &amp; Scoping</h4>
+<ul>
+<li><strong>UserCompany</strong> — Maps each <code>ApplicationUser</code> to one or more <code>Company</code> names</li>
+<li><strong>CompanyScopeHelper</strong> — Utility class that loads the current user's accessible companies from claims/DB and filters queries accordingly</li>
+<li><strong>Controller/Query-Level Enforcement</strong> — Company-scoped data is filtered through <code>CompanyScopeHelper</code> or <code>ItAdminCompanyScopeSupport</code>; individual record endpoints call <code>CompanyScopeHelper.CanAccessCompany(User, branch)</code> where branch-level checks are required</li>
+<li><strong>Dictionary Entities</strong> — Departments, Email Groups, Shared Mailboxes, Server Folders, and Software Licenses are linked to companies via join tables (e.g., <code>DepartmentCompany</code>, <code>EmailGroupCompany</code>)</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Code Example: Stateless State Machine — OnboardingRequest.cs</h4>
+<p>The onboarding lifecycle is enforced by a <strong>Stateless</strong> finite state machine embedded in the domain model. It prevents invalid transitions (e.g., jumping from <code>Draft</code> to <code>Completed</code>) at the model level.</p>
+<pre>
+public class OnboardingRequest : ISlaTrackable
+{
+    // State machine is NOT persisted — rebuilt from Status on every load
+    [NotMapped]
+    private readonly StateMachine&lt;RequestStatus, OnboardingTrigger&gt; _machine;
+
+    public OnboardingRequest()
+    {
+        _machine = new StateMachine&lt;RequestStatus, OnboardingTrigger&gt;(
+            () =&gt; Status,             // Read current state from entity
+            status =&gt; Status = status  // Write new state back to entity
+        );
+        ConfigureStateMachine();
+    }
+
+    public RequestStatus Status { get; set; } = RequestStatus.Draft;
+
+    private void ConfigureStateMachine()
+    {
+        _machine.Configure(RequestStatus.Draft)
+            .Permit(OnboardingTrigger.SubmitByHr,
+                    RequestStatus.PendingITApproval)
+            .Permit(OnboardingTrigger.Cancel,
+                    RequestStatus.Rejected);
+
+        _machine.Configure(RequestStatus.PendingApproval)
+            .Permit(OnboardingTrigger.Cancel, RequestStatus.Rejected);
+
+        _machine.Configure(RequestStatus.PendingHRApproval)
+            .Permit(OnboardingTrigger.Cancel, RequestStatus.Rejected);
+
+        _machine.Configure(RequestStatus.PendingHODApproval)
+            .Permit(OnboardingTrigger.Cancel, RequestStatus.Rejected);
+
+        _machine.Configure(RequestStatus.PendingITApproval)
+            .PermitReentry(OnboardingTrigger.StartItSetup)
+            .Permit(OnboardingTrigger.FinishOnboarding,
+                    RequestStatus.PendingEmployeeSign)
+            .Permit(OnboardingTrigger.Cancel,
+                    RequestStatus.Rejected);
+    }
+
+    // Public trigger methods used by command handlers
+    public void SubmitByHr()       =&gt; _machine.Fire(OnboardingTrigger.SubmitByHr);
+    public void FinishOnboarding() =&gt; _machine.Fire(OnboardingTrigger.FinishOnboarding);
+    public void Cancel()           =&gt; _machine.Fire(OnboardingTrigger.Cancel);
+
+    // Check if a transition is allowed before rendering UI buttons
+    public bool CanBeRejected() =&gt;
+        Status != RequestStatus.Rejected &amp;&amp;
+        _machine.CanFire(OnboardingTrigger.Cancel);
+}
+</pre>
+<p><strong>How It Works:</strong></p>
+<ul>
+<li><strong><code>[NotMapped]</code>:</strong> The machine object is never persisted — only the <code>Status</code> enum is stored. The machine is reconstructed from the persisted status each time the entity loads from EF Core.</li>
+<li><strong><code>.Permit(trigger, target)</code>:</strong> Defines a valid transition. Attempting any other configured trigger throws <code>InvalidOperationException</code>, so command handlers cannot use the state-machine API to skip guarded steps.</li>
+<li><strong><code>.PermitReentry()</code>:</strong> Allows IT to re-enter the same state when saving partial setup progress without changing status.</li>
+<li><strong><code>CanFire()</code>:</strong> Used inside entity helper methods such as <code>CanBeRejected()</code>, which command handlers call before firing transitions.</li>
+</ul>
+</div>
+
+<h3 id="sec1-5">1.5 Architecture Rationale &amp; Design Decisions</h3>
+<p>This section explains <strong>why</strong> each major library and pattern was chosen, what problem it solves, and what the alternative would look like without it.</p>
+
+<div class="card">
+<h4>Why MediatR? — Decoupling Controllers from Business Logic</h4>
+<p><strong>Problem:</strong> In a traditional MVC application, controllers contain business logic directly. As the system grows, controllers become bloated "god classes" — hundreds of lines mixing HTTP concerns (model binding, response formatting) with domain logic (validation, state transitions, database operations). This makes the code hard to test, hard to reuse, and hard to maintain.</p>
+
+<p><strong>Solution:</strong> MediatR implements the <strong>Mediator pattern</strong> combined with <strong>CQRS (Command/Query Responsibility Segregation)</strong>. Instead of controllers calling services directly, they send a <em>request object</em> (Command or Query) to MediatR, which routes it to the correct handler.</p>
+
+<pre>
+// ❌ WITHOUT MediatR — Controller does everything
+public class OnboardingController : Controller
+{
+    public async Task&lt;IActionResult&gt; Sign(int id, OnboardingSignatureApiRequest dto)
+    {
+        // Validation mixed into controller
+        if (string.IsNullOrEmpty(dto.SignatureData)) return BadRequest();
+
+        // Business logic in the controller
+        var request = await _context.OnboardingRequests.FindAsync(id);
+        request.ITAdminSignature = dto.SignatureData;
+        request.Status = RequestStatus.PendingEmployeeSign;
+
+        // Audit logging manually added
+        _context.AuditLogs.Add(new AuditLog { ... });
+
+        await _context.SaveChangesAsync();
+        return Ok();
+    }
+}
+
+// ✅ WITH MediatR — Controller only dispatches
+public class OnboardingApiController : ControllerBase
+{
+    public async Task&lt;IActionResult&gt; Sign(int id, OnboardingSignatureApiRequest dto)
+    {
+        var result = await _mediator.Send(
+            new ProcessOnboardingSignatureCommand(
+                id, dto.SignatureType, dto.SignatureData));
+        return Ok(result);
+    }
+}
+// Validation, audit logging, and transactions happen
+// automatically in the pipeline — the handler only
+// contains the actual business logic.
+</pre>
+
+<p><strong>Benefits in This System:</strong></p>
+<ul>
+<li><strong>Single Responsibility:</strong> Each handler does exactly one thing. <code>ProcessOnboardingSignatureCommand</code> handles onboarding signatures. <code>ProcessOnboardingRejectionCommand</code> handles rejection. No mixing of concerns.</li>
+<li><strong>Cross-Cutting Concerns:</strong> Validation, audit logging, transaction management, and performance monitoring are applied to commands sent through MediatR — reducing duplicated infrastructure code across the 26 controller classes.</li>
+<li><strong>Testability:</strong> Handlers can be tested without MVC controller plumbing; database-backed handlers still need an EF test context or mocked dependencies.</li>
+<li><strong>Discoverability:</strong> New developers can search for <code>*Command.cs</code> and <code>*Query.cs</code> to find MediatR-backed operations without reading controller code.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why Pipeline Behaviors? — The "Middleware for Business Logic" Pattern</h4>
+<p><strong>Problem:</strong> Most mutating MediatR requests need input validation, audit logging, transaction wrapping, and performance monitoring. Without a pipeline, each handler would need to manually call these services — leading to duplicated infrastructure code and a higher risk of missed audit logs or transaction boundaries.</p>
+
+<p><strong>Solution:</strong> MediatR <strong>Pipeline Behaviors</strong> (<code>IPipelineBehavior&lt;TRequest, TResponse&gt;</code>) act as middleware for business logic. They wrap the <code>next()</code> delegate in a chain, just like ASP.NET Core HTTP middleware wraps <code>RequestDelegate</code>.</p>
+
+<div class="mermaid">
+flowchart LR
+    A["Controller\nsends Command"] --> B["ValidationBehavior\nCheck input rules"]
+    B --> C["AuditLoggingBehavior\nRecord actor + payload"]
+    C --> D["TransactionBehavior\nBegin DB transaction"]
+    D --> E["RequestLoggingBehavior\nDebug/error log"]
+    E --> F["PerformanceBehavior\nStart timer"]
+    F --> G["Command Handler\nDomain logic"]
+    G --> F
+    F --> E
+    E --> D
+    D --> C
+    C --> B
+    B --> A
+    style A fill:#dbeafe,stroke:#1e40af
+    style G fill:#d1fae5,stroke:#065f46
+</div>
+
+<p><strong>Why This Matters:</strong></p>
+<ul>
+<li><strong>Less boilerplate in handlers:</strong> Command handlers can focus on business logic while validation, command audit logging, transaction management, and performance timing are handled by the pipeline.</li>
+<li><strong>Consistent enforcement:</strong> Commands sent through MediatR pass through the globally registered pipeline; commands without validators use the zero-validator fast path, and audit logging applies to request types ending in <code>Command</code>.</li>
+<li><strong>Ordering matters:</strong> Validation runs first (no point starting a transaction for invalid data). Audit logging runs before the transaction (so failures are captured). Performance monitoring wraps the entire chain.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why FluentValidation? — Declarative Input Validation</h4>
+<p><strong>Problem:</strong> ASP.NET's built-in <code>[Required]</code> and <code>[StringLength]</code> data annotations are limited to simple property-level checks. Real business rules — like "department name must be unique" or "selected HOD must belong to the selected company" — require validation code that would otherwise clutter the model or controller.</p>
+
+<p><strong>Solution:</strong> FluentValidation provides a fluent, testable API for building complex validation rules in dedicated <code>Validator</code> classes. These validators are auto-discovered by the DI container and executed by the <code>ValidationBehavior</code> in the MediatR pipeline.</p>
+
+<pre>
+// Example: Validator for creating a department
+public sealed class CreateDepartmentCommandValidator
+    : AbstractValidator&lt;CreateDepartmentCommand&gt;
+{
+    public CreateDepartmentCommandValidator(ApplicationDbContext context)
+    {
+        RuleFor(x =&gt; x.Name)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .Length(2, 100)
+            .MustAsync(async (name, ct) =&gt;
+                !await context.Departments.AsNoTracking()
+                    .AnyAsync(d =&gt;
+                        d.Name.ToUpper() == name.Trim().ToUpper(), ct))
+            .WithMessage("Department name must be unique.");
+
+        RuleFor(x =&gt; x.Description).MaximumLength(500);
+    }
+}
+</pre>
+
+<p><strong>Why Not Just Data Annotations?</strong></p>
+<ul>
+<li><strong>Async rules:</strong> Data annotations cannot call <code>async</code> methods. FluentValidation supports <code>MustAsync</code> for database lookups (e.g., uniqueness checks).</li>
+<li><strong>Separation:</strong> Validation rules live in their own files, not cluttering the domain model or command class.</li>
+<li><strong>Conditional logic:</strong> <code>When()</code> and <code>Unless()</code> allow rules that only apply based on other properties — impossible with attributes.</li>
+<li><strong>Testability:</strong> Each validator can be unit-tested independently with <code>TestValidate()</code> — no HTTP request needed.</li>
+<li><strong>Pipeline integration:</strong> Validators for MediatR requests run automatically via <code>ValidationBehavior</code>. Legacy/direct MVC actions still use <code>ModelState</code> checks where they do not route through MediatR.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why Stateless? — Domain-Driven Workflow Enforcement</h4>
+<p><strong>Problem:</strong> Onboarding requests follow a strict lifecycle (Draft → PendingITApproval → PendingEmployeeSign → Completed). Without a state machine, this logic would be scattered across controllers as <code>if/else</code> chains — making it easy to introduce bugs like allowing a "Draft" request to jump directly to "Completed". Offboarding uses a separate multi-party approval flow described later in this document.</p>
+
+<p><strong>Solution:</strong> The <strong>Stateless</strong> library provides a lightweight finite state machine that is configured directly in the domain model. The machine <em>defines</em> which configured trigger transitions are legal. Illegal trigger calls throw <code>InvalidOperationException</code>, keeping handler-driven workflow changes on the allowed path.</p>
+
+<pre>
+// Without Stateless — fragile and error-prone:
+if (request.Status == RequestStatus.Draft)
+    request.Status = RequestStatus.PendingITApproval;  // What about validation?
+else if (request.Status == RequestStatus.PendingITApproval)
+    request.Status = RequestStatus.Completed;           // Skipped employee sign!
+
+// With Stateless — transitions are declared, not coded:
+_machine.Configure(RequestStatus.Draft)
+    .Permit(OnboardingTrigger.SubmitByHr, RequestStatus.PendingITApproval);
+// Trying to fire FinishOnboarding from Draft → throws InvalidOperationException
+</pre>
+
+<p><strong>Why This Matters:</strong></p>
+<ul>
+<li><strong>Business rules as code:</strong> The state machine IS the specification. Product managers can read <code>.Permit()</code> calls and understand the workflow without reading controller logic.</li>
+<li><strong>Guarded transitions:</strong> Command handlers that use the state-machine methods cannot skip configured workflow steps; the machine validates the trigger before allowing it.</li>
+<li><strong>Guard helper methods:</strong> Methods such as <code>CanBeRejected()</code>, <code>CanBeItSigned()</code>, and <code>CanRegenerateToken()</code> expose state checks used by handlers and UI flows before actions are allowed.</li>
+<li><strong>Self-documenting:</strong> The <code>ConfigureStateMachine()</code> method is a single source of truth for the entire workflow, replacing documentation that can go stale.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why Argon2id? — Future-Proof Password Security</h4>
+<p><strong>Problem:</strong> ASP.NET Identity's default password hasher uses PBKDF2 with HMAC-SHA256. While acceptable, PBKDF2 is vulnerable to GPU-based brute-force attacks because it is not <em>memory-hard</em> — an attacker with GPUs can compute millions of hashes per second cheaply.</p>
+
+<p><strong>Solution:</strong> <strong>Argon2id</strong> is the winner of the Password Hashing Competition (2015) and is recommended by OWASP. It is <em>memory-hard</em> (requiring 32 MB per hash), making GPU attacks economically impractical. The <code>id</code> variant combines Argon2i (side-channel resistant) and Argon2d (GPU-resistant) for defense-in-depth.</p>
+
+<p><strong>Why Not Just PBKDF2?</strong></p>
+<ul>
+<li><strong>Memory hardness:</strong> Each Argon2id hash requires 32 MB of RAM. An attacker with 8 GB of GPU memory can only compute ~250 hashes in parallel — vs. millions with PBKDF2.</li>
+<li><strong>Transparent migration:</strong> The self-describing hash format allows upgrading parameters (memory, iterations) without resetting all user passwords. Old hashes are auto-upgraded on next login.</li>
+<li><strong>PDPA 2010 compliance:</strong> Malaysia's data protection law (Principle 4: Security) requires "reasonable steps" to protect personal data. Argon2id represents the current industry best practice.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why HMAC-SHA256 for Signatures? — Cryptographic Integrity Guarantees</h4>
+<p><strong>Problem (Audit Finding H-03):</strong> Digital signatures are stored as Base64-encoded images in the database. Without integrity verification, a database administrator could silently swap one signature image for another — creating a forged approval with no detection mechanism.</p>
+
+<p><strong>Solution:</strong> Every signature is accompanied by an HMAC-SHA256 hash computed over the complete signing context (entity type, ID, signer, timestamp, and the signature data itself). If <em>any</em> field is modified after signing, the HMAC verification fails.</p>
+
+<p><strong>Why HMAC and Not a Simple Hash?</strong></p>
+<ul>
+<li><strong>HMAC uses a secret key:</strong> A simple SHA-256 hash can be recomputed by anyone. HMAC requires the configured server-side key — even a DBA with only database access cannot forge a valid HMAC without that key.</li>
+<li><strong>Canonical message format:</strong> The pipe-delimited format (<code>EntityType|EntityId|Signer|Timestamp|Base64</code>) ensures that all contextual data is bound to the signature. Moving a signature from Request #1 to Request #2 changes the <code>EntityId</code>, invalidating the HMAC.</li>
+<li><strong>Constant-time comparison:</strong> <code>CryptographicOperations.FixedTimeEquals</code> prevents timing attacks where an attacker could deduce correct HMAC bytes one-at-a-time by measuring response times.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why Mapster? — High-Performance Object Mapping</h4>
+<p><strong>Problem:</strong> The system has many entity-to-ViewModel mappings (e.g., <code>OnboardingRequest</code> → <code>OnboardingIndexListItem</code>). Manual mapping code is tedious, error-prone, and creates maintenance burden when properties are added.</p>
+
+<p><strong>Solution:</strong> <strong>Mapster</strong> auto-maps properties between objects by convention (matching property names). Compared to AutoMapper:</p>
+<ul>
+<li><strong>Performance:</strong> Mapster provides expression-based projection via <code>ProjectToType</code> and centralized mapping configuration, reducing manual projection code while keeping queries readable.</li>
+<li><strong>Zero config for simple cases:</strong> Matching property names are mapped automatically. Custom mappings are configured only when names differ.</li>
+<li><strong>Lightweight:</strong> The project uses <code>Mapster</code> plus <code>Mapster.DependencyInjection</code> for a small mapping package set.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why Serilog? — Structured Diagnostic Logging</h4>
+<p><strong>Problem:</strong> The built-in <code>Microsoft.Extensions.Logging</code> writes plain text logs that are difficult to search, filter, and analyze at scale. Finding "all failed login attempts from IP 172.16.3.50 in the last hour" requires fragile regex parsing.</p>
+
+<p><strong>Solution:</strong> <strong>Serilog</strong> captures structured message templates and named properties. The current file sink in <code>Program.cs</code> writes formatted text to <code>logs/app-.log</code>, not JSON, while preserving structured templates for sinks that support property queries.</p>
+<pre>
+// Plain text log (hard to query):
+"User admin@company.com failed login from 172.16.3.50 at 2026-04-23T14:30:00Z"
+
+// Serilog message template used by the application:
+_logger.LogWarning("Failed login for {UserId} from {IpAddress}",
+    userId, ipAddress);
+
+// Current file sink output format:
+2026-04-23 14:30:00.000 +00:00 [WRN] Failed login for admin@company.com from 172.16.3.50
+</pre>
+<p><strong>Why This Matters:</strong></p>
+<ul>
+<li><strong>Rolling file sink:</strong> Logs rotate daily and retain the last 30 files, matching the Serilog file sink configuration in <code>Program.cs</code>.</li>
+<li><strong>Request pipeline integration:</strong> Serilog's ASP.NET Core middleware logs dynamic requests that pass through <code>UseSerilogRequestLogging()</code> with status code, duration, and path.</li>
+<li><strong>Performance monitoring:</strong> The <code>PerformanceBehavior</code> uses Serilog to flag slow MediatR operations with structured data for easy identification.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Why SQLite? — Zero-Configuration Deployment</h4>
+<p><strong>Problem:</strong> This is an internal enterprise tool deployed on a single Windows server. Installing and maintaining SQL Server or PostgreSQL adds operational complexity (DBA requirements, backup agents, licensing costs, network configuration) that is disproportionate to the system's scale.</p>
+
+<p><strong>Solution:</strong> <strong>SQLite</strong> is an embedded database that lives as a single file (<code>App_Data/IT_FormDB.db</code>). It requires zero installation, zero configuration, and zero maintenance beyond file-level backups (handled by <code>DatabaseBackupService</code>).</p>
+
+<p><strong>Tradeoffs Accepted:</strong></p>
+<ul>
+<li><strong>Single-writer:</strong> SQLite uses file-level locking, limiting write concurrency. This design fits the current single-server internal portal; higher write concurrency would require moving to a client/server database.</li>
+<li><strong>No network access:</strong> The database is local-only. Multi-server deployments would require migration to PostgreSQL — but this system is designed for single-server operation.</li>
+<li><strong>Backup simplicity:</strong> The <code>DatabaseBackupService</code> copies the entire DB file with a timestamp. Restore = copy the file back. No <code>pg_restore</code> or <code>.bak</code> files to manage.</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: SECURITY & DATA INTEGRITY                         -->
+<!-- ============================================================ -->
+<h2 id="sec2"><span class="section-icon">2</span>Security &amp; Data Integrity</h2>
+
+<h3 id="sec2-1">2.1 Authentication Mechanisms</h3>
+
+<div class="grid2">
+<div class="card">
+<h4>Password Hashing — Argon2id</h4>
+<p>Replaces the default ASP.NET Identity PBKDF2 hasher with <strong>Argon2id</strong> (memory-hard, side-channel resistant).</p>
+<table>
+<tr><th>Parameter</th><th>Current</th><th>Legacy</th></tr>
+<tr><td>Parallelism</td><td>4</td><td>8</td></tr>
+<tr><td>Memory (KB)</td><td>32,768</td><td>65,536</td></tr>
+<tr><td>Iterations</td><td>3</td><td>4</td></tr>
+<tr><td>Salt Size</td><td>16 bytes</td><td>16 bytes</td></tr>
+<tr><td>Hash Size</td><td>32 bytes</td><td>32 bytes</td></tr>
+</table>
+<p>Legacy hashes are auto-detected and rehashed on successful login (<code>SuccessRehashNeeded</code>).</p>
+
+<h4>Code Example: Argon2idPasswordHasher.cs</h4>
+<p>The hasher uses a <strong>self-describing binary format</strong> that embeds all parameters in the hash output, enabling transparent parameter upgrades.</p>
+<pre>
+public string HashPassword(TUser user, string password)
+{
+    byte[] salt = RandomNumberGenerator.GetBytes(_settings.SaltSize);
+    byte[] hash = ComputeHash(password, salt, _settings);
+
+    // Binary: [marker:1][parallel:1][memory:4][iter:4]
+    //         [saltLen:2][hashLen:2][salt:N][hash:N]
+    byte[] result = new byte[14 + _settings.SaltSize + _settings.HashSize];
+    result[0] = 0x02;  // Versioned format marker
+    result[1] = (byte)_settings.DegreeOfParallelism;
+    BinaryPrimitives.WriteInt32LittleEndian(
+        result.AsSpan(2), _settings.MemorySize);
+    // ... salt and hash appended after 14-byte header
+    return Convert.ToBase64String(result);
+}
+
+public PasswordVerificationResult VerifyHashedPassword(
+    TUser user, string hashedPassword, string providedPassword)
+{
+    byte[] decoded = Convert.FromBase64String(hashedPassword);
+
+    // 1st: Try current versioned Argon2id (0x02)
+    if (TryVerifyVersionedArgon2(decoded, providedPassword, out var r))
+        return r;
+
+    // 2nd: Try legacy Argon2id (0x01) — rehash on success
+    if (TryVerifyLegacyArgon2(decoded, providedPassword, out r))
+        return r;  // Returns SuccessRehashNeeded
+
+    // 3rd: Fallback to ASP.NET Identity PBKDF2
+    var fallback = _fallbackPasswordHasher
+        .VerifyHashedPassword(user, hashedPassword, providedPassword);
+    return fallback switch
+    {
+        PasswordVerificationResult.Success =&gt;
+            PasswordVerificationResult.SuccessRehashNeeded,
+        PasswordVerificationResult.SuccessRehashNeeded =&gt;
+            PasswordVerificationResult.SuccessRehashNeeded,
+        _ =&gt; PasswordVerificationResult.Failed
+    };
+}
+
+private static byte[] ComputeHash(string password,
+    byte[] salt, Argon2idSettings s)
+{
+    using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password))
+    {
+        Salt = salt,
+        DegreeOfParallelism = s.DegreeOfParallelism,  // 4
+        MemorySize = s.MemorySize,                      // 32 MB
+        Iterations = s.Iterations                       // 3 passes
+    };
+    return argon2.GetBytes(s.HashSize);                 // 32 bytes
+}
+</pre>
+<p><strong>How It Works:</strong></p>
+<ul>
+<li><strong>Self-describing format:</strong> The hash embeds all Argon2id parameters (parallelism, memory, iterations, salt/hash sizes) in the binary output. This means the system can verify hashes created with <em>any</em> past parameter set without configuration lookups.</li>
+<li><strong>Three-tier verification:</strong> On login, the hasher tries (1) current v2, (2) legacy v1, (3) PBKDF2 fallback. Any success with older formats returns <code>SuccessRehashNeeded</code>, prompting the system to transparently re-hash with current settings.</li>
+<li><strong>FixedTimeEquals:</strong> Hash comparison uses constant-time comparison to prevent timing side-channel attacks.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Account Lockout — Escalating Schedule</h4>
+<p>Progressive lockout with configurable durations from <code>SecuritySettings</code>:</p>
+<table>
+<tr><th>Attempt</th><th>Lockout Duration</th></tr>
+<tr><td>1st lockout</td><td>5 minutes</td></tr>
+<tr><td>2nd lockout</td><td>15 minutes</td></tr>
+<tr><td>3rd lockout</td><td>30 minutes</td></tr>
+<tr><td>4th+ lockout</td><td>120 minutes</td></tr>
+</table>
+<p>Login lockout threshold is 5 failed attempts by default (<code>SecuritySettings:MaxOtpAttempts</code> is also used by the login handler). Security stamp is validated on <strong>every request</strong> (<code>ValidationInterval = TimeSpan.Zero</code>).</p>
+</div>
+</div>
+
+<div class="card">
+<h4>Cookie Configuration</h4>
+<table>
+<tr><th>Property</th><th>Value</th><th>Rationale</th></tr>
+<tr><td>Cookie Name</td><td><code>YTC.IT.Auth.v2</code></td><td>Rotated to invalidate stale auth cookies</td></tr>
+<tr><td>Expiry</td><td>4 hours</td><td>Reduced session window for security</td></tr>
+<tr><td>SameSite</td><td>Strict</td><td>Prevents CSRF via top-level navigation</td></tr>
+<tr><td>HttpOnly</td><td>true</td><td>Prevents JavaScript access to cookie</td></tr>
+<tr><td>SecurePolicy</td><td>SameAsRequest</td><td>Supports internal HTTP deployments</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>OTP &amp; Device Verification</h4>
+<ul>
+<li><strong>Password Reset OTP</strong>: The current password-reset flow generates 6-character alphanumeric codes with <code>SecureOtpGenerator</code> / <code>RandomNumberGenerator</code>, stores SHA-256 hashes, expires codes after 5 minutes, limits verification to 3 failed attempts, and enforces a 1-minute resend/request cooldown. Older <code>EmailOtpService</code> paths use numeric codes protected with ASP.NET Data Protection and <code>SecuritySettings</code>.</li>
+<li><strong>Device Verification Tokens</strong>: One-time tokens issued for hardware audit agents. Token expiry: 30 minutes. Tokens may be linked to <code>ApplicationUser</code> for employee asset assignment, or issued without an employee for asset-only verification.</li>
+<li><strong>Forced Password Change</strong>: Middleware intercepts all requests when <code>MustChangePassword</code> claim is present, redirecting to <code>/Account/ForceChangePassword</code>.</li>
+</ul>
+</div>
+
+<h3 id="sec2-2">2.2 Role-Based Access Control (RBAC)</h3>
+<p>RBAC is implemented via <strong>claims-based authorization policies</strong>. Users are assigned titles (roles) through the <code>UserTitle</code> entity, which are transformed into claims at login by <code>UserTitleClaimsTransformation</code>.</p>
+
+<table>
+<tr><th>Policy Name</th><th>Required Claim</th><th>Grants Access To</th></tr>
+<tr><td><code>RequireIT</code></td><td><code>UserTitle = "IT"</code></td><td>IT Asset management, IT Setup wizards, Software License management, System Users, SLA Settings, Configuration, Department API writes</td></tr>
+<tr><td><code>RequireHR</code></td><td><code>UserTitle = "HR"</code></td><td>Onboarding creation, Offboarding creation, Employee import, Draft management</td></tr>
+<tr><td><code>RequireHROrIT</code></td><td><code>UserTitle = "HR"</code> OR <code>"IT"</code></td><td>Employee directory, Audit Log controller/API; the Analytics handler mirrors this HR/IT title check internally</td></tr>
+<tr><td><code>RequireManager</code></td><td><code>UserTitle = "Manager"</code></td><td>Configured policy, but not currently used by controller attributes</td></tr>
+<tr><td>Handler-level Manager check</td><td><code>UserTitle = "Manager"</code></td><td>Rejection handlers for onboarding/offboarding also allow Manager users alongside IT</td></tr>
+<tr><td>Handler-level HOD check</td><td><code>UserTitle = "HOD"</code></td><td>Offboarding HOD/manager signature, with company scope plus assignment/email checks inside <code>ProcessOffboardingManagerSignatureCommandHandler</code></td></tr>
+</table>
+
+<div class="note"><strong>Multi-Title Support:</strong> A single user can hold multiple titles simultaneously (e.g., IT + HR). The <code>UserTitle</code> table has a unique composite index on <code>(UserId, Title)</code>.</div>
+
+<div class="warn"><strong>UI-Level Restriction:</strong> Although the <code>RequireHROrIT</code> policy is applied on the Audit Log controller, the sidebar navigation only renders the Audit Log link for users with the <code>IT</code> title. HR users are effectively restricted from accessing Audit Logs through the UI. HOD offboarding signing is enforced inside the command handler rather than by a named authorization policy.</div>
+
+<h3 id="sec2-3">2.3 Cryptographic Implementations</h3>
+
+<div class="card">
+<h4>HMAC-SHA256 Signature Integrity (H-03)</h4>
+<p>Prevents tampering of digital signature images. When a user signs a form, <code>SignatureIntegrityService</code> computes an HMAC over the canonical signing event data:</p>
+<pre>Canonical Message = "{EntityType}|{EntityId}|{SignerUserId}|{SignedAtUtc:O}|{SignatureBase64}"
+Algorithm        = HMAC-SHA256
+Key Source       = Environment variable IT_FORM__SignatureHmac__Key (Base64-encoded; deploy with &gt;=32 random bytes)
+Output           = Uppercase hex string stored alongside signature in DB
+Verification     = Constant-time comparison via CryptographicOperations.FixedTimeEquals()</pre>
+<p>Legacy system-imported signatures are prefixed <code>SYSTEM-IMPORT-</code> and trusted by default.</p>
+</div>
+
+<div class="card">
+<h4>Code Example: SignatureIntegrityService.cs — HMAC Anti-Tampering</h4>
+<p>This service addresses <strong>Audit Finding H-03</strong>: preventing a rogue admin from swapping one digital signature image for another without detection.</p>
+<pre>
+public class SignatureIntegrityService : ISignatureIntegrityService
+{
+    private readonly byte[] _keyBytes;
+
+    public SignatureIntegrityService(IConfiguration configuration)
+    {
+        var keyStr = configuration["SignatureHmac:Key"];
+        if (string.IsNullOrWhiteSpace(keyStr) ||
+            keyStr.Contains("SET_VIA_ENV_VAR"))
+            throw new InvalidOperationException(
+                "SignatureHmac:Key is not configured.");
+
+        _keyBytes = Convert.FromBase64String(keyStr);  // Deployment should use &gt;=32 bytes
+    }
+
+    public string ComputeHmac(string entityType, string entityId,
+        string signerUserId, DateTime signedAtUtc, string signatureBase64)
+    {
+        // Fix DateTimeKind loss from SQLite (strips trailing 'Z')
+        var normalizedDate = DateTime.SpecifyKind(signedAtUtc, DateTimeKind.Utc);
+
+        // Pipe-delimited canonical message prevents concatenation attacks
+        var message = $"{entityType}|{entityId}|{signerUserId ?? ""}|" +
+                      $"{normalizedDate:O}|{signatureBase64}";
+
+        using var hmac = new HMACSHA256(_keyBytes);
+        var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+        return Convert.ToHexString(hashBytes);  // Uppercase hex: "A1B2C3..."
+    }
+
+    public bool Verify(string entityType, string entityId,
+        string signerUserId, DateTime signedAtUtc,
+        string signatureBase64, string storedHmac)
+    {
+        if (string.IsNullOrEmpty(storedHmac)) return false;
+
+        // Legacy Excel imports are trusted
+        if (storedHmac.StartsWith("SYSTEM-IMPORT-")) return true;
+
+        try
+        {
+            var computed = ComputeHmac(entityType, entityId,
+                signerUserId, signedAtUtc, signatureBase64);
+
+            // Constant-time comparison prevents timing side-channel attacks
+            return CryptographicOperations.FixedTimeEquals(
+                Convert.FromHexString(computed),
+                Convert.FromHexString(storedHmac));
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+}
+</pre>
+<p><strong>How It Works:</strong></p>
+<ul>
+<li><strong>Pipe delimiter (<code>|</code>):</strong> Prevents concatenation ambiguity attacks — e.g., <code>"UserA|1"</code> vs <code>"UserA1|"</code>. All five fields are included so changing <em>any</em> field invalidates the HMAC.</li>
+<li><strong>DateTime normalization:</strong> SQLite strips the UTC <code>Z</code> suffix from ISO-8601 dates. <code>DateTime.SpecifyKind</code> restores it to ensure the canonical message matches between sign-time and verify-time.</li>
+<li><strong><code>FixedTimeEquals</code>:</strong> Uses <code>CryptographicOperations</code> for constant-time comparison, preventing an attacker from deducing valid HMAC bytes through response timing analysis.</li>
+<li><strong><code>SYSTEM-IMPORT-</code> prefix:</strong> Legacy records imported via Excel bulk upload don't have valid HMACs. The prefix bypasses verification for these specific records only.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Column-Level Encryption (AES)</h4>
+<p>PII fields marked with the <code>[EncryptColumn]</code> attribute are transparently encrypted/decrypted via EF Core <code>ValueConverter</code>:</p>
+<table>
+<tr><th>Entity</th><th>Encrypted Fields</th></tr>
+<tr><td>OnboardingRequest</td><td>EmployeeID, EmailAddress, ContactNumber, HODEmail</td></tr>
+<tr><td>OffboardingRequest</td><td>EmployeeID, EmailAddress, HODEmail, ForwardToEmail</td></tr>
+<tr><td>SoftwareKey</td><td>KeyValue</td></tr>
+<tr><td>EmailContact</td><td>EmailAddress</td></tr>
+</table>
+<p>Encryption is performed by <code>LicenseEncryptionService</code> using AES. Configure <code>Security:LicenseEncryptionKey</code> and <code>Security:LicenseEncryptionIv</code> via environment variables in production; the service currently falls back to built-in default strings if these keys are absent.</p>
+</div>
+
+<h3 id="sec2-4">2.4 Security Headers &amp; Middleware</h3>
+<table>
+<tr><th>Header</th><th>Value</th><th>Purpose</th></tr>
+<tr><td>Content-Security-Policy</td><td><code>default-src 'self' ...; frame-ancestors 'none'</code></td><td>Restricts resource loading to trusted origins</td></tr>
+<tr><td>X-Frame-Options</td><td><code>DENY</code></td><td>Anti-clickjacking</td></tr>
+<tr><td>X-Content-Type-Options</td><td><code>nosniff</code></td><td>Prevents MIME-sniffing attacks</td></tr>
+<tr><td>Referrer-Policy</td><td><code>strict-origin-when-cross-origin</code></td><td>Controls referrer information leakage</td></tr>
+<tr><td>X-XSS-Protection</td><td><code>1; mode=block</code></td><td>Legacy browser XSS filter</td></tr>
+<tr><td>Permissions-Policy</td><td><code>camera=(), microphone=(), geolocation=()</code></td><td>Disables unnecessary browser APIs</td></tr>
+<tr><td>Server Header</td><td><em>Removed</em></td><td>Kestrel <code>AddServerHeader = false</code></td></tr>
+</table>
+
+<div class="card">
+<h4>Additional Security Controls</h4>
+<ul>
+<li><strong>Rate Limiting</strong>: Fixed-window named policies — <code>fixed</code> (100 req/min) and <code>strict</code> (10 req/min) — applied only to endpoints/controllers that declare the policy.</li>
+<li><strong>Anti-CSRF</strong>: Global <code>AutoValidateAntiforgeryToken</code> filter on MVC/API controller state-changing requests. API support via <code>X-XSRF-TOKEN</code> header. The anonymous inventory minimal API performs its own token/API-key authentication and is not covered by the MVC antiforgery filter.</li>
+<li><strong>Soft Delete</strong>: Entities implementing <code>ISoftDeletable</code> are never physically deleted. Global query filters exclude soft-deleted records.</li>
+<li><strong>Sensitive File Storage</strong>: Uploaded files (resignation letters, damage photos) are stored in <code>App_Data</code> outside the webroot. A middleware blocks direct access to legacy upload paths.</li>
+<li><strong>Data Protection</strong>: ASP.NET Data Protection keys persisted to <code>LocalApplicationData/IT_Form/DataProtection-Keys</code> to survive republishes.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Code Example: SecurityHeadersMiddleware.cs — HTTP Response Hardening</h4>
+<p>A custom middleware that injects security headers into dynamic application responses that reach it — the central location for browser-level response hardening.</p>
+<pre>
+public class SecurityHeadersMiddleware
+{
+    private readonly RequestDelegate _next;
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        // 1. CSP — restrict resource loading to trusted origins
+        context.Response.Headers.Append("Content-Security-Policy",
+            "default-src 'self' http://172.16.3.142:5063 http://172.16.1.137:5063; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
+            "style-src 'self' 'unsafe-inline' http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
+            "font-src 'self' data: http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdnjs.cloudflare.com https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
+            "img-src 'self' data: blob: http://172.16.3.142:5063 http://172.16.1.137:5063; " +
+            "frame-ancestors 'none';");
+
+        // 2. Anti-Clickjacking
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+
+        // 3. Prevent MIME type sniffing
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+
+        // 4. Control referrer leakage
+        context.Response.Headers.Append("Referrer-Policy",
+            "strict-origin-when-cross-origin");
+
+        // 5. Legacy browser XSS filter
+        context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+
+        // 6. Disable unnecessary browser APIs
+        context.Response.Headers.Append("Permissions-Policy",
+            "camera=(), microphone=(), geolocation=()");
+
+        await _next(context);
+    }
+}
+</pre>
+<p><strong>Key Points:</strong></p>
+<ul>
+<li><strong>Internal network IPs in CSP:</strong> The portal runs on a private LAN without HTTPS. Internal IPs are explicitly whitelisted — a deliberate tradeoff for enterprise deployment.</li>
+<li><strong><code>frame-ancestors 'none'</code>:</strong> Defense-in-depth with <code>X-Frame-Options: DENY</code> for clickjacking prevention.</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Code Example: AuditLoggingBehavior.cs — Automatic Command Audit Trail</h4>
+<p>This MediatR pipeline behavior captures a structured audit log for every <strong>Command</strong> operation, recording actor, IP, payload, and success/failure status — without requiring manual logging in handlers.</p>
+<pre>
+public sealed class AuditLoggingBehavior&lt;TRequest, TResponse&gt;
+    : IPipelineBehavior&lt;TRequest, TResponse&gt;
+{
+    public async Task&lt;TResponse&gt; Handle(TRequest request,
+        RequestHandlerDelegate&lt;TResponse&gt; next, CancellationToken ct)
+    {
+        if (!ShouldAudit(request)) return await next();
+
+        var action = request.GetType().Name;  // e.g. "ProcessOnboardingSignatureCommand"
+        var userId = _httpContextAccessor.HttpContext?
+            .User?.Identity?.Name ?? "System";
+        var payload = JsonSerializer.Serialize(request);
+        var correlationId = Guid.NewGuid();   // Links related audit entries
+
+        try
+        {
+            var response = await next();      // Execute the command handler
+
+            await WriteSuccessAuditLogAsync(new AuditLog
+            {
+                UserId = userId, Action = action, Payload = payload,
+                IsSuccess = true,
+                IpAddress = _httpContextAccessor.HttpContext?
+                    .Connection?.RemoteIpAddress?.ToString(),
+                CorrelationId = correlationId
+            }, ct);
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            // Uses separate DbContext scope to survive txn rollback
+            await WriteFailureAuditLogAsync(new AuditLog
+            {
+                UserId = userId, Action = action, Payload = payload,
+                IsSuccess = false, ErrorMessage = ex.Message,
+                CorrelationId = correlationId
+            }, ct);
+
+            throw;  // Re-throw for TransactionBehavior rollback
+        }
+    }
+
+    // Only audit Commands, not Queries
+    private static bool ShouldAudit(TRequest request)
+        =&gt; request.GetType().Name.EndsWith("Command");
+}
+</pre>
+<p><strong>How It Works:</strong></p>
+<ul>
+<li><strong>CorrelationId:</strong> A unique <code>Guid</code> links all audit entries generated during a single request. The UI's "Audit Chain" view uses this to show the full lifecycle of a command.</li>
+<li><strong>Failure isolation:</strong> Failed command audits use a <em>separate</em> <code>DbContext</code> scope (<code>IServiceScopeFactory</code>) so the failure audit survives even when the main transaction rolls back.</li>
+<li><strong>Convention-based:</strong> Only types ending in <code>*Command</code> are audited. Query operations are excluded to reduce audit noise.</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: TECHNICAL DOCUMENTATION                           -->
+<!-- ============================================================ -->
+<h2 id="sec3"><span class="section-icon">3</span>Technical Documentation</h2>
+
+<h3 id="sec3-1">3.1 Environment Setup &amp; Deployment</h3>
+<div class="grid2">
+  <div class="card">
+    <h4>1. Prerequisites & DX (Developer Experience)</h4>
+    <p>To compile and run the application locally:</p>
+    <ul>
+      <li><strong>SDK:</strong> .NET 10.0 SDK</li>
+      <li><strong>IDE:</strong> Visual Studio 2022 / VS Code / Rider</li>
+      <li><strong>Database:</strong> SQLite (No external SQL server required. The local DB file is auto-created at <code>App_Data/IT_FormDB.db</code>)</li>
+    </ul>
+    <pre>
+# 1. Restore packages
+dotnet restore
+
+# 2. Apply migrations (handled automatically on startup)
+dotnet run --project "IT Form.csproj"
+
+# URLs
+UI: http://localhost:5063
+API Reference: http://localhost:5063/scalar/v1 (Development only)
+Health Check: http://localhost:5063/health</pre>
+  </div>
+
+  <div class="card">
+    <h4>2. Seed Data & Local Authentication</h4>
+    <p>When the application runs on a blank database, <code>Data/DbInitializer.cs</code> creates a temporary bootstrap IT account to prevent lockout:</p>
+    <ul>
+      <li><strong>Bootstrap Admin User:</strong> <code>itdept</code> (the only seed user)</li>
+      <li><strong>Bootstrap Email:</strong> <code>it@itportal.com</code>; cleanup also recognizes legacy seed email <code>it@ytcprecast.com</code></li>
+      <li><strong>Bootstrap Password:</strong> <code>Abc123!xyz</code> unless overridden by <code>SeedAdmin:Password</code>; the account is forced to change password on login</li>
+      <li><strong>Title Seeded:</strong> IT</li>
+      <li><strong>Lifecycle:</strong> on startup, the seed account is kept only until an active non-seed user has a title listed in <code>SeedAdminTitles</code>. Current source sets that list to <code>IT</code> and <code>HR</code>, so either title triggers automatic seed removal.</li>
+    </ul>
+    <p class="warn"><strong>Audit note:</strong> If the intended business rule is IT-only seed removal, update <code>SeedAdminTitles</code> in <code>Data/DbInitializer.cs</code>. The statement above reflects the current implementation.</p>
+    <p>Development sample data is seeded only in Development when no companies exist. Production startup seeds only required SLA settings and the bootstrap user safety net.</p>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h4>3. Production Configuration (.env / appsettings)</h4>
+    <p>Never hardcode secrets in source control. In production, provide the following configuration keys via <code>appsettings.json</code> or Windows Environment Variables:</p>
+    <table style="margin-top:8px;">
+      <tr><th>Key</th><th>Description</th></tr>
+      <tr><td><code>ConnectionStrings:DefaultConnection</code></td><td>Backup/seed-check connection string. Main runtime currently creates/uses <code>App_Data\IT_FormDB.db</code> from <code>Program.cs</code>.</td></tr>
+      <tr><td><code>IT_FORM__SmtpSettings__Password</code></td><td>Office 365 SMTP auth password</td></tr>
+      <tr><td><code>IT_FORM__SignatureHmac__Key</code></td><td>Base64-encoded HMAC key for digital signature integrity; use 32+ random bytes</td></tr>
+      <tr><td><code>IT_FORM__Security__LicenseEncryptionKey</code></td><td>AES key material for encrypted columns such as EmployeeID and software keys; <code>LicenseEncryptionService</code> pads/truncates the UTF-8 value to 32 bytes</td></tr>
+      <tr><td><code>IT_FORM__Security__LicenseEncryptionIv</code></td><td>AES IV material; <code>LicenseEncryptionService</code> pads/truncates the UTF-8 value to 16 bytes</td></tr>
+      <tr><td><code>IT_FORM__InventorySync__ApiKey</code></td><td>Legacy inventory API key, used only when <code>SecuritySettings:AllowLegacyInventoryApiKey</code> is enabled</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h4>4. Deployment & Disaster Recovery (DevOps)</h4>
+    <p><strong>IIS Hosting:</strong></p>
+    <ol>
+      <li>Publish the app: <code>dotnet publish -c Release -o ./publish</code></li>
+      <li>Create an IIS App Pool set to <strong>No Managed Code</strong>.</li>
+      <li>Grant the IIS AppPool Identity <strong>Write</strong> permissions to the <code>App_Data/</code> directory (required for SQLite writes).</li>
+    </ol>
+    <p><strong>Disaster Recovery (Backup Strategy):</strong></p>
+    <p>Because SQLite is a single file, disaster recovery is file-based. The <code>DatabaseBackupService</code> creates one backup on startup, then creates a timestamped copy of <code>IT_FormDB.db</code> daily at 2:00 AM and stores it in <code>App_Data/backups/</code>. It keeps the latest 10 backup files. To restore the system from a critical failure, stop the app, replace the corrupted <code>IT_FormDB.db</code> with the selected backup file, and restart the IIS worker process.</p>
+  </div>
+</div>
+
+<h3 id="sec3-2">3.2 Database Schema &amp; Data Dictionary</h3>
+<p>The current SQLite database contains <strong>43 tables</strong>, including ASP.NET Identity tables, EF/SQLite metadata tables, and 33 domain <code>DbSet</code> tables mapped by <code>ApplicationDbContext</code>. Below is a summary of key entities:</p>
+
+<h4>Core Business Entities</h4>
+<table>
+<tr><th>Entity</th><th>Table</th><th>PK</th><th>Key Fields</th><th>Description</th></tr>
+<tr><td>OnboardingRequest</td><td>OnboardingRequests</td><td>Id (int)</td><td>FullName, EmployeeID🔒, Status, Branch, Department</td><td>Employee onboarding lifecycle with Stateless state machine</td></tr>
+<tr><td>OffboardingRequest</td><td>OffboardingRequests</td><td>Id (int)</td><td>FullName, EmployeeID🔒, Status, LastDayOfWork</td><td>Employee offboarding with multi-party signature workflow</td></tr>
+<tr><td>ITAsset</td><td>ITAssets</td><td>Id (int)</td><td>AssetTag (unique), SerialNumber, AssetType, Status</td><td>Hardware inventory with telemetry sync and fingerprinting</td></tr>
+<tr><td>SoftwareLicense</td><td>SoftwareLicenses</td><td>Id (int)</td><td>SoftwareName, ContractLimit, TotalLicenses, ExpiryDate?</td><td>Software license pool with key management</td></tr>
+<tr><td>SoftwareKey</td><td>SoftwareKeys</td><td>Id (int)</td><td>KeyValue🔒, IsAssigned, SoftwareLicenseId</td><td>Individual license keys (encrypted at rest)</td></tr>
+<tr><td>StandardSoftware</td><td>StandardSoftware</td><td>Id (int)</td><td>SoftwareName, IsMandatory, IsFree</td><td>Software catalog for onboarding checklists</td></tr>
+</table>
+<p style="font-size:.82rem;color:var(--muted);">🔒 = Column encrypted via <code>[EncryptColumn]</code> attribute (AES)</p>
+
+<h4>Identity &amp; Access</h4>
+<table>
+<tr><th>Entity</th><th>PK</th><th>Key Fields</th><th>Description</th></tr>
+<tr><td>ApplicationUser</td><td>Id (string)</td><td>FullName, Department, IsActive, MustChangePassword, LockoutCount</td><td>Extends IdentityUser with org-specific fields</td></tr>
+<tr><td>UserTitle</td><td>Id (int)</td><td>UserId (FK), Title</td><td>Role assignment — "IT", "HR", "Manager", "HOD"</td></tr>
+<tr><td>UserCompany</td><td>Id (int)</td><td>UserId (FK), CompanyName</td><td>Multi-company access mapping</td></tr>
+</table>
+
+<h4>Organization Dictionaries</h4>
+<table>
+<tr><th>Entity</th><th>PK</th><th>Key Fields</th><th>Multi-Company Join Table</th></tr>
+<tr><td>Company</td><td>Id (int)</td><td>Name, Lot, TimeZoneId, BusinessStartTime/EndTime</td><td>—</td></tr>
+<tr><td>Department</td><td>Id (int)</td><td>Name, IsActive</td><td>DepartmentCompany</td></tr>
+<tr><td>EmailGroup</td><td>Id (int)</td><td>GroupName, GroupEmail, IsActive</td><td>EmailGroupCompany</td></tr>
+<tr><td>SharedMailbox</td><td>Id (int)</td><td>MailboxName, MailboxAddress, IsActive</td><td>SharedMailboxCompany</td></tr>
+<tr><td>ServerFolder</td><td>Id (int)</td><td>FolderName, IsActive</td><td>ServerFolderCompany</td></tr>
+<tr><td>EmailContact</td><td>Id (int)</td><td>Name, EmailAddress🔒, Department</td><td>—</td></tr>
+</table>
+
+<h4>Request Mapping &amp; Assignment Tables</h4>
+<table>
+<tr><th>Entity</th><th>FK Relationships</th><th>Purpose</th></tr>
+<tr><td>IssuedAsset</td><td>OnboardingRequestId, ITAssetId</td><td>Hardware assigned during onboarding</td></tr>
+<tr><td>IssuedSoftware</td><td>OnboardingRequestId, SoftwareLicenseId</td><td>Software assigned during onboarding</td></tr>
+<tr><td>FolderPermission</td><td>OnboardingRequestId</td><td>Server folder access (Read/Modify) per request</td></tr>
+<tr><td>RequestSoftware</td><td>OnboardingRequestId, StandardSoftwareId</td><td>Software requested by HR in onboarding form</td></tr>
+<tr><td>RequestEmailGroup</td><td>OnboardingRequestId</td><td>Email groups requested for new employee</td></tr>
+<tr><td>RequestSharedMailbox</td><td>OnboardingRequestId</td><td>Shared mailboxes requested for new employee</td></tr>
+<tr><td>MaintenanceLog</td><td>ITAssetId</td><td>Service/repair history for assets</td></tr>
+</table>
+
+<h4>Security &amp; Audit Tables</h4>
+<table>
+<tr><th>Entity</th><th>PK</th><th>Key Fields</th><th>Purpose</th></tr>
+<tr><td>AuditLog</td><td>Id (int)</td><td>EntityName, EntityId, Action, PerformedBy, Changes (JSON), IpAddress, CorrelationId</td><td>Append-oriented audit trail for entity and command changes</td></tr>
+<tr><td>OtpRecord</td><td>Id (int)</td><td>Email, Code, ExpiresAt, FailedAttempts, IsLocked</td><td>One-time password for external signing</td></tr>
+<tr><td>SigningToken</td><td>Id (int)</td><td>Token, OnboardingRequestId/OffboardingRequestId, ExpiresAt, IsUsed</td><td>Legacy/auxiliary signing-token records; current employee acknowledgement links use request <code>AccessToken</code> GUIDs</td></tr>
+<tr><td>DeviceVerificationToken</td><td>Token (string)</td><td>EmployeeId, IsVerified, VerifiedAssetTag</td><td>One-time hardware audit agent authentication; <code>EmployeeId</code> is optional</td></tr>
+<tr><td>EmailOutboxMessage</td><td>Id (int)</td><td>MessageType, PayloadJson, Status, AttemptCount</td><td>Transactional outbox for reliable email delivery</td></tr>
+<tr><td>SlaSetting</td><td>Id (int)</td><td>RequestType, TargetDays, EscalationDaysTier1/Tier2</td><td>SLA thresholds and escalation configuration</td></tr>
+</table>
+
+<h3 id="sec3-3">3.3 Entity-Relationship Diagram (ERD)</h3>
+<div class="mermaid">
+erDiagram
+    ApplicationUser ||--o{ UserTitle : "has roles"
+    ApplicationUser ||--o{ UserCompany : "belongs to"
+    ApplicationUser ||--o{ DeviceVerificationToken : "verifies"
+
+    Company ||--o{ DepartmentCompany : "scopes"
+    Company ||--o{ EmailGroupCompany : "scopes"
+    Company ||--o{ SharedMailboxCompany : "scopes"
+    Company ||--o{ ServerFolderCompany : "scopes"
+    Company ||--o{ SoftwareLicenseCompany : "scopes"
+
+    Department ||--o{ DepartmentCompany : "linked"
+    EmailGroup ||--o{ EmailGroupCompany : "linked"
+    SharedMailbox ||--o{ SharedMailboxCompany : "linked"
+    ServerFolder ||--o{ ServerFolderCompany : "linked"
+
+    OnboardingRequest ||--o{ IssuedAsset : "assigns"
+    OnboardingRequest ||--o{ IssuedSoftware : "assigns"
+    OnboardingRequest ||--o{ FolderPermission : "grants"
+    OnboardingRequest ||--o{ RequestSoftware : "requests"
+    OnboardingRequest ||--o{ RequestEmailGroup : "requests"
+    OnboardingRequest ||--o{ RequestSharedMailbox : "requests"
+
+    OffboardingRequest |o--|| OnboardingRequest : "optionally references"
+
+    ITAsset ||--o{ IssuedAsset : "issued as"
+    ITAsset ||--o{ MaintenanceLog : "serviced by"
+
+    StandardSoftware ||--o{ SoftwareLicense : "editions"
+    StandardSoftware ||--o{ RequestSoftware : "catalog"
+    SoftwareLicense ||--o{ SoftwareKey : "has keys"
+    SoftwareLicense ||--o{ IssuedSoftware : "assigned via"
+    SoftwareLicense ||--o{ SoftwareLicenseCompany : "scoped"
+
+    SoftwareKey |o--|| OnboardingRequest : "optionally assigned to"
+
+    SigningToken |o--|| OnboardingRequest : "legacy token"
+    SigningToken |o--|| OffboardingRequest : "legacy token"
+
+    OnboardingRequest {
+        int Id PK
+        string FullName
+        string EmployeeID
+        string Department
+        string Branch
+        RequestStatus Status
+        DateTime RequestDate
+        string RequesterSignature
+        string RequesterSignatureHmac
+        string ITAdminSignature
+        string ITAdminSignatureHmac
+        string EmployeeSignature
+        string EmployeeSignatureHmac
+        Guid AccessToken
+    }
+
+    OffboardingRequest {
+        int Id PK
+        string FullName
+        string EmployeeID
+        string Department
+        RequestStatus Status
+        DateTime LastDayOfWork
+        string HRSignature
+        string HODSignature
+        string ITAdminSignature
+        string EmployeeSignature
+        Guid AccessToken
+        int OnboardingRequestId FK
+    }
+
+    ITAsset {
+        int Id PK
+        string AssetTag UK
+        string SerialNumber
+        AssetType AssetType
+        AssetStatus Status
+        string Model
+        string HardwareHash
+        bool IsDeleted
+    }
+
+    ApplicationUser {
+        string Id PK
+        string FullName
+        string Email
+        string Department
+        bool IsActive
+        bool MustChangePassword
+        int LockoutCount
+    }
+
+    AuditLog {
+        int Id PK
+        string EntityName
+        string EntityId
+        string Action
+        string PerformedBy
+        string Changes
+        string IpAddress
+        Guid CorrelationId
+        bool IsSuccess
+    }
+
+    SoftwareLicense {
+        int Id PK
+        string SoftwareName
+        int ContractLimit
+        int TotalLicenses
+        DateTime ExpiryDate
+        int StandardSoftwareId FK
+        bool IsDeleted
+    }
+
+    SoftwareKey {
+        int Id PK
+        string KeyValue
+        bool IsAssigned
+        int SoftwareLicenseId FK
+        int OnboardingRequestId FK
+        bool IsDeleted
+    }
+</div>
+<p class="note"><strong>ERD note:</strong> Mermaid ER syntax does not support C# nullable markers such as <code>int?</code> or <code>DateTime?</code> in attribute types. In the actual model, <code>OffboardingRequest.OnboardingRequestId</code>, <code>SoftwareLicense.ExpiryDate</code>, and <code>SoftwareKey.OnboardingRequestId</code> are nullable.</p>
+
+<h3 id="sec3-4">3.4 API Specifications</h3>
+<p>The system exposes a RESTful API alongside its MVC controllers. Interactive documentation is available at <code>/scalar/v1</code> (Development mode only).</p>
+<p>Authenticated state-changing controller endpoints are subject to the MVC antiforgery filter and require the <code>X-XSRF-TOKEN</code> header unless the action explicitly opts out. Rate limiting is endpoint-specific: onboarding/offboarding/audit APIs use <code>fixed</code>, employee APIs and inventory sync use <code>strict</code>, and department plus inventory token/download controller endpoints do not currently declare a named limiter. The inventory sync minimal API is anonymous at the ASP.NET authorization layer but validates a one-time device token, or the legacy API key only when that compatibility switch is enabled.</p>
+
+<h4>Onboarding API — <code>/api/onboarding-requests</code></h4>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/onboarding-requests</code></td><td>Authenticated</td><td>List requests (filterable by status, search, paged)</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/onboarding-requests/{id}</code></td><td>Authenticated</td><td>Get full request details</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/onboarding-requests/{id}/sign</code></td><td>Authenticated; handler requires IT</td><td>Submit IT Admin digital signature (<code>SignatureType = "ITAdmin"</code>)</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/onboarding-requests/{id}/reject</code></td><td>Authenticated; handler requires Manager or IT</td><td>Reject request with reason</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/onboarding-requests/{id}/regenerate-token</code></td><td>Authenticated; handler checks company scope and rejects IT users</td><td>Regenerate employee signing access token</td></tr>
+<tr><td><span class="badge-sm badge-red">DELETE</span></td><td><code>/api/onboarding-requests/{id}</code></td><td>Authenticated</td><td>Delete draft/rejected request</td></tr>
+</table>
+
+<h4>Offboarding API — <code>/api/offboarding-requests</code></h4>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/offboarding-requests</code></td><td>Authenticated</td><td>List requests (filterable by status, search, paged)</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/offboarding-requests/{id}</code></td><td>Authenticated</td><td>Get full request details</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/sign/hr</code></td><td>Authenticated; handler requires HR</td><td>HR digital signature</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/sign/manager</code></td><td>Authenticated; handler requires HOD</td><td>HOD digital signature with assignment/email/company-scope checks</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/sign/it</code></td><td>Authenticated; handler requires IT</td><td>IT Admin digital signature</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/sign/employee</code></td><td>Authenticated; handler requires HR</td><td>Manual employee acknowledgment signature recorded by HR</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/reject</code></td><td>Authenticated; handler requires Manager or IT</td><td>Reject request</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/regenerate-token</code></td><td>Authenticated; handler requires HR</td><td>Regenerate employee signing access token</td></tr>
+<tr><td><span class="badge-sm badge-red">DELETE</span></td><td><code>/api/offboarding-requests/{id}</code></td><td>Authenticated</td><td>Delete draft/rejected request</td></tr>
+</table>
+
+<h4>Employee API — <code>/api/employees</code></h4>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/employees/import-template</code></td><td>RequireHR</td><td>Download Excel import template (.xlsx)</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/employees/import</code></td><td>RequireHR</td><td>Bulk import employees from Excel</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/employees/{id}/details</code></td><td>RequireHROrIT</td><td>Get employee details with issued assets</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/employees/hods-by-company</code></td><td>RequireHR</td><td>List HODs filtered by company</td></tr>
+</table>
+
+<h4>Audit Log API — <code>/api/audit-logs</code></h4>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs</code></td><td>RequireHROrIT <sup>*</sup></td><td>Search/filter audit entries (entity, action, date range)</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/{id}</code></td><td>RequireHROrIT <sup>*</sup></td><td>Single audit log details</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/{id}/chain</code></td><td>RequireHROrIT <sup>*</sup></td><td>Correlated audit chain by CorrelationId</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/summary</code></td><td>RequireHROrIT <sup>*</sup></td><td>Aggregate summary statistics</td></tr>
+</table>
+<p style="font-size:.82rem;color:var(--muted);"><sup>*</sup> Controller policy is <code>RequireHROrIT</code>, but UI navigation restricts access to IT-only users. HR users cannot reach audit log pages through the application interface.</p>
+
+<h4>Department API — <code>/api/departments</code></h4>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/departments</code></td><td>RequireIT</td><td>Create department dictionary entry</td></tr>
+<tr><td><span class="badge-sm badge-orange">PUT</span></td><td><code>/api/departments/{id}</code></td><td>RequireIT</td><td>Update department dictionary entry</td></tr>
+<tr><td><span class="badge-sm badge-red">DELETE</span></td><td><code>/api/departments/{id}</code></td><td>RequireIT</td><td>Delete department dictionary entry</td></tr>
+</table>
+
+<h4>Inventory &amp; Verification Endpoints — <code>/api/inventory</code></h4>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Rate Limit</th><th>Description</th></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/inventory/sync</code></td><td>Device token; legacy API key only if enabled</td><td>strict (10/min)</td><td>Hardware telemetry sync from audit agent — creates/updates ITAsset with CPU, RAM, Storage, OS, hardware fingerprint</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/inventory/generate-token/{employeeId}</code></td><td>RequireIT</td><td>none configured</td><td>Create employee-specific device verification token</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/inventory/generate-token</code></td><td>RequireIT</td><td>none configured</td><td>Create asset-only device verification token</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/inventory/status/{token}</code></td><td>RequireIT</td><td>none configured</td><td>Read verification status and hardware fingerprint warning</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/inventory/download-universal</code></td><td>RequireIT</td><td>none configured</td><td>Legacy universal download endpoint; currently returns disabled/not found</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/inventory/download/{token}</code></td><td>Anonymous token link</td><td>none configured</td><td>Download the token-bound device verification ZIP</td></tr>
+</table>
+<p style="font-size:.82rem;color:var(--muted);">Related browser route: <code>GET /verify/{token}</code> is an anonymous verification page that validates the device token before offering the token-bound download.</p>
+
+<h3 id="sec3-5">3.5 Third-Party Dependencies</h3>
+<table>
+<tr><th>Package</th><th>Version</th><th>License</th><th>Purpose</th></tr>
+<tr><td>ClosedXML</td><td>0.105.0</td><td>MIT</td><td>Excel file read/write for employee import/export</td></tr>
+<tr><td>FluentValidation</td><td>12.1.1</td><td>Apache-2.0</td><td>Request validation in MediatR pipeline</td></tr>
+<tr><td>FluentValidation.DependencyInjectionExtensions</td><td>12.1.1</td><td>Apache-2.0</td><td>Automatic validator registration from the application assembly</td></tr>
+<tr><td>Konscious.Security.Cryptography.Argon2</td><td>1.3.1</td><td>MIT</td><td>Argon2id password hashing</td></tr>
+<tr><td>MailKit</td><td>4.16.0</td><td>MIT</td><td>Referenced SMTP package; current sender implementation uses <code>System.Net.Mail</code></td></tr>
+<tr><td>Mapster</td><td>10.0.7</td><td>MIT</td><td>Object-to-object mapping (DTO projection)</td></tr>
+<tr><td>Mapster.DependencyInjection</td><td>10.0.7</td><td>MIT</td><td>DI integration for Mapster mapping configuration</td></tr>
+<tr><td>MediatR</td><td>12.2.0</td><td>Apache-2.0</td><td>CQRS mediator pattern implementation</td></tr>
+<tr><td>Microsoft.AspNetCore.Identity.EntityFrameworkCore</td><td>10.0.6</td><td>MIT</td><td>Identity persistence with EF Core</td></tr>
+<tr><td>Microsoft.AspNetCore.OpenApi</td><td>10.0.6</td><td>MIT</td><td>OpenAPI document generation for API endpoints</td></tr>
+<tr><td>Microsoft.EntityFrameworkCore.Sqlite</td><td>10.0.6</td><td>MIT</td><td>SQLite database provider</td></tr>
+<tr><td>Microsoft.EntityFrameworkCore.Tools</td><td>10.0.6</td><td>MIT</td><td>EF Core migration tooling package</td></tr>
+<tr><td>Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore</td><td>10.0.6</td><td>MIT</td><td>Entity Framework Core health-check integration for <code>/health</code></td></tr>
+<tr><td>Microsoft.Extensions.Http.Resilience</td><td>10.5.0</td><td>MIT</td><td>HTTP client resilience package; currently referenced for the commented external notification client setup</td></tr>
+<tr><td>Microsoft.Office.Interop.Outlook</td><td>15.0.4797.1004</td><td>Not declared in package metadata</td><td>Legacy package reference; current sender does not use Outlook COM automation</td></tr>
+<tr><td>MimeKit</td><td>4.16.0</td><td>MIT</td><td>Referenced MIME package; current sender implementation uses <code>System.Net.Mail</code></td></tr>
+<tr><td>Newtonsoft.Json</td><td>13.0.4</td><td>MIT</td><td>JSON serialization (legacy compatibility)</td></tr>
+<tr><td>NodaTime</td><td>3.3.1</td><td>Apache-2.0</td><td>Time zone-aware business hours calculation</td></tr>
+<tr><td>QuestPDF</td><td>2026.2.4</td><td>Package license file</td><td>PDF document generation for forms; application sets <code>LicenseType.Community</code></td></tr>
+<tr><td>Scalar.AspNetCore</td><td>2.14.1</td><td>MIT</td><td>Interactive OpenAPI documentation UI</td></tr>
+<tr><td>Serilog.AspNetCore</td><td>10.0.0</td><td>Apache-2.0</td><td>Structured logging with request pipeline integration</td></tr>
+<tr><td>Serilog.Sinks.File</td><td>7.0.0</td><td>Apache-2.0</td><td>Daily rolling file logs under <code>logs/</code></td></tr>
+<tr><td>Stateless</td><td>5.20.1</td><td>Apache-2.0</td><td>Finite state machine for request lifecycle</td></tr>
+</table>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 4: WORKFLOW FLOWCHARTS                                -->
+<!-- ============================================================ -->
+<h2 id="sec4"><span class="section-icon">4</span>Workflow Flowcharts</h2>
+
+<h3 id="sec4-1">4.1 Onboarding Workflow</h3>
+<p>The onboarding lifecycle is managed by a <strong>Stateless</strong> state machine in <code>OnboardingRequest.cs</code>. The state machine enforces valid transitions and prevents illegal state changes.</p>
+
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> Draft : HR creates request
+    Draft --> PendingITApproval : SubmitByHr (HR signs)
+    Draft --> Rejected : Cancel
+    PendingITApproval --> PendingITApproval : StartItSetup (IT begins work)
+    PendingITApproval --> PendingEmployeeSign : FinishOnboarding (IT signs)
+    PendingITApproval --> Rejected : Cancel
+    PendingEmployeeSign --> Completed : Employee signs acknowledgment
+    Rejected --> [*]
+    Completed --> [*]
+</div>
+
+<div class="card">
+<h4>Onboarding Step-by-Step Process</h4>
+<div class="mermaid">
+flowchart TD
+    A["HR Creates Onboarding Request\n(Draft)"] --> B["HR fills employee details:\nName, ID, Department, Branch,\nEmail, Contact, Join Date"]
+    B --> C["HR selects software,\nemail groups, shared mailboxes,\nserver folder permissions"]
+    C --> D{"HR Signs &\nSubmits?"}
+    D -->|Yes| E["Status → PendingITApproval\nHMAC computed for HR signature"]
+    D -->|No| F["Remains as Draft"]
+    E --> G["IT Reviews Request"]
+    G --> H["IT assigns hardware\n(IssuedAssets)"]
+    H --> I["IT assigns software licenses\n(IssuedSoftware + SoftwareKeys)"]
+    I --> J["IT completes setup checklist:\nO365, WiFi, Printer, Domain,\nVPN, Shared Drive, etc."]
+    J --> K{"IT Signs &\nCompletes?"}
+    K -->|Yes| L["Status → PendingEmployeeSign\nAccessToken signing link available"]
+    K -->|No| M["IT saves progress"]
+    L --> N["Employee receives\nsigning link via email"]
+    N --> O["Employee signs\nacknowledgment form"]
+    O --> P["Status → Completed\nPDF generated for records"]
+
+    style A fill:#dbeafe,stroke:#1e40af
+    style E fill:#fef3c7,stroke:#92400e
+    style L fill:#fef3c7,stroke:#92400e
+    style P fill:#d1fae5,stroke:#065f46
+</div>
+</div>
+
+<h3 id="sec4-2">4.2 Offboarding Workflow</h3>
+<p>Offboarding uses a <strong>multi-party approval pattern</strong> rather than a state machine. Status is derived from which signatures are present.</p>
+
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> Draft : HR creates request
+    Draft --> PendingApproval : HR signs (no checker assigned)
+    Draft --> PendingHODApproval : HR signs (checker approved)
+    PendingApproval --> PendingHODApproval : Checker approves
+    PendingHODApproval --> PendingITApproval : HOD signs
+    PendingITApproval --> PendingEmployeeSign : IT Admin signs (all 3 signed)
+    PendingEmployeeSign --> Completed : Employee signs
+    Draft --> Rejected : Reject
+    PendingApproval --> Rejected : Reject
+    PendingHODApproval --> Rejected : Reject
+    PendingITApproval --> Rejected : Reject
+    Rejected --> [*]
+    Completed --> [*]
+</div>
+
+<div class="card">
+<h4>Offboarding Step-by-Step Process</h4>
+<div class="mermaid">
+flowchart TD
+    A["HR Creates Offboarding Request"] --> B["Fill employee details +\nLast Day of Work"]
+    B --> C["Link to original\nOnboarding Request (optional)"]
+    C --> D["HR Signs → PendingApproval"]
+    D --> E["IT Checker Reviews\n(must be different from creator)"]
+    E --> F["Checker Approves →\nPendingHODApproval"]
+    F --> G["HOD Signs\n→ PendingITApproval"]
+    G --> H["IT Completes Checklist:\nAD Disable, Email Forward,\nM365 License Revoke,\nHardware Return"]
+    H --> I["IT Signs →\nPendingEmployeeSign"]
+    I --> J["Employee Signs\nAcknowledgment"]
+    J --> K["Status → Completed\nPDF Generated"]
+
+    style A fill:#dbeafe,stroke:#1e40af
+    style D fill:#fef3c7,stroke:#92400e
+    style G fill:#fef3c7,stroke:#92400e
+    style I fill:#fef3c7,stroke:#92400e
+    style K fill:#d1fae5,stroke:#065f46
+</div>
+</div>
+
+<h3 id="sec4-3">4.3 MediatR Command Pipeline</h3>
+<p>Requests sent through <code>ISender</code> / <code>IMediator</code> flow through the MediatR pipeline before reaching the handler. Direct MVC/API actions that work against <code>ApplicationDbContext</code> bypass this pipeline.</p>
+
+<div class="mermaid">
+flowchart LR
+    A["API Controller\nreceives HTTP request"] --> B["MediatR.Send()"]
+    B --> C["1. ValidationBehavior\nFluentValidation rules"]
+    C -->|Invalid| C1["Return 400\nValidationException"]
+    C -->|Valid| D["2. AuditLoggingBehavior\nCapture actor + IP + payload"]
+    D --> E["3. TransactionBehavior\nBegin DB transaction"]
+    E --> F["4. RequestLoggingBehavior\nDebug/error log"]
+    F --> G["5. PerformanceBehavior\nStart stopwatch"]
+    G --> H["Command/Query Handler\nDomain logic executes"]
+    H -->|Success| I["Commit transaction\nFlush post-commit actions"]
+    H -->|Failure| J["Rollback transaction\nLog error"]
+    I --> K["Return response\nto API Controller"]
+    J --> L["Return error\nto API Controller"]
+
+    style C1 fill:#fee2e2,stroke:#991b1b
+    style J fill:#fee2e2,stroke:#991b1b
+    style K fill:#d1fae5,stroke:#065f46
+</div>
+
+<h3 id="sec4-4">4.4 Digital Signature Verification Flow</h3>
+<p>When a form is signed, the system computes and stores an HMAC to ensure signature integrity. On verification (e.g., PDF generation), the HMAC is recomputed and compared:</p>
+
+<div class="mermaid">
+flowchart TD
+    subgraph "Signing (Write)"
+        A["User draws signature\non canvas (Base64)"] --> B["Capture metadata:\nEntityType, EntityId,\nSignerUserId, UTC timestamp"]
+        B --> C["Build canonical message:\nType|Id|User|Timestamp|Base64"]
+        C --> D["Compute HMAC-SHA256\nusing server-side key"]
+        D --> E["Store in DB:\nSignature + HMAC hex string"]
+    end
+
+    subgraph "Verification (Read)"
+        F["Load signature +\nstored HMAC from DB"] --> G{"HMAC starts with\nSYSTEM-IMPORT-?"}
+        G -->|Yes| H["Trust: legacy import\n✅ Valid"]
+        G -->|No| I["Recompute HMAC from\nstored metadata"]
+        I --> J["FixedTimeEquals()\nconstant-time compare"]
+        J -->|Match| K["✅ Signature Verified\nNo tampering detected"]
+        J -->|Mismatch| L["❌ TAMPERED\nAlert: Signature invalid"]
+    end
+
+    style H fill:#d1fae5,stroke:#065f46
+    style K fill:#d1fae5,stroke:#065f46
+    style L fill:#fee2e2,stroke:#991b1b
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: BACKGROUND SERVICES                               -->
+<!-- ============================================================ -->
+<h2 id="sec5"><span class="section-icon">5</span>Background Services &amp; Hosted Workers</h2>
+
+<table>
+<tr><th>Service</th><th>Type</th><th>Schedule</th><th>Purpose</th></tr>
+<tr><td>EmailDispatcherBackgroundService</td><td>BackgroundService</td><td>Polls every 2 seconds</td><td>Processes transactional outbox — dequeues <code>EmailOutboxMessage</code> batches and sends via SMTP</td></tr>
+<tr><td>SlaCheckerService</td><td>BackgroundService</td><td>Every 1 hour</td><td>Monitors onboarding/offboarding requests for SLA breaches. Sends primary, tier-1, and tier-2 escalation notifications directly via SMTP.</td></tr>
+<tr><td>AssetLicenseExpiryService</td><td>BackgroundService</td><td>Every 24 hours</td><td>Checks ITAsset warranty dates and SoftwareLicense expiry dates. Sends daily notifications directly via SMTP.</td></tr>
+<tr><td>DatabaseBackupService</td><td>BackgroundService</td><td>Startup + daily at 2:00 AM</td><td>Creates timestamped backup copies of the SQLite database file and keeps the latest 10.</td></tr>
+<tr><td>DataRetentionService</td><td>BackgroundService</td><td>Every 24 hours after startup</td><td>Anonymizes completed/rejected onboarding and offboarding records older than the retention window, then purges stale OTP, signing, and device verification tokens older than 30 days.</td></tr>
+<tr><td>OffboardingAutoSignService</td><td>BackgroundService</td><td>Every 6 hours</td><td>Auto-signs the HOD/manager step after qualifying requests remain in <code>PendingHODApproval</code> for more than 3 days.</td></tr>
+</table>
+
+<div class="mermaid">
+flowchart LR
+    subgraph "Background Services"
+        ES["EmailDispatcher"]
+        SLA["SlaChecker"]
+        ALE["AssetLicenseExpiry"]
+        DBB["DatabaseBackup"]
+        DR["DataRetention"]
+        OAS["OffboardingAutoSign"]
+    end
+    subgraph "Data Layer"
+        DB[("SQLite DB")]
+        OUTBOX["EmailOutboxMessages"]
+    end
+    subgraph "External"
+        SMTP["SMTP"]
+    end
+
+    OUTBOX --> ES
+    ES --> SMTP
+    SLA --> DB
+    ALE --> DB
+    DBB --> DB
+    DR --> DB
+    OAS --> DB
+    SLA -->|escalation| SMTP
+    ALE -->|expiry alert| SMTP
+</div>
+
+
+
+</div>
+</body>
+</html>

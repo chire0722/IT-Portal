@@ -1,13 +1,17 @@
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.Signature;
+using IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature;
 using IT_Form.Data;
+using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
 using IT_Form.ViewModels;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -53,6 +57,85 @@ public class SignatureReadQueryHandlerTests
         Assert.Equal("Alpha HQ", model.Company);
         Assert.False(model.AlreadySigned);
         Assert.False(model.Expired);
+    }
+
+    [Fact]
+    public async Task GetSignatureAcknowledgePageQuery_UsesRegeneratedTimestamp_WhenCompletedAtIsOld()
+    {
+        await using var context = CreateContext();
+        var token = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 2,
+            AccessToken = token,
+            FullName = "Regenerated User",
+            Department = "IT",
+            Branch = "HQ",
+            Status = RequestStatus.PendingEmployeeSign,
+            CreatedAt = now.AddDays(-20),
+            CompletedAt = now.AddDays(-10),
+            UpdatedAt = now.AddMinutes(-5)
+        });
+        await context.SaveChangesAsync();
+
+        var integrity = new Mock<ISignatureIntegrityService>();
+        var handler = new GetSignatureAcknowledgePageQueryHandler(context, integrity.Object);
+
+        var result = await handler.Handle(new GetSignatureAcknowledgePageQuery(token, "Onboarding"), CancellationToken.None);
+
+        Assert.Equal(GetSignatureAcknowledgePageStatus.Ready, result.Status);
+        var model = Assert.IsType<SignatureAcknowledgePageViewModel>(result.ViewModel);
+        Assert.False(model.Expired);
+    }
+
+    [Fact]
+    public async Task AcknowledgeEmployeeSignatureCommand_UsesRegeneratedTimestamp_WhenCompletedAtIsOld()
+    {
+        await using var context = CreateContext();
+        var token = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        const string signatureData = "data:image/png;base64,VALID";
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 3,
+            AccessToken = token,
+            FullName = "Regenerated Signer",
+            Department = "IT",
+            Branch = "HQ",
+            Status = RequestStatus.PendingEmployeeSign,
+            CreatedAt = now.AddDays(-20),
+            CompletedAt = now.AddDays(-10),
+            UpdatedAt = now.AddMinutes(-5)
+        });
+        await context.SaveChangesAsync();
+
+        var integrity = new Mock<ISignatureIntegrityService>();
+        integrity
+            .Setup(service => service.ComputeHmac(
+                "OnboardingRequest",
+                "3",
+                "Regenerated Signer",
+                It.IsAny<DateTime>(),
+                signatureData))
+            .Returns("HMAC");
+
+        var handler = CreateAcknowledgeHandler(context, integrity.Object);
+
+        var result = await handler.Handle(
+            new AcknowledgeEmployeeSignatureCommand(token, "Onboarding", signatureData, PdpaConsent: true),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Acknowledgement completed successfully.", result.Message);
+
+        var saved = await context.OnboardingRequests.SingleAsync(r => r.Id == 3);
+        Assert.Equal(RequestStatus.Completed, saved.Status);
+        Assert.Equal(signatureData, saved.EmployeeSignature);
+        Assert.Equal("HMAC", saved.EmployeeSignatureHmac);
+        Assert.True(saved.IsPdpaConsented);
     }
 
     [Fact]
@@ -118,6 +201,74 @@ public class SignatureReadQueryHandlerTests
         Assert.Equal(GetSignaturePdfStatus.Expired, result.Status);
         Assert.Equal("This access link has expired (30 day limit). Please contact HR for a new one.", result.Message);
         pdfService.Verify(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSignaturePdfQuery_UsesRegeneratedTimestamp_WhenCompletedAtIsOld()
+    {
+        await using var context = CreateContext();
+        var token = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 8,
+            AccessToken = token,
+            FullName = "Regenerated Pdf User",
+            CreatedAt = now.AddDays(-60),
+            CompletedAt = now.AddDays(-40),
+            UpdatedAt = now.AddMinutes(-5)
+        });
+        await context.SaveChangesAsync();
+
+        var pdfService = new Mock<IPdfService>();
+        pdfService
+            .Setup(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()))
+            .Returns(new byte[] { 1, 2, 3 });
+        var integrity = new Mock<ISignatureIntegrityService>();
+        var handler = new GetSignaturePdfQueryHandler(context, pdfService.Object, integrity.Object);
+
+        var result = await handler.Handle(new GetSignaturePdfQuery(token, "Onboarding"), CancellationToken.None);
+
+        Assert.Equal(GetSignaturePdfStatus.Ready, result.Status);
+        Assert.NotNull(result.File);
+        pdfService.Verify(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()), Times.Once);
+    }
+
+    private static AcknowledgeEmployeeSignatureCommandHandler CreateAcknowledgeHandler(
+        ApplicationDbContext context,
+        ISignatureIntegrityService integrity)
+    {
+        var queue = new Mock<IEmailBackgroundQueue>();
+        queue
+            .Setup(service => service.QueueEmailAsync(
+                It.IsAny<IEmailBackgroundMessage>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(ValueTask.CompletedTask);
+
+        return new AcknowledgeEmployeeSignatureCommandHandler(
+            context,
+            Mock.Of<ILogger<AcknowledgeEmployeeSignatureCommandHandler>>(),
+            integrity,
+            queue.Object,
+            CreateUserManager().Object,
+            new ConfigurationBuilder().Build(),
+            Mock.Of<IHttpContextAccessor>());
+    }
+
+    private static Mock<UserManager<ApplicationUser>> CreateUserManager()
+    {
+        var store = new Mock<IUserStore<ApplicationUser>>();
+        return new Mock<UserManager<ApplicationUser>>(
+            store.Object,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!);
     }
 
     private static ApplicationDbContext CreateContext()

@@ -19,6 +19,10 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 .WithMessage("Please provide your signature.")
                 .MaximumLength(500000)
                 .WithMessage("Signature data is too large.");
+
+            RuleFor(x => x.PdpaConsent)
+                .Equal(true)
+                .WithMessage("Please confirm the PDPA privacy notice before submitting.");
         }
     }
 }

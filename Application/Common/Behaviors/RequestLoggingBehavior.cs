@@ -19,6 +19,7 @@ namespace IT_Form.Application.Common.Behaviors
             CancellationToken cancellationToken)
         {
             var requestName = typeof(TRequest).Name;
+            var isCommand = requestName.EndsWith("Command", StringComparison.Ordinal);
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.LogDebug("Handling MediatR request {RequestName}", requestName);
@@ -36,7 +37,15 @@ namespace IT_Form.Application.Common.Behaviors
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "MediatR request {RequestName} failed", requestName);
+                if (isCommand)
+                {
+                    _logger.LogError(ex, "FAILED COMMAND {CommandName}", requestName);
+                }
+                else
+                {
+                    _logger.LogError(ex, "MediatR request {RequestName} failed", requestName);
+                }
+
                 throw;
             }
         }

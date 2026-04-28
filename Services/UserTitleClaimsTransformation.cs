@@ -1,3 +1,5 @@
+// Project comment: UserTitleClaimsTransformation.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Data;
 using Microsoft.AspNetCore.Authentication;
@@ -21,6 +23,9 @@ namespace IT_Form.Services
             _cache = cache;
         }
 
+        /// <summary>
+        /// Runs the TransformAsync operation.
+        /// </summary>
         public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
         {
             if (principal.Identity?.IsAuthenticated != true)
@@ -105,6 +110,9 @@ namespace IT_Form.Services
             return principal;
         }
 
+        /// <summary>
+        /// Defines the ClaimsSnapshot record used by the IT Form application.
+        /// </summary>
         private sealed record ClaimsSnapshot(
             bool MustChangePassword,
             IReadOnlyCollection<string> Titles,

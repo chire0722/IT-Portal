@@ -1,7 +1,12 @@
+// Project comment: UserManagementViewModel.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the UserManagement screen or form.
+    /// </summary>
     public class UserManagementViewModel
     {
         public string? Id { get; set; }

@@ -1,3 +1,5 @@
+// Project comment: EmailGroupPageModels.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Application.Common.Models;
 using IT_Form.Helpers;
@@ -5,6 +7,9 @@ using IT_Form.Models.Enums;
 
 namespace IT_Form.Application.Features.EmailGroup;
 
+/// <summary>
+/// Defines the EmailGroupIndexListItem class used by the IT Form application.
+/// </summary>
 public sealed class EmailGroupIndexListItem
 {
     public int Id { get; init; }
@@ -14,6 +19,9 @@ public sealed class EmailGroupIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+/// <summary>
+/// Provides view data for the EmailGroupIndexPage screen or form.
+/// </summary>
 public sealed class EmailGroupIndexPageViewModel
 {
     public int? SelectedCompanyId { get; init; }
@@ -21,6 +29,9 @@ public sealed class EmailGroupIndexPageViewModel
     public List<EmailGroupIndexListItem> Items { get; init; } = [];
 }
 
+/// <summary>
+/// Provides view data for the EmailGroupEditorPage screen or form.
+/// </summary>
 public sealed class EmailGroupEditorPageViewModel
 {
     public int Id { get; set; }
@@ -43,6 +54,9 @@ public sealed class EmailGroupEditorPageViewModel
     public List<PageCompanyOption> CompanyOptions { get; set; } = [];
 }
 
+/// <summary>
+/// Provides view data for the EmailGroupMembersPage screen or form.
+/// </summary>
 public sealed class EmailGroupMembersPageViewModel
 {
     public int GroupId { get; init; }
@@ -54,6 +68,9 @@ public sealed class EmailGroupMembersPageViewModel
     public List<EmailGroupMemberListItem> Members { get; init; } = [];
 }
 
+/// <summary>
+/// Defines the EmailGroupMemberListItem class used by the IT Form application.
+/// </summary>
 public sealed class EmailGroupMemberListItem
 {
     public string EmployeeName { get; init; } = "Unknown";
@@ -65,6 +82,9 @@ public sealed class EmailGroupMemberListItem
     public string ControllerName { get; init; } = string.Empty;
 }
 
+/// <summary>
+/// Provides view data for the EmailGroupReportPage screen or form.
+/// </summary>
 public sealed class EmailGroupReportPageViewModel
 {
     public PaginatedList<IT_Form.ViewModels.EmailGroupAccessReportViewModel> Report { get; init; }

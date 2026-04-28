@@ -1,7 +1,15 @@
+// Project comment: ConfigurationValueNormalizer.cs is part of the IT Form application source code.
+
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the ConfigurationValueNormalizer class used by the IT Form application.
+    /// </summary>
     public static class ConfigurationValueNormalizer
     {
+        /// <summary>
+        /// Runs the NormalizeSecret operation.
+        /// </summary>
         public static string NormalizeSecret(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -18,6 +26,9 @@ namespace IT_Form.Helpers
             return trimmed;
         }
 
+        /// <summary>
+        /// Runs the NormalizeBaseUrl operation.
+        /// </summary>
         public static string? NormalizeBaseUrl(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))

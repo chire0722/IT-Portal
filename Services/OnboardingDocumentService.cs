@@ -1,3 +1,5 @@
+// Project comment: OnboardingDocumentService.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using System.Security.Claims;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides OnboardingDocument service behavior for the application.
+    /// </summary>
     public sealed class OnboardingDocumentService : IOnboardingDocumentService
     {
         private readonly ApplicationDbContext _context;
@@ -27,6 +32,9 @@ namespace IT_Form.Services
             _logger = logger;
         }
 
+        /// <summary>
+        /// Runs the ExportBulkPdfAsync operation.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> ExportBulkPdfAsync(int[] ids, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
             if (ids == null || ids.Length == 0)
@@ -77,6 +85,9 @@ namespace IT_Form.Services
                 $"Onboarding_PDFs_{DateTime.Now:yyyyMMdd}.zip"));
         }
 
+        /// <summary>
+        /// Runs the GeneratePdfAsync operation.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> GeneratePdfAsync(int id, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
             var request = await _context.OnboardingRequests

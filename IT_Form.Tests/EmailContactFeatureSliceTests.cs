@@ -1,3 +1,5 @@
+// Project comment: EmailContactFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,9 +20,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the EmailContactFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class EmailContactFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateEmailContactValidator_Fails_WhenEmailInvalid operation.
+    /// </summary>
     public void CreateEmailContactValidator_Fails_WhenEmailInvalid()
     {
         var validator = new CreateEmailContactCommandValidator();
@@ -31,6 +39,9 @@ public class EmailContactFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditEmailContactHandler_ReturnsNotFound_WhenContactMissing operation.
+    /// </summary>
     public async Task EditEmailContactHandler_ReturnsNotFound_WhenContactMissing()
     {
         using var context = CreateContext();
@@ -41,6 +52,9 @@ public class EmailContactFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteEmailContactHandler_Deletes_WhenFound operation.
+    /// </summary>
     public async Task DeleteEmailContactHandler_Deletes_WhenFound()
     {
         using var context = CreateContext();
@@ -54,6 +68,9 @@ public class EmailContactFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the BulkImportEmailContactsValidator_Fails_WhenFileMissing operation.
+    /// </summary>
     public void BulkImportEmailContactsValidator_Fails_WhenFileMissing()
     {
         var validator = new BulkImportEmailContactsCommandValidator();
@@ -63,6 +80,9 @@ public class EmailContactFeatureSliceTests
         Assert.False(result.IsValid);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

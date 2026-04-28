@@ -1,9 +1,14 @@
+// Project comment: UpdateUserManagementCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace IT_Form.Application.Features.UserManagement.Writes.UpdateUserManagement;
 
+/// <summary>
+/// Validates input for the UpdateUserManagementCommand request.
+/// </summary>
 public sealed class UpdateUserManagementCommandValidator : AbstractValidator<UpdateUserManagementCommand>
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -44,6 +49,9 @@ public sealed class UpdateUserManagementCommandValidator : AbstractValidator<Upd
             .When(x => !string.IsNullOrWhiteSpace(x.Password) || !string.IsNullOrWhiteSpace(x.ConfirmPassword));
     }
 
+    /// <summary>
+    /// Runs the BeUniqueUsernameAsync operation.
+    /// </summary>
     private async Task<bool> BeUniqueUsernameAsync(
         UpdateUserManagementCommand command,
         string username,

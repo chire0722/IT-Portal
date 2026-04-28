@@ -1,8 +1,13 @@
+// Project comment: ApplicationUser.cs is part of the IT Form application source code.
+
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the ApplicationUser class used by the IT Form application.
+    /// </summary>
     public class ApplicationUser : IdentityUser
     {
         [Required]

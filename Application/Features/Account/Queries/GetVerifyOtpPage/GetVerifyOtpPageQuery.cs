@@ -1,3 +1,5 @@
+// Project comment: GetVerifyOtpPageQuery.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Features.Account;
 using IT_Form.Data;
 using IT_Form.ViewModels;
@@ -6,10 +8,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Account.Queries.GetVerifyOtpPage;
 
+/// <summary>
+/// Carries data needed to execute the GetVerifyOtpPage query.
+/// </summary>
 public sealed record GetVerifyOtpPageQuery(
     string Email,
     string? Code = null) : IRequest<VerifyOtpViewModel>;
 
+/// <summary>
+/// Handles the GetVerifyOtpPageQuery query workflow.
+/// </summary>
 public sealed class GetVerifyOtpPageQueryHandler : IRequestHandler<GetVerifyOtpPageQuery, VerifyOtpViewModel>
 {
     private readonly ApplicationDbContext _context;
@@ -19,6 +27,9 @@ public sealed class GetVerifyOtpPageQueryHandler : IRequestHandler<GetVerifyOtpP
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<VerifyOtpViewModel> Handle(GetVerifyOtpPageQuery request, CancellationToken cancellationToken)
     {
         var userEmail = await _context.Users

@@ -1,3 +1,5 @@
+// Project comment: RegenerateOffboardingTokenCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -7,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.RegenerateOffboardingToken
 {
+    /// <summary>
+    /// Handles the RegenerateOffboardingTokenCommand command workflow.
+    /// </summary>
     public sealed class RegenerateOffboardingTokenCommandHandler : IRequestHandler<RegenerateOffboardingTokenCommand, ProcessResult<object>>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.Offboarding.RegenerateOffboardingToken
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(RegenerateOffboardingTokenCommand request, CancellationToken cancellationToken)
         {
             var user = _currentUserAccessor.User;

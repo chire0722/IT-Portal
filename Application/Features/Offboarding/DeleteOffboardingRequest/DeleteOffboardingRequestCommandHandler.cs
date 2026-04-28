@@ -1,3 +1,5 @@
+// Project comment: DeleteOffboardingRequestCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.DeleteOffboardingRequest
 {
+    /// <summary>
+    /// Handles the DeleteOffboardingRequestCommand command workflow.
+    /// </summary>
     public sealed class DeleteOffboardingRequestCommandHandler : IRequestHandler<DeleteOffboardingRequestCommand, CommandResponse>
     {
         private readonly ApplicationDbContext _context;
@@ -24,6 +29,9 @@ namespace IT_Form.Application.Features.Offboarding.DeleteOffboardingRequest
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<CommandResponse> Handle(DeleteOffboardingRequestCommand request, CancellationToken cancellationToken)
         {
             var offboardingRequest = await _context.OffboardingRequests.FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);

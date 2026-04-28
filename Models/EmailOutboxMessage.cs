@@ -1,8 +1,13 @@
+// Project comment: EmailOutboxMessage.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Models.Enums;
 
 namespace IT_Form.Models;
 
+/// <summary>
+/// Defines the EmailOutboxMessage class used by the IT Form application.
+/// </summary>
 public sealed class EmailOutboxMessage
 {
     public int Id { get; set; }

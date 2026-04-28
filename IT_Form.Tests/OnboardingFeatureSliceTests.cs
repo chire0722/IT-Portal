@@ -1,3 +1,5 @@
+// Project comment: OnboardingFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Security.Claims;
 using System.Threading;
@@ -36,9 +38,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the OnboardingFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class OnboardingFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the SignValidator_Fails_WhenSignatureDataMissing operation.
+    /// </summary>
     public void SignValidator_Fails_WhenSignatureDataMissing()
     {
         var validator = new SignOnboardingRequestCommandValidator();
@@ -49,6 +57,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SignHandler_ReturnsForbiddenRole_WhenUserIsNotIT operation.
+    /// </summary>
     public async Task SignHandler_ReturnsForbiddenRole_WhenUserIsNotIT()
     {
         using var context = CreateContext();
@@ -84,6 +95,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateChecklistValidator_Fails_WhenRemarksTooLong operation.
+    /// </summary>
     public void UpdateChecklistValidator_Fails_WhenRemarksTooLong()
     {
         var validator = new UpdateOnboardingChecklistCommandValidator();
@@ -96,6 +110,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateChecklistHandler_UpdatesChecklist_WhenRequestIsEditable operation.
+    /// </summary>
     public async Task UpdateChecklistHandler_UpdatesChecklist_WhenRequestIsEditable()
     {
         using var context = CreateContext();
@@ -140,6 +157,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RegenerateTokenValidator_Fails_WhenIdInvalid operation.
+    /// </summary>
     public void RegenerateTokenValidator_Fails_WhenIdInvalid()
     {
         var validator = new RegenerateOnboardingTokenCommandValidator();
@@ -150,6 +170,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RegenerateTokenHandler_Regenerates_WhenPendingEmployeeSign operation.
+    /// </summary>
     public async Task RegenerateTokenHandler_Regenerates_WhenPendingEmployeeSign()
     {
         using var context = CreateContext();
@@ -183,6 +206,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RejectValidator_Fails_WhenReasonMissing operation.
+    /// </summary>
     public void RejectValidator_Fails_WhenReasonMissing()
     {
         var validator = new RejectOnboardingRequestCommandValidator();
@@ -193,6 +219,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RejectHandler_ReturnsRejected_WhenUserIsITAndRequestEditable operation.
+    /// </summary>
     public async Task RejectHandler_ReturnsRejected_WhenUserIsITAndRequestEditable()
     {
         using var context = CreateContext();
@@ -225,6 +254,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateManageAccessValidator_Fails_WhenIdInvalid operation.
+    /// </summary>
     public void UpdateManageAccessValidator_Fails_WhenIdInvalid()
     {
         var validator = new UpdateManageAccessCommandValidator();
@@ -242,6 +274,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateManageAccessHandler_UpdatesAssignments_WhenRequestIsCurrentEmployee operation.
+    /// </summary>
     public async Task UpdateManageAccessHandler_UpdatesAssignments_WhenRequestIsCurrentEmployee()
     {
         using var context = CreateContext();
@@ -294,6 +329,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SignOffHrValidator_Fails_WhenSignatureMissing operation.
+    /// </summary>
     public void SignOffHrValidator_Fails_WhenSignatureMissing()
     {
         var validator = new SignOffHrOnboardingCommandValidator();
@@ -304,6 +342,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SignOffHrHandler_SetsDraftToPendingITApproval_WhenValid operation.
+    /// </summary>
     public async Task SignOffHrHandler_SetsDraftToPendingITApproval_WhenValid()
     {
         using var context = CreateContext();
@@ -337,6 +378,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteOnboardingRequestValidator_Fails_WhenIdInvalid operation.
+    /// </summary>
     public void DeleteOnboardingRequestValidator_Fails_WhenIdInvalid()
     {
         var validator = new DeleteOnboardingRequestCommandValidator();
@@ -347,6 +391,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteOnboardingRequestHandler_DeletesDraft_WhenAllowed operation.
+    /// </summary>
     public async Task DeleteOnboardingRequestHandler_DeletesDraft_WhenAllowed()
     {
         using var context = CreateContext();
@@ -375,6 +422,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Saves data for the SaveOnboardingDraftValidator_Fails_WhenModelMissing operation.
+    /// </summary>
     public void SaveOnboardingDraftValidator_Fails_WhenModelMissing()
     {
         var validator = new SaveOnboardingDraftCommandValidator();
@@ -385,6 +435,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Saves data for the SaveOnboardingDraftHandler_SavesDraft_WhenEditable operation.
+    /// </summary>
     public async Task SaveOnboardingDraftHandler_SavesDraft_WhenEditable()
     {
         using var context = CreateContext();
@@ -415,6 +468,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the CompleteOnboardingItSetupValidator_Fails_WhenSessionIdInvalid operation.
+    /// </summary>
     public void CompleteOnboardingItSetupValidator_Fails_WhenSessionIdInvalid()
     {
         var validator = new CompleteOnboardingItSetupCommandValidator();
@@ -429,6 +485,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the CompleteOnboardingItSetupHandler_SavesDraft_WhenRequested operation.
+    /// </summary>
     public async Task CompleteOnboardingItSetupHandler_SavesDraft_WhenRequested()
     {
         using var context = CreateContext();
@@ -488,6 +547,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditOnboardingRequestValidator_Fails_WhenIdInvalid operation.
+    /// </summary>
     public async Task EditOnboardingRequestValidator_Fails_WhenIdInvalid()
     {
         var hodService = new Mock<IOnboardingHodService>();
@@ -507,6 +569,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditOnboardingRequestHandler_UpdatesRequest_WhenEditable operation.
+    /// </summary>
     public async Task EditOnboardingRequestHandler_UpdatesRequest_WhenEditable()
     {
         using var context = CreateContext();
@@ -574,6 +639,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Saves data for the SaveOnboardingStep1Validator_Fails_WhenModelMissing operation.
+    /// </summary>
     public async Task SaveOnboardingStep1Validator_Fails_WhenModelMissing()
     {
         var hodService = new Mock<IOnboardingHodService>();
@@ -587,6 +655,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Saves data for the SaveOnboardingStep1Handler_SavesDraftAndAdvancesStep operation.
+    /// </summary>
     public async Task SaveOnboardingStep1Handler_SavesDraftAndAdvancesStep()
     {
         using var context = CreateContext();
@@ -649,6 +720,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the CompleteOnboardingHrStep2Validator_Fails_WhenSessionMissing operation.
+    /// </summary>
     public void CompleteOnboardingHrStep2Validator_Fails_WhenSessionMissing()
     {
         var validator = new CompleteOnboardingHrStep2CommandValidator();
@@ -659,6 +733,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the CompleteOnboardingHrStep2Handler_ReturnsMissingStep1_WhenSessionIncomplete operation.
+    /// </summary>
     public async Task CompleteOnboardingHrStep2Handler_ReturnsMissingStep1_WhenSessionIncomplete()
     {
         using var context = CreateContext();
@@ -678,6 +755,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the CompleteOnboardingHrStep2Handler_QueuesWelcomeEmail_WhenNewRequestIsSaved operation.
+    /// </summary>
     public async Task CompleteOnboardingHrStep2Handler_QueuesWelcomeEmail_WhenNewRequestIsSaved()
     {
         using var context = CreateContext();
@@ -734,6 +814,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetOnboardingStep1OptionsHandler_AllowsDepartmentWithoutCompanyMapping operation.
+    /// </summary>
     public async Task GetOnboardingStep1OptionsHandler_AllowsDepartmentWithoutCompanyMapping()
     {
         using var context = CreateContext();
@@ -782,6 +865,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateOnboardingItStep3Validator_Fails_WhenSessionIdInvalid operation.
+    /// </summary>
     public void UpdateOnboardingItStep3Validator_Fails_WhenSessionIdInvalid()
     {
         var validator = new UpdateOnboardingItStep3CommandValidator();
@@ -795,6 +881,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateOnboardingItStep3Handler_SavesDraft_WhenPendingApproval operation.
+    /// </summary>
     public async Task UpdateOnboardingItStep3Handler_SavesDraft_WhenPendingApproval()
     {
         using var context = CreateContext();
@@ -851,6 +940,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateOnboardingItStep4Validator_Fails_WhenSessionIdInvalid operation.
+    /// </summary>
     public void UpdateOnboardingItStep4Validator_Fails_WhenSessionIdInvalid()
     {
         var validator = new UpdateOnboardingItStep4CommandValidator();
@@ -864,6 +956,9 @@ public class OnboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateOnboardingItStep4Handler_SavesDraft_WhenPendingApproval operation.
+    /// </summary>
     public async Task UpdateOnboardingItStep4Handler_SavesDraft_WhenPendingApproval()
     {
         using var context = CreateContext();
@@ -910,6 +1005,9 @@ public class OnboardingFeatureSliceTests
         Assert.True(folder.CanModify);
     }
 
+    /// <summary>
+    /// Builds the value returned by the BuildUser operation.
+    /// </summary>
     private static ClaimsPrincipal BuildUser(string username, string title, string? company = null)
     {
         var identity = new ClaimsIdentity("mock");
@@ -923,6 +1021,9 @@ public class OnboardingFeatureSliceTests
         return new ClaimsPrincipal(identity);
     }
 
+    /// <summary>
+    /// Creates data for the CreateUserManager operation.
+    /// </summary>
     private static Mock<UserManager<ApplicationUser>> CreateUserManager()
     {
         var store = new Mock<IUserStore<ApplicationUser>>();
@@ -938,6 +1039,9 @@ public class OnboardingFeatureSliceTests
             null!);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

@@ -1,5 +1,10 @@
+// Project comment: OffboardingEmployeeDetailsViewModel.cs is part of the IT Form application source code.
+
 namespace IT_Form.ViewModels
 {
+/// <summary>
+/// Provides view data for the OffboardingEmployeeDetails screen or form.
+/// </summary>
 public sealed class OffboardingEmployeeDetailsViewModel
 {
     public string? FullName { get; set; }

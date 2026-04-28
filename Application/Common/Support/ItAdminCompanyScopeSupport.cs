@@ -1,3 +1,5 @@
+// Project comment: ItAdminCompanyScopeSupport.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -6,16 +8,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Common.Support;
 
+/// <summary>
+/// Defines the ItAdminCompanyScopeSupport class used by the IT Form application.
+/// </summary>
 internal static class ItAdminCompanyScopeSupport
 {
+    /// <summary>
+    /// Runs the HasGlobalAccess operation.
+    /// </summary>
     public static bool HasGlobalAccess(ClaimsPrincipal? user)
         => user?.HasClaim("UserTitle", "IT") == true;
 
+    /// <summary>
+    /// Gets the data required by the GetScopedCompanies operation.
+    /// </summary>
     public static List<string> GetScopedCompanies(ClaimsPrincipal? user)
         => HasGlobalAccess(user)
             ? []
             : CompanyScopeHelper.GetScopedCompanies(user);
 
+    /// <summary>
+    /// Runs the LoadAccessibleCompanyIdsAsync operation.
+    /// </summary>
     public static async Task<HashSet<int>?> LoadAccessibleCompanyIdsAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -34,6 +48,9 @@ internal static class ItAdminCompanyScopeSupport
             activeOnly);
     }
 
+    /// <summary>
+    /// Runs the LoadAccessibleCompanyDisplayNamesAsync operation.
+    /// </summary>
     public static async Task<List<string>> LoadAccessibleCompanyDisplayNamesAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -54,6 +71,9 @@ internal static class ItAdminCompanyScopeSupport
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Runs the LoadCompanyOptionsAsync operation.
+    /// </summary>
     public static Task<List<PageCompanyOption>> LoadCompanyOptionsAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -62,6 +82,9 @@ internal static class ItAdminCompanyScopeSupport
             ? PageQueryLookupSupport.LoadActiveCompaniesAsync(context, cancellationToken)
             : PageQueryLookupSupport.LoadActiveCompaniesAsync(context, user, cancellationToken);
 
+    /// <summary>
+    /// Runs the LoadCurrentEmployeesAsync operation.
+    /// </summary>
     public static Task<List<PageCurrentEmployeeOption>> LoadCurrentEmployeesAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -70,9 +93,15 @@ internal static class ItAdminCompanyScopeSupport
             ? PageQueryLookupSupport.LoadCurrentEmployeesAsync(context, cancellationToken)
             : PageQueryLookupSupport.LoadCurrentEmployeesAsync(context, user, cancellationToken);
 
+    /// <summary>
+    /// Runs the CanAccessCompany operation.
+    /// </summary>
     public static bool CanAccessCompany(ClaimsPrincipal? user, string? company)
         => HasGlobalAccess(user) || CompanyScopeHelper.CanAccessCompany(user, company);
 
+    /// <summary>
+    /// Runs the AreRequestedCompanyIdsAssignableAsync operation.
+    /// </summary>
     public static async Task<bool> AreRequestedCompanyIdsAssignableAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,

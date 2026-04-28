@@ -1,3 +1,5 @@
+// Project comment: CreateEmailGroupCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
@@ -10,6 +12,9 @@ using EmailGroupEntity = IT_Form.Models.EmailGroup;
 
 namespace IT_Form.Application.Features.EmailGroups.Writes.CreateEmailGroup;
 
+/// <summary>
+/// Handles the CreateEmailGroupCommand command workflow.
+/// </summary>
 public sealed class CreateEmailGroupCommandHandler : IRequestHandler<CreateEmailGroupCommand, int>
 {
     private readonly ApplicationDbContext _context;
@@ -21,6 +26,9 @@ public sealed class CreateEmailGroupCommandHandler : IRequestHandler<CreateEmail
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<int> Handle(CreateEmailGroupCommand request, CancellationToken cancellationToken)
     {
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanyIds, cancellationToken);
@@ -33,6 +41,9 @@ public sealed class CreateEmailGroupCommandHandler : IRequestHandler<CreateEmail
         return entity.Id;
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
         var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(

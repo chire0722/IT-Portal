@@ -1,3 +1,5 @@
+// Project comment: EmailContactControllerTests.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using IT_Form.Application.Features.EmailContact;
@@ -9,9 +11,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the EmailContactControllerTests class used by the IT Form application.
+/// </summary>
 public class EmailContactControllerTests : ControllerTestBase
 {
     [Fact]
+    /// <summary>
+    /// Runs the Index_ReturnsView operation.
+    /// </summary>
     public async Task Index_ReturnsView()
     {
         using var context = CreateContext();
@@ -27,6 +35,9 @@ public class EmailContactControllerTests : ControllerTestBase
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the Create_Post_ReturnsView_WhenModelIsNull_Adversarial operation.
+    /// </summary>
     public async Task Create_Post_ReturnsView_WhenModelIsNull_Adversarial()
     {
         using var context = CreateContext();

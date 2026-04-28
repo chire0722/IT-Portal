@@ -1,3 +1,5 @@
+// Project comment: OffboardingActionWriteHelpers.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -7,8 +9,14 @@ using System.Security.Claims;
 
 namespace IT_Form.Application.Features.Offboarding.ActionWrites
 {
+    /// <summary>
+    /// Defines the OffboardingActionWriteHelpers class used by the IT Form application.
+    /// </summary>
     internal static class OffboardingActionWriteHelpers
     {
+        /// <summary>
+        /// Runs the IsUserAuthorizedForRequest operation.
+        /// </summary>
         internal static async Task<bool> IsUserAuthorizedForRequest(
             ApplicationDbContext context,
             ClaimsPrincipal user,

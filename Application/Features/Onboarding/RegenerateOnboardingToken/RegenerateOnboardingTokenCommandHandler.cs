@@ -1,3 +1,5 @@
+// Project comment: RegenerateOnboardingTokenCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -7,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.RegenerateOnboardingToken
 {
+    /// <summary>
+    /// Handles the RegenerateOnboardingTokenCommand command workflow.
+    /// </summary>
     public sealed class RegenerateOnboardingTokenCommandHandler : IRequestHandler<RegenerateOnboardingTokenCommand, ProcessResult<object>>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.Onboarding.RegenerateOnboardingToken
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(RegenerateOnboardingTokenCommand request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests

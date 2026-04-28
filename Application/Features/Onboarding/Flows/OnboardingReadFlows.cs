@@ -1,3 +1,5 @@
+// Project comment: OnboardingReadFlows.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Onboarding.GetManageAccess;
@@ -10,11 +12,26 @@ using MediatR;
 
 namespace IT_Form.Application.Features.Onboarding.Flows
 {
+    /// <summary>
+    /// Carries data needed to execute the GetOnboardingDetailsPage query.
+    /// </summary>
     public sealed record GetOnboardingDetailsPageQuery(int Id) : IRequest<ProcessResult<OnboardingDetailsPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetManageAccessPage query.
+    /// </summary>
     public sealed record GetManageAccessPageQuery(int Id) : IRequest<ProcessResult<ManageAccessViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetOnboardingEditPage query.
+    /// </summary>
     public sealed record GetOnboardingEditPageQuery(int Id) : IRequest<ProcessResult<EditOnboardingPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetOnboardingDeletePage query.
+    /// </summary>
     public sealed record GetOnboardingDeletePageQuery(int Id) : IRequest<ProcessResult<OnboardingRequest>>;
 
+    /// <summary>
+    /// Handles the GetOnboardingDetailsPageQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingDetailsPageQueryHandler
         : IRequestHandler<GetOnboardingDetailsPageQuery, ProcessResult<OnboardingDetailsPageViewModel>>
     {
@@ -22,6 +39,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
 
         public GetOnboardingDetailsPageQueryHandler(ISender sender) => _sender = sender;
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OnboardingDetailsPageViewModel>> Handle(GetOnboardingDetailsPageQuery request, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(new GetOnboardingDetailsQuery(request.Id), cancellationToken);
@@ -34,6 +54,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the GetManageAccessPageQuery query workflow.
+    /// </summary>
     public sealed class GetManageAccessPageQueryHandler
         : IRequestHandler<GetManageAccessPageQuery, ProcessResult<ManageAccessViewModel>>
     {
@@ -41,6 +64,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
 
         public GetManageAccessPageQueryHandler(ISender sender) => _sender = sender;
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<ManageAccessViewModel>> Handle(GetManageAccessPageQuery request, CancellationToken cancellationToken)
         {
             var model = await _sender.Send(new GetManageAccessQuery(request.Id), cancellationToken);
@@ -53,6 +79,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the GetOnboardingEditPageQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingEditPageQueryHandler
         : IRequestHandler<GetOnboardingEditPageQuery, ProcessResult<EditOnboardingPageViewModel>>
     {
@@ -65,6 +94,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sessionAccessor = sessionAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<EditOnboardingPageViewModel>> Handle(GetOnboardingEditPageQuery request, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(new GetOnboardingEditQuery(request.Id), cancellationToken);
@@ -86,6 +118,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the GetOnboardingDeletePageQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingDeletePageQueryHandler
         : IRequestHandler<GetOnboardingDeletePageQuery, ProcessResult<OnboardingRequest>>
     {
@@ -93,6 +128,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
 
         public GetOnboardingDeletePageQueryHandler(ISender sender) => _sender = sender;
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OnboardingRequest>> Handle(GetOnboardingDeletePageQuery request, CancellationToken cancellationToken)
             => await _sender.Send(new GetOnboardingDeleteQuery(request.Id), cancellationToken);
     }

@@ -1,3 +1,5 @@
+// Project comment: UpdateOnboardingItStep3CommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Helpers;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep3
 {
+    /// <summary>
+    /// Handles the UpdateOnboardingItStep3Command command workflow.
+    /// </summary>
     public sealed class UpdateOnboardingItStep3CommandHandler
         : IRequestHandler<UpdateOnboardingItStep3Command, UpdateOnboardingItStep3Result>
     {
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep3
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<UpdateOnboardingItStep3Result> Handle(UpdateOnboardingItStep3Command request, CancellationToken cancellationToken)
         {
             var session = request.Session;
@@ -150,6 +158,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep3
             return (standardSoftwareNames, licenseSoftwareNames);
         }
 
+        /// <summary>
+        /// Runs the ContainsSoftware operation.
+        /// </summary>
         private static bool ContainsSoftware(IEnumerable<string> softwareNames, params string[] keywords)
         {
             foreach (var name in softwareNames)
@@ -163,6 +174,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep3
             return false;
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyLegacySoftwareFlags operation.
+        /// </summary>
         private static void ApplyLegacySoftwareFlags(
             OnboardingViewModel target,
             IReadOnlyCollection<string> standardSoftwareNames,

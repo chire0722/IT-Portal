@@ -1,3 +1,5 @@
+// Project comment: GenerateOffboardingPdfQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -12,6 +14,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
 {
+    /// <summary>
+    /// Handles the GenerateOffboardingPdfQuery query workflow.
+    /// </summary>
     public sealed class GenerateOffboardingPdfQueryHandler : IRequestHandler<GenerateOffboardingPdfQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -31,6 +36,9 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(GenerateOffboardingPdfQuery request, CancellationToken cancellationToken)
         {
             var offboardingRequest = await _context.OffboardingRequests

@@ -1,3 +1,5 @@
+// Project comment: DepartmentPageQueries.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -12,11 +14,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Department
 {
+    /// <summary>
+    /// Carries data needed to execute the GetDepartmentIndexPage query.
+    /// </summary>
     public sealed record GetDepartmentIndexPageQuery() : IRequest<ProcessResult<List<DepartmentIndexListItem>>>;
+    /// <summary>
+    /// Carries data needed to execute the GetDepartmentCreatePage query.
+    /// </summary>
     public sealed record GetDepartmentCreatePageQuery(DepartmentEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<DepartmentEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetDepartmentEditPage query.
+    /// </summary>
     public sealed record GetDepartmentEditPageQuery(int Id, DepartmentEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<DepartmentEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the DownloadDepartmentTemplate query.
+    /// </summary>
     public sealed record DownloadDepartmentTemplateQuery() : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the GetDepartmentIndexPageQuery query workflow.
+    /// </summary>
     public sealed class GetDepartmentIndexPageQueryHandler : IRequestHandler<GetDepartmentIndexPageQuery, ProcessResult<List<DepartmentIndexListItem>>>
     {
         private readonly ApplicationDbContext _context;
@@ -28,6 +45,9 @@ namespace IT_Form.Application.Features.Department
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<List<DepartmentIndexListItem>>> Handle(GetDepartmentIndexPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -54,6 +74,9 @@ namespace IT_Form.Application.Features.Department
         }
     }
 
+    /// <summary>
+    /// Handles the GetDepartmentCreatePageQuery query workflow.
+    /// </summary>
     public sealed class GetDepartmentCreatePageQueryHandler : IRequestHandler<GetDepartmentCreatePageQuery, ProcessResult<DepartmentEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -65,6 +88,9 @@ namespace IT_Form.Application.Features.Department
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<DepartmentEditorPageViewModel>> Handle(GetDepartmentCreatePageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -86,6 +112,9 @@ namespace IT_Form.Application.Features.Department
         }
     }
 
+    /// <summary>
+    /// Handles the GetDepartmentEditPageQuery query workflow.
+    /// </summary>
     public sealed class GetDepartmentEditPageQueryHandler : IRequestHandler<GetDepartmentEditPageQuery, ProcessResult<DepartmentEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -97,6 +126,9 @@ namespace IT_Form.Application.Features.Department
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<DepartmentEditorPageViewModel>> Handle(GetDepartmentEditPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -143,6 +175,9 @@ namespace IT_Form.Application.Features.Department
         }
     }
 
+    /// <summary>
+    /// Handles the DownloadDepartmentTemplateQuery query workflow.
+    /// </summary>
     public sealed class DownloadDepartmentTemplateQueryHandler : IRequestHandler<DownloadDepartmentTemplateQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -154,6 +189,9 @@ namespace IT_Form.Application.Features.Department
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(DownloadDepartmentTemplateQuery request, CancellationToken cancellationToken)
         {
             var companyDisplayNames = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(

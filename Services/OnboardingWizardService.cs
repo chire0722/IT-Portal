@@ -1,3 +1,5 @@
+// Project comment: OnboardingWizardService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -9,6 +11,9 @@ using Newtonsoft.Json;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides OnboardingWizard service behavior for the application.
+    /// </summary>
     public sealed class OnboardingWizardService : IOnboardingWizardService
     {
         private const string SessionKey = "OnboardingWizard";
@@ -19,6 +24,9 @@ namespace IT_Form.Services
             _context = context;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetFromSession operation.
+        /// </summary>
         public OnboardingViewModel GetFromSession(ISession session)
         {
             var json = session.GetString(SessionKey);
@@ -35,12 +43,18 @@ namespace IT_Form.Services
             return model;
         }
 
+        /// <summary>
+        /// Saves data for the SaveToSession operation.
+        /// </summary>
         public void SaveToSession(ISession session, OnboardingViewModel model)
         {
             var json = JsonConvert.SerializeObject(model);
             session.SetString(SessionKey, json);
         }
 
+        /// <summary>
+        /// Creates data for the CreateNewSessionAsync operation.
+        /// </summary>
         public async Task<OnboardingViewModel> CreateNewSessionAsync(CancellationToken cancellationToken = default)
         {
             var model = new OnboardingViewModel();
@@ -48,6 +62,9 @@ namespace IT_Form.Services
             return model;
         }
 
+        /// <summary>
+        /// Runs the RestoreDraftSessionAsync operation.
+        /// </summary>
         public async Task<OnboardingViewModel?> RestoreDraftSessionAsync(int requestId, CancellationToken cancellationToken = default)
         {
             var request = await _context.OnboardingRequests
@@ -74,6 +91,9 @@ namespace IT_Form.Services
             return session;
         }
 
+        /// <summary>
+        /// Runs the RestoreItSetupSessionAsync operation.
+        /// </summary>
         public async Task<OnboardingViewModel?> RestoreItSetupSessionAsync(int requestId, CancellationToken cancellationToken = default)
         {
             var request = await _context.OnboardingRequests
@@ -116,6 +136,9 @@ namespace IT_Form.Services
             return session;
         }
 
+        /// <summary>
+        /// Runs the PrepareDraftSessionAsync operation.
+        /// </summary>
         public async Task<OnboardingViewModel> PrepareDraftSessionAsync(OnboardingViewModel currentSession, OnboardingViewModel postedModel, CancellationToken cancellationToken = default)
         {
             var session = currentSession ?? new OnboardingViewModel();
@@ -135,12 +158,18 @@ namespace IT_Form.Services
             return session;
         }
 
+        /// <summary>
+        /// Runs the PrepareStep2Session operation.
+        /// </summary>
         public OnboardingViewModel PrepareStep2Session(OnboardingViewModel model)
         {
             model.CurrentStep = 2;
             return model;
         }
 
+        /// <summary>
+        /// Runs the EnsureStep4FolderPermissionsAsync operation.
+        /// </summary>
         public async Task<OnboardingViewModel> EnsureStep4FolderPermissionsAsync(OnboardingViewModel model, string? branchName, CancellationToken cancellationToken = default)
         {
             model.CurrentStep = 4;
@@ -163,6 +192,9 @@ namespace IT_Form.Services
             return model;
         }
 
+        /// <summary>
+        /// Maps data for the MapRequestToSession operation.
+        /// </summary>
         public void MapRequestToSession(OnboardingRequest request, OnboardingViewModel session)
         {
             session.Id = request.Id;
@@ -244,6 +276,9 @@ namespace IT_Form.Services
             session.PrecastGroup = request.PrecastGroup;
         }
 
+        /// <summary>
+        /// Runs the ClearHrRestrictedAccessFields operation.
+        /// </summary>
         public void ClearHrRestrictedAccessFields(OnboardingViewModel session)
         {
             session.FolderPermissions = new List<FolderPermissionViewModel>();
@@ -252,6 +287,9 @@ namespace IT_Form.Services
             session.OtherFolderDetails = null;
         }
 
+        /// <summary>
+        /// Maps data for the MapStep1ToSession operation.
+        /// </summary>
         public void MapStep1ToSession(OnboardingViewModel model, OnboardingViewModel session)
         {
             if (model.Id > 0)
@@ -275,6 +313,9 @@ namespace IT_Form.Services
             // The view model only tracks the consent flag; timestamps live on the request entity.
         }
 
+        /// <summary>
+        /// Maps data for the MapSessionToRequest operation.
+        /// </summary>
         public void MapSessionToRequest(OnboardingViewModel session, OnboardingRequest request)
         {
             request.FullName = session.FullName;
@@ -411,6 +452,9 @@ namespace IT_Form.Services
             request.PrecastGroup = session.PrecastGroup;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetActiveFolderNamesAsync operation.
+        /// </summary>
         private async Task<List<string>> GetActiveFolderNamesAsync(CancellationToken cancellationToken)
         {
             return await _context.ServerFolders

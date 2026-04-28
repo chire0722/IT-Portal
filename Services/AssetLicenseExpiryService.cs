@@ -1,3 +1,5 @@
+// Project comment: AssetLicenseExpiryService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
@@ -9,6 +11,9 @@ using IT_Form.Helpers;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides AssetLicenseExpiry service behavior for the application.
+    /// </summary>
     public class AssetLicenseExpiryService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
@@ -22,6 +27,9 @@ namespace IT_Form.Services
             _smtpSettings = smtpSettings.Value;
         }
 
+        /// <summary>
+        /// Runs the ExecuteAsync operation.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("AssetLicenseExpiryService started.");
@@ -51,6 +59,9 @@ namespace IT_Form.Services
             _logger.LogInformation("AssetLicenseExpiryService is stopping.");
         }
 
+        /// <summary>
+        /// Processes data for the ProcessExpirationsAsync operation.
+        /// </summary>
         private async Task ProcessExpirationsAsync(CancellationToken token)
         {
             using var scope = _serviceProvider.CreateScope();

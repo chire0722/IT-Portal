@@ -1,3 +1,5 @@
+// Project comment: UpdateManageAccessSupport.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Services;
@@ -5,8 +7,14 @@ using IT_Form.ViewModels;
 
 namespace IT_Form.Application.Features.Onboarding.UpdateManageAccess
 {
+    /// <summary>
+    /// Defines the UpdateManageAccessSupport class used by the IT Form application.
+    /// </summary>
     internal static class UpdateManageAccessSupport
     {
+        /// <summary>
+        /// Builds the value returned by the BuildSelections operation.
+        /// </summary>
         internal static AccessSelections BuildSelections(
             AccessCatalogDto accessCatalog,
             UpdateManageAccessCommand request,
@@ -69,6 +77,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateManageAccess
                 replacementFolderPermissions);
         }
 
+        /// <summary>
+        /// Runs the ReplaceAccessCollections operation.
+        /// </summary>
         internal static void ReplaceAccessCollections(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -109,6 +120,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateManageAccess
             }
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyOtherAccessFields operation.
+        /// </summary>
         internal static void ApplyOtherAccessFields(OnboardingRequest onboardingRequest, UpdateManageAccessCommand request)
         {
             onboardingRequest.OtherGroup = !string.IsNullOrWhiteSpace(request.OtherGroupDetails);
@@ -128,6 +142,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateManageAccess
         }
     }
 
+    /// <summary>
+    /// Defines the AccessSelections record used by the IT Form application.
+    /// </summary>
     internal sealed record AccessSelections(
         List<RequestEmailGroup> EmailGroups,
         List<RequestSharedMailbox> SharedMailboxes,

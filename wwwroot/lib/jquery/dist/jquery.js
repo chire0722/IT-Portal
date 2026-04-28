@@ -1,3 +1,5 @@
+// Project comment: jquery.js contains client-side behavior used by the IT Form web interface.
+
 /*!
  * jQuery JavaScript Library v3.7.1
  * https://jquery.com/

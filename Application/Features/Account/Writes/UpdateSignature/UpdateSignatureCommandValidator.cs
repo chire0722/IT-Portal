@@ -1,7 +1,12 @@
+// Project comment: UpdateSignatureCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Account.Writes.UpdateSignature;
 
+/// <summary>
+/// Validates input for the UpdateSignatureCommand request.
+/// </summary>
 public sealed class UpdateSignatureCommandValidator : AbstractValidator<UpdateSignatureCommand>
 {
     public UpdateSignatureCommandValidator()

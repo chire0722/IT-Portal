@@ -1,3 +1,5 @@
+// Project comment: TransactionBehavior.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using MediatR;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace IT_Form.Application.Common.Behaviors
 {
+    /// <summary>
+    /// Defines the TransactionBehavior class used by the IT Form application.
+    /// </summary>
     public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -19,6 +24,9 @@ namespace IT_Form.Application.Common.Behaviors
             _postCommitActionQueue = postCommitActionQueue;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<TResponse> Handle(
             TRequest request,
             RequestHandlerDelegate<TResponse> next,
@@ -73,6 +81,9 @@ namespace IT_Form.Application.Common.Behaviors
             }
         }
 
+        /// <summary>
+        /// Runs the ShouldWrapInTransaction operation.
+        /// </summary>
         private static bool ShouldWrapInTransaction(TRequest request)
         {
             var requestTypeName = request.GetType().Name;

@@ -1,3 +1,5 @@
+// Project comment: DataRetentionService.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -33,6 +35,9 @@ namespace IT_Form.Services
             _options = options.Value;
         }
 
+        /// <summary>
+        /// Runs the ExecuteAsync operation.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation(
@@ -67,6 +72,9 @@ namespace IT_Form.Services
             }
         }
 
+        /// <summary>
+        /// Runs the RunRetentionPass operation.
+        /// </summary>
         private async Task RunRetentionPass(CancellationToken ct)
         {
             using var scope = _scopeFactory.CreateScope();
@@ -95,6 +103,9 @@ namespace IT_Form.Services
             await RedactExpiredAuditLogsAsync(db, ct);
         }
 
+        /// <summary>
+        /// Runs the AnonymizeExpiredOffboardingAsync operation.
+        /// </summary>
         private async Task<int> AnonymizeExpiredOffboardingAsync(
             ApplicationDbContext db,
             DateTime cutoff,
@@ -149,6 +160,9 @@ namespace IT_Form.Services
             return staleOffboarding.Count;
         }
 
+        /// <summary>
+        /// Runs the AnonymizeExpiredOnboardingAsync operation.
+        /// </summary>
         private async Task<int> AnonymizeExpiredOnboardingAsync(
             ApplicationDbContext db,
             DateTime cutoff,
@@ -195,6 +209,9 @@ namespace IT_Form.Services
             return staleOnboarding.Count;
         }
 
+        /// <summary>
+        /// Runs the PurgeExpiredTokensAsync operation.
+        /// </summary>
         private async Task PurgeExpiredTokensAsync(ApplicationDbContext db, CancellationToken ct)
         {
             var tokenCutoff = DateTime.UtcNow - SecurityTokenRetentionPeriod;
@@ -231,6 +248,9 @@ namespace IT_Form.Services
             }
         }
 
+        /// <summary>
+        /// Runs the RedactExpiredAuditLogsAsync operation.
+        /// </summary>
         private async Task RedactExpiredAuditLogsAsync(ApplicationDbContext db, CancellationToken ct)
         {
             var auditCutoff = DateTime.UtcNow - AuditLogRetentionPeriod;

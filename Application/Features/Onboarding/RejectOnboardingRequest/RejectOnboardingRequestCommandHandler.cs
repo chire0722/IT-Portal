@@ -1,3 +1,5 @@
+// Project comment: RejectOnboardingRequestCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -7,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.RejectOnboardingRequest
 {
+    /// <summary>
+    /// Handles the RejectOnboardingRequestCommand command workflow.
+    /// </summary>
     public sealed class RejectOnboardingRequestCommandHandler : IRequestHandler<RejectOnboardingRequestCommand, ProcessResult<object>>
     {
         private readonly ApplicationDbContext _context;
@@ -23,6 +28,9 @@ namespace IT_Form.Application.Features.Onboarding.RejectOnboardingRequest
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(RejectOnboardingRequestCommand request, CancellationToken cancellationToken)
         {
             var user = _currentUserAccessor.User;

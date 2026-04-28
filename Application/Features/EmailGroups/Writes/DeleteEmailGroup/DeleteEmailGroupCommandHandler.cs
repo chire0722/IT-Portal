@@ -1,3 +1,5 @@
+// Project comment: DeleteEmailGroupCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroups.Writes.DeleteEmailGroup;
 
+/// <summary>
+/// Handles the DeleteEmailGroupCommand command workflow.
+/// </summary>
 public sealed class DeleteEmailGroupCommandHandler : IRequestHandler<DeleteEmailGroupCommand, Unit>
 {
     private readonly ApplicationDbContext _context;
@@ -22,6 +27,9 @@ public sealed class DeleteEmailGroupCommandHandler : IRequestHandler<DeleteEmail
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(DeleteEmailGroupCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.EmailGroups
@@ -42,6 +50,9 @@ public sealed class DeleteEmailGroupCommandHandler : IRequestHandler<DeleteEmail
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the EnsureExistingEmailGroupIsInScopeAsync operation.
+    /// </summary>
     private async Task EnsureExistingEmailGroupIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
     {
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

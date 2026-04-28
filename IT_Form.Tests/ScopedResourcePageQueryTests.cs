@@ -1,3 +1,5 @@
+// Project comment: ScopedResourcePageQueryTests.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.Department;
@@ -18,6 +20,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the ScopedResourcePageQueryTests class used by the IT Form application.
+/// </summary>
 public class ScopedResourcePageQueryTests
 {
     public ScopedResourcePageQueryTests()
@@ -26,6 +31,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the DepartmentQueries_ReturnTypedIndexAndEditorModels operation.
+    /// </summary>
     public async Task DepartmentQueries_ReturnTypedIndexAndEditorModels()
     {
         await using var context = CreateContext();
@@ -69,6 +77,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EmailGroupMembersQuery_ReturnsTypedMembersPage operation.
+    /// </summary>
     public async Task EmailGroupMembersQuery_ReturnsTypedMembersPage()
     {
         await using var context = CreateContext();
@@ -128,6 +139,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SharedMailboxMembersQuery_ReturnsTypedMembersPage operation.
+    /// </summary>
     public async Task SharedMailboxMembersQuery_ReturnsTypedMembersPage()
     {
         await using var context = CreateContext();
@@ -183,6 +197,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ServerFolderMembersQuery_ReturnsTypedMembersPageWithPermissionFlags operation.
+    /// </summary>
     public async Task ServerFolderMembersQuery_ReturnsTypedMembersPageWithPermissionFlags()
     {
         await using var context = CreateContext();
@@ -237,6 +254,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EmailGroupReportQuery_ReturnsTypedPageAndNotFoundForUnknownGroup operation.
+    /// </summary>
     public async Task EmailGroupReportQuery_ReturnsTypedPageAndNotFoundForUnknownGroup()
     {
         await using var context = CreateContext();
@@ -285,6 +305,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SharedMailboxExportQuery_ReturnsBinaryFilePayload operation.
+    /// </summary>
     public async Task SharedMailboxExportQuery_ReturnsBinaryFilePayload()
     {
         await using var context = CreateContext();
@@ -329,6 +352,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ServerFolderReportAndTemplateQueries_ReturnTypedResults operation.
+    /// </summary>
     public async Task ServerFolderReportAndTemplateQueries_ReturnTypedResults()
     {
         await using var context = CreateContext();
@@ -390,6 +416,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the DepartmentTemplateQuery_ReturnsBinaryFilePayload operation.
+    /// </summary>
     public async Task DepartmentTemplateQuery_ReturnsBinaryFilePayload()
     {
         await using var context = CreateContext();
@@ -417,6 +446,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EmailGroupAndSharedMailboxTemplateQueries_IncludeLiveCompanyDropdowns operation.
+    /// </summary>
     public async Task EmailGroupAndSharedMailboxTemplateQueries_IncludeLiveCompanyDropdowns()
     {
         await using var context = CreateContext();
@@ -452,6 +484,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ItUserWithAssignedCompany_SeesCrossCompanyResourcePagesAndCompanyOptions operation.
+    /// </summary>
     public async Task ItUserWithAssignedCompany_SeesCrossCompanyResourcePagesAndCompanyOptions()
     {
         await using var context = CreateContext();
@@ -536,6 +571,9 @@ public class ScopedResourcePageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ResourceIndexQueries_FilterBySelectedCompany_WhileKeepingGlobalItems operation.
+    /// </summary>
     public async Task ResourceIndexQueries_FilterBySelectedCompany_WhileKeepingGlobalItems()
     {
         await using var context = CreateContext();
@@ -640,6 +678,9 @@ public class ScopedResourcePageQueryTests
         Assert.Equal(1, serverFolders.Data.SelectedCompanyId);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -656,6 +697,9 @@ public class ScopedResourcePageQueryTests
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Runs the OpenWorkbook operation.
+    /// </summary>
     private static XLWorkbook OpenWorkbook(byte[] content)
         => new(new MemoryStream(content));
 }

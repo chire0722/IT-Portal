@@ -1,7 +1,12 @@
+// Project comment: SubmitOffboardingCreateCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Offboarding.Create
 {
+    /// <summary>
+    /// Validates input for the SubmitOffboardingCreateCommand request.
+    /// </summary>
     public sealed class SubmitOffboardingCreateCommandValidator : AbstractValidator<SubmitOffboardingCreateCommand>
     {
         public SubmitOffboardingCreateCommandValidator()

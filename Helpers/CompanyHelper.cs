@@ -1,7 +1,12 @@
+// Project comment: CompanyHelper.cs is part of the IT Form application source code.
+
 using System;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the CompanyHelper class used by the IT Form application.
+    /// </summary>
     public static class CompanyHelper
     {
         /// <summary>

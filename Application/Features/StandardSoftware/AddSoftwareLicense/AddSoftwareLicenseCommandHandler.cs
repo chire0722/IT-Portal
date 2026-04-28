@@ -1,3 +1,5 @@
+// Project comment: AddSoftwareLicenseCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using FluentValidation;
 using FluentValidation.Results;
@@ -9,6 +11,9 @@ using MediatR;
 
 namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
 {
+    /// <summary>
+    /// Handles the AddSoftwareLicenseCommand command workflow.
+    /// </summary>
     public sealed class AddSoftwareLicenseCommandHandler : IRequestHandler<AddSoftwareLicenseCommand, AddSoftwareLicenseResult>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<AddSoftwareLicenseResult> Handle(AddSoftwareLicenseCommand request, CancellationToken cancellationToken)
         {
             if (request.IsSubscription && !request.IsFree && !request.ExpiryDate.HasValue)
@@ -66,6 +74,9 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
             return new AddSoftwareLicenseResult(AddSoftwareLicenseStatus.Added, "License edition added.");
         }
 
+        /// <summary>
+        /// Runs the EnsureRequestedCompaniesAreAllowedAsync operation.
+        /// </summary>
         private async Task EnsureRequestedCompaniesAreAllowedAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
         {
             var requestedCompanyIds = selectedCompanyIds

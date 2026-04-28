@@ -1,3 +1,5 @@
+// Project comment: SignatureController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Features.Signature;
 using IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature;
 using MediatR;
@@ -8,6 +10,9 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace IT_Form.Controllers
 {
+    /// <summary>
+    /// Handles web requests for the Signature area.
+    /// </summary>
     public class SignatureController : AppControllerBase
     {
         private readonly ISender _sender;
@@ -15,11 +20,17 @@ namespace IT_Form.Controllers
         public SignatureController(ISender sender) => _sender = sender;
 
         // GET: /Signature/Acknowledge?token=xxx&type=Onboarding
+        /// <summary>
+        /// Runs the Acknowledge operation.
+        /// </summary>
         public async Task<IActionResult> Acknowledge(Guid token, string type)
             => HandleAcknowledgePageResult(await _sender.Send(new GetSignatureAcknowledgePageQuery(token, type)));
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Acknowledge operation.
+        /// </summary>
         public async Task<IActionResult> Acknowledge(Guid token, string type, string signatureData, bool pdpaConsent = false)
         {
             return await ExecuteWithValidationResult(
@@ -48,9 +59,15 @@ namespace IT_Form.Controllers
 
         // GET: /Signature/ViewPdf?token=xxx&type=Onboarding
         [HttpGet]
+        /// <summary>
+        /// Runs the ViewPdf operation.
+        /// </summary>
         public async Task<IActionResult> ViewPdf(Guid token, string type)
             => HandlePdfResult(await _sender.Send(new GetSignaturePdfQuery(token, type)));
 
+        /// <summary>
+        /// Runs the HandleAcknowledgePageResult operation.
+        /// </summary>
         private IActionResult HandleAcknowledgePageResult(GetSignatureAcknowledgePageResult result)
         {
             return result.Status switch
@@ -63,6 +80,9 @@ namespace IT_Form.Controllers
             };
         }
 
+        /// <summary>
+        /// Runs the HandlePdfResult operation.
+        /// </summary>
         private IActionResult HandlePdfResult(GetSignaturePdfResult result)
         {
             return result.Status switch

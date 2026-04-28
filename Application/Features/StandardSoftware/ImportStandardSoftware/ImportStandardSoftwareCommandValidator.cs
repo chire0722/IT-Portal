@@ -1,7 +1,12 @@
+// Project comment: ImportStandardSoftwareCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 {
+    /// <summary>
+    /// Validates input for the ImportStandardSoftwareCommand request.
+    /// </summary>
     public sealed class ImportStandardSoftwareCommandValidator : AbstractValidator<ImportStandardSoftwareCommand>
     {
         public ImportStandardSoftwareCommandValidator()

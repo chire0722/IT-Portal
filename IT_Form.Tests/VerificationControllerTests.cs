@@ -1,3 +1,5 @@
+// Project comment: VerificationControllerTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,11 +16,17 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the VerificationControllerTests class used by the IT Form application.
+    /// </summary>
     public class VerificationControllerTests : ControllerTestBase
     {
         // VerificationController uses Index(token)
 
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsView_ForValidToken operation.
+        /// </summary>
         public async Task Index_ReturnsView_ForValidToken()
         {
             using var context = CreateContext();
@@ -36,6 +44,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsBadRequest_ForExpiredToken operation.
+        /// </summary>
         public async Task Index_ReturnsBadRequest_ForExpiredToken()
         {
             using var context = CreateContext();
@@ -65,6 +76,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the DownloadUniversalTool_ReturnsNotFound_AfterSecurityHardening operation.
+        /// </summary>
         public void DownloadUniversalTool_ReturnsNotFound_AfterSecurityHardening()
         {
             using var context = CreateContext();
@@ -79,6 +93,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the GenerateToken_ReturnsEmployeeSpecificLink_AndReplacesOlderTokens operation.
+        /// </summary>
         public async Task GenerateToken_ReturnsEmployeeSpecificLink_AndReplacesOlderTokens()
         {
             using var context = CreateContext();
@@ -126,6 +143,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the GenerateTokenWithoutEmployee_ReturnsAssetOnlyLink_AndStoresAnonymousToken operation.
+        /// </summary>
         public async Task GenerateTokenWithoutEmployee_ReturnsAssetOnlyLink_AndStoresAnonymousToken()
         {
             using var context = CreateContext();
@@ -160,6 +180,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Index_AllowsOldAssetOnlyToken_WithoutExpiry operation.
+        /// </summary>
         public async Task Index_AllowsOldAssetOnlyToken_WithoutExpiry()
         {
             using var context = CreateContext();
@@ -188,6 +211,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry operation.
+        /// </summary>
         public async Task DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry()
         {
             using var context = CreateContext();
@@ -217,6 +243,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the DownloadTool_RejectsExpiredToken operation.
+        /// </summary>
         public async Task DownloadTool_RejectsExpiredToken()
         {
             using var context = CreateContext();
@@ -246,6 +275,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Gets the data required by the GetStatus_ReturnsFingerprintWarning_WhenVerifiedTokenHasMismatch operation.
+        /// </summary>
         public async Task GetStatus_ReturnsFingerprintWarning_WhenVerifiedTokenHasMismatch()
         {
             using var context = CreateContext();
@@ -278,6 +310,9 @@ namespace IT_Form.Tests
             Assert.Equal("LAP-900", valueType.GetProperty("assetTag")?.GetValue(json.Value) as string);
         }
 
+        /// <summary>
+        /// Creates data for the CreateVerificationController operation.
+        /// </summary>
         private static VerificationController CreateVerificationController(
             Data.ApplicationDbContext context,
             IDictionary<string, string?> configurationValues,

@@ -1,8 +1,13 @@
+// Project comment: OffboardingIndexListItem.cs is part of the IT Form application source code.
+
 using IT_Form.Models.Enums;
 using IT_Form.Helpers;
 
 namespace IT_Form.Application.Features.Offboarding.GetOffboardingIndex
 {
+    /// <summary>
+    /// Defines the OffboardingIndexListItem class used by the IT Form application.
+    /// </summary>
     public sealed class OffboardingIndexListItem
     {
         public int Id { get; set; }

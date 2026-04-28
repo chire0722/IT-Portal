@@ -1,3 +1,5 @@
+// Project comment: UpdateUserManagementCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
@@ -15,6 +17,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.UserManagement.Writes.UpdateUserManagement;
 
+/// <summary>
+/// Handles the UpdateUserManagementCommand command workflow.
+/// </summary>
 public sealed class UpdateUserManagementCommandHandler : IRequestHandler<UpdateUserManagementCommand, Unit>
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -34,6 +39,9 @@ public sealed class UpdateUserManagementCommandHandler : IRequestHandler<UpdateU
         _logger = logger;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(UpdateUserManagementCommand request, CancellationToken cancellationToken)
     {
         var user = await _context.Users
@@ -79,6 +87,9 @@ public sealed class UpdateUserManagementCommandHandler : IRequestHandler<UpdateU
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(
         IEnumerable<string>? selectedCompanies,
         CancellationToken cancellationToken)

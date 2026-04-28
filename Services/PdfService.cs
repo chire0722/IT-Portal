@@ -1,3 +1,5 @@
+// Project comment: PdfService.cs is part of the IT Form application source code.
+
 using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
@@ -10,12 +12,18 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides IPdf service behavior for the application.
+    /// </summary>
     public interface IPdfService
     {
         byte[] GeneratePdf(OnboardingRequest request);
         byte[] GenerateOffboardingPdf(OffboardingRequest request);
     }
 
+    /// <summary>
+    /// Provides Pdf service behavior for the application.
+    /// </summary>
     public class PdfService : IPdfService
     {
         private readonly ILogger<PdfService> _logger;
@@ -32,6 +40,9 @@ namespace IT_Form.Services
             _integrityService = integrityService;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetCompanyLogo operation.
+        /// </summary>
         private byte[]? GetCompanyLogo(string? branch)
         {
             if (string.IsNullOrEmpty(branch)) return GetDefaultLogo(null);
@@ -50,6 +61,9 @@ namespace IT_Form.Services
             return GetDefaultLogo(branch);
         }
 
+        /// <summary>
+        /// Gets the data required by the GetDefaultLogo operation.
+        /// </summary>
         private byte[]? GetDefaultLogo(string? branch)
         {
             var isYTC = branch != null && branch.Contains("YTC", StringComparison.OrdinalIgnoreCase);
@@ -60,6 +74,9 @@ namespace IT_Form.Services
             return null;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetCompanyName operation.
+        /// </summary>
         private string GetCompanyName(string? branch)
         {
             if (string.IsNullOrEmpty(branch)) return "PEMBINAAN YENG TONG SDN BHD";
@@ -78,6 +95,9 @@ namespace IT_Form.Services
             return "PEMBINAAN YENG TONG SDN BHD";
         }
 
+        /// <summary>
+        /// Runs the GeneratePdf operation.
+        /// </summary>
         public byte[] GeneratePdf(OnboardingRequest request)
         {
             var assignedSoftwareNames = GetAssignedSoftwareNames(request);
@@ -488,6 +508,9 @@ namespace IT_Form.Services
             return pdfBytes;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetAssignedSoftwareNames operation.
+        /// </summary>
         private static List<string> GetAssignedSoftwareNames(OnboardingRequest request)
         {
             var issuedSoftwareNames = request.IssuedSoftware?
@@ -516,6 +539,9 @@ namespace IT_Form.Services
                 .ToList();
         }
 
+        /// <summary>
+        /// Gets the data required by the GetLegacySoftwareNames operation.
+        /// </summary>
         private static List<string> GetLegacySoftwareNames(OnboardingRequest request)
         {
             var softwareNames = new List<string>();
@@ -541,6 +567,9 @@ namespace IT_Form.Services
             return softwareNames;
         }
 
+        /// <summary>
+        /// Runs the AddInfoRow operation.
+        /// </summary>
         private void AddInfoRow(TableDescriptor table, string label, string value)
         {
             table.Cell().Border(1).Padding(3).Text(label).Bold().FontSize(8)
@@ -548,6 +577,9 @@ namespace IT_Form.Services
             table.Cell().Border(1).Padding(3).Text(value ?? "—").FontSize(8);
         }
 
+        /// <summary>
+        /// Runs the AddVerifiedSignatureBlock operation.
+        /// </summary>
         private void AddVerifiedSignatureBlock(RowDescriptor row, string label, string? signatureBase64, string? hmac, string entityType, string entityId, string signer, DateTime? signedAt, string? timeZoneId)
         {
             row.RelativeItem().Column(c =>
@@ -595,6 +627,9 @@ namespace IT_Form.Services
             });
         }
 
+        /// <summary>
+        /// Runs the GenerateOffboardingPdf operation.
+        /// </summary>
         public byte[] GenerateOffboardingPdf(OffboardingRequest request)
         {
             var companyTimeZoneId = GetCompanyTimeZoneId(request.Branch);
@@ -915,6 +950,9 @@ namespace IT_Form.Services
             return pdfBytes;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetCompanyTimeZoneId operation.
+        /// </summary>
         private string GetCompanyTimeZoneId(string? branch)
         {
             if (string.IsNullOrWhiteSpace(branch))

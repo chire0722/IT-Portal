@@ -1,3 +1,5 @@
+// Project comment: StandardSoftwareFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Security.Claims;
 using System.Threading;
@@ -25,6 +27,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the StandardSoftwareFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class StandardSoftwareFeatureSliceTests
 {
     public StandardSoftwareFeatureSliceTests()
@@ -33,6 +38,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateStandardSoftwareValidator_Fails_WhenNameMissing operation.
+    /// </summary>
     public void CreateStandardSoftwareValidator_Fails_WhenNameMissing()
     {
         var validator = new CreateStandardSoftwareCommandValidator();
@@ -43,6 +51,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditStandardSoftwareHandler_ReturnsNotFound_WhenSoftwareMissing operation.
+    /// </summary>
     public async Task EditStandardSoftwareHandler_ReturnsNotFound_WhenSoftwareMissing()
     {
         using var context = CreateContext();
@@ -53,6 +64,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteStandardSoftwareValidator_Fails_WhenAnyAssigned operation.
+    /// </summary>
     public async Task DeleteStandardSoftwareValidator_Fails_WhenAnyAssigned()
     {
         using var context = CreateContext();
@@ -73,6 +87,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddSoftwareLicenseHandler_RequiresExpiry_ForPaidSubscription operation.
+    /// </summary>
     public async Task AddSoftwareLicenseHandler_RequiresExpiry_ForPaidSubscription()
     {
         using var context = CreateContext();
@@ -88,6 +105,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddSoftwareLicenseHandler_CreatesSeatRows_ForSubscriptionQuantity operation.
+    /// </summary>
     public async Task AddSoftwareLicenseHandler_CreatesSeatRows_ForSubscriptionQuantity()
     {
         using var context = CreateContext();
@@ -120,6 +140,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToCreateGlobalVersion operation.
+    /// </summary>
     public async Task AddSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToCreateGlobalVersion()
     {
         using var context = CreateContext();
@@ -149,6 +172,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditSoftwareLicenseHandler_ReturnsInvalidSeatLimit_WhenReducingBelowAssignedSeats operation.
+    /// </summary>
     public async Task EditSoftwareLicenseHandler_ReturnsInvalidSeatLimit_WhenReducingBelowAssignedSeats()
     {
         using var context = CreateContext();
@@ -188,6 +214,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToEditScopedVersion operation.
+    /// </summary>
     public async Task EditSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToEditScopedVersion()
     {
         using var context = CreateContext();
@@ -230,6 +259,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteSoftwareLicenseHandler_ReturnsHasAssignedKeys_WhenAssigned operation.
+    /// </summary>
     public async Task DeleteSoftwareLicenseHandler_ReturnsHasAssignedKeys_WhenAssigned()
     {
         using var context = CreateContext();
@@ -245,6 +277,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the StandardSoftwareIndexQuery_ShowsLicensesAcrossCompanies_ForCompanyScopedItUser operation.
+    /// </summary>
     public async Task StandardSoftwareIndexQuery_ShowsLicensesAcrossCompanies_ForCompanyScopedItUser()
     {
         using var context = CreateContext();
@@ -297,6 +332,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the StandardSoftwareIndexQuery_FiltersBySelectedCompany_WhileKeepingGlobalVersions operation.
+    /// </summary>
     public async Task StandardSoftwareIndexQuery_FiltersBySelectedCompany_WhileKeepingGlobalVersions()
     {
         using var context = CreateContext();
@@ -355,6 +393,9 @@ public class StandardSoftwareFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ImportStandardSoftwareValidator_Fails_WhenFileMissing operation.
+    /// </summary>
     public void ImportStandardSoftwareValidator_Fails_WhenFileMissing()
     {
         var validator = new ImportStandardSoftwareCommandValidator();
@@ -364,6 +405,9 @@ public class StandardSoftwareFeatureSliceTests
         Assert.False(result.IsValid);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -380,6 +424,9 @@ public class StandardSoftwareFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreateCurrentUserAccessor operation.
+    /// </summary>
     private static ICurrentUserAccessor CreateCurrentUserAccessor()
     {
         var mock = new Mock<ICurrentUserAccessor>();

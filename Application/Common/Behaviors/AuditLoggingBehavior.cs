@@ -1,5 +1,8 @@
+// Project comment: AuditLoggingBehavior.cs is part of the IT Form application source code.
+
 using System.Text.Json;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +11,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Common.Behaviors
 {
+    /// <summary>
+    /// Defines the AuditLoggingBehavior class used by the IT Form application.
+    /// </summary>
     public sealed class AuditLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -31,6 +37,9 @@ namespace IT_Form.Application.Common.Behaviors
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<TResponse> Handle(
             TRequest request,
             RequestHandlerDelegate<TResponse> next,
@@ -133,6 +142,9 @@ namespace IT_Form.Application.Common.Behaviors
             }
         }
 
+        /// <summary>
+        /// Runs the WriteSuccessAuditLogAsync operation.
+        /// </summary>
         private async Task WriteSuccessAuditLogAsync(AuditLog auditLog, CancellationToken cancellationToken)
         {
             // Use the current request DbContext/connection so SQLite does not deadlock
@@ -140,6 +152,9 @@ namespace IT_Form.Application.Common.Behaviors
             await _context.PersistStandaloneAuditLogAsync(auditLog, cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the WriteFailureAuditLogAsync operation.
+        /// </summary>
         private async Task WriteFailureAuditLogAsync(AuditLog auditLog, CancellationToken cancellationToken)
         {
             if (_scopeFactory == null)
@@ -153,14 +168,20 @@ namespace IT_Form.Application.Common.Behaviors
             await auditContext.PersistStandaloneAuditLogAsync(auditLog, cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the ShouldAudit operation.
+        /// </summary>
         private static bool ShouldAudit(TRequest request)
             => request.GetType().Name.EndsWith("Command", StringComparison.Ordinal);
 
+        /// <summary>
+        /// Runs the SerializePayload operation.
+        /// </summary>
         private static string SerializePayload(TRequest request)
         {
             try
             {
-                return JsonSerializer.Serialize(request, request.GetType(), SerializerOptions);
+                return AuditPayloadSanitizer.SerializeSanitized(request, SerializerOptions);
             }
             catch (Exception ex)
             {

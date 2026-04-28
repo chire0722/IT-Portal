@@ -1,7 +1,12 @@
+// Project comment: SharedMailbox.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the SharedMailbox class used by the IT Form application.
+    /// </summary>
     public class SharedMailbox
     {
         public int Id { get; set; }

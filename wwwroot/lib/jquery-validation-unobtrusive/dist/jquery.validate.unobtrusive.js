@@ -1,3 +1,5 @@
+// Project comment: jquery.validate.unobtrusive.js contains client-side behavior used by the IT Form web interface.
+
 /**
  * @license
  * Unobtrusive validation support library for jQuery and jQuery Validate

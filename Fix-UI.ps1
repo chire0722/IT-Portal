@@ -1,3 +1,5 @@
+# Project comment: Fix-UI.ps1 contains PowerShell automation for the IT Form project.
+
 $ErrorActionPreference = "Stop"
 
 $viewsPath = "c:\IT_Form_Backup\Views"

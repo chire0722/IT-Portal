@@ -1,4 +1,6 @@
-﻿using System;
+// Project comment: OnboardingIntegrityTests.cs is part of the IT Form application source code.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -24,8 +26,14 @@ using Newtonsoft.Json;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the OnboardingIntegrityTests class used by the IT Form application.
+    /// </summary>
     public class OnboardingIntegrityTests
     {
+        /// <summary>
+        /// Gets the data required by the GetContext operation.
+        /// </summary>
         private ApplicationDbContext GetContext()
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -40,6 +48,9 @@ namespace IT_Form.Tests
             return new ApplicationDbContext(options, mockHttpContextAccessor.Object, mockDbLogger.Object, mockLicenseEncryption.Object);
         }
 
+        /// <summary>
+        /// Gets the data required by the GetController operation.
+        /// </summary>
         private OnboardingController GetController(ApplicationDbContext context, string userTitle = "HR")
         {
             var mockWizardService = new Mock<IOnboardingWizardService>();
@@ -180,6 +191,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Edit_Get_LockedIfCompleted operation.
+        /// </summary>
         public async Task Edit_Get_LockedIfCompleted()
         {
             using var context = GetContext();
@@ -196,6 +210,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Edit_Post_LockedIfCompleted operation.
+        /// </summary>
         public async Task Edit_Post_LockedIfCompleted()
         {
             using var context = GetContext();
@@ -216,6 +233,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Step1_Post_LockedIfPendingSign operation.
+        /// </summary>
         public async Task Step1_Post_LockedIfPendingSign()
         {
             using var context = GetContext();
@@ -237,17 +257,38 @@ namespace IT_Form.Tests
         }
     }
 
+    /// <summary>
+    /// Defines the MockSession class used by the IT Form application.
+    /// </summary>
     public class MockSession : ISession
     {
         private readonly Dictionary<string, byte[]> _sessionData = new();
         public bool IsAvailable => true;
         public string Id => Guid.NewGuid().ToString();
         public IEnumerable<string> Keys => _sessionData.Keys;
+        /// <summary>
+        /// Runs the Clear operation.
+        /// </summary>
         public void Clear() => _sessionData.Clear();
+        /// <summary>
+        /// Runs the CommitAsync operation.
+        /// </summary>
         public async Task CommitAsync(System.Threading.CancellationToken cancellationToken = default) => await Task.CompletedTask;
+        /// <summary>
+        /// Runs the LoadAsync operation.
+        /// </summary>
         public async Task LoadAsync(System.Threading.CancellationToken cancellationToken = default) => await Task.CompletedTask;
+        /// <summary>
+        /// Runs the Remove operation.
+        /// </summary>
         public void Remove(string key) => _sessionData.Remove(key);
+        /// <summary>
+        /// Runs the Set operation.
+        /// </summary>
         public void Set(string key, byte[] value) => _sessionData[key] = value;
+        /// <summary>
+        /// Runs the TryGetValue operation.
+        /// </summary>
         public bool TryGetValue(string key, out byte[] value) => _sessionData.TryGetValue(key, out value!);
     }
 }

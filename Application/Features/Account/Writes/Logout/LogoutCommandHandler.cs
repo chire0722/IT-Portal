@@ -1,3 +1,5 @@
+// Project comment: LogoutCommandHandler.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.Account.Writes.Logout;
 
+/// <summary>
+/// Handles the LogoutCommand command workflow.
+/// </summary>
 public sealed class LogoutCommandHandler : IRequestHandler<LogoutCommand, Unit>
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
@@ -27,6 +32,9 @@ public sealed class LogoutCommandHandler : IRequestHandler<LogoutCommand, Unit>
         _logger = logger;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
         var user = _currentUserAccessor.User;

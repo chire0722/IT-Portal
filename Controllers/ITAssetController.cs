@@ -1,3 +1,5 @@
+// Project comment: ITAssetController.cs is part of the IT Form application source code.
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +22,9 @@ using System.Security.Claims;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the ITAsset area.
+    /// </summary>
     public class ITAssetController : AppControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -32,6 +37,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(string searchString, AssetType? assetType, AssetStatus? status, int? companyId = null)
         {
             var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, User, CancellationToken.None);
@@ -110,6 +118,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset/ExportCsv
+        /// <summary>
+        /// Runs the ExportCsv operation.
+        /// </summary>
         public async Task<IActionResult> ExportCsv(string searchString, AssetType? assetType, AssetStatus? status, int? companyId = null)
         {
             var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, User, CancellationToken.None);
@@ -194,6 +205,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset/Details/5
+        /// <summary>
+        /// Runs the Details operation.
+        /// </summary>
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -214,6 +228,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset/Create
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
         {
             await PopulateCreateEditViewBagsAsync();
@@ -223,6 +240,9 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create([Bind("AssetTag,SerialNumber,AssetType,OtherAssetType,Status,Model,Company,Location,PurchaseDate,WarrantyExpiry,RAM,Storage,WindowsVersion,DDRType,NoExtendWarranty")] ITAsset itAsset, int? AssignedEmployeeId, string? CustomEmployeeName)
         {
             if (itAsset == null) return View(new ITAsset());
@@ -253,6 +273,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset/Edit/5
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -290,6 +313,9 @@ namespace IT_Form.Controllers
         // POST: ITAsset/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, [Bind("Id,AssetTag,SerialNumber,AssetType,OtherAssetType,Status,Model,Company,Location,PurchaseDate,WarrantyExpiry,RAM,Storage,WindowsVersion,DDRType,NoExtendWarranty")] ITAsset itAsset, int? AssignedEmployeeId, string? CustomEmployeeName)
         {
             if (id != itAsset.Id) return NotFound();
@@ -333,6 +359,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset/Delete/5
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -347,6 +376,9 @@ namespace IT_Form.Controllers
         // POST: ITAsset/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the DeleteConfirmed operation.
+        /// </summary>
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var itAsset = await _context.ITAssets
@@ -381,6 +413,9 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ToggleNoExtendWarranty operation.
+        /// </summary>
         public async Task<IActionResult> ToggleNoExtendWarranty(int id)
         {
             var asset = await _context.ITAssets.FindAsync(id);
@@ -405,6 +440,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: ITAsset/DownloadImportTemplate
+        /// <summary>
+        /// Runs the DownloadImportTemplate operation.
+        /// </summary>
         public async Task<IActionResult> DownloadImportTemplate()
         {
             using (var workbook = new ClosedXML.Excel.XLWorkbook())
@@ -488,6 +526,9 @@ namespace IT_Form.Controllers
         // POST: ITAsset/BulkImport
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the BulkImport operation.
+        /// </summary>
         public async Task<IActionResult> BulkImport(IFormFile file)
         {
             if (CompanyScopeHelper.HasScopedCompanies(User))
@@ -612,11 +653,17 @@ namespace IT_Form.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        /// <summary>
+        /// Runs the ITAssetExists operation.
+        /// </summary>
         private bool ITAssetExists(int id)
         {
             return _context.ITAssets.Any(e => e.Id == id);
         }
 
+        /// <summary>
+        /// Runs the PopulateCreateEditViewBagsAsync operation.
+        /// </summary>
         private async Task PopulateCreateEditViewBagsAsync(string? selectedCompany = null)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(User);
@@ -646,6 +693,9 @@ namespace IT_Form.Controllers
             ViewBag.Companies = new SelectList(companies, selectedCompany);
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyAssetCompanyScope operation.
+        /// </summary>
         private IQueryable<ITAsset> ApplyAssetCompanyScope(IQueryable<ITAsset> query)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(User);

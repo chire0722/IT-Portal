@@ -1,3 +1,5 @@
+// Project comment: EditOnboardingRequestCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Helpers;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
 {
+    /// <summary>
+    /// Handles the EditOnboardingRequestCommand command workflow.
+    /// </summary>
     public sealed class EditOnboardingRequestCommandHandler
         : IRequestHandler<EditOnboardingRequestCommand, EditOnboardingRequestResult>
     {
@@ -34,6 +39,9 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<EditOnboardingRequestResult> Handle(EditOnboardingRequestCommand request, CancellationToken cancellationToken)
         {
             var currentUser = await _userManager.GetUserAsync(_currentUserAccessor.User);

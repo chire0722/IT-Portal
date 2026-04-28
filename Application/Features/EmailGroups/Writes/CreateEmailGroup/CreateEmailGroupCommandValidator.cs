@@ -1,9 +1,14 @@
+// Project comment: CreateEmailGroupCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroups.Writes.CreateEmailGroup;
 
+/// <summary>
+/// Validates input for the CreateEmailGroupCommand request.
+/// </summary>
 public sealed class CreateEmailGroupCommandValidator : AbstractValidator<CreateEmailGroupCommand>
 {
     public CreateEmailGroupCommandValidator(ApplicationDbContext context)

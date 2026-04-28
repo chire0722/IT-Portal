@@ -1,5 +1,10 @@
+// Project comment: ManageAccessViewModel.cs is part of the IT Form application source code.
+
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the ManageAccess screen or form.
+    /// </summary>
     public sealed class ManageAccessViewModel
     {
         public int OnboardingId { get; set; }
@@ -24,6 +29,9 @@ namespace IT_Form.ViewModels
         public IReadOnlyList<ManageAccessSharedMailboxOptionViewModel> AvailableSharedMailboxes { get; set; } = [];
     }
 
+    /// <summary>
+    /// Provides view data for the ManageAccessEmailGroupOption screen or form.
+    /// </summary>
     public sealed class ManageAccessEmailGroupOptionViewModel
     {
         public int Id { get; set; }
@@ -31,6 +39,9 @@ namespace IT_Form.ViewModels
         public string GroupEmail { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Provides view data for the ManageAccessSharedMailboxOption screen or form.
+    /// </summary>
     public sealed class ManageAccessSharedMailboxOptionViewModel
     {
         public int Id { get; set; }

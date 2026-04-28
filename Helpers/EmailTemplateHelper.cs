@@ -1,7 +1,15 @@
+// Project comment: EmailTemplateHelper.cs is part of the IT Form application source code.
+
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the EmailTemplateHelper class used by the IT Form application.
+    /// </summary>
     public static class EmailTemplateHelper
     {
+        /// <summary>
+        /// Gets the data required by the GetProfessionalHtmlTemplate operation.
+        /// </summary>
         public static string GetProfessionalHtmlTemplate(string title, string greeting, string paramsRows, string ctaUrl, string ctaLabel)
         {
             var year = System.DateTime.UtcNow.Year;
@@ -122,6 +130,9 @@ namespace IT_Form.Helpers
 </html>";
         }
 
+        /// <summary>
+        /// Gets the data required by the GetProfessionalHtmlTemplate operation.
+        /// </summary>
         public static string GetProfessionalHtmlTemplate(string title, string greeting, string paramsRows, string ctaUrl, string ctaLabel, string? senderName, string? senderTitle, string? senderSignatureImage = null)
         {
             var senderBlock = "";

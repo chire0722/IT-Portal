@@ -1,7 +1,12 @@
+// Project comment: UpdateProfileCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Account.Writes.UpdateProfile;
 
+/// <summary>
+/// Validates input for the UpdateProfileCommand request.
+/// </summary>
 public sealed class UpdateProfileCommandValidator : AbstractValidator<UpdateProfileCommand>
 {
     private static readonly string[] AllowedContentTypes = ["image/png", "image/jpeg", "image/gif"];

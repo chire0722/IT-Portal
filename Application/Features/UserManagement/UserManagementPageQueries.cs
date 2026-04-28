@@ -1,3 +1,5 @@
+// Project comment: UserManagementPageQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
@@ -10,10 +12,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.UserManagement
 {
+    /// <summary>
+    /// Carries data needed to execute the GetUserManagementIndexPage query.
+    /// </summary>
     public sealed record GetUserManagementIndexPageQuery() : IRequest<ProcessResult<List<UserManagementIndexListItem>>>;
+    /// <summary>
+    /// Carries data needed to execute the GetUserManagementCreatePage query.
+    /// </summary>
     public sealed record GetUserManagementCreatePageQuery(UserManagementViewModel? Model = null) : IRequest<ProcessResult<UserManagementEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetUserManagementEditPage query.
+    /// </summary>
     public sealed record GetUserManagementEditPageQuery(string Id, UserManagementViewModel? Model = null) : IRequest<ProcessResult<UserManagementEditorPageViewModel>>;
 
+    /// <summary>
+    /// Handles the GetUserManagementIndexPageQuery query workflow.
+    /// </summary>
     public sealed class GetUserManagementIndexPageQueryHandler : IRequestHandler<GetUserManagementIndexPageQuery, ProcessResult<List<UserManagementIndexListItem>>>
     {
         private readonly ApplicationDbContext _context;
@@ -25,6 +39,9 @@ namespace IT_Form.Application.Features.UserManagement
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<List<UserManagementIndexListItem>>> Handle(GetUserManagementIndexPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -68,6 +85,9 @@ namespace IT_Form.Application.Features.UserManagement
         }
     }
 
+    /// <summary>
+    /// Handles the GetUserManagementCreatePageQuery query workflow.
+    /// </summary>
     public sealed class GetUserManagementCreatePageQueryHandler : IRequestHandler<GetUserManagementCreatePageQuery, ProcessResult<UserManagementEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -79,6 +99,9 @@ namespace IT_Form.Application.Features.UserManagement
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<UserManagementEditorPageViewModel>> Handle(GetUserManagementCreatePageQuery request, CancellationToken cancellationToken)
         {
             var companies = await UserManagementPageQueryHelpers.LoadCompaniesAsync(_context, _currentUserAccessor.User, cancellationToken);
@@ -90,6 +113,9 @@ namespace IT_Form.Application.Features.UserManagement
         }
     }
 
+    /// <summary>
+    /// Handles the GetUserManagementEditPageQuery query workflow.
+    /// </summary>
     public sealed class GetUserManagementEditPageQueryHandler : IRequestHandler<GetUserManagementEditPageQuery, ProcessResult<UserManagementEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -101,6 +127,9 @@ namespace IT_Form.Application.Features.UserManagement
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<UserManagementEditorPageViewModel>> Handle(GetUserManagementEditPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -133,8 +162,14 @@ namespace IT_Form.Application.Features.UserManagement
         }
     }
 
+    /// <summary>
+    /// Defines the UserManagementPageQueryHelpers class used by the IT Form application.
+    /// </summary>
     internal static class UserManagementPageQueryHelpers
     {
+        /// <summary>
+        /// Runs the LoadDepartmentsAsync operation.
+        /// </summary>
         internal static async Task<List<UserManagementDepartmentOption>> LoadDepartmentsAsync(
             ApplicationDbContext context,
             System.Security.Claims.ClaimsPrincipal? user,
@@ -167,6 +202,9 @@ namespace IT_Form.Application.Features.UserManagement
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the LoadCompaniesAsync operation.
+        /// </summary>
         internal static async Task<List<UserManagementCompanyOption>> LoadCompaniesAsync(
             ApplicationDbContext context,
             System.Security.Claims.ClaimsPrincipal? user,
@@ -178,6 +216,9 @@ namespace IT_Form.Application.Features.UserManagement
                 })
                 .ToList();
 
+        /// <summary>
+        /// Builds the value returned by the BuildEditorPage operation.
+        /// </summary>
         internal static UserManagementEditorPageViewModel BuildEditorPage(
             UserManagementViewModel model,
             List<UserManagementDepartmentOption> departments,

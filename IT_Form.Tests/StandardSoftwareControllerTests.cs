@@ -1,3 +1,5 @@
+// Project comment: StandardSoftwareControllerTests.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -15,9 +17,15 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the StandardSoftwareControllerTests class used by the IT Form application.
+    /// </summary>
     public class StandardSoftwareControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsView_ForITRole operation.
+        /// </summary>
         public async Task Index_ReturnsView_ForITRole()
         {
             using var context = CreateContext();
@@ -33,6 +41,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Gets the data required by the GetEmployees_ReturnsJsonOptions operation.
+        /// </summary>
         public async Task GetEmployees_ReturnsJsonOptions()
         {
             using var context = CreateContext();
@@ -55,6 +66,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Gets the data required by the GetKeys_ReturnsJsonPayload operation.
+        /// </summary>
         public async Task GetKeys_ReturnsJsonPayload()
         {
             using var context = CreateContext();
@@ -90,6 +104,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the DownloadTemplate_ReturnsFileResult_WhenQueryReturnsBinaryPayload operation.
+        /// </summary>
         public async Task DownloadTemplate_ReturnsFileResult_WhenQueryReturnsBinaryPayload()
         {
             var sender = new Moq.Mock<MediatR.ISender>();
@@ -114,6 +131,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the EditLicense_ReturnsJsonFailure_WhenSeatLimitIsInvalid operation.
+        /// </summary>
         public async Task EditLicense_ReturnsJsonFailure_WhenSeatLimitIsInvalid()
         {
             var sender = new Moq.Mock<MediatR.ISender>();

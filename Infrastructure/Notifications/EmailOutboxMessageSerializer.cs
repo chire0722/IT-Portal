@@ -1,12 +1,20 @@
+// Project comment: EmailOutboxMessageSerializer.cs is part of the IT Form application source code.
+
 using System.Text.Json;
 using IT_Form.Models;
 
 namespace IT_Form.Infrastructure.Notifications;
 
+/// <summary>
+/// Defines the EmailOutboxMessageSerializer class used by the IT Form application.
+/// </summary>
 internal static class EmailOutboxMessageSerializer
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
+    /// <summary>
+    /// Runs the Serialize operation.
+    /// </summary>
     public static EmailOutboxMessage Serialize(IEmailBackgroundMessage message)
         => message switch
         {
@@ -17,6 +25,9 @@ internal static class EmailOutboxMessageSerializer
             _ => throw new InvalidOperationException($"Unsupported email background message type: {message.GetType().FullName}")
         };
 
+    /// <summary>
+    /// Runs the Deserialize operation.
+    /// </summary>
     public static IEmailBackgroundMessage Deserialize(string messageType, string payloadJson)
         => messageType switch
         {

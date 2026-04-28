@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+// Project comment: 20260325014507_AddIsFreeToSoftwareLicense.cs is part of the IT Form application source code.
+
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 

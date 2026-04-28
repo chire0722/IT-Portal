@@ -1,3 +1,5 @@
+// Project comment: SignOffHrOnboardingCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.SignOffHrOnboarding
 {
+    /// <summary>
+    /// Handles the SignOffHrOnboardingCommand command workflow.
+    /// </summary>
     public sealed class SignOffHrOnboardingCommandHandler
         : IRequestHandler<SignOffHrOnboardingCommand, ProcessResult<object>>
     {
@@ -28,6 +33,9 @@ namespace IT_Form.Application.Features.Onboarding.SignOffHrOnboarding
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(SignOffHrOnboardingCommand request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests

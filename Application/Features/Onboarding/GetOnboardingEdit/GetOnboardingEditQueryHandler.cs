@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingEditQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingEdit
 {
+    /// <summary>
+    /// Handles the GetOnboardingEditQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingEditQueryHandler : IRequestHandler<GetOnboardingEditQuery, ProcessResult<EditOnboardingPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -27,6 +32,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingEdit
             _onboardingHodService = onboardingHodService;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<EditOnboardingPageViewModel>> Handle(GetOnboardingEditQuery request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests
@@ -104,6 +112,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingEdit
                 MapToViewModel(onboardingRequest, standardSoftware, emailGroups, sharedMailboxes, companies, departments, hodUsers));
         }
 
+        /// <summary>
+        /// Maps data for the MapToViewModel operation.
+        /// </summary>
         private static EditOnboardingPageViewModel MapToViewModel(
             OnboardingRequest model,
             List<IT_Form.Models.StandardSoftware> standardSoftware,

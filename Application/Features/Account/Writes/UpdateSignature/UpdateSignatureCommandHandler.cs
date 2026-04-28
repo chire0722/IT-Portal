@@ -1,3 +1,5 @@
+// Project comment: UpdateSignatureCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Common.Validation;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.AspNetCore.Identity;
 
 namespace IT_Form.Application.Features.Account.Writes.UpdateSignature;
 
+/// <summary>
+/// Handles the UpdateSignatureCommand command workflow.
+/// </summary>
 public sealed class UpdateSignatureCommandHandler : IRequestHandler<UpdateSignatureCommand, Unit>
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -21,6 +26,9 @@ public sealed class UpdateSignatureCommandHandler : IRequestHandler<UpdateSignat
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(UpdateSignatureCommand request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByIdAsync(request.UserId);

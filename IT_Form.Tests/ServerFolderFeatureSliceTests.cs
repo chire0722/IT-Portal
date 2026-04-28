@@ -1,3 +1,5 @@
+// Project comment: ServerFolderFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,9 +21,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the ServerFolderFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class ServerFolderFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateServerFolderValidator_Fails_WhenNameMissing operation.
+    /// </summary>
     public async Task CreateServerFolderValidator_Fails_WhenNameMissing()
     {
         using var context = CreateContext();
@@ -33,6 +41,9 @@ public class ServerFolderFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateServerFolderHandler_ThrowsNotFound_WhenFolderMissing operation.
+    /// </summary>
     public async Task UpdateServerFolderHandler_ThrowsNotFound_WhenFolderMissing()
     {
         using var context = CreateContext();
@@ -43,6 +54,9 @@ public class ServerFolderFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddCurrentEmployeeFolderHandler_ReturnsUpdated_WhenPermissionExists operation.
+    /// </summary>
     public async Task AddCurrentEmployeeFolderHandler_ReturnsUpdated_WhenPermissionExists()
     {
         using var context = CreateContext();
@@ -60,6 +74,9 @@ public class ServerFolderFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the BulkImportServerFoldersValidator_Fails_WhenFileMissing operation.
+    /// </summary>
     public void BulkImportServerFoldersValidator_Fails_WhenFileMissing()
     {
         var validator = new BulkImportServerFoldersCommandValidator();
@@ -69,6 +86,9 @@ public class ServerFolderFeatureSliceTests
         Assert.False(result.IsValid);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

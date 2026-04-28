@@ -1,8 +1,13 @@
+// Project comment: StandardSoftware.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the StandardSoftware class used by the IT Form application.
+    /// </summary>
     public class StandardSoftware : ISoftDeletable
     {
         public int Id { get; set; }

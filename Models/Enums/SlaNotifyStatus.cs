@@ -1,6 +1,11 @@
+// Project comment: SlaNotifyStatus.cs is part of the IT Form application source code.
+
 // SlaNotifyStatus.cs
 namespace IT_Form.Models.Enums
 {
+    /// <summary>
+    /// Lists the supported SlaNotifyStatus values used by the application.
+    /// </summary>
     public enum SlaNotifyStatus
     {
         Pending = 0,

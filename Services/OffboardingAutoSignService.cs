@@ -1,3 +1,5 @@
+// Project comment: OffboardingAutoSignService.cs is part of the IT Form application source code.
+
 using System;
 using System.Linq;
 using System.Threading;
@@ -11,6 +13,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides OffboardingAutoSign service behavior for the application.
+    /// </summary>
     public class OffboardingAutoSignService : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
@@ -23,6 +28,9 @@ namespace IT_Form.Services
             _logger = logger;
         }
 
+        /// <summary>
+        /// Runs the ExecuteAsync operation.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Offboarding Auto-Sign Background Service is starting.");
@@ -51,6 +59,9 @@ namespace IT_Form.Services
             _logger.LogInformation("Offboarding Auto-Sign Background Service is stopping.");
         }
 
+        /// <summary>
+        /// Processes data for the ProcessAutoSignAsync operation.
+        /// </summary>
         private async Task ProcessAutoSignAsync(CancellationToken stoppingToken)
         {
             using (var scope = _scopeFactory.CreateScope())

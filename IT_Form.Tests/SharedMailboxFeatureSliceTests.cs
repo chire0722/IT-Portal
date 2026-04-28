@@ -1,3 +1,5 @@
+// Project comment: SharedMailboxFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,9 +23,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the SharedMailboxFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class SharedMailboxFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateSharedMailboxValidator_Fails_WhenEmailInvalid operation.
+    /// </summary>
     public async Task CreateSharedMailboxValidator_Fails_WhenEmailInvalid()
     {
         using var context = CreateContext();
@@ -35,6 +43,9 @@ public class SharedMailboxFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateSharedMailboxHandler_ThrowsNotFound_WhenMailboxMissing operation.
+    /// </summary>
     public async Task UpdateSharedMailboxHandler_ThrowsNotFound_WhenMailboxMissing()
     {
         using var context = CreateContext();
@@ -45,6 +56,9 @@ public class SharedMailboxFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteSharedMailboxHandler_Deletes_WhenFound operation.
+    /// </summary>
     public async Task DeleteSharedMailboxHandler_Deletes_WhenFound()
     {
         using var context = CreateContext();
@@ -58,6 +72,9 @@ public class SharedMailboxFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddCurrentEmployeeSharedMailboxHandler_ReturnsAlreadyExists_WhenAlreadyAssigned operation.
+    /// </summary>
     public async Task AddCurrentEmployeeSharedMailboxHandler_ReturnsAlreadyExists_WhenAlreadyAssigned()
     {
         using var context = CreateContext();
@@ -74,6 +91,9 @@ public class SharedMailboxFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ImportSharedMailboxesValidator_Fails_WhenFileMissing operation.
+    /// </summary>
     public void ImportSharedMailboxesValidator_Fails_WhenFileMissing()
     {
         var validator = new ImportSharedMailboxesCommandValidator();
@@ -83,6 +103,9 @@ public class SharedMailboxFeatureSliceTests
         Assert.False(result.IsValid);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

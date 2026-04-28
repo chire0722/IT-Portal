@@ -1,3 +1,5 @@
+// Project comment: EmailGroupTemplateQueries.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -9,8 +11,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroup
 {
+    /// <summary>
+    /// Carries data needed to execute the DownloadEmailGroupTemplate query.
+    /// </summary>
     public sealed record DownloadEmailGroupTemplateQuery() : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the DownloadEmailGroupTemplateQuery query workflow.
+    /// </summary>
     public sealed class DownloadEmailGroupTemplateQueryHandler : IRequestHandler<DownloadEmailGroupTemplateQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -22,6 +30,9 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(DownloadEmailGroupTemplateQuery request, CancellationToken cancellationToken)
         {
             var activeCompanies = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(

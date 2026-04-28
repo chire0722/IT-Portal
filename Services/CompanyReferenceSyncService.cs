@@ -1,3 +1,5 @@
+// Project comment: CompanyReferenceSyncService.cs is part of the IT Form application source code.
+
 using System.Text.RegularExpressions;
 using IT_Form.Data;
 using IT_Form.Models;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides CompanyReferenceSync service behavior for the application.
+    /// </summary>
     public class CompanyReferenceSyncService : ICompanyReferenceSyncService
     {
         private readonly ApplicationDbContext _context;
@@ -24,6 +29,9 @@ namespace IT_Form.Services
             _context = context;
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyUpdatedCompanySyncAsync operation.
+        /// </summary>
         public async Task<int> ApplyUpdatedCompanySyncAsync(Company originalCompany, Company updatedCompany, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(originalCompany);
@@ -51,6 +59,9 @@ namespace IT_Form.Services
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the SyncAllActiveCompaniesAsync operation.
+        /// </summary>
         public async Task<CompanyReferenceSyncResult> SyncAllActiveCompaniesAsync(CancellationToken cancellationToken = default)
         {
             var activeCompanies = await _context.Companies
@@ -72,6 +83,9 @@ namespace IT_Form.Services
             return new CompanyReferenceSyncResult(updatedCount, ambiguousReferences.OrderBy(x => x).ToArray());
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyCompanyReferenceUpdateAsync operation.
+        /// </summary>
         private async Task<int> ApplyCompanyReferenceUpdateAsync(
             Func<string?, string?> replacementResolver,
             CancellationToken cancellationToken = default)
@@ -142,6 +156,9 @@ namespace IT_Form.Services
             return updatedCount;
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyCompanyReferenceUpdateAsync operation.
+        /// </summary>
         private static int ApplyCompanyReferenceUpdateAsync(
             Func<string?, bool> shouldReplace,
             string replacementValue,
@@ -156,6 +173,9 @@ namespace IT_Form.Services
             return 1;
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyCompanyReferenceUpdateAsync operation.
+        /// </summary>
         private async Task<int> ApplyCompanyReferenceUpdateAsync(
             Func<string?, bool> shouldReplace,
             string replacementValue,
@@ -166,6 +186,9 @@ namespace IT_Form.Services
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the ShouldReplace operation.
+        /// </summary>
         private static bool ShouldReplace(string? currentValue, CompanyReferenceIdentity originalIdentity, string newDisplayName)
         {
             if (string.IsNullOrWhiteSpace(currentValue) ||
@@ -178,6 +201,9 @@ namespace IT_Form.Services
             return currentIdentity.Matches(originalIdentity);
         }
 
+        /// <summary>
+        /// Runs the ResolveReplacement operation.
+        /// </summary>
         private static string? ResolveReplacement(
             string? currentValue,
             IReadOnlyCollection<CompanyCandidate> companyCandidates,
@@ -263,6 +289,9 @@ namespace IT_Form.Services
             return null;
         }
 
+        /// <summary>
+        /// Runs the NormalizeForComparison operation.
+        /// </summary>
         private static string NormalizeForComparison(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -278,6 +307,9 @@ namespace IT_Form.Services
             return normalized.ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Runs the NormalizeCompanyName operation.
+        /// </summary>
         private static string NormalizeCompanyName(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -299,6 +331,9 @@ namespace IT_Form.Services
             return normalized;
         }
 
+        /// <summary>
+        /// Runs the NormalizeLotKey operation.
+        /// </summary>
         private static string NormalizeLotKey(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -323,13 +358,22 @@ namespace IT_Form.Services
             return cleaned.Length <= 20 ? cleaned : string.Empty;
         }
 
+        /// <summary>
+        /// Defines the struct record used by the IT Form application.
+        /// </summary>
         private readonly record struct CompanyCandidate(Company Company, CompanyReferenceIdentity Identity);
 
+        /// <summary>
+        /// Defines the struct record used by the IT Form application.
+        /// </summary>
         private readonly record struct CompanyReferenceIdentity(
             string NormalizedDisplay,
             string NormalizedName,
             string NormalizedLot)
         {
+            /// <summary>
+            /// Runs the FromCompany operation.
+            /// </summary>
             public static CompanyReferenceIdentity FromCompany(Company company)
             {
                 ArgumentNullException.ThrowIfNull(company);
@@ -340,6 +384,9 @@ namespace IT_Form.Services
                     NormalizeLotKey(company.Lot));
             }
 
+            /// <summary>
+            /// Runs the FromReference operation.
+            /// </summary>
             public static CompanyReferenceIdentity FromReference(string? value)
             {
                 if (string.IsNullOrWhiteSpace(value))
@@ -366,6 +413,9 @@ namespace IT_Form.Services
                     NormalizeLotKey(lotSource));
             }
 
+            /// <summary>
+            /// Runs the Matches operation.
+            /// </summary>
             public bool Matches(CompanyReferenceIdentity other)
             {
                 if (string.IsNullOrEmpty(NormalizedName) || string.IsNullOrEmpty(other.NormalizedName))

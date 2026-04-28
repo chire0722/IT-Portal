@@ -1,3 +1,5 @@
+// Project comment: OnboardingRequest.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using IT_Form.Models.Enums;
@@ -6,6 +8,9 @@ using Stateless;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the OnboardingRequest class used by the IT Form application.
+    /// </summary>
     public class OnboardingRequest : ISlaTrackable
     {
         [NotMapped]
@@ -200,23 +205,38 @@ namespace IT_Form.Models
         public bool IsPdpaConsented { get; set; }
         public DateTime? PdpaConsentedAt { get; set; }
 
+        /// <summary>
+        /// Runs the CanBeHrSignedOff operation.
+        /// </summary>
         public bool CanBeHrSignedOff() => State == OnboardingState.Draft;
 
+        /// <summary>
+        /// Runs the SubmitByHr operation.
+        /// </summary>
         public void SubmitByHr()
         {
             _machine.Fire(OnboardingTrigger.SubmitByHr);
         }
 
+        /// <summary>
+        /// Runs the StartItSetup operation.
+        /// </summary>
         public void StartItSetup()
         {
             _machine.Fire(OnboardingTrigger.StartItSetup);
         }
 
+        /// <summary>
+        /// Runs the FinishOnboarding operation.
+        /// </summary>
         public void FinishOnboarding()
         {
             _machine.Fire(OnboardingTrigger.FinishOnboarding);
         }
 
+        /// <summary>
+        /// Runs the Cancel operation.
+        /// </summary>
         public void Cancel()
         {
             if (Status == RequestStatus.Rejected)
@@ -227,11 +247,17 @@ namespace IT_Form.Models
             _machine.Fire(OnboardingTrigger.Cancel);
         }
 
+        /// <summary>
+        /// Runs the RestoreDraft operation.
+        /// </summary>
         public void RestoreDraft()
         {
             Status = RequestStatus.Draft;
         }
 
+        /// <summary>
+        /// Runs the SignOffByHr operation.
+        /// </summary>
         public void SignOffByHr(string signatureBase64, string signerName, string signatureHmac, DateTime signedAtUtc)
         {
             RequesterSignature = signatureBase64;
@@ -242,16 +268,31 @@ namespace IT_Form.Models
             UpdatedAt = signedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the CanBeItSigned operation.
+        /// </summary>
         public bool CanBeItSigned() => Status == RequestStatus.PendingITApproval;
 
+        /// <summary>
+        /// Runs the CanBeEdited operation.
+        /// </summary>
         public bool CanBeEdited() =>
             Status != RequestStatus.PendingEmployeeSign &&
             Status != RequestStatus.Completed;
 
+        /// <summary>
+        /// Runs the CanStartItSetup operation.
+        /// </summary>
         public bool CanStartItSetup() => Status == RequestStatus.PendingITApproval;
 
+        /// <summary>
+        /// Runs the CanRegenerateToken operation.
+        /// </summary>
         public bool CanRegenerateToken() => Status == RequestStatus.PendingEmployeeSign;
 
+        /// <summary>
+        /// Applies changes for the ApplyItChecklist operation.
+        /// </summary>
         public void ApplyItChecklist(
             bool checkPhysicalClean,
             bool checkO365Setup,
@@ -288,6 +329,9 @@ namespace IT_Form.Models
             UpdatedAt = updatedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the HasCompleteItChecklist operation.
+        /// </summary>
         public bool HasCompleteItChecklist() =>
             CheckPhysicalClean &&
             CheckO365Setup &&
@@ -304,6 +348,9 @@ namespace IT_Form.Models
             CheckScanFolder &&
             CheckVPNSetup;
 
+        /// <summary>
+        /// Runs the SignByItAdmin operation.
+        /// </summary>
         public void SignByItAdmin(string signatureBase64, string signerName, string signatureHmac, DateTime signedAtUtc)
         {
             ITAdminSignature = signatureBase64;
@@ -315,6 +362,9 @@ namespace IT_Form.Models
             UpdatedAt = signedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the CompleteItSetup operation.
+        /// </summary>
         public void CompleteItSetup(string? signatureBase64, string signerName, string? signatureHmac, DateTime signedAtUtc)
         {
             ITAdminSignature = signatureBase64;
@@ -326,6 +376,9 @@ namespace IT_Form.Models
             UpdatedAt = signedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the SubmitDraftByHr operation.
+        /// </summary>
         public void SubmitDraftByHr(string? signatureBase64, string signerName, string? signatureHmac, DateTime submittedAtUtc)
         {
             RequesterSignature = signatureBase64 ?? RequesterSignature;
@@ -336,10 +389,16 @@ namespace IT_Form.Models
             UpdatedAt = submittedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the CanBeRejected operation.
+        /// </summary>
         public bool CanBeRejected() =>
             Status != RequestStatus.Rejected &&
             _machine.CanFire(OnboardingTrigger.Cancel);
 
+        /// <summary>
+        /// Runs the Reject operation.
+        /// </summary>
         public void Reject(string reason, string? rejectedByUserId, DateTime updatedAtUtc)
         {
             Cancel();
@@ -348,12 +407,18 @@ namespace IT_Form.Models
             UpdatedAt = updatedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the RegenerateAccessToken operation.
+        /// </summary>
         public void RegenerateAccessToken(DateTime updatedAtUtc)
         {
             AccessToken = Guid.NewGuid();
             UpdatedAt = updatedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the CanBeDeletedBy operation.
+        /// </summary>
         public bool CanBeDeletedBy(bool isHr)
         {
             var isSignedByHrOnly = !string.IsNullOrEmpty(RequesterSignature)
@@ -364,6 +429,9 @@ namespace IT_Form.Models
                 || (isHr && isSignedByHrOnly);
         }
 
+        /// <summary>
+        /// Runs the ConfigureStateMachine operation.
+        /// </summary>
         private void ConfigureStateMachine()
         {
             _machine.Configure(RequestStatus.Draft)
@@ -385,6 +453,9 @@ namespace IT_Form.Models
                 .Permit(OnboardingTrigger.Cancel, RequestStatus.Rejected);
         }
 
+        /// <summary>
+        /// Runs the HasItProgress operation.
+        /// </summary>
         private bool HasItProgress()
             => !string.IsNullOrWhiteSpace(ChecklistRemarks) ||
                !string.IsNullOrWhiteSpace(SoftwareRemarks) ||

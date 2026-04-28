@@ -1,8 +1,13 @@
+// Project comment: MaintenanceLog.cs is part of the IT Form application source code.
+
 using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the MaintenanceLog class used by the IT Form application.
+    /// </summary>
     public class MaintenanceLog : ISoftDeletable
     {
         public int Id { get; set; }

@@ -1,3 +1,5 @@
+// Project comment: HomeDashboardSupport.cs is part of the IT Form application source code.
+
 using System.Globalization;
 using IT_Form.Data;
 using IT_Form.Models;
@@ -6,8 +8,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Home;
 
+/// <summary>
+/// Defines the HomeDashboardSupport class used by the IT Form application.
+/// </summary>
 internal static class HomeDashboardSupport
 {
+    /// <summary>
+    /// Creates data for the CreatePeriodContext operation.
+    /// </summary>
     public static DashboardPeriodContext CreatePeriodContext(int? year)
     {
         var currentYear = DateTime.UtcNow.Year;
@@ -35,12 +43,18 @@ internal static class HomeDashboardSupport
             isCurrentYear ? "This Month" : $"In {selectedYear}");
     }
 
+    /// <summary>
+    /// Applies changes for the ApplyPeriodContext operation.
+    /// </summary>
     public static void ApplyPeriodContext(DashboardViewModel viewModel, DashboardPeriodContext context)
     {
         viewModel.SelectedYear = context.SelectedYear;
         viewModel.AvailableYears = context.AvailableYears.ToList();
     }
 
+    /// <summary>
+    /// Builds the value returned by the BuildMonthlyTrendAsync operation.
+    /// </summary>
     public static async Task<MonthlyTrendResult> BuildMonthlyTrendAsync(
         ApplicationDbContext context,
         DashboardPeriodContext period,
@@ -51,6 +65,9 @@ internal static class HomeDashboardSupport
             period,
             cancellationToken);
 
+    /// <summary>
+    /// Builds the value returned by the BuildMonthlyTrendAsync operation.
+    /// </summary>
     public static async Task<MonthlyTrendResult> BuildMonthlyTrendAsync(
         IQueryable<OnboardingRequest> onboardingQuery,
         IQueryable<OffboardingRequest> offboardingQuery,
@@ -91,6 +108,9 @@ internal static class HomeDashboardSupport
         return new MonthlyTrendResult(labels, onboarding, offboarding);
     }
 
+    /// <summary>
+    /// Runs the PopulateAuditMetricsAsync operation.
+    /// </summary>
     public static async Task PopulateAuditMetricsAsync(
         ApplicationDbContext context,
         DashboardViewModel viewModel,
@@ -132,6 +152,9 @@ internal static class HomeDashboardSupport
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Builds the value returned by the BuildWindowsVersionDistributionAsync operation.
+    /// </summary>
     public static async Task<Dictionary<string, int>> BuildWindowsVersionDistributionAsync(
         ApplicationDbContext context,
         CancellationToken cancellationToken)
@@ -139,6 +162,9 @@ internal static class HomeDashboardSupport
             context.ITAssets.AsNoTracking(),
             cancellationToken);
 
+    /// <summary>
+    /// Builds the value returned by the BuildWindowsVersionDistributionAsync operation.
+    /// </summary>
     public static async Task<Dictionary<string, int>> BuildWindowsVersionDistributionAsync(
         IQueryable<IT_Form.Models.ITAsset> assetQuery,
         CancellationToken cancellationToken)
@@ -158,6 +184,9 @@ internal static class HomeDashboardSupport
             .ToDictionary(item => item.Version, item => item.Count);
     }
 
+    /// <summary>
+    /// Builds the value returned by the BuildLicenseUtilizationAsync operation.
+    /// </summary>
     public static async Task<LicenseUtilizationResult> BuildLicenseUtilizationAsync(
         ApplicationDbContext context,
         CancellationToken cancellationToken)
@@ -165,6 +194,9 @@ internal static class HomeDashboardSupport
             context.SoftwareLicenses.AsNoTracking(),
             cancellationToken);
 
+    /// <summary>
+    /// Builds the value returned by the BuildLicenseUtilizationAsync operation.
+    /// </summary>
     public static async Task<LicenseUtilizationResult> BuildLicenseUtilizationAsync(
         IQueryable<SoftwareLicense> softwareLicensesQuery,
         CancellationToken cancellationToken)
@@ -205,6 +237,9 @@ internal static class HomeDashboardSupport
             items.Sum(item => item.Used));
     }
 
+    /// <summary>
+    /// Gets the data required by the GetLicenseSeatCapacity operation.
+    /// </summary>
     public static int GetLicenseSeatCapacity(SoftwareLicense license)
     {
         if (license.IsFree)
@@ -217,6 +252,9 @@ internal static class HomeDashboardSupport
             : license.Keys.Count;
     }
 
+    /// <summary>
+    /// Gets the data required by the GetAssignedSeatCount operation.
+    /// </summary>
     public static int GetAssignedSeatCount(SoftwareLicense license)
     {
         if (license.IsFree)
@@ -227,6 +265,9 @@ internal static class HomeDashboardSupport
         return license.Keys.Count(key => key.IsAssigned);
     }
 
+    /// <summary>
+    /// Gets the data required by the GetLicenseSeatCapacity operation.
+    /// </summary>
     private static int GetLicenseSeatCapacity(SoftwareLicenseUsageSnapshot license)
     {
         if (license.IsFree)
@@ -239,6 +280,9 @@ internal static class HomeDashboardSupport
             : license.KeyCount;
     }
 
+    /// <summary>
+    /// Gets the data required by the GetAssignedSeatCount operation.
+    /// </summary>
     private static int GetAssignedSeatCount(SoftwareLicenseUsageSnapshot license)
     {
         if (license.IsFree)
@@ -249,6 +293,9 @@ internal static class HomeDashboardSupport
         return license.AssignedKeyCount;
     }
 
+    /// <summary>
+    /// Runs the NormalizeOS operation.
+    /// </summary>
     public static string NormalizeOS(string? os)
     {
         if (string.IsNullOrWhiteSpace(os))
@@ -296,6 +343,9 @@ internal static class HomeDashboardSupport
         return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(normalized);
     }
 
+    /// <summary>
+    /// Defines the SoftwareLicenseUsageSnapshot record used by the IT Form application.
+    /// </summary>
     private sealed record SoftwareLicenseUsageSnapshot(
         string SoftwareName,
         bool IsFree,

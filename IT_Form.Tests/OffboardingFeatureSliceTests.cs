@@ -1,3 +1,5 @@
+// Project comment: OffboardingFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Security.Claims;
 using System.Threading;
@@ -20,9 +22,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the OffboardingFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class OffboardingFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the RejectValidator_Fails_WhenReasonMissing operation.
+    /// </summary>
     public void RejectValidator_Fails_WhenReasonMissing()
     {
         var validator = new RejectOffboardingRequestCommandValidator();
@@ -33,6 +41,9 @@ public class OffboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RejectHandler_ReturnsRejected_WhenUserIsITAndRequestEditable operation.
+    /// </summary>
     public async Task RejectHandler_ReturnsRejected_WhenUserIsITAndRequestEditable()
     {
         using var context = CreateContext();
@@ -62,6 +73,9 @@ public class OffboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RegenerateTokenValidator_Fails_WhenIdInvalid operation.
+    /// </summary>
     public void RegenerateTokenValidator_Fails_WhenIdInvalid()
     {
         var validator = new RegenerateOffboardingTokenCommandValidator();
@@ -72,6 +86,9 @@ public class OffboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RegenerateTokenHandler_Regenerates_WhenPendingEmployeeSign operation.
+    /// </summary>
     public async Task RegenerateTokenHandler_Regenerates_WhenPendingEmployeeSign()
     {
         using var context = CreateContext();
@@ -104,6 +121,9 @@ public class OffboardingFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetStep2Handler_ReturnsForbidden_WhenItUserTargetsDifferentCompany operation.
+    /// </summary>
     public async Task GetStep2Handler_ReturnsForbidden_WhenItUserTargetsDifferentCompany()
     {
         using var context = CreateContext();
@@ -129,6 +149,9 @@ public class OffboardingFeatureSliceTests
         Assert.False(result.IsSuccess);
     }
 
+    /// <summary>
+    /// Builds the value returned by the BuildUser operation.
+    /// </summary>
     private static ClaimsPrincipal BuildUser(string username, string title, string? company = null)
     {
         var identity = new ClaimsIdentity("mock");
@@ -141,6 +164,9 @@ public class OffboardingFeatureSliceTests
         return new ClaimsPrincipal(identity);
     }
 
+    /// <summary>
+    /// Creates data for the CreateUserManager operation.
+    /// </summary>
     private static Mock<UserManager<ApplicationUser>> CreateUserManager()
     {
         var store = new Mock<IUserStore<ApplicationUser>>();
@@ -156,6 +182,9 @@ public class OffboardingFeatureSliceTests
             null!);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

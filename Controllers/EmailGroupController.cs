@@ -1,3 +1,5 @@
+// Project comment: EmailGroupController.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Features.EmailGroup;
 using IT_Form.Application.Features.EmailGroup.AddCurrentEmployeeToEmailGroup;
@@ -12,6 +14,9 @@ using MediatR;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the EmailGroup area.
+    /// </summary>
     public class EmailGroupController : AppControllerBase
     {
         private readonly IMediator _mediator;
@@ -21,13 +26,22 @@ namespace IT_Form.Controllers
             _mediator = mediator;
         }
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(int? companyId = null)
             => HandleProcessResult(await _mediator.Send(new GetEmailGroupIndexPageQuery(companyId)));
 
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _mediator.Send(new GetEmailGroupCreatePageQuery()));
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(EmailGroupEditorPageViewModel model, int[] selectedCompanyIds)
         {
             if (model == null) return HandleProcessResult(await _mediator.Send(new GetEmailGroupCreatePageQuery()));
@@ -48,9 +62,15 @@ namespace IT_Form.Controllers
         }
 
         [NonAction]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public Task<IActionResult> Create(EmailGroupEditorPageViewModel model)
             => Create(model, System.Array.Empty<int>());
 
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -58,6 +78,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, EmailGroupEditorPageViewModel model, int[] selectedCompanyIds)
         {
             if (id != model.Id) return NotFound();
@@ -79,6 +102,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(int id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -90,10 +116,16 @@ namespace IT_Form.Controllers
                 nameof(Index),
                 new { });
 
+        /// <summary>
+        /// Runs the Members operation.
+        /// </summary>
         public async Task<IActionResult> Members(int id, int? onboardingRequestId = null)
             => HandleProcessResult(await _mediator.Send(new GetEmailGroupMembersPageQuery(id, onboardingRequestId)));
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the AddCurrentEmployee operation.
+        /// </summary>
         public async Task<IActionResult> AddCurrentEmployee(int id, int onboardingRequestId)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -121,19 +153,31 @@ namespace IT_Form.Controllers
                 nameof(Members),
                 new { id, onboardingRequestId });
 
+        /// <summary>
+        /// Runs the Report operation.
+        /// </summary>
         public async Task<IActionResult> Report(int? id, string? searchString, int page = 1)
             => HandleProcessResult(await _mediator.Send(new GetEmailGroupReportPageQuery(id, searchString, page)));
 
+        /// <summary>
+        /// Runs the ExportCsv operation.
+        /// </summary>
         public async Task<IActionResult> ExportCsv(int? id, string? searchString)
             => HandleProcessResult(await _mediator.Send(new ExportEmailGroupReportCsvQuery(id, searchString)));
 
         // GET: /EmailGroup/DownloadTemplate
+        /// <summary>
+        /// Runs the DownloadTemplate operation.
+        /// </summary>
         public async Task<IActionResult> DownloadTemplate()
             => HandleProcessResult(await _mediator.Send(new DownloadEmailGroupTemplateQuery()));
 
 
         // POST: /EmailGroup/ImportExcel
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ImportExcel operation.
+        /// </summary>
         public async Task<IActionResult> ImportExcel(IFormFile file)
             => await ExecuteWithValidationRedirect(
                 async () =>

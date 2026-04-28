@@ -1,7 +1,12 @@
+// Project comment: ResetPasswordViewModel.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the ResetPassword screen or form.
+    /// </summary>
     public class ResetPasswordViewModel
     {
         [Required]

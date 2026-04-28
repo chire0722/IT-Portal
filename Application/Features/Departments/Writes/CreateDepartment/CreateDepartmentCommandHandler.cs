@@ -1,3 +1,5 @@
+// Project comment: CreateDepartmentCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
@@ -11,6 +13,9 @@ using DepartmentEntity = IT_Form.Models.Department;
 
 namespace IT_Form.Application.Features.Departments.Writes.CreateDepartment;
 
+/// <summary>
+/// Handles the CreateDepartmentCommand command workflow.
+/// </summary>
 public sealed class CreateDepartmentCommandHandler : IRequestHandler<CreateDepartmentCommand, int>
 {
     private readonly ApplicationDbContext _context;
@@ -22,6 +27,9 @@ public sealed class CreateDepartmentCommandHandler : IRequestHandler<CreateDepar
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<int> Handle(CreateDepartmentCommand request, CancellationToken cancellationToken)
     {
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanyIds, cancellationToken);
@@ -34,6 +42,9 @@ public sealed class CreateDepartmentCommandHandler : IRequestHandler<CreateDepar
         return entity.Id;
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
         var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(

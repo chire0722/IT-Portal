@@ -1,7 +1,12 @@
+// Project comment: EmailGroup.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the EmailGroup class used by the IT Form application.
+    /// </summary>
     public class EmailGroup
     {
         public int Id { get; set; }

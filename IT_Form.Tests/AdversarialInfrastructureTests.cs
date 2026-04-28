@@ -1,3 +1,5 @@
+// Project comment: AdversarialInfrastructureTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Threading.Tasks;
 using IT_Form.Controllers;
@@ -11,23 +13,35 @@ using IT_Form.Tests.Helpers;
 namespace IT_Form.Tests
 {
     // A dummy controller to test the base infrastructure
+    /// <summary>
+    /// Handles web requests for the MockSecurity area.
+    /// </summary>
     public class MockSecurityController : Controller
     {
         private readonly ApplicationDbContext _context;
         public MockSecurityController(ApplicationDbContext context) => _context = context;
 
+        /// <summary>
+        /// Runs the AdminOnly operation.
+        /// </summary>
         public IActionResult AdminOnly()
         {
             if (User.FindFirst("UserTitle")?.Value != "IT") return Forbid();
             return Ok("Secret Area");
         }
 
+        /// <summary>
+        /// Runs the NullCheck operation.
+        /// </summary>
         public IActionResult NullCheck(Department? dept)
         {
             if (dept == null) return BadRequest("Null provided");
             return Ok(dept.Name);
         }
 
+        /// <summary>
+        /// Runs the Details operation.
+        /// </summary>
         public async Task<IActionResult> Details(int id)
         {
             var dept = await _context.Departments.FindAsync(id);
@@ -36,9 +50,15 @@ namespace IT_Form.Tests
         }
     }
 
+    /// <summary>
+    /// Defines the AdversarialInfrastructureTests class used by the IT Form application.
+    /// </summary>
     public class AdversarialInfrastructureTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Base_CanSimulate_AdminRole operation.
+        /// </summary>
         public void Base_CanSimulate_AdminRole()
         {
             using var context = CreateContext();
@@ -50,6 +70,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Base_CanSimulate_UnauthorizedRole operation.
+        /// </summary>
         public void Base_CanSimulate_UnauthorizedRole()
         {
             using var context = CreateContext();
@@ -61,6 +84,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Base_Supports_NullInjection operation.
+        /// </summary>
         public void Base_Supports_NullInjection()
         {
             using var context = CreateContext();
@@ -73,6 +99,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Base_Handles_MissingId_WithoutCrash operation.
+        /// </summary>
         public async Task Base_Handles_MissingId_WithoutCrash()
         {
             using var context = CreateContext();
@@ -85,6 +114,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Base_Session_IsOperation operation.
+        /// </summary>
         public void Base_Session_IsOperation()
         {
              using var context = CreateContext();

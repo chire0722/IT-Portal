@@ -1,3 +1,5 @@
+// Project comment: ResetPasswordCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
@@ -8,6 +10,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace IT_Form.Application.Features.Account.ResetPassword
 {
+    /// <summary>
+    /// Handles the ResetPasswordCommand command workflow.
+    /// </summary>
     public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, ResetPasswordResult>
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -30,6 +35,9 @@ namespace IT_Form.Application.Features.Account.ResetPassword
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ResetPasswordResult> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
@@ -77,6 +85,9 @@ namespace IT_Form.Application.Features.Account.ResetPassword
                 Array.Empty<string>());
         }
 
+        /// <summary>
+        /// Runs the QueueSecurityAlertAsync operation.
+        /// </summary>
         private async Task QueueSecurityAlertAsync(ApplicationUser user, string method, CancellationToken cancellationToken)
         {
             string subject = "IT Form - Security Alert: Password Changed";

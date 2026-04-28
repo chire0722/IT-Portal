@@ -1,9 +1,14 @@
+// Project comment: SoftwareKey.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using IT_Form.Attributes;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the SoftwareKey class used by the IT Form application.
+    /// </summary>
     public class SoftwareKey : ISoftDeletable
     {
         public int Id { get; set; }

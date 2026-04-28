@@ -1,3 +1,4 @@
+<!-- Project comment: IT Form.csproj defines a .NET project in the IT Form solution. -->
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>

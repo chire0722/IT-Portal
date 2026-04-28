@@ -1,7 +1,12 @@
+// Project comment: EmailConfirmationViewModel.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Provides view data for the EmailConfirmation screen or form.
+    /// </summary>
     public class EmailConfirmationViewModel
     {
         [Required]

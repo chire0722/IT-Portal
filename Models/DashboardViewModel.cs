@@ -1,8 +1,13 @@
+// Project comment: DashboardViewModel.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 using System.Linq;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Provides view data for the Dashboard screen or form.
+    /// </summary>
     public class DashboardViewModel
     {
         public IEnumerable<DashboardOnboardingQueueItem> PendingOnboarding { get; set; } = new List<DashboardOnboardingQueueItem>();
@@ -136,6 +141,9 @@ namespace IT_Form.Models
         public double SlaYoYDiff => Math.Round(AvgOnboardingDays - PrevYearAvgOnboardingDays, 1);
     }
 
+    /// <summary>
+    /// Defines the CombinedPendingTask class used by the IT Form application.
+    /// </summary>
     public class CombinedPendingTask
     {
         public int Id { get; set; }
@@ -148,6 +156,9 @@ namespace IT_Form.Models
         public int DaysPending { get; set; }
     }
 
+    /// <summary>
+    /// Provides view data for the SoftwareUtilization screen or form.
+    /// </summary>
     public class SoftwareUtilizationViewModel
     {
         public string SoftwareName { get; set; } = string.Empty;

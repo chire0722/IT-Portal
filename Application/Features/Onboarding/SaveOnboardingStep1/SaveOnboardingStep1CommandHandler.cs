@@ -1,3 +1,5 @@
+// Project comment: SaveOnboardingStep1CommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Helpers;
@@ -10,6 +12,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.SaveOnboardingStep1
 {
+    /// <summary>
+    /// Handles the SaveOnboardingStep1Command command workflow.
+    /// </summary>
     public sealed class SaveOnboardingStep1CommandHandler
         : IRequestHandler<SaveOnboardingStep1Command, SaveOnboardingStep1Result>
     {
@@ -27,6 +32,9 @@ namespace IT_Form.Application.Features.Onboarding.SaveOnboardingStep1
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<SaveOnboardingStep1Result> Handle(SaveOnboardingStep1Command request, CancellationToken cancellationToken)
         {
             var session = request.Session;

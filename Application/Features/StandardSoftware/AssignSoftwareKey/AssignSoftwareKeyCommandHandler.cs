@@ -1,3 +1,5 @@
+// Project comment: AssignSoftwareKeyCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Services;
@@ -8,6 +10,9 @@ using System.Text;
 
 namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
 {
+    /// <summary>
+    /// Handles the AssignSoftwareKeyCommand command workflow.
+    /// </summary>
     public sealed class AssignSoftwareKeyCommandHandler : IRequestHandler<AssignSoftwareKeyCommand, AssignSoftwareKeyResult>
     {
         private readonly ApplicationDbContext _context;
@@ -24,6 +29,9 @@ namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
             _emailBackgroundQueue = emailBackgroundQueue;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<AssignSoftwareKeyResult> Handle(AssignSoftwareKeyCommand request, CancellationToken cancellationToken)
         {
             var key = await _context.SoftwareKeys.Include(k => k.SoftwareLicense).FirstOrDefaultAsync(k => k.Id == request.Id, cancellationToken);
@@ -117,6 +125,9 @@ namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
             return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.AssignedOrUnassigned, "Updated successfully.");
         }
 
+        /// <summary>
+        /// Runs the QueueLowLicenseAvailabilityAsync operation.
+        /// </summary>
         private async Task<bool> QueueLowLicenseAvailabilityAsync(int softwareLicenseId, CancellationToken cancellationToken)
         {
             var license = await _context.SoftwareLicenses

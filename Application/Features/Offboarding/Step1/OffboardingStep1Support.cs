@@ -1,3 +1,5 @@
+// Project comment: OffboardingStep1Support.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -10,11 +12,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.Step1
 {
+    /// <summary>
+    /// Defines the OffboardingStep1Support class used by the IT Form application.
+    /// </summary>
     internal static class OffboardingStep1Support
     {
         private static readonly string[] DamageExtensions = [".pdf", ".jpg", ".jpeg", ".png", ".mp4", ".mov", ".webm"];
         private static readonly string[] ReturnExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+        private const long MaxDamageFileBytes = 50 * 1024 * 1024;
+        private const long MaxReturnFileBytes = 10 * 1024 * 1024;
 
+        /// <summary>
+        /// Applies changes for the ApplyStep1Fields operation.
+        /// </summary>
         internal static void ApplyStep1Fields(OffboardingRequest existing, OffboardingRequest request)
         {
             existing.AccountDisabledAD = request.AccountDisabledAD;
@@ -49,6 +59,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             existing.FinesRemarks = request.FinesRemarks;
         }
 
+        /// <summary>
+        /// Validates data for the ValidateDamageFile operation.
+        /// </summary>
         internal static string? ValidateDamageFile(IFormFile? file)
         {
             if (file == null || file.Length <= 0)
@@ -56,13 +69,18 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 return null;
             }
 
+            if (file.Length > MaxDamageFileBytes)
+            {
+                return "Hardware proof file size exceeds the 50MB limit.";
+            }
+
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!string.IsNullOrEmpty(extension) && !DamageExtensions.Contains(extension))
+            if (string.IsNullOrEmpty(extension) || !DamageExtensions.Contains(extension))
             {
                 return "Invalid file type. Allowed: PDF, images (.jpg, .jpeg, .png), and videos (.mp4, .mov, .webm).";
             }
 
-            var contentType = file.ContentType.ToLowerInvariant();
+            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
             if (!contentType.StartsWith("image/") &&
                 !contentType.StartsWith("video/") &&
                 contentType != "application/pdf")
@@ -73,6 +91,35 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             return null;
         }
 
+        /// <summary>
+        /// Validates data for the ValidateReturnFile operation.
+        /// </summary>
+        internal static string? ValidateReturnFile(IFormFile? file)
+        {
+            if (file == null || file.Length <= 0)
+            {
+                return null;
+            }
+
+            if (file.Length > MaxReturnFileBytes)
+            {
+                return "Hardware return file size exceeds the 10MB limit.";
+            }
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
+            if (!ReturnExtensions.Contains(extension) ||
+                (!contentType.StartsWith("image/") && contentType != "application/pdf"))
+            {
+                return "Invalid return file type. Only PDF and images (.jpg, .jpeg, .png) are allowed.";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Saves data for the SaveDamageFileAsync operation.
+        /// </summary>
         internal static async Task SaveDamageFileAsync(
             IWebHostEnvironment env,
             OffboardingRequest existing,
@@ -96,6 +143,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Saves data for the SaveReturnFileAsync operation.
+        /// </summary>
         internal static async Task SaveReturnFileAsync(
             IWebHostEnvironment env,
             OffboardingRequest existing,
@@ -109,7 +159,7 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
 
             var extension = Path.GetExtension(hardwareReturnImage.FileName).ToLowerInvariant();
-            var contentType = hardwareReturnImage.ContentType.ToLowerInvariant();
+            var contentType = hardwareReturnImage.ContentType?.ToLowerInvariant() ?? string.Empty;
             if (!ReturnExtensions.Contains(extension) ||
                 (!contentType.StartsWith("image/") && contentType != "application/pdf"))
             {
@@ -126,6 +176,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the MarkReturnedAssetsAsync operation.
+        /// </summary>
         internal static async Task MarkReturnedAssetsAsync(
             ApplicationDbContext context,
             IReadOnlyCollection<int>? returnedAssetIds,
@@ -146,6 +199,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
         }
 
+        /// <summary>
+        /// Runs the FailureAsync operation.
+        /// </summary>
         internal static async Task<ProcessResult<OffboardingStep1PageViewModel>> FailureAsync(
             ApplicationDbContext context,
             string message,
@@ -158,6 +214,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             };
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildPageModelAsync operation.
+        /// </summary>
         private static async Task<OffboardingStep1PageViewModel> BuildPageModelAsync(
             ApplicationDbContext context,
             OffboardingRequest request,

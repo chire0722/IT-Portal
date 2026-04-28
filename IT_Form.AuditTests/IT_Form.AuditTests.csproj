@@ -1,3 +1,4 @@
+<!-- Project comment: IT_Form.AuditTests.csproj defines a .NET project in the IT Form solution. -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>

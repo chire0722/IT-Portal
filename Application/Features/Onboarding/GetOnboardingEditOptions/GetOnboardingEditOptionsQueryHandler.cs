@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingEditOptionsQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Services;
@@ -7,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingEditOptions
 {
+    /// <summary>
+    /// Handles the GetOnboardingEditOptionsQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingEditOptionsQueryHandler
         : IRequestHandler<GetOnboardingEditOptionsQuery, EditOnboardingPageViewModel>
     {
@@ -21,6 +26,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingEditOptions
             _onboardingHodService = onboardingHodService;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<EditOnboardingPageViewModel> Handle(GetOnboardingEditOptionsQuery request, CancellationToken cancellationToken)
         {
             var model = request.Model;

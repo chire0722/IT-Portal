@@ -1,3 +1,5 @@
+// Project comment: EmployeeApiControllerTests.cs is part of the IT Form application source code.
+
 using System.IO;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
@@ -12,9 +14,15 @@ using Xunit;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the EmployeeApiControllerTests class used by the IT Form application.
+    /// </summary>
     public class EmployeeApiControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Import_RecordsEmployeeIdDeskNumberAndJoinDate_FromHeaderMappedSheet operation.
+        /// </summary>
         public async Task Import_RecordsEmployeeIdDeskNumberAndJoinDate_FromHeaderMappedSheet()
         {
             using var context = CreateContext();
@@ -74,6 +82,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Import_MatchesCompanyFromPartialNameAndLotReference operation.
+        /// </summary>
         public async Task Import_MatchesCompanyFromPartialNameAndLotReference()
         {
             using var context = CreateContext();
@@ -139,6 +150,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Gets the data required by the GetHodsByCompany_ReturnsOnlyCompanyMatchedHods operation.
+        /// </summary>
         public async Task GetHodsByCompany_ReturnsOnlyCompanyMatchedHods()
         {
             using var context = CreateContext();
@@ -166,6 +180,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the DownloadTemplate_UsesCurrentDepartmentAndCompanyDropdowns operation.
+        /// </summary>
         public async Task DownloadTemplate_UsesCurrentDepartmentAndCompanyDropdowns()
         {
             using var context = CreateContext();

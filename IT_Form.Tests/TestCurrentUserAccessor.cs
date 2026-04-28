@@ -1,8 +1,13 @@
+// Project comment: TestCurrentUserAccessor.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the TestCurrentUserAccessor class used by the IT Form application.
+/// </summary>
 public sealed class TestCurrentUserAccessor : ICurrentUserAccessor
 {
     public TestCurrentUserAccessor(

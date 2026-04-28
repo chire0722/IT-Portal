@@ -1,3 +1,5 @@
+// Project comment: InventoryEndpointAssignmentTests.cs is part of the IT Form application source code.
+
 using System;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -7,9 +9,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the InventoryEndpointAssignmentTests class used by the IT Form application.
+/// </summary>
 public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
 {
     [Fact]
+    /// <summary>
+    /// Runs the ResolveVerificationAssignmentAsync_MatchesCurrentEmployee_ByEmail operation.
+    /// </summary>
     public async Task ResolveVerificationAssignmentAsync_MatchesCurrentEmployee_ByEmail()
     {
         using var context = CreateContext();
@@ -39,6 +47,9 @@ public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ResolveVerificationAssignmentAsync_FallsBackToManualName_WhenCurrentEmployeeRecordMissing operation.
+    /// </summary>
     public async Task ResolveVerificationAssignmentAsync_FallsBackToManualName_WhenCurrentEmployeeRecordMissing()
     {
         using var context = CreateContext();
@@ -60,6 +71,9 @@ public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
     }
 
     [Fact]
+    /// <summary>
+    /// Applies changes for the ApplyVerificationAssignmentAsync_AssignsAssetToSelectedEmployee operation.
+    /// </summary>
     public async Task ApplyVerificationAssignmentAsync_AssignsAssetToSelectedEmployee()
     {
         using var context = CreateContext();
@@ -113,6 +127,9 @@ public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
     }
 
     [Fact]
+    /// <summary>
+    /// Applies changes for the ApplyVerificationAssignmentAsync_DoesNothing_WhenTokenHasNoEmployee operation.
+    /// </summary>
     public async Task ApplyVerificationAssignmentAsync_DoesNothing_WhenTokenHasNoEmployee()
     {
         using var context = CreateContext();
@@ -146,6 +163,9 @@ public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
     }
 
     [Fact]
+    /// <summary>
+    /// Applies changes for the ApplyHardwareFingerprintTelemetry_CapturesFirstFingerprint_AsBaselineAndLatest operation.
+    /// </summary>
     public void ApplyHardwareFingerprintTelemetry_CapturesFirstFingerprint_AsBaselineAndLatest()
     {
         var asset = new ITAsset
@@ -171,6 +191,9 @@ public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
     }
 
     [Fact]
+    /// <summary>
+    /// Applies changes for the ApplyHardwareFingerprintTelemetry_FlagsWarning_WhenLatestFingerprintDiffersFromBaseline operation.
+    /// </summary>
     public void ApplyHardwareFingerprintTelemetry_FlagsWarning_WhenLatestFingerprintDiffersFromBaseline()
     {
         var asset = new ITAsset
@@ -198,6 +221,9 @@ public sealed class InventoryEndpointAssignmentTests : ControllerTestBase
     }
 
     [Fact]
+    /// <summary>
+    /// Applies changes for the ApplyHardwareFingerprintTelemetry_ClearsExistingWarning_WhenLatestFingerprintMatchesBaseline operation.
+    /// </summary>
     public void ApplyHardwareFingerprintTelemetry_ClearsExistingWarning_WhenLatestFingerprintMatchesBaseline()
     {
         var asset = new ITAsset

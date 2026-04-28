@@ -1,3 +1,5 @@
+// Project comment: SubmitOffboardingCreateCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.Create
 {
+    /// <summary>
+    /// Handles the SubmitOffboardingCreateCommand command workflow.
+    /// </summary>
     public sealed class SubmitOffboardingCreateCommandHandler
         : IRequestHandler<SubmitOffboardingCreateCommand, ProcessResult<OffboardingCreatePageViewModel>>
     {
@@ -28,6 +33,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OffboardingCreatePageViewModel>> Handle(
             SubmitOffboardingCreateCommand command,
             CancellationToken cancellationToken)

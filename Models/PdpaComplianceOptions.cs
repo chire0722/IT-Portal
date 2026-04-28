@@ -1,5 +1,10 @@
+// Project comment: PdpaComplianceOptions.cs is part of the IT Form application source code.
+
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the PdpaComplianceOptions class used by the IT Form application.
+    /// </summary>
     public sealed class PdpaComplianceOptions
     {
         public string DataControllerName { get; set; } = "YTC / PYT Group";

@@ -1,7 +1,12 @@
+// Project comment: RequestDetailsReadModels.cs is part of the IT Form application source code.
+
 using IT_Form.Models.Enums;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Defines the RequestAssetReadModel class used by the IT Form application.
+    /// </summary>
     public sealed class RequestAssetReadModel
     {
         public AssetType AssetType { get; set; }
@@ -15,6 +20,9 @@ namespace IT_Form.ViewModels
         public RequestLinkedAssetReadModel? ITAsset { get; set; }
     }
 
+    /// <summary>
+    /// Defines the RequestLinkedAssetReadModel class used by the IT Form application.
+    /// </summary>
     public sealed class RequestLinkedAssetReadModel
     {
         public string AssetTag { get; set; } = string.Empty;
@@ -23,18 +31,27 @@ namespace IT_Form.ViewModels
         public AssetStatus Status { get; set; }
     }
 
+    /// <summary>
+    /// Defines the RequestIssuedSoftwareReadModel class used by the IT Form application.
+    /// </summary>
     public sealed class RequestIssuedSoftwareReadModel
     {
         public string SoftwareName { get; set; } = string.Empty;
         public string? Notes { get; set; }
     }
 
+    /// <summary>
+    /// Defines the RequestSoftwareReadModel class used by the IT Form application.
+    /// </summary>
     public sealed class RequestSoftwareReadModel
     {
         public int? Id { get; set; }
         public string SoftwareName { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Defines the RequestEmailGroupReadModel class used by the IT Form application.
+    /// </summary>
     public sealed class RequestEmailGroupReadModel
     {
         public int? Id { get; set; }
@@ -42,6 +59,9 @@ namespace IT_Form.ViewModels
         public string? GroupEmail { get; set; }
     }
 
+    /// <summary>
+    /// Defines the RequestSharedMailboxReadModel class used by the IT Form application.
+    /// </summary>
     public sealed class RequestSharedMailboxReadModel
     {
         public int? Id { get; set; }
@@ -49,6 +69,9 @@ namespace IT_Form.ViewModels
         public string? MailboxAddress { get; set; }
     }
 
+    /// <summary>
+    /// Defines the RequestFolderPermissionReadModel class used by the IT Form application.
+    /// </summary>
     public sealed class RequestFolderPermissionReadModel
     {
         public string FolderName { get; set; } = string.Empty;

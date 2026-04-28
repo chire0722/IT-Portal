@@ -1,7 +1,12 @@
+// Project comment: UpdateEmailContactCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.EmailContact.Writes.UpdateEmailContact;
 
+/// <summary>
+/// Validates input for the UpdateEmailContactCommand request.
+/// </summary>
 public sealed class UpdateEmailContactCommandValidator : AbstractValidator<UpdateEmailContactCommand>
 {
     public UpdateEmailContactCommandValidator()

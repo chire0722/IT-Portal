@@ -1,3 +1,5 @@
+// Project comment: OnboardingItSetupSupport.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
@@ -7,8 +9,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
 {
+    /// <summary>
+    /// Defines the OnboardingItSetupSupport class used by the IT Form application.
+    /// </summary>
     internal static class OnboardingItSetupSupport
     {
+        /// <summary>
+        /// Applies changes for the ApplyChecklistToSession operation.
+        /// </summary>
         internal static void ApplyChecklistToSession(OnboardingViewModel session, CompleteOnboardingItSetupCommand command)
         {
             session.CheckPhysicalClean = command.CheckPhysicalClean;
@@ -28,6 +36,9 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
             session.ChecklistRemarks = command.ChecklistRemarks;
         }
 
+        /// <summary>
+        /// Runs the RebuildSoftwareAssignmentsAsync operation.
+        /// </summary>
         internal static async Task<SoftwareAssignmentResult> RebuildSoftwareAssignmentsAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -101,6 +112,9 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
             return new SoftwareAssignmentResult(newAssignmentsLog, outOfStockLog);
         }
 
+        /// <summary>
+        /// Runs the SyncIssuedAssetsAsync operation.
+        /// </summary>
         internal static async Task SyncIssuedAssetsAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -172,6 +186,9 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
             }
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildSuccessMessage operation.
+        /// </summary>
         internal static string BuildSuccessMessage(string fullName, IReadOnlyCollection<string> newAssignmentsLog)
         {
             var message = $"IT setup complete for {fullName}.";
@@ -183,12 +200,18 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
             return message;
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildWarningMessage operation.
+        /// </summary>
         internal static string? BuildWarningMessage(IReadOnlyCollection<string> outOfStockLog)
             => outOfStockLog.Any()
                 ? $"Out of stock! Could not assign keys for: {string.Join(", ", outOfStockLog)}. Please add more keys in the Software Inventory."
                 : null;
     }
 
+    /// <summary>
+    /// Represents the result returned by the SoftwareAssignment workflow.
+    /// </summary>
     internal sealed record SoftwareAssignmentResult(
         IReadOnlyCollection<string> AssignedSoftwareNames,
         IReadOnlyCollection<string> OutOfStockSoftwareNames);

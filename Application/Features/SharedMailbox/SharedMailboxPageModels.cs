@@ -1,3 +1,5 @@
+// Project comment: SharedMailboxPageModels.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Application.Common.Models;
 using IT_Form.Helpers;
@@ -5,6 +7,9 @@ using IT_Form.Models.Enums;
 
 namespace IT_Form.Application.Features.SharedMailbox;
 
+/// <summary>
+/// Defines the SharedMailboxIndexListItem class used by the IT Form application.
+/// </summary>
 public sealed class SharedMailboxIndexListItem
 {
     public int Id { get; init; }
@@ -14,6 +19,9 @@ public sealed class SharedMailboxIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+/// <summary>
+/// Provides view data for the SharedMailboxIndexPage screen or form.
+/// </summary>
 public sealed class SharedMailboxIndexPageViewModel
 {
     public int? SelectedCompanyId { get; init; }
@@ -21,6 +29,9 @@ public sealed class SharedMailboxIndexPageViewModel
     public List<SharedMailboxIndexListItem> Items { get; init; } = [];
 }
 
+/// <summary>
+/// Provides view data for the SharedMailboxEditorPage screen or form.
+/// </summary>
 public sealed class SharedMailboxEditorPageViewModel
 {
     public int Id { get; set; }
@@ -43,6 +54,9 @@ public sealed class SharedMailboxEditorPageViewModel
     public List<PageCompanyOption> CompanyOptions { get; set; } = [];
 }
 
+/// <summary>
+/// Provides view data for the SharedMailboxMembersPage screen or form.
+/// </summary>
 public sealed class SharedMailboxMembersPageViewModel
 {
     public int MailboxId { get; init; }
@@ -54,6 +68,9 @@ public sealed class SharedMailboxMembersPageViewModel
     public List<SharedMailboxMemberListItem> Members { get; init; } = [];
 }
 
+/// <summary>
+/// Defines the SharedMailboxMemberListItem class used by the IT Form application.
+/// </summary>
 public sealed class SharedMailboxMemberListItem
 {
     public string EmployeeName { get; init; } = "Unknown";
@@ -65,6 +82,9 @@ public sealed class SharedMailboxMemberListItem
     public string ControllerName { get; init; } = string.Empty;
 }
 
+/// <summary>
+/// Provides view data for the SharedMailboxReportPage screen or form.
+/// </summary>
 public sealed class SharedMailboxReportPageViewModel
 {
     public PaginatedList<IT_Form.ViewModels.SharedMailboxAccessReportViewModel> Report { get; init; }

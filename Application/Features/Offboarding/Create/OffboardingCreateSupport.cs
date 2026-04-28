@@ -1,3 +1,5 @@
+// Project comment: OffboardingCreateSupport.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -12,11 +14,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.Create
 {
+    /// <summary>
+    /// Defines the OffboardingCreateSupport class used by the IT Form application.
+    /// </summary>
     internal static class OffboardingCreateSupport
     {
         private static readonly string[] AllowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
         private static readonly string[] ValidMimeTypes = ["application/pdf", "image/jpeg", "image/png"];
 
+        /// <summary>
+        /// Validates data for the ValidateAssignedHodAsync operation.
+        /// </summary>
         internal static async Task<string?> ValidateAssignedHodAsync(
             ApplicationDbContext context,
             OffboardingRequest request,
@@ -50,6 +58,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
             return null;
         }
 
+        /// <summary>
+        /// Validates data for the ValidateResignationLetter operation.
+        /// </summary>
         internal static string? ValidateResignationLetter(IFormFile? resignationLetter)
         {
             if (resignationLetter == null || resignationLetter.Length <= 0)
@@ -63,12 +74,12 @@ namespace IT_Form.Application.Features.Offboarding.Create
             }
 
             var extension = Path.GetExtension(resignationLetter.FileName).ToLowerInvariant();
-            if (!string.IsNullOrEmpty(extension) && !AllowedExtensions.Contains(extension))
+            if (string.IsNullOrEmpty(extension) || !AllowedExtensions.Contains(extension))
             {
                 return "Invalid file type. Only PDF and images (.jpg, .jpeg, .png) are allowed.";
             }
 
-            var contentType = resignationLetter.ContentType.ToLowerInvariant();
+            var contentType = resignationLetter.ContentType?.ToLowerInvariant() ?? string.Empty;
             if (!ValidMimeTypes.Contains(contentType))
             {
                 return "Invalid file content. Real image or PDF files only.";
@@ -77,6 +88,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
             return null;
         }
 
+        /// <summary>
+        /// Saves data for the SaveResignationLetterAsync operation.
+        /// </summary>
         internal static async Task SaveResignationLetterAsync(
             ApplicationDbContext context,
             IWebHostEnvironment env,
@@ -101,6 +115,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
             await context.SaveChangesAsync(cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the FailureAsync operation.
+        /// </summary>
         internal static async Task<ProcessResult<OffboardingCreatePageViewModel>> FailureAsync(
             ApplicationDbContext context,
             ICurrentUserAccessor currentUserAccessor,
@@ -112,6 +129,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
             return ProcessResult<OffboardingCreatePageViewModel>.Failure(message) with { Data = pageModel };
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildPageModelAsync operation.
+        /// </summary>
         private static async Task<OffboardingCreatePageViewModel> BuildPageModelAsync(
             ApplicationDbContext context,
             ICurrentUserAccessor currentUserAccessor,
@@ -165,6 +185,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
             return pageModel;
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildHodListAsync operation.
+        /// </summary>
         private static async Task<List<SelectListItem>> BuildHodListAsync(
             ApplicationDbContext context,
             string? company,

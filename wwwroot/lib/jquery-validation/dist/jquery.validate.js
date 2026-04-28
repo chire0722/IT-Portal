@@ -1,3 +1,5 @@
+// Project comment: jquery.validate.js contains client-side behavior used by the IT Form web interface.
+
 /*!
  * jQuery Validation Plugin v1.21.0
  *

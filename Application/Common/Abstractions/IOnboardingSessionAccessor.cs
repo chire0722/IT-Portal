@@ -1,7 +1,12 @@
+// Project comment: IOnboardingSessionAccessor.cs is part of the IT Form application source code.
+
 using IT_Form.ViewModels;
 
 namespace IT_Form.Application.Common.Abstractions
 {
+    /// <summary>
+    /// Defines the contract implemented by IOnboardingSessionAccessor services.
+    /// </summary>
     public interface IOnboardingSessionAccessor
     {
         OnboardingViewModel Get();

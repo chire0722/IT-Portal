@@ -1,3 +1,5 @@
+// Project comment: GetManageAccessQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Services;
 using IT_Form.ViewModels;
@@ -6,6 +8,9 @@ using MediatR;
 
 namespace IT_Form.Application.Features.Onboarding.GetManageAccess
 {
+    /// <summary>
+    /// Handles the GetManageAccessQuery query workflow.
+    /// </summary>
     public sealed class GetManageAccessQueryHandler : IRequestHandler<GetManageAccessQuery, ManageAccessViewModel?>
     {
         private readonly ICurrentEmployeeAccessService _accessService;
@@ -19,6 +24,9 @@ namespace IT_Form.Application.Features.Onboarding.GetManageAccess
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ManageAccessViewModel?> Handle(GetManageAccessQuery request, CancellationToken cancellationToken)
         {
             if (!_currentUserAccessor.User.HasClaim("UserTitle", "IT"))

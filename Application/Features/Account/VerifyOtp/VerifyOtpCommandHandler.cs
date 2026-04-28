@@ -1,3 +1,5 @@
+// Project comment: VerifyOtpCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using System.Security.Cryptography;
 using IT_Form.Application.Features.Account;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Account.VerifyOtp
 {
+    /// <summary>
+    /// Handles the VerifyOtpCommand command workflow.
+    /// </summary>
     public sealed class VerifyOtpCommandHandler : IRequestHandler<VerifyOtpCommand, VerifyOtpResult>
     {
         private readonly UserManager<IT_Form.Models.ApplicationUser> _userManager;
@@ -27,6 +32,9 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<VerifyOtpResult> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);

@@ -1,12 +1,22 @@
+// Project comment: UpdateCompanyCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Company.Writes.UpdateCompany;
 
+/// <summary>
+/// Validates input for the UpdateCompanyCommand request.
+/// </summary>
 public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateCompanyCommand>
 {
+    private static readonly string[] AllowedLogoExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+    private static readonly string[] AllowedLogoContentTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+    private const long MaxLogoBytes = 1 * 1024 * 1024;
+
     private readonly ApplicationDbContext _context;
 
     public UpdateCompanyCommandValidator(ApplicationDbContext context)
@@ -38,8 +48,19 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
 
         RuleFor(x => x.IsLoginPageLogo)
             .CustomAsync(ValidateLoginPageLogoAsync);
+
+        RuleFor(x => x.Logo)
+            .Must(file => file == null || file.Length <= MaxLogoBytes)
+            .WithMessage("Logo must be under 1 MB.");
+
+        RuleFor(x => x.Logo)
+            .Must(BeAllowedLogoFile)
+            .WithMessage("Only PNG, JPG, GIF, and WebP logo images are allowed.");
     }
 
+    /// <summary>
+    /// Validates data for the ValidateLoginPageLogoAsync operation.
+    /// </summary>
     private async Task ValidateLoginPageLogoAsync(
         bool isLoginPageLogo,
         ValidationContext<UpdateCompanyCommand> context,
@@ -75,6 +96,9 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
         }
     }
 
+    /// <summary>
+    /// Runs the HasAnyBusinessDay operation.
+    /// </summary>
     private static bool HasAnyBusinessDay(UpdateCompanyCommand command)
         => command.WorksOnMonday ||
            command.WorksOnTuesday ||
@@ -83,4 +107,20 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
            command.WorksOnFriday ||
            command.WorksOnSaturday ||
            command.WorksOnSunday;
+
+    /// <summary>
+    /// Runs the BeAllowedLogoFile operation.
+    /// </summary>
+    private static bool BeAllowedLogoFile(IFormFile? file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return true;
+        }
+
+        var extension = (Path.GetExtension(file.FileName ?? string.Empty) ?? string.Empty).ToLowerInvariant();
+        var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
+        return AllowedLogoExtensions.Contains(extension) &&
+               AllowedLogoContentTypes.Contains(contentType);
+    }
 }

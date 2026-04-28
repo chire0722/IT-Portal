@@ -1,3 +1,5 @@
+// Project comment: StandardSoftwarePageReadQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
@@ -9,15 +11,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware
 {
+    /// <summary>
+    /// Carries data needed to execute the GetStandardSoftwareIndexPage query.
+    /// </summary>
     public sealed record GetStandardSoftwareIndexPageQuery(string? SearchString, bool? IsMandatory, bool? IsSubscription, int? CompanyId)
         : IRequest<ProcessResult<StandardSoftwareIndexPageViewModel>>;
 
+    /// <summary>
+    /// Carries data needed to execute the GetStandardSoftwareCreatePage query.
+    /// </summary>
     public sealed record GetStandardSoftwareCreatePageQuery(StandardSoftwareEditorPageViewModel? Model = null)
         : IRequest<ProcessResult<StandardSoftwareEditorPageViewModel>>;
 
+    /// <summary>
+    /// Carries data needed to execute the GetStandardSoftwareEditPage query.
+    /// </summary>
     public sealed record GetStandardSoftwareEditPageQuery(int Id, StandardSoftwareEditorPageViewModel? Model = null)
         : IRequest<ProcessResult<StandardSoftwareEditorPageViewModel>>;
 
+    /// <summary>
+    /// Handles the GetStandardSoftwareIndexPageQuery query workflow.
+    /// </summary>
     public sealed class GetStandardSoftwareIndexPageQueryHandler
         : IRequestHandler<GetStandardSoftwareIndexPageQuery, ProcessResult<StandardSoftwareIndexPageViewModel>>
     {
@@ -30,6 +44,9 @@ namespace IT_Form.Application.Features.StandardSoftware
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<StandardSoftwareIndexPageViewModel>> Handle(GetStandardSoftwareIndexPageQuery request, CancellationToken cancellationToken)
         {
             var today = DateTime.Today;
@@ -165,9 +182,15 @@ namespace IT_Form.Application.Features.StandardSoftware
         }
     }
 
+    /// <summary>
+    /// Handles the GetStandardSoftwareCreatePageQuery query workflow.
+    /// </summary>
     public sealed class GetStandardSoftwareCreatePageQueryHandler
         : IRequestHandler<GetStandardSoftwareCreatePageQuery, ProcessResult<StandardSoftwareEditorPageViewModel>>
     {
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public Task<ProcessResult<StandardSoftwareEditorPageViewModel>> Handle(GetStandardSoftwareCreatePageQuery request, CancellationToken cancellationToken)
         {
             return Task.FromResult(ProcessResult<StandardSoftwareEditorPageViewModel>.Success(
@@ -175,6 +198,9 @@ namespace IT_Form.Application.Features.StandardSoftware
         }
     }
 
+    /// <summary>
+    /// Handles the GetStandardSoftwareEditPageQuery query workflow.
+    /// </summary>
     public sealed class GetStandardSoftwareEditPageQueryHandler
         : IRequestHandler<GetStandardSoftwareEditPageQuery, ProcessResult<StandardSoftwareEditorPageViewModel>>
     {
@@ -182,6 +208,9 @@ namespace IT_Form.Application.Features.StandardSoftware
 
         public GetStandardSoftwareEditPageQueryHandler(ApplicationDbContext context) => _context = context;
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<StandardSoftwareEditorPageViewModel>> Handle(GetStandardSoftwareEditPageQuery request, CancellationToken cancellationToken)
         {
             var model = request.Model ?? await _context.StandardSoftware

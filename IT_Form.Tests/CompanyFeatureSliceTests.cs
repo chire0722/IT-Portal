@@ -1,3 +1,5 @@
+// Project comment: CompanyFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.IO;
 using System.Threading;
@@ -20,9 +22,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the CompanyFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class CompanyFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateCompanyValidator_Fails_WhenLogoMissing operation.
+    /// </summary>
     public void CreateCompanyValidator_Fails_WhenLogoMissing()
     {
         var validator = new CreateCompanyCommandValidator();
@@ -48,6 +56,9 @@ public class CompanyFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateCompanyValidator_Fails_WhenBusinessHoursInvalid operation.
+    /// </summary>
     public void CreateCompanyValidator_Fails_WhenBusinessHoursInvalid()
     {
         var validator = new CreateCompanyCommandValidator();
@@ -73,6 +84,9 @@ public class CompanyFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateCompanyValidator_Fails_WhenNoBusinessDaySelected operation.
+    /// </summary>
     public void CreateCompanyValidator_Fails_WhenNoBusinessDaySelected()
     {
         var validator = new CreateCompanyCommandValidator();
@@ -98,11 +112,16 @@ public class CompanyFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateCompanyValidator_Accepts_FullTzdbTimeZoneId operation.
+    /// </summary>
     public void CreateCompanyValidator_Accepts_FullTzdbTimeZoneId()
     {
         var validator = new CreateCompanyCommandValidator();
         var logo = new Mock<IFormFile>();
         logo.SetupGet(file => file.Length).Returns(1);
+        logo.SetupGet(file => file.FileName).Returns("logo.png");
+        logo.SetupGet(file => file.ContentType).Returns("image/png");
 
         var result = validator.Validate(new CreateCompanyCommand(
             "Test",
@@ -125,6 +144,9 @@ public class CompanyFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditCompanyHandler_ReturnsNotFound_WhenCompanyMissing operation.
+    /// </summary>
     public async Task EditCompanyHandler_ReturnsNotFound_WhenCompanyMissing()
     {
         using var context = CreateContext();
@@ -154,6 +176,9 @@ public class CompanyFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteCompanyHandler_DeletesCompany_WhenExists operation.
+    /// </summary>
     public async Task DeleteCompanyHandler_DeletesCompany_WhenExists()
     {
         using var context = CreateContext();
@@ -169,6 +194,9 @@ public class CompanyFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SyncCompanyNamesHandler_ReturnsExpectedMessage operation.
+    /// </summary>
     public async Task SyncCompanyNamesHandler_ReturnsExpectedMessage()
     {
         var syncService = new Mock<ICompanyReferenceSyncService>();
@@ -183,6 +211,9 @@ public class CompanyFeatureSliceTests
         Assert.Equal("Synchronized 3 company reference record(s).", result.Message);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -199,6 +230,9 @@ public class CompanyFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreateHostEnvironment operation.
+    /// </summary>
     private static Mock<IWebHostEnvironment> CreateHostEnvironment()
     {
         var host = new Mock<IWebHostEnvironment>();

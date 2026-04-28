@@ -1,9 +1,14 @@
+// Project comment: OnboardingViewModel.cs is part of the IT Form application source code.
+
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the Onboarding screen or form.
+    /// </summary>
     public class OnboardingViewModel
     {
         public int Id { get; set; }
@@ -167,6 +172,9 @@ namespace IT_Form.ViewModels
         }
     }
 
+    /// <summary>
+    /// Provides view data for the AssetItem screen or form.
+    /// </summary>
     public class AssetItemViewModel
     {
         public AssetType AssetType { get; set; }
@@ -180,6 +188,9 @@ namespace IT_Form.ViewModels
         public bool IsChecked { get; set; }
     }
 
+    /// <summary>
+    /// Provides view data for the OnboardingAssetCategoryOption screen or form.
+    /// </summary>
     public sealed class OnboardingAssetCategoryOptionViewModel
     {
         public AssetType AssetType { get; set; }
@@ -187,6 +198,9 @@ namespace IT_Form.ViewModels
         public string DisplayName { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Provides view data for the FolderPermission screen or form.
+    /// </summary>
     public class FolderPermissionViewModel
     {
         public string FolderName { get; set; } = string.Empty;

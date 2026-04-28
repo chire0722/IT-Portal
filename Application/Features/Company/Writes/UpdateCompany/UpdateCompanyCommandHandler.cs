@@ -1,3 +1,5 @@
+// Project comment: UpdateCompanyCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Data;
 using IT_Form.Services;
@@ -8,6 +10,9 @@ using CompanyEntity = IT_Form.Models.Company;
 
 namespace IT_Form.Application.Features.Company.Writes.UpdateCompany;
 
+/// <summary>
+/// Handles the UpdateCompanyCommand command workflow.
+/// </summary>
 public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyCommand, int>
 {
     private readonly ApplicationDbContext _context;
@@ -24,6 +29,9 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
         _companyReferenceSyncService = companyReferenceSyncService;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<int> Handle(UpdateCompanyCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Companies
@@ -54,7 +62,8 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
 
         if (request.Logo != null && request.Logo.Length > 0)
         {
-            var fileName = entity.Id + "_Logo_" + Path.GetFileName(request.Logo.FileName);
+            var extension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
+            var fileName = $"{entity.Id}_Logo_{Guid.NewGuid():N}{extension}";
             var directoryPath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "companies", "logos");
 
             if (!Directory.Exists(directoryPath))

@@ -1,7 +1,12 @@
+// Project comment: OtpRecord.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the OtpRecord class used by the IT Form application.
+    /// </summary>
     public class OtpRecord
     {
         public int Id { get; set; }

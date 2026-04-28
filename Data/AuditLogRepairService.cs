@@ -1,7 +1,12 @@
+// Project comment: AuditLogRepairService.cs is part of the IT Form application source code.
+
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Data;
 
+/// <summary>
+/// Provides AuditLogRepair service behavior for the application.
+/// </summary>
 public sealed class AuditLogRepairService
 {
     private readonly ApplicationDbContext _context;
@@ -15,6 +20,9 @@ public sealed class AuditLogRepairService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Runs the RepairAsync operation.
+    /// </summary>
     public async Task RepairAsync(CancellationToken cancellationToken = default)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);

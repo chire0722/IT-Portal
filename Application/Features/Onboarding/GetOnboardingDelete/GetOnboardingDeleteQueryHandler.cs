@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingDeleteQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingDelete
 {
+    /// <summary>
+    /// Handles the GetOnboardingDeleteQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingDeleteQueryHandler : IRequestHandler<GetOnboardingDeleteQuery, ProcessResult<OnboardingRequest>>
     {
         private readonly ApplicationDbContext _context;
@@ -21,6 +26,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDelete
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OnboardingRequest>> Handle(GetOnboardingDeleteQuery request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests

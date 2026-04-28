@@ -1,3 +1,5 @@
+// Project comment: ForgotPasswordCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Features.Account;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Account.ForgotPassword
 {
+    /// <summary>
+    /// Handles the ForgotPasswordCommand command workflow.
+    /// </summary>
     public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, ForgotPasswordResult>
     {
         private readonly ApplicationDbContext _context;
@@ -30,6 +35,9 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ForgotPasswordResult> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
         {
             var user = await _context.Users

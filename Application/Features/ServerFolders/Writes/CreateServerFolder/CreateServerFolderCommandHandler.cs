@@ -1,3 +1,5 @@
+// Project comment: CreateServerFolderCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
@@ -10,6 +12,9 @@ using ServerFolderEntity = IT_Form.Models.ServerFolder;
 
 namespace IT_Form.Application.Features.ServerFolders.Writes.CreateServerFolder;
 
+/// <summary>
+/// Handles the CreateServerFolderCommand command workflow.
+/// </summary>
 public sealed class CreateServerFolderCommandHandler : IRequestHandler<CreateServerFolderCommand, int>
 {
     private readonly ApplicationDbContext _context;
@@ -21,6 +26,9 @@ public sealed class CreateServerFolderCommandHandler : IRequestHandler<CreateSer
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<int> Handle(CreateServerFolderCommand request, CancellationToken cancellationToken)
     {
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanyIds, cancellationToken);
@@ -33,6 +41,9 @@ public sealed class CreateServerFolderCommandHandler : IRequestHandler<CreateSer
         return entity.Id;
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
         var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(

@@ -1,3 +1,5 @@
+// Project comment: ApplicationDbContext.cs is part of the IT Form application source code.
+
 using IT_Form.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -17,6 +19,9 @@ using IT_Form.Infrastructure.Notifications;
 
 namespace IT_Form.Data
 {
+    /// <summary>
+    /// Defines the ApplicationDbContext class used by the IT Form application.
+    /// </summary>
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         private const string AuditCorrelationIdItemKey = "AuditCorrelationId";
@@ -96,12 +101,18 @@ namespace IT_Form.Data
 
         internal string EncryptionModelCacheKey => _encryptionService.GetType().FullName ?? _encryptionService.GetType().Name;
 
+        /// <summary>
+        /// Runs the OnConfiguring operation.
+        /// </summary>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.ReplaceService<IModelCacheKeyFactory, ApplicationDbContextModelCacheKeyFactory>();
             base.OnConfiguring(optionsBuilder);
         }
 
+        /// <summary>
+        /// Runs the EncryptWithFallback operation.
+        /// </summary>
         private static string EncryptWithFallback(string value, ILicenseEncryptionService encryptionService)
         {
             if (string.IsNullOrEmpty(value))
@@ -113,6 +124,9 @@ namespace IT_Form.Data
             return string.IsNullOrEmpty(encrypted) ? value : encrypted;
         }
 
+        /// <summary>
+        /// Runs the DecryptWithFallback operation.
+        /// </summary>
         private static string DecryptWithFallback(string value, ILicenseEncryptionService encryptionService)
         {
             if (string.IsNullOrEmpty(value))
@@ -124,6 +138,9 @@ namespace IT_Form.Data
             return string.IsNullOrEmpty(decrypted) ? value : decrypted;
         }
 
+        /// <summary>
+        /// Runs the OnModelCreating operation.
+        /// </summary>
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -540,16 +557,25 @@ namespace IT_Form.Data
         // sync-over-async deadlock (calling .GetAwaiter().GetResult() on an async
         // method inside ASP.NET is a known deadlock risk). Audit is intentionally
         // skipped on the sync path since it should never be used in normal app flow.
+        /// <summary>
+        /// Saves data for the SaveChanges operation.
+        /// </summary>
         public override int SaveChanges()
         {
             return base.SaveChanges();
         }
 
+        /// <summary>
+        /// Saves data for the SaveChanges operation.
+        /// </summary>
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
             return base.SaveChanges(acceptAllChangesOnSuccess);
         }
 
+        /// <summary>
+        /// Runs the LogActionAsync operation.
+        /// </summary>
         public async Task LogActionAsync(string entityName, string entityId, string action, string details, string? changes = null)
         {
             var currentUser = _httpContextAccessor?.HttpContext?.User?.Identity?.Name ?? "System";
@@ -577,6 +603,9 @@ namespace IT_Form.Data
             await base.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Runs the PersistStandaloneAuditLogAsync operation.
+        /// </summary>
         public async Task PersistStandaloneAuditLogAsync(AuditLog log, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(log);
@@ -596,6 +625,9 @@ namespace IT_Form.Data
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the IsSensitiveAuditField operation.
+        /// </summary>
         private static bool IsSensitiveAuditField(Type entityType, string propertyName)
         {
             if (PersonalDataAuditFields.Contains(propertyName))
@@ -612,6 +644,9 @@ namespace IT_Form.Data
             return entityType.GetProperty(propertyName)?.GetCustomAttribute<EncryptColumnAttribute>() != null;
         }
 
+        /// <summary>
+        /// Saves data for the SaveChangesAsync operation.
+        /// </summary>
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             // If we are already inside a save (writing audit logs), skip audit pass
@@ -690,6 +725,9 @@ namespace IT_Form.Data
             return result;
         }
 
+        /// <summary>
+        /// Runs the EnqueueAuditNotifications operation.
+        /// </summary>
         private void EnqueueAuditNotifications(List<AuditLog> logsForEmail, string? currentBaseUrl)
         {
             if (logsForEmail.Count == 0)
@@ -700,6 +738,9 @@ namespace IT_Form.Data
             _postCommitActionQueue.Enqueue(ct => DispatchAuditNotificationsAfterCommitAsync(logsForEmail, currentBaseUrl, ct));
         }
 
+        /// <summary>
+        /// Runs the DispatchAuditNotificationsAfterCommitAsync operation.
+        /// </summary>
         private async Task DispatchAuditNotificationsAfterCommitAsync(
             List<AuditLog> logsForEmail,
             string? currentBaseUrl,
@@ -855,12 +896,18 @@ namespace IT_Form.Data
             return list;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetCurrentCorrelationId operation.
+        /// </summary>
         private Guid? GetCurrentCorrelationId()
         {
             var item = _httpContextAccessor?.HttpContext?.Items[AuditCorrelationIdItemKey];
             return item is Guid correlationId ? correlationId : null;
         }
 
+        /// <summary>
+        /// Runs the SendAuditNotificationsAsync operation.
+        /// </summary>
         internal async Task SendAuditNotificationsAsync(
             List<AuditLog> entries,
             string? baseUrl = null,

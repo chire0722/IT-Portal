@@ -1,3 +1,5 @@
+// Project comment: DepartmentController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Features.Department.ImportDepartments;
 using IT_Form.Application.Features.Department;
 using CreateDepartmentWriteCommand = IT_Form.Application.Features.Departments.Writes.CreateDepartment.CreateDepartmentCommand;
@@ -10,6 +12,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the Department area.
+    /// </summary>
     public class DepartmentController : AppControllerBase
     {
         private readonly IMediator _mediator;
@@ -19,13 +24,22 @@ namespace IT_Form.Controllers
             _mediator = mediator;
         }
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index()
             => HandleProcessResult(await _mediator.Send(new GetDepartmentIndexPageQuery()));
 
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _mediator.Send(new GetDepartmentCreatePageQuery()));
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(DepartmentEditorPageViewModel model, int[] selectedCompanyIds)
         {
             if (model == null) return HandleProcessResult(await _mediator.Send(new GetDepartmentCreatePageQuery()));
@@ -46,9 +60,15 @@ namespace IT_Form.Controllers
         }
 
         [NonAction]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public Task<IActionResult> Create(DepartmentEditorPageViewModel model)
             => Create(model, System.Array.Empty<int>());
 
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -56,6 +76,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, DepartmentEditorPageViewModel model, int[] selectedCompanyIds)
         {
             if (id != model.Id) return NotFound();
@@ -77,10 +100,16 @@ namespace IT_Form.Controllers
         }
 
         [NonAction]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public Task<IActionResult> Edit(int id, DepartmentEditorPageViewModel model)
             => Edit(id, model, System.Array.Empty<int>());
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(int id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -93,12 +122,18 @@ namespace IT_Form.Controllers
                 new { });
 
         // GET: /Department/DownloadTemplate
+        /// <summary>
+        /// Runs the DownloadTemplate operation.
+        /// </summary>
         public async Task<IActionResult> DownloadTemplate()
             => HandleProcessResult(await _mediator.Send(new DownloadDepartmentTemplateQuery()));
 
 
         // POST: /Department/ImportExcel
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ImportExcel operation.
+        /// </summary>
         public async Task<IActionResult> ImportExcel(IFormFile file)
             => await ExecuteWithValidationRedirect(
                 async () =>

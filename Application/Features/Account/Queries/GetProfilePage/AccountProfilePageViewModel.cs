@@ -1,5 +1,10 @@
+// Project comment: AccountProfilePageViewModel.cs is part of the IT Form application source code.
+
 namespace IT_Form.Application.Features.Account.Queries.GetProfilePage;
 
+/// <summary>
+/// Provides view data for the AccountProfilePage screen or form.
+/// </summary>
 public sealed class AccountProfilePageViewModel
 {
     public string FullName { get; init; } = string.Empty;

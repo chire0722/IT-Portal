@@ -1,12 +1,20 @@
+// Project comment: ExcelTemplateDropdownHelper.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 
 namespace IT_Form.Helpers;
 
+/// <summary>
+/// Defines the ExcelTemplateDropdownHelper class used by the IT Form application.
+/// </summary>
 public static class ExcelTemplateDropdownHelper
 {
     public const string CompanyOptionsDefinedName = "CompanyOptions";
     public const string DepartmentOptionsDefinedName = "DepartmentOptions";
 
+    /// <summary>
+    /// Creates data for the CreateReferenceSheet operation.
+    /// </summary>
     public static IXLWorksheet CreateReferenceSheet(
         XLWorkbook workbook,
         string sheetName = "Reference",
@@ -21,6 +29,9 @@ public static class ExcelTemplateDropdownHelper
         return worksheet;
     }
 
+    /// <summary>
+    /// Runs the AddNamedList operation.
+    /// </summary>
     public static bool AddNamedList(
         XLWorkbook workbook,
         IXLWorksheet referenceSheet,
@@ -60,6 +71,9 @@ public static class ExcelTemplateDropdownHelper
         return true;
     }
 
+    /// <summary>
+    /// Applies changes for the ApplyDropdownFromNamedList operation.
+    /// </summary>
     public static void ApplyDropdownFromNamedList(
         IXLWorksheet worksheet,
         string rangeAddress,
@@ -83,6 +97,9 @@ public static class ExcelTemplateDropdownHelper
         validation.ErrorMessage = errorMessage;
     }
 
+    /// <summary>
+    /// Applies changes for the ApplyTrueFalseDropdown operation.
+    /// </summary>
     public static void ApplyTrueFalseDropdown(IXLWorksheet worksheet, string rangeAddress)
     {
         var validation = worksheet.Range(rangeAddress).CreateDataValidation();
@@ -96,6 +113,9 @@ public static class ExcelTemplateDropdownHelper
         validation.ErrorMessage = "Please select TRUE or FALSE from the dropdown list.";
     }
 
+    /// <summary>
+    /// Runs the SetColumnWidths operation.
+    /// </summary>
     public static void SetColumnWidths(IXLWorksheet worksheet, params double[] widths)
     {
         for (var i = 0; i < widths.Length; i++)
@@ -104,6 +124,9 @@ public static class ExcelTemplateDropdownHelper
         }
     }
 
+    /// <summary>
+    /// Runs the CalculateTextWidth operation.
+    /// </summary>
     private static double CalculateTextWidth(string header, IEnumerable<string> values)
     {
         var maxLength = values

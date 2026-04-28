@@ -1,3 +1,5 @@
+// Project comment: ResendOtpCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Features.Account;
 using IT_Form.Data;
@@ -9,6 +11,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.Account.Writes.ResendOtp;
 
+/// <summary>
+/// Handles the ResendOtpCommand command workflow.
+/// </summary>
 public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, ResendOtpResult>
 {
     private readonly ApplicationDbContext _context;
@@ -31,6 +36,9 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
         _logger = logger;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<ResendOtpResult> Handle(ResendOtpCommand request, CancellationToken cancellationToken)
     {
         var user = await _context.Users

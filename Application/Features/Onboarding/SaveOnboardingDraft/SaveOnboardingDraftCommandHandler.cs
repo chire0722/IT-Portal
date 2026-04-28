@@ -1,3 +1,5 @@
+// Project comment: SaveOnboardingDraftCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Helpers;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.SaveOnboardingDraft
 {
+    /// <summary>
+    /// Handles the SaveOnboardingDraftCommand command workflow.
+    /// </summary>
     public sealed class SaveOnboardingDraftCommandHandler
         : IRequestHandler<SaveOnboardingDraftCommand, SaveOnboardingDraftResult>
     {
@@ -26,6 +31,9 @@ namespace IT_Form.Application.Features.Onboarding.SaveOnboardingDraft
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<SaveOnboardingDraftResult> Handle(SaveOnboardingDraftCommand request, CancellationToken cancellationToken)
         {
             var session = request.Model;

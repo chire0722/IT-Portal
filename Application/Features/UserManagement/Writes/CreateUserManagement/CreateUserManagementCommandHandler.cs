@@ -1,3 +1,5 @@
+// Project comment: CreateUserManagementCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
@@ -16,6 +18,9 @@ using System.Net;
 
 namespace IT_Form.Application.Features.UserManagement.Writes.CreateUserManagement;
 
+/// <summary>
+/// Handles the CreateUserManagementCommand command workflow.
+/// </summary>
 public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateUserManagementCommand, string>
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -41,6 +46,9 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
         _logger = logger;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<string> Handle(CreateUserManagementCommand request, CancellationToken cancellationToken)
     {
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanies, cancellationToken);
@@ -60,6 +68,9 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
         return user.Id;
     }
 
+    /// <summary>
+    /// Runs the QueueWelcomeEmailAsync operation.
+    /// </summary>
     private async Task QueueWelcomeEmailAsync(ApplicationUser user, string temporaryPassword, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(user.Email))
@@ -110,6 +121,9 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
             cancellationToken);
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(
         IEnumerable<string>? selectedCompanies,
         CancellationToken cancellationToken)

@@ -1,3 +1,5 @@
+// Project comment: ImportEmailGroupsCommandHandler.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroup.ImportEmailGroups
 {
+    /// <summary>
+    /// Handles the ImportEmailGroupsCommand command workflow.
+    /// </summary>
     public sealed class ImportEmailGroupsCommandHandler : IRequestHandler<ImportEmailGroupsCommand, ImportEmailGroupsResult>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.EmailGroup.ImportEmailGroups
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ImportEmailGroupsResult> Handle(ImportEmailGroupsCommand request, CancellationToken cancellationToken)
         {
             if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage))

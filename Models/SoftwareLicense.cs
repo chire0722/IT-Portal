@@ -1,8 +1,13 @@
+// Project comment: SoftwareLicense.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Models.Enums;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the SoftwareLicense class used by the IT Form application.
+    /// </summary>
     public class SoftwareLicense : ISoftDeletable
     {
         public int Id { get; set; }

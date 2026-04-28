@@ -1,5 +1,10 @@
+// Project comment: SmtpSettings.cs is part of the IT Form application source code.
+
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the SmtpSettings class used by the IT Form application.
+    /// </summary>
     public class SmtpSettings
     {
         public string Host { get; set; } = string.Empty;

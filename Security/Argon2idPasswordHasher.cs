@@ -1,3 +1,5 @@
+// Project comment: Argon2idPasswordHasher.cs is part of the IT Form application source code.
+
 using Konscious.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -8,6 +10,9 @@ using System.Text;
 
 namespace IT_Form.Security
 {
+    /// <summary>
+    /// Defines the Argon2idPasswordHasher class used by the IT Form application.
+    /// </summary>
     public class Argon2idPasswordHasher<TUser> : IPasswordHasher<TUser> where TUser : class
     {
         private const byte IdentityFormatMarker = 0x01;
@@ -23,6 +28,9 @@ namespace IT_Form.Security
             _legacySettings = options.Value.LegacyArgon2id;
         }
 
+        /// <summary>
+        /// Runs the HashPassword operation.
+        /// </summary>
         public string HashPassword(TUser user, string password)
         {
             byte[] salt = RandomNumberGenerator.GetBytes(_settings.SaltSize);
@@ -41,6 +49,9 @@ namespace IT_Form.Security
             return Convert.ToBase64String(result);
         }
 
+        /// <summary>
+        /// Runs the VerifyHashedPassword operation.
+        /// </summary>
         public PasswordVerificationResult VerifyHashedPassword(TUser user, string hashedPassword, string providedPassword)
         {
             if (string.IsNullOrWhiteSpace(hashedPassword) || providedPassword == null)
@@ -76,6 +87,9 @@ namespace IT_Form.Security
             }
         }
 
+        /// <summary>
+        /// Runs the TryVerifyVersionedArgon2 operation.
+        /// </summary>
         private bool TryVerifyVersionedArgon2(
             byte[] decoded,
             string providedPassword,
@@ -118,6 +132,9 @@ namespace IT_Form.Security
             return true;
         }
 
+        /// <summary>
+        /// Runs the TryVerifyLegacyArgon2 operation.
+        /// </summary>
         private bool TryVerifyLegacyArgon2(
             byte[] decoded,
             string providedPassword,
@@ -142,6 +159,9 @@ namespace IT_Form.Security
             return true;
         }
 
+        /// <summary>
+        /// Runs the ComputeHash operation.
+        /// </summary>
         private static byte[] ComputeHash(string password, byte[] salt, Argon2idSettings settings)
         {
             using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password))
@@ -155,6 +175,9 @@ namespace IT_Form.Security
             return argon2.GetBytes(settings.HashSize);
         }
 
+        /// <summary>
+        /// Runs the AreEquivalent operation.
+        /// </summary>
         private static bool AreEquivalent(Argon2idSettings left, Argon2idSettings right)
             => left.DegreeOfParallelism == right.DegreeOfParallelism
                && left.MemorySize == right.MemorySize
@@ -162,6 +185,9 @@ namespace IT_Form.Security
                && left.SaltSize == right.SaltSize
                && left.HashSize == right.HashSize;
 
+        /// <summary>
+        /// Runs the IsSane operation.
+        /// </summary>
         private static bool IsSane(Argon2idSettings settings)
             => settings.DegreeOfParallelism > 0
                && settings.MemorySize > 0

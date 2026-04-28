@@ -1,3 +1,5 @@
+// Project comment: ExportOffboardingCsvQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -11,6 +13,9 @@ using System.Text;
 
 namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
 {
+    /// <summary>
+    /// Handles the ExportOffboardingCsvQuery query workflow.
+    /// </summary>
     public sealed class ExportOffboardingCsvQueryHandler : IRequestHandler<ExportOffboardingCsvQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -22,6 +27,9 @@ namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(ExportOffboardingCsvQuery request, CancellationToken cancellationToken)
         {
             var query = _context.OffboardingRequests.AsNoTracking().AsQueryable();
@@ -54,6 +62,9 @@ namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
                 $"offboarding_export_{DateTime.Now:yyyyMMdd}.csv"));
         }
 
+        /// <summary>
+        /// Applies changes for the ApplySearchFilter operation.
+        /// </summary>
         private static IQueryable<OffboardingRequest> ApplySearchFilter(IQueryable<OffboardingRequest> query, string? searchString, RequestStatus? status)
         {
             if (!string.IsNullOrEmpty(searchString))
@@ -70,6 +81,9 @@ namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
             return query;
         }
 
+        /// <summary>
+        /// Runs the Escape operation.
+        /// </summary>
         private static string Escape(string? value) => value?.Replace("\"", "\"\"") ?? string.Empty;
     }
 }

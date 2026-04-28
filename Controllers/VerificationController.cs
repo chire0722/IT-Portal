@@ -1,3 +1,5 @@
+// Project comment: VerificationController.cs is part of the IT Form application source code.
+
 using Microsoft.AspNetCore.Mvc;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,9 @@ using IT_Form.Models;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the Verification area.
+    /// </summary>
     public class VerificationController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -23,6 +28,9 @@ namespace IT_Form.Controllers
 
         [AllowAnonymous]
         [HttpGet("/verify/{token}")]
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(string token)
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -48,17 +56,26 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost("/api/inventory/generate-token/{employeeId}")]
+        /// <summary>
+        /// Runs the GenerateToken operation.
+        /// </summary>
         public async Task<IActionResult> GenerateToken(string employeeId)
         {
             return await GenerateTokenCoreAsync(employeeId);
         }
 
         [HttpPost("/api/inventory/generate-token")]
+        /// <summary>
+        /// Runs the GenerateTokenWithoutEmployee operation.
+        /// </summary>
         public async Task<IActionResult> GenerateTokenWithoutEmployee()
         {
             return await GenerateTokenCoreAsync(null);
         }
 
+        /// <summary>
+        /// Runs the GenerateTokenCoreAsync operation.
+        /// </summary>
         private async Task<IActionResult> GenerateTokenCoreAsync(string? employeeId)
         {
             ApplicationUser? user = null;
@@ -101,6 +118,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpGet("/api/inventory/status/{token}")]
+        /// <summary>
+        /// Gets the data required by the GetStatus operation.
+        /// </summary>
         public async Task<IActionResult> GetStatus(string token)
         {
             var dbToken = await _context.DeviceVerificationTokens.FirstOrDefaultAsync(t => t.Token == token);
@@ -124,6 +144,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpGet("/api/inventory/download-universal")]
+        /// <summary>
+        /// Runs the DownloadUniversalTool operation.
+        /// </summary>
         public IActionResult DownloadUniversalTool()
         {
             return NotFound("Universal inventory downloads are disabled. Generate an employee-specific verification token instead.");
@@ -131,6 +154,9 @@ namespace IT_Form.Controllers
 
         [AllowAnonymous]
         [HttpGet("/api/inventory/download/{token}")]
+        /// <summary>
+        /// Runs the DownloadTool operation.
+        /// </summary>
         public async Task<IActionResult> DownloadTool(string token)
         {
             var dbToken = await _context.DeviceVerificationTokens.FirstOrDefaultAsync(t => t.Token == token);
@@ -161,6 +187,9 @@ namespace IT_Form.Controllers
             return File(ms.ToArray(), "application/zip", "Device_Verification.zip");
         }
 
+        /// <summary>
+        /// Runs the AddToolScriptsToArchive operation.
+        /// </summary>
         private static void AddToolScriptsToArchive(System.IO.Compression.ZipArchive archive, IReadOnlyList<string> apiUrls, string token)
         {
             var psEntry = archive.CreateEntry("Verify_Device.ps1");
@@ -176,6 +205,9 @@ namespace IT_Form.Controllers
             }
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildInventorySyncUrls operation.
+        /// </summary>
         private IReadOnlyList<string> BuildInventorySyncUrls(HttpRequest request)
         {
             var urls = new List<string>();
@@ -186,6 +218,9 @@ namespace IT_Form.Controllers
             return urls;
         }
 
+        /// <summary>
+        /// Runs the AppendInventorySyncUrl operation.
+        /// </summary>
         private static void AppendInventorySyncUrl(List<string> urls, string? baseUrl)
         {
             if (string.IsNullOrWhiteSpace(baseUrl))
@@ -214,6 +249,9 @@ namespace IT_Form.Controllers
             }
         }
 
+        /// <summary>
+        /// Gets the data required by the GetTokenLifetimeMinutes operation.
+        /// </summary>
         private int GetTokenLifetimeMinutes()
         {
             return int.TryParse(_configuration["SecuritySettings:DeviceVerificationExpiryMinutes"], out var minutes) && minutes > 0
@@ -221,13 +259,22 @@ namespace IT_Form.Controllers
                 : 30;
         }
 
+        /// <summary>
+        /// Runs the HasExpiringEmployeeContext operation.
+        /// </summary>
         private static bool HasExpiringEmployeeContext(DeviceVerificationToken token)
             => !string.IsNullOrWhiteSpace(token.EmployeeId);
 
+        /// <summary>
+        /// Runs the IsExpired operation.
+        /// </summary>
         private bool IsExpired(DeviceVerificationToken token)
             => HasExpiringEmployeeContext(token) &&
                token.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()) <= DateTime.UtcNow;
 
+        /// <summary>
+        /// Builds the value returned by the BuildPowerShellAuditScript operation.
+        /// </summary>
         private static string BuildPowerShellAuditScript(IReadOnlyList<string> apiUrls, string token)
         {
             var escapedApiUrls = string.Join(
@@ -637,6 +684,9 @@ exit 2
 """;
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildBatchWrapperScript operation.
+        /// </summary>
         private static string BuildBatchWrapperScript()
         {
             return """
@@ -706,6 +756,9 @@ exit /b %ScriptExit%
 """;
         }
 
+        /// <summary>
+        /// Runs the EscapeForPowerShellSingleQuotedString operation.
+        /// </summary>
         private static string EscapeForPowerShellSingleQuotedString(string value)
         {
             return value.Replace("'", "''");

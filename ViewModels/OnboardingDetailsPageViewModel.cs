@@ -1,8 +1,13 @@
+// Project comment: OnboardingDetailsPageViewModel.cs is part of the IT Form application source code.
+
 using IT_Form.Models.Enums;
 using IT_Form.Helpers;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the OnboardingDetailsPage screen or form.
+    /// </summary>
     public sealed class OnboardingDetailsPageViewModel
     {
         public int Id { get; set; }

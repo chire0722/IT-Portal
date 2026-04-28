@@ -1,3 +1,5 @@
+// Project comment: OnboardingHrFlows.Entry.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -9,16 +11,37 @@ using MediatR;
 
 namespace IT_Form.Application.Features.Onboarding.Flows
 {
+    /// <summary>
+    /// Carries data needed to execute the StartOnboardingCreate query.
+    /// </summary>
     public sealed record StartOnboardingCreateQuery() : IRequest<ProcessResult<object>>;
+    /// <summary>
+    /// Carries data needed to execute the GetOnboardingStep1Page query.
+    /// </summary>
     public sealed record GetOnboardingStep1PageQuery() : IRequest<ProcessResult<OnboardingStep1PageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the SubmitOnboardingStep1Flow command.
+    /// </summary>
     public sealed record SubmitOnboardingStep1FlowCommand(OnboardingStep1PageViewModel Model) : IRequest<ProcessResult<object>>;
+    /// <summary>
+    /// Carries data needed to execute the OpenOnboardingDraftEntry query.
+    /// </summary>
     public sealed record OpenOnboardingDraftEntryQuery() : IRequest<ProcessResult<object>>;
+    /// <summary>
+    /// Carries data needed to execute the SubmitOnboardingDraftFlow command.
+    /// </summary>
     public sealed record SubmitOnboardingDraftFlowCommand(OnboardingViewModel Model) : IRequest<ProcessResult<object>>;
 
+    /// <summary>
+    /// Handles the StartOnboardingCreateQuery query workflow.
+    /// </summary>
     public sealed class StartOnboardingCreateQueryHandler : IRequestHandler<StartOnboardingCreateQuery, ProcessResult<object>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
         public StartOnboardingCreateQueryHandler(IOnboardingSessionAccessor sessionAccessor) => _sessionAccessor = sessionAccessor;
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(StartOnboardingCreateQuery request, CancellationToken cancellationToken)
         {
             _sessionAccessor.Save(await _sessionAccessor.CreateNewAsync(cancellationToken));
@@ -26,6 +49,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the GetOnboardingStep1PageQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingStep1PageQueryHandler : IRequestHandler<GetOnboardingStep1PageQuery, ProcessResult<OnboardingStep1PageViewModel>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
@@ -37,6 +63,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OnboardingStep1PageViewModel>> Handle(GetOnboardingStep1PageQuery request, CancellationToken cancellationToken)
         {
             var model = _sessionAccessor.Get();
@@ -46,6 +75,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the SubmitOnboardingStep1FlowCommand command workflow.
+    /// </summary>
     public sealed class SubmitOnboardingStep1FlowCommandHandler : IRequestHandler<SubmitOnboardingStep1FlowCommand, ProcessResult<object>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
@@ -57,6 +89,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(SubmitOnboardingStep1FlowCommand request, CancellationToken cancellationToken)
         {
             var session = _sessionAccessor.Get();
@@ -71,10 +106,16 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the OpenOnboardingDraftEntryQuery query workflow.
+    /// </summary>
     public sealed class OpenOnboardingDraftEntryQueryHandler : IRequestHandler<OpenOnboardingDraftEntryQuery, ProcessResult<object>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
         public OpenOnboardingDraftEntryQueryHandler(IOnboardingSessionAccessor sessionAccessor) => _sessionAccessor = sessionAccessor;
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public Task<ProcessResult<object>> Handle(OpenOnboardingDraftEntryQuery request, CancellationToken cancellationToken)
         {
             var session = _sessionAccessor.Get();
@@ -84,6 +125,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the SubmitOnboardingDraftFlowCommand command workflow.
+    /// </summary>
     public sealed class SubmitOnboardingDraftFlowCommandHandler : IRequestHandler<SubmitOnboardingDraftFlowCommand, ProcessResult<object>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
@@ -97,6 +141,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(SubmitOnboardingDraftFlowCommand request, CancellationToken cancellationToken)
         {
             if (request.Model.CurrentStep >= 2)
@@ -119,11 +166,17 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Validates input for the SubmitOnboardingStep1FlowCommand request.
+    /// </summary>
     public sealed class SubmitOnboardingStep1FlowCommandValidator : AbstractValidator<SubmitOnboardingStep1FlowCommand>
     {
         public SubmitOnboardingStep1FlowCommandValidator() => RuleFor(x => x.Model).NotNull();
     }
 
+    /// <summary>
+    /// Validates input for the SubmitOnboardingDraftFlowCommand request.
+    /// </summary>
     public sealed class SubmitOnboardingDraftFlowCommandValidator : AbstractValidator<SubmitOnboardingDraftFlowCommand>
     {
         public SubmitOnboardingDraftFlowCommandValidator() => RuleFor(x => x.Model).NotNull();

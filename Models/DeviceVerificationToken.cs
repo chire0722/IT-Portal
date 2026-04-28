@@ -1,8 +1,13 @@
+// Project comment: DeviceVerificationToken.cs is part of the IT Form application source code.
+
 using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the DeviceVerificationToken class used by the IT Form application.
+    /// </summary>
     public class DeviceVerificationToken
     {
         [Key]

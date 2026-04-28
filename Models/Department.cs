@@ -1,7 +1,12 @@
+// Project comment: Department.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the Department class used by the IT Form application.
+    /// </summary>
     public class Department
     {
         public int Id { get; set; }

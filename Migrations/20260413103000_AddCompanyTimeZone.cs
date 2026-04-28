@@ -1,3 +1,5 @@
+// Project comment: 20260413103000_AddCompanyTimeZone.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -9,6 +11,9 @@ namespace IT_Form.Migrations
     /// <inheritdoc />
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20260413103000_AddCompanyTimeZone")]
+    /// <summary>
+    /// Defines the AddCompanyTimeZone class used by the IT Form application.
+    /// </summary>
     public partial class AddCompanyTimeZone : Migration
     {
         /// <inheritdoc />

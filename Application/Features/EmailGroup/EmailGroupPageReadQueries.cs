@@ -1,3 +1,5 @@
+// Project comment: EmailGroupPageReadQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -9,11 +11,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroup
 {
+    /// <summary>
+    /// Carries data needed to execute the GetEmailGroupIndexPage query.
+    /// </summary>
     public sealed record GetEmailGroupIndexPageQuery(int? CompanyId = null) : IRequest<ProcessResult<EmailGroupIndexPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetEmailGroupCreatePage query.
+    /// </summary>
     public sealed record GetEmailGroupCreatePageQuery(EmailGroupEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<EmailGroupEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetEmailGroupEditPage query.
+    /// </summary>
     public sealed record GetEmailGroupEditPageQuery(int Id, EmailGroupEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<EmailGroupEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetEmailGroupMembersPage query.
+    /// </summary>
     public sealed record GetEmailGroupMembersPageQuery(int Id, int? OnboardingRequestId = null) : IRequest<ProcessResult<EmailGroupMembersPageViewModel>>;
 
+    /// <summary>
+    /// Handles the GetEmailGroupIndexPageQuery query workflow.
+    /// </summary>
     public sealed class GetEmailGroupIndexPageQueryHandler : IRequestHandler<GetEmailGroupIndexPageQuery, ProcessResult<EmailGroupIndexPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -25,6 +42,9 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<EmailGroupIndexPageViewModel>> Handle(GetEmailGroupIndexPageQuery request, CancellationToken cancellationToken)
         {
             var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
@@ -70,6 +90,9 @@ namespace IT_Form.Application.Features.EmailGroup
         }
     }
 
+    /// <summary>
+    /// Handles the GetEmailGroupCreatePageQuery query workflow.
+    /// </summary>
     public sealed class GetEmailGroupCreatePageQueryHandler : IRequestHandler<GetEmailGroupCreatePageQuery, ProcessResult<EmailGroupEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -81,6 +104,9 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<EmailGroupEditorPageViewModel>> Handle(GetEmailGroupCreatePageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -102,6 +128,9 @@ namespace IT_Form.Application.Features.EmailGroup
         }
     }
 
+    /// <summary>
+    /// Handles the GetEmailGroupEditPageQuery query workflow.
+    /// </summary>
     public sealed class GetEmailGroupEditPageQueryHandler : IRequestHandler<GetEmailGroupEditPageQuery, ProcessResult<EmailGroupEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -113,6 +142,9 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<EmailGroupEditorPageViewModel>> Handle(GetEmailGroupEditPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -159,6 +191,9 @@ namespace IT_Form.Application.Features.EmailGroup
         }
     }
 
+    /// <summary>
+    /// Handles the GetEmailGroupMembersPageQuery query workflow.
+    /// </summary>
     public sealed class GetEmailGroupMembersPageQueryHandler : IRequestHandler<GetEmailGroupMembersPageQuery, ProcessResult<EmailGroupMembersPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -170,6 +205,9 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<EmailGroupMembersPageViewModel>> Handle(GetEmailGroupMembersPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

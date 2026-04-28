@@ -1,7 +1,12 @@
+// Project comment: SharedMailboxAccessReportViewModel.cs is part of the IT Form application source code.
+
 using System;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the SharedMailboxAccessReport screen or form.
+    /// </summary>
     public class SharedMailboxAccessReportViewModel
     {
         public string EmployeeName { get; set; } = string.Empty;

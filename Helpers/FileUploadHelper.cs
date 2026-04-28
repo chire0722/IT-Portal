@@ -1,9 +1,14 @@
+// Project comment: FileUploadHelper.cs is part of the IT Form application source code.
+
 using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Linq;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the FileUploadHelper class used by the IT Form application.
+    /// </summary>
     public static class FileUploadHelper
     {
         private static readonly string[] AllowedExtensions = { ".xlsx", ".xls" };
@@ -13,6 +18,9 @@ namespace IT_Form.Helpers
         };
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
 
+        /// <summary>
+        /// Runs the IsValidExcelFile operation.
+        /// </summary>
         public static bool IsValidExcelFile(IFormFile file, out string errorMessage)
         {
             errorMessage = string.Empty;

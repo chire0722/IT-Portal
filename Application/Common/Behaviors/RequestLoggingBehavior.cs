@@ -1,8 +1,13 @@
+// Project comment: RequestLoggingBehavior.cs is part of the IT Form application source code.
+
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Common.Behaviors
 {
+    /// <summary>
+    /// Defines the RequestLoggingBehavior class used by the IT Form application.
+    /// </summary>
     public sealed class RequestLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -13,6 +18,9 @@ namespace IT_Form.Application.Common.Behaviors
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<TResponse> Handle(
             TRequest request,
             RequestHandlerDelegate<TResponse> next,

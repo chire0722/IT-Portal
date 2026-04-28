@@ -1,7 +1,12 @@
+// Project comment: SlaHelper.cs is part of the IT Form application source code.
+
 using System;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the SlaHelper class used by the IT Form application.
+    /// </summary>
     public static class SlaHelper
     {
         public static readonly TimeSpan DefaultBusinessStartTime = new(8, 30, 0);
@@ -16,17 +21,29 @@ namespace IT_Form.Helpers
             DayOfWeek.Saturday
         ];
 
+        /// <summary>
+        /// Gets the data required by the GetDefaultWorkingDays operation.
+        /// </summary>
         public static HashSet<DayOfWeek> GetDefaultWorkingDays()
             => [.. DefaultWorkingDaysValues];
 
+        /// <summary>
+        /// Gets the data required by the GetMalaysiaTime operation.
+        /// </summary>
         public static DateTime GetMalaysiaTime(DateTime utcDate)
         {
             return CompanyTimeZoneHelper.ConvertFromUtc(utcDate, CompanyTimeZoneHelper.DefaultTimeZoneId);
         }
 
+        /// <summary>
+        /// Runs the CalculateSlaDeadline operation.
+        /// </summary>
         public static DateTime CalculateSlaDeadline(DateTime startUtc, int targetDays)
             => CalculateSlaDeadline(startUtc, targetDays, DefaultBusinessStartTime, DefaultBusinessEndTime, GetDefaultWorkingDays());
 
+        /// <summary>
+        /// Runs the CalculateSlaDeadline operation.
+        /// </summary>
         public static DateTime CalculateSlaDeadline(
             DateTime startUtc,
             int targetDays,
@@ -34,6 +51,9 @@ namespace IT_Form.Helpers
             TimeSpan businessEndTime)
             => CalculateSlaDeadline(startUtc, targetDays, businessStartTime, businessEndTime, GetDefaultWorkingDays());
 
+        /// <summary>
+        /// Runs the CalculateSlaDeadline operation.
+        /// </summary>
         public static DateTime CalculateSlaDeadline(
             DateTime startUtc,
             int targetDays,
@@ -79,9 +99,15 @@ namespace IT_Form.Helpers
             return CompanyTimeZoneHelper.ConvertToUtc(currentLocal, businessSchedule.TimeZoneId);
         }
 
+        /// <summary>
+        /// Runs the CalculateBusinessHoursSpent operation.
+        /// </summary>
         public static double CalculateBusinessHoursSpent(DateTime startUtc, DateTime endUtc)
             => CalculateBusinessHoursSpent(startUtc, endUtc, DefaultBusinessStartTime, DefaultBusinessEndTime, GetDefaultWorkingDays());
 
+        /// <summary>
+        /// Runs the CalculateBusinessHoursSpent operation.
+        /// </summary>
         public static double CalculateBusinessHoursSpent(
             DateTime startUtc,
             DateTime endUtc,
@@ -89,6 +115,9 @@ namespace IT_Form.Helpers
             TimeSpan businessEndTime)
             => CalculateBusinessHoursSpent(startUtc, endUtc, businessStartTime, businessEndTime, GetDefaultWorkingDays());
 
+        /// <summary>
+        /// Runs the CalculateBusinessHoursSpent operation.
+        /// </summary>
         public static double CalculateBusinessHoursSpent(
             DateTime startUtc,
             DateTime endUtc,
@@ -133,11 +162,17 @@ namespace IT_Form.Helpers
             return totalHours;
         }
 
+        /// <summary>
+        /// Runs the IsSlaOverdue operation.
+        /// </summary>
         public static bool IsSlaOverdue(DateTime startUtc, int targetDays)
         {
             return IsSlaOverdue(startUtc, targetDays, DefaultBusinessStartTime, DefaultBusinessEndTime, GetDefaultWorkingDays());
         }
 
+        /// <summary>
+        /// Runs the IsSlaOverdue operation.
+        /// </summary>
         public static bool IsSlaOverdue(
             DateTime startUtc,
             int targetDays,
@@ -145,6 +180,9 @@ namespace IT_Form.Helpers
             TimeSpan businessEndTime)
             => IsSlaOverdue(startUtc, targetDays, businessStartTime, businessEndTime, GetDefaultWorkingDays());
 
+        /// <summary>
+        /// Runs the IsSlaOverdue operation.
+        /// </summary>
         public static bool IsSlaOverdue(
             DateTime startUtc,
             int targetDays,
@@ -156,6 +194,9 @@ namespace IT_Form.Helpers
             return DateTime.UtcNow > CalculateSlaDeadline(startUtc, targetDays, businessStartTime, businessEndTime, workingDays, timeZoneId);
         }
 
+        /// <summary>
+        /// Runs the NormalizeBusinessSchedule operation.
+        /// </summary>
         private static CompanyBusinessSchedule NormalizeBusinessSchedule(
             TimeSpan businessStartTime,
             TimeSpan businessEndTime,
@@ -188,6 +229,9 @@ namespace IT_Form.Helpers
                 CompanyTimeZoneHelper.NormalizeTimeZoneId(timeZoneId));
         }
 
+        /// <summary>
+        /// Runs the MoveToNextWorkingDate operation.
+        /// </summary>
         private static DateTime MoveToNextWorkingDate(DateTime currentLocal, CompanyBusinessSchedule businessSchedule)
         {
             var next = currentLocal;

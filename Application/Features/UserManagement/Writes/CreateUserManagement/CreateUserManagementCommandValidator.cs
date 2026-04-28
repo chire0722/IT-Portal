@@ -1,9 +1,14 @@
+// Project comment: CreateUserManagementCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace IT_Form.Application.Features.UserManagement.Writes.CreateUserManagement;
 
+/// <summary>
+/// Validates input for the CreateUserManagementCommand request.
+/// </summary>
 public sealed class CreateUserManagementCommandValidator : AbstractValidator<CreateUserManagementCommand>
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -41,6 +46,9 @@ public sealed class CreateUserManagementCommandValidator : AbstractValidator<Cre
             .WithMessage("Passwords do not match.");
     }
 
+    /// <summary>
+    /// Runs the BeUniqueUsernameAsync operation.
+    /// </summary>
     private async Task<bool> BeUniqueUsernameAsync(
         CreateUserManagementCommand command,
         string username,

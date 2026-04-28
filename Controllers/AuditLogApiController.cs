@@ -1,3 +1,5 @@
+// Project comment: AuditLogApiController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.AuditLogs.Flows;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +13,9 @@ namespace IT_Form.Controllers
     [Authorize(Policy = "RequireHROrIT")]
     [Route("api/audit-logs")]
     [EnableRateLimiting("fixed")]
+    /// <summary>
+    /// Handles web requests for the AuditLogApi area.
+    /// </summary>
     public sealed class AuditLogApiController : AppApiControllerBase
     {
         private readonly ISender _sender;
@@ -21,6 +26,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpGet]
+        /// <summary>
+        /// Gets the data required by the GetList operation.
+        /// </summary>
         public async Task<IActionResult> GetList(
             [FromQuery] string? entity,
             [FromQuery] string? auditAction,
@@ -32,14 +40,23 @@ namespace IT_Form.Controllers
             => Ok(await _sender.Send(new GetAuditLogListApiQuery(entity, auditAction, search, startDate, endDate, isSuccess, page)));
 
         [HttpGet("{id:int}")]
+        /// <summary>
+        /// Gets the data required by the GetDetails operation.
+        /// </summary>
         public async Task<IActionResult> GetDetails(int id)
             => HandleProcessResult(await _sender.Send(new GetAuditLogDetailsApiQuery(id)));
 
         [HttpGet("{id:int}/chain")]
+        /// <summary>
+        /// Gets the data required by the GetChain operation.
+        /// </summary>
         public async Task<IActionResult> GetChain(int id, [FromQuery] bool failuresOnly = false)
             => HandleProcessResult(await _sender.Send(new GetAuditLogChainApiQuery(id, failuresOnly)));
 
         [HttpGet("summary")]
+        /// <summary>
+        /// Gets the data required by the GetSummary operation.
+        /// </summary>
         public async Task<IActionResult> GetSummary(
             [FromQuery] string? entity,
             [FromQuery] string? auditAction,

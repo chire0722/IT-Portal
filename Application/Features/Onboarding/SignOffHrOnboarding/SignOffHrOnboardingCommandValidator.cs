@@ -1,7 +1,12 @@
+// Project comment: SignOffHrOnboardingCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Onboarding.SignOffHrOnboarding
 {
+    /// <summary>
+    /// Validates input for the SignOffHrOnboardingCommand request.
+    /// </summary>
     public sealed class SignOffHrOnboardingCommandValidator : AbstractValidator<SignOffHrOnboardingCommand>
     {
         public SignOffHrOnboardingCommandValidator()

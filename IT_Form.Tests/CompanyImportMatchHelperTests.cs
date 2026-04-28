@@ -1,12 +1,20 @@
+// Project comment: CompanyImportMatchHelperTests.cs is part of the IT Form application source code.
+
 using IT_Form.Helpers;
 using IT_Form.Models;
 using Xunit;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the CompanyImportMatchHelperTests class used by the IT Form application.
+    /// </summary>
     public class CompanyImportMatchHelperTests
     {
         [Fact]
+        /// <summary>
+        /// Runs the FindCompanyByReference_MatchesUniquePartialCompanyName operation.
+        /// </summary>
         public void FindCompanyByReference_MatchesUniquePartialCompanyName()
         {
             var companies = new[]
@@ -22,6 +30,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the FindCompanyByReference_MatchesUniqueLotNumberFragment operation.
+        /// </summary>
         public void FindCompanyByReference_MatchesUniqueLotNumberFragment()
         {
             var companies = new[]
@@ -37,6 +48,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the FindCompanyByReference_MatchesCombinedPartialNameAndLot operation.
+        /// </summary>
         public void FindCompanyByReference_MatchesCombinedPartialNameAndLot()
         {
             var companies = new[]
@@ -52,6 +66,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the FindCompanyByReference_DoesNotMatchAmbiguousPartialCompanyName operation.
+        /// </summary>
         public void FindCompanyByReference_DoesNotMatchAmbiguousPartialCompanyName()
         {
             var companies = new[]

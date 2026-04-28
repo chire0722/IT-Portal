@@ -1,12 +1,17 @@
+@* Project comment: Edit.cshtml renders part of the IT Form web user interface. *@
+
 @model IT_Form.Application.Features.Company.CompanyEditorPageViewModel
 @using IT_Form.Helpers
 @{ ViewData["Title"] = "Edit Company"; }
 
+@* Company maintenance form. The business calendar fields feed SLA and signature date calculations. *@
 <h2>Edit Company</h2>
 <div class="card shadow-sm border-0 mt-4" style="max-width: 600px;">
     <div class="card-body">
         <form asp-action="Edit" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @* Preserve existing record identity and logo path when the user does not upload a replacement logo. *@
             <input type="hidden" asp-for="Id" />
             <input type="hidden" asp-for="LogoPath" />
             
@@ -24,6 +29,7 @@
 
             <div class="mb-3">
                 <label asp-for="TimeZoneId" class="form-label font-weight-bold">Time Zone</label>
+                @* The full TZDB list is rendered server-side, then enhanced with Select2 search below. *@
                 <select asp-for="TimeZoneId" asp-items="CompanyTimeZoneHelper.GetSelectListItems(Model.TimeZoneId)" class="form-select shadow-sm time-zone-select" data-placeholder="Search a time zone by city or IANA ID">
                 </select>
                 <div class="form-text text-muted small">Used for signature dates and SLA deadline calculations. Type to search the full TZDB time zone list.</div>
@@ -49,6 +55,7 @@
 
             <div class="mb-4">
                 <label class="form-label font-weight-bold d-block">Business Days</label>
+                @* Each checked day is treated as a valid working day by the due-date calculator. *@
                 <div class="d-flex flex-wrap gap-3">
                     <div class="form-check">
                         <input asp-for="WorksOnMonday" class="form-check-input" />
@@ -84,6 +91,7 @@
 
             <div class="mb-4">
                 <label class="form-label font-weight-bold">Company Logo</label>
+                @* Show the current logo preview so admins can decide whether to replace it. *@
                 @if (!string.IsNullOrEmpty(Model.LogoPath))
                 {
                     <div class="mb-2">
@@ -118,12 +126,14 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 
+    @* Select2 is used here because the time zone dropdown can contain many entries. *@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         $(function () {
+            // Read the placeholder from markup so the select setup stays tied to the rendered field.
             var placeholder = $('.time-zone-select').data('placeholder');
             $('.time-zone-select').select2({
                 theme: 'bootstrap-5',
@@ -135,6 +145,7 @@
     </script>
 
     <style>
+        /* Keep the enhanced Select2 field visually aligned with Bootstrap form controls. */
         .select2-container--bootstrap-5 .select2-selection--single {
             min-height: calc(1.5em + 1rem + 2px);
             padding: 0.5rem 1rem;

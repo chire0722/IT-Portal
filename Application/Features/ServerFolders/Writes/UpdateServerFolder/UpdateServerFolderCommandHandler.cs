@@ -1,3 +1,5 @@
+// Project comment: UpdateServerFolderCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -12,6 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ServerFolders.Writes.UpdateServerFolder;
 
+/// <summary>
+/// Handles the UpdateServerFolderCommand command workflow.
+/// </summary>
 public sealed class UpdateServerFolderCommandHandler : IRequestHandler<UpdateServerFolderCommand, Unit>
 {
     private readonly ApplicationDbContext _context;
@@ -23,6 +28,9 @@ public sealed class UpdateServerFolderCommandHandler : IRequestHandler<UpdateSer
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(UpdateServerFolderCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.ServerFolders
@@ -70,6 +78,9 @@ public sealed class UpdateServerFolderCommandHandler : IRequestHandler<UpdateSer
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the EnsureExistingServerFolderIsInScopeAsync operation.
+    /// </summary>
     private async Task EnsureExistingServerFolderIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
     {
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -85,6 +96,9 @@ public sealed class UpdateServerFolderCommandHandler : IRequestHandler<UpdateSer
         }
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
         var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(

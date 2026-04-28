@@ -1,7 +1,12 @@
+// Project comment: PaginatedList.cs is part of the IT Form application source code.
+
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the PaginatedList class used by the IT Form application.
+    /// </summary>
     public class PaginatedList<T> : List<T>
     {
         public int PageIndex { get; private set; }
@@ -19,6 +24,9 @@ namespace IT_Form.Helpers
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
 
+        /// <summary>
+        /// Creates data for the CreateAsync operation.
+        /// </summary>
         public static async Task<PaginatedList<T>> CreateAsync(
             IQueryable<T> source, int pageIndex, int pageSize)
         {

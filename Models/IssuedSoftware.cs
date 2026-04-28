@@ -1,8 +1,13 @@
+// Project comment: IssuedSoftware.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the IssuedSoftware class used by the IT Form application.
+    /// </summary>
     public class IssuedSoftware
     {
         public int Id { get; set; }

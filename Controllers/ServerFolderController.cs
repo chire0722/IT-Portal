@@ -1,3 +1,5 @@
+// Project comment: ServerFolderController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Features.ServerFolder;
 using IT_Form.Application.Features.ServerFolder.AddCurrentEmployeeToServerFolder;
 using IT_Form.Application.Features.ServerFolder.BulkImportServerFolders;
@@ -10,6 +12,9 @@ using MediatR;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the ServerFolder area.
+    /// </summary>
     public class ServerFolderController : AppControllerBase
     {
         private readonly IMediator _mediator;
@@ -19,14 +24,23 @@ namespace IT_Form.Controllers
             _mediator = mediator;
         }
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(int? companyId = null)
             => HandleProcessResult(await _mediator.Send(new GetServerFolderIndexPageQuery(companyId)));
 
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _mediator.Send(new GetServerFolderCreatePageQuery()));
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(ServerFolderEditorPageViewModel model, int[] selectedCompanyIds)
         {
             if (model == null) return HandleProcessResult(await _mediator.Send(new GetServerFolderCreatePageQuery()));
@@ -45,9 +59,15 @@ namespace IT_Form.Controllers
         }
 
         [NonAction]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public Task<IActionResult> Create(ServerFolderEditorPageViewModel model)
             => Create(model, System.Array.Empty<int>());
 
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -56,6 +76,9 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, ServerFolderEditorPageViewModel model, int[] selectedCompanyIds)
         {
             if (id != model.Id) return NotFound();
@@ -74,14 +97,23 @@ namespace IT_Form.Controllers
                 async () => HandleProcessResult(await _mediator.Send(new GetServerFolderEditPageQuery(id, model, selectedCompanyIds))));
         }
 
+        /// <summary>
+        /// Runs the Report operation.
+        /// </summary>
         public async Task<IActionResult> Report(int? id, string? searchString, int page = 1)
             => HandleProcessResult(await _mediator.Send(new GetServerFolderReportPageQuery(id, searchString, page)));
 
+        /// <summary>
+        /// Runs the Members operation.
+        /// </summary>
         public async Task<IActionResult> Members(int id, int? onboardingRequestId = null)
             => HandleProcessResult(await _mediator.Send(new GetServerFolderMembersPageQuery(id, onboardingRequestId)));
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the AddCurrentEmployee operation.
+        /// </summary>
         public async Task<IActionResult> AddCurrentEmployee(int id, int onboardingRequestId, bool canRead = true, bool canModify = false)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -109,16 +141,25 @@ namespace IT_Form.Controllers
                 nameof(Members),
                 new { id, onboardingRequestId });
 
+        /// <summary>
+        /// Runs the ExportCsv operation.
+        /// </summary>
         public async Task<IActionResult> ExportCsv(int? id, string? searchString)
             => HandleProcessResult(await _mediator.Send(new ExportServerFolderReportCsvQuery(id, searchString)));
 
         // GET: /ServerFolder/DownloadTemplate
+        /// <summary>
+        /// Runs the DownloadTemplate operation.
+        /// </summary>
         public async Task<IActionResult> DownloadTemplate()
             => HandleProcessResult(await _mediator.Send(new DownloadServerFolderTemplateQuery()));
 
         // POST: ServerFolder/BulkImport
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the BulkImport operation.
+        /// </summary>
         public async Task<IActionResult> BulkImport(IFormFile file)
             => await ExecuteWithValidationRedirect(
                 async () =>

@@ -1,3 +1,5 @@
+// Project comment: SignatureControllerTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -11,9 +13,15 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the SignatureControllerTests class used by the IT Form application.
+    /// </summary>
     public class SignatureControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Acknowledge_Get_FailsOnHmacMismatch_Adversarial operation.
+        /// </summary>
         public async Task Acknowledge_Get_FailsOnHmacMismatch_Adversarial()
         {
             using var context = CreateContext();
@@ -37,6 +45,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Acknowledge_Post_MissingSignature_RedisplaysViewWithValidationError operation.
+        /// </summary>
         public async Task Acknowledge_Post_MissingSignature_RedisplaysViewWithValidationError()
         {
             using var context = CreateContext();
@@ -65,6 +76,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Acknowledge_Post_MissingPdpaConsent_RedisplaysViewWithValidationError operation.
+        /// </summary>
         public async Task Acknowledge_Post_MissingPdpaConsent_RedisplaysViewWithValidationError()
         {
             using var context = CreateContext();

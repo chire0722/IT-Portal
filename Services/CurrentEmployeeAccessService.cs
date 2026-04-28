@@ -1,3 +1,5 @@
+// Project comment: CurrentEmployeeAccessService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides CurrentEmployeeAccess service behavior for the application.
+    /// </summary>
     public sealed class CurrentEmployeeAccessService : ICurrentEmployeeAccessService
     {
         private readonly ApplicationDbContext _context;
@@ -17,6 +22,9 @@ namespace IT_Form.Services
             _context = context;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetEmployeeContextAsync operation.
+        /// </summary>
         public async Task<EmployeeContext?> GetEmployeeContextAsync(int onboardingId, CancellationToken cancellationToken = default)
         {
             var request = await _context.OnboardingRequests
@@ -43,6 +51,9 @@ namespace IT_Form.Services
             };
         }
 
+        /// <summary>
+        /// Gets the data required by the GetAccessCatalogAsync operation.
+        /// </summary>
         public async Task<AccessCatalogDto> GetAccessCatalogAsync(
             int? companyId,
             IEnumerable<int>? existingEmailGroupIds,
@@ -145,6 +156,9 @@ namespace IT_Form.Services
             };
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildFolderPermissions operation.
+        /// </summary>
         public List<FolderPermissionViewModel> BuildFolderPermissions(
             IEnumerable<string> availableFolderNames,
             IEnumerable<FolderPermission>? existingPermissions)
@@ -191,6 +205,9 @@ namespace IT_Form.Services
                 .ToList();
         }
 
+        /// <summary>
+        /// Maps data for the MapLegacyFlags operation.
+        /// </summary>
         public void MapLegacyFlags(
             IEnumerable<RequestEmailGroup> emailGroups,
             IEnumerable<RequestSharedMailbox> sharedMailboxes,
@@ -208,9 +225,15 @@ namespace IT_Form.Services
             target.MailboxStore = sharedMailboxes.Any(mailbox => AccessValueMatches(mailbox.MailboxName, mailbox.MailboxAddress, "store"));
         }
 
+        /// <summary>
+        /// Runs the IsCurrentEmployeeRecord operation.
+        /// </summary>
         private static bool IsCurrentEmployeeRecord(OnboardingRequest request)
             => request.Status == RequestStatus.Completed || request.Status == RequestStatus.Approved;
 
+        /// <summary>
+        /// Runs the ResolveCompanyIdAsync operation.
+        /// </summary>
         private async Task<int?> ResolveCompanyIdAsync(string? branchName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(branchName))
@@ -225,6 +248,9 @@ namespace IT_Form.Services
             return CompanyImportMatchHelper.FindCompanyByReference(companies, branchName)?.Id;
         }
 
+        /// <summary>
+        /// Runs the AccessValueMatches operation.
+        /// </summary>
         private static bool AccessValueMatches(string? primaryValue, string? secondaryValue, params string[] aliases)
         {
             var tokens = BuildAccessTokens(primaryValue)
@@ -236,6 +262,9 @@ namespace IT_Form.Services
                 .Any(alias => tokens.Contains(alias));
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildAccessTokens operation.
+        /// </summary>
         private static IEnumerable<string> BuildAccessTokens(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -252,6 +281,9 @@ namespace IT_Form.Services
                 .ToList();
         }
 
+        /// <summary>
+        /// Runs the NormalizeAccessToken operation.
+        /// </summary>
         private static string NormalizeAccessToken(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))

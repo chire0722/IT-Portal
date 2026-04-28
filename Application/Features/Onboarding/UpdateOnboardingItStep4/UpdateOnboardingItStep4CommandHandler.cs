@@ -1,3 +1,5 @@
+// Project comment: UpdateOnboardingItStep4CommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Helpers;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep4
 {
+    /// <summary>
+    /// Handles the UpdateOnboardingItStep4Command command workflow.
+    /// </summary>
     public sealed class UpdateOnboardingItStep4CommandHandler
         : IRequestHandler<UpdateOnboardingItStep4Command, UpdateOnboardingItStep4Result>
     {
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingItStep4
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<UpdateOnboardingItStep4Result> Handle(UpdateOnboardingItStep4Command request, CancellationToken cancellationToken)
         {
             var session = request.Session;

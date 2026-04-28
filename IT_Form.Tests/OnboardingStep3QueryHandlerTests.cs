@@ -1,3 +1,5 @@
+// Project comment: OnboardingStep3QueryHandlerTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.DTOs.Options;
 using IT_Form.Application.Features.Onboarding.GetOnboardingItStep3;
@@ -15,6 +17,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the OnboardingStep3QueryHandlerTests class used by the IT Form application.
+/// </summary>
 public class OnboardingStep3QueryHandlerTests
 {
     public OnboardingStep3QueryHandlerTests()
@@ -23,6 +28,9 @@ public class OnboardingStep3QueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_ReturnsOptionDtosForStep3Selections operation.
+    /// </summary>
     public async Task Handle_ReturnsOptionDtosForStep3Selections()
     {
         await using var context = CreateContext();
@@ -135,6 +143,9 @@ public class OnboardingStep3QueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_ReturnsUnlimitedAvailability_ForFreeSoftware operation.
+    /// </summary>
     public async Task Handle_ReturnsUnlimitedAvailability_ForFreeSoftware()
     {
         await using var context = CreateContext();
@@ -179,6 +190,9 @@ public class OnboardingStep3QueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_FiltersSoftwareVersions_ByEmployeeCompany operation.
+    /// </summary>
     public async Task Handle_FiltersSoftwareVersions_ByEmployeeCompany()
     {
         await using var context = CreateContext();
@@ -372,6 +386,9 @@ public class OnboardingStep3QueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_ReturnsForbidden_WhenItUserTargetsDifferentCompany operation.
+    /// </summary>
     public async Task Handle_ReturnsForbidden_WhenItUserTargetsDifferentCompany()
     {
         await using var context = CreateContext();
@@ -399,6 +416,9 @@ public class OnboardingStep3QueryHandlerTests
         Assert.Contains("assigned company scope", result.Message);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

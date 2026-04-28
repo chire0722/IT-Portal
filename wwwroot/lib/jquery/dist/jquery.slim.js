@@ -1,3 +1,5 @@
+// Project comment: jquery.slim.js contains client-side behavior used by the IT Form web interface.
+
 /*!
  * jQuery JavaScript Library v3.7.1 -ajax,-ajax/jsonp,-ajax/load,-ajax/script,-ajax/var/location,-ajax/var/nonce,-ajax/var/rquery,-ajax/xhr,-manipulation/_evalUrl,-deprecated/ajax-event-alias,-effects,-effects/animatedSelector,-effects/Tween
  * https://jquery.com/

@@ -1,8 +1,13 @@
+// Project comment: ExcelImportDateHelper.cs is part of the IT Form application source code.
+
 using System.Globalization;
 using ClosedXML.Excel;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the ExcelImportDateHelper class used by the IT Form application.
+    /// </summary>
     public static class ExcelImportDateHelper
     {
         public const string PreferredDateFormat = "dd/MM/yyyy";
@@ -17,6 +22,9 @@ namespace IT_Form.Helpers
             "MM/dd/yyyy"
         };
 
+        /// <summary>
+        /// Runs the TryReadOptionalDate operation.
+        /// </summary>
         public static bool TryReadOptionalDate(IXLCell cell, out DateTime? value, out string? errorMessage)
         {
             value = null;

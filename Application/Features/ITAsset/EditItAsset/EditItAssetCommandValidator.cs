@@ -1,3 +1,5 @@
+// Project comment: EditItAssetCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using IT_Form.Models.Enums;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ITAsset.EditItAsset
 {
+    /// <summary>
+    /// Validates input for the EditItAssetCommand request.
+    /// </summary>
     public sealed class EditItAssetCommandValidator : AbstractValidator<EditItAssetCommand>
     {
         private readonly ApplicationDbContext _context;
@@ -23,6 +28,9 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
                 .CustomAsync(ValidateAsync);
         }
 
+        /// <summary>
+        /// Validates data for the ValidateAsync operation.
+        /// </summary>
         private async Task ValidateAsync(
             EditItAssetCommand command,
             ValidationContext<EditItAssetCommand> context,

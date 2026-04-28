@@ -1,7 +1,12 @@
+// Project comment: CompanyPageModels.cs is part of the IT Form application source code.
+
 using IT_Form.Helpers;
 
 namespace IT_Form.Application.Features.Company;
 
+/// <summary>
+/// Defines the CompanyIndexListItem class used by the IT Form application.
+/// </summary>
 public sealed class CompanyIndexListItem
 {
     public int Id { get; init; }
@@ -22,6 +27,9 @@ public sealed class CompanyIndexListItem
     public bool WorksOnSunday { get; init; }
 }
 
+/// <summary>
+/// Provides view data for the CompanyEditorPage screen or form.
+/// </summary>
 public sealed class CompanyEditorPageViewModel
 {
     public int Id { get; set; }

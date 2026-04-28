@@ -1,3 +1,5 @@
+// Project comment: SharedMailboxTemplateQueries.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -9,8 +11,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.SharedMailbox
 {
+    /// <summary>
+    /// Carries data needed to execute the DownloadSharedMailboxTemplate query.
+    /// </summary>
     public sealed record DownloadSharedMailboxTemplateQuery() : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the DownloadSharedMailboxTemplateQuery query workflow.
+    /// </summary>
     public sealed class DownloadSharedMailboxTemplateQueryHandler : IRequestHandler<DownloadSharedMailboxTemplateQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -22,6 +30,9 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(DownloadSharedMailboxTemplateQuery request, CancellationToken cancellationToken)
         {
             var activeCompanies = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(

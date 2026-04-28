@@ -1,3 +1,5 @@
+// Project comment: EmailDispatcherBackgroundServiceTests.cs is part of the IT Form application source code.
+
 using System.Text.Json;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
@@ -14,9 +16,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the EmailDispatcherBackgroundServiceTests class used by the IT Form application.
+/// </summary>
 public class EmailDispatcherBackgroundServiceTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the ExecuteAsync_SendsOtpEmailViaSmtp operation.
+    /// </summary>
     public async Task ExecuteAsync_SendsOtpEmailViaSmtp()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

@@ -1,3 +1,5 @@
+// Project comment: CreateItAssetCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using IT_Form.Models.Enums;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ITAsset.CreateItAsset
 {
+    /// <summary>
+    /// Validates input for the CreateItAssetCommand request.
+    /// </summary>
     public sealed class CreateItAssetCommandValidator : AbstractValidator<CreateItAssetCommand>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.ITAsset.CreateItAsset
                 .CustomAsync(ValidateAsync);
         }
 
+        /// <summary>
+        /// Validates data for the ValidateAsync operation.
+        /// </summary>
         private async Task ValidateAsync(
             CreateItAssetCommand command,
             ValidationContext<CreateItAssetCommand> context,

@@ -1,9 +1,14 @@
+// Project comment: UpdateDepartmentCommandValidator.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Departments.Writes.UpdateDepartment;
 
+/// <summary>
+/// Validates input for the UpdateDepartmentCommand request.
+/// </summary>
 public sealed class UpdateDepartmentCommandValidator : AbstractValidator<UpdateDepartmentCommand>
 {
     public UpdateDepartmentCommandValidator(ApplicationDbContext context)

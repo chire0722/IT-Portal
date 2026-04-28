@@ -1,3 +1,5 @@
+// Project comment: RequestDetailsQueryHandlerTests.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Mapping;
@@ -19,6 +21,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the RequestDetailsQueryHandlerTests class used by the IT Form application.
+/// </summary>
 public class RequestDetailsQueryHandlerTests
 {
     public RequestDetailsQueryHandlerTests()
@@ -27,6 +32,9 @@ public class RequestDetailsQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OnboardingDetailsHandler_ReturnsReadModelWithMappedCollections operation.
+    /// </summary>
     public async Task OnboardingDetailsHandler_ReturnsReadModelWithMappedCollections()
     {
         await using var context = CreateContext();
@@ -156,6 +164,9 @@ public class RequestDetailsQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OnboardingDetailsHandler_AllowsHrToReadAcrossCompanies operation.
+    /// </summary>
     public async Task OnboardingDetailsHandler_AllowsHrToReadAcrossCompanies()
     {
         await using var context = CreateContext();
@@ -197,6 +208,9 @@ public class RequestDetailsQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OnboardingDetailsHandler_ReturnsForbidden_ForItOutsideCompany operation.
+    /// </summary>
     public async Task OnboardingDetailsHandler_ReturnsForbidden_ForItOutsideCompany()
     {
         await using var context = CreateContext();
@@ -231,6 +245,9 @@ public class RequestDetailsQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OffboardingDetailsHandler_ReturnsReadModelWithOnboardingSnapshot operation.
+    /// </summary>
     public async Task OffboardingDetailsHandler_ReturnsReadModelWithOnboardingSnapshot()
     {
         await using var context = CreateContext();
@@ -366,6 +383,9 @@ public class RequestDetailsQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OffboardingDetailsHandler_AllowsHrToReadAcrossCompanies operation.
+    /// </summary>
     public async Task OffboardingDetailsHandler_AllowsHrToReadAcrossCompanies()
     {
         await using var context = CreateContext();
@@ -408,6 +428,9 @@ public class RequestDetailsQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OffboardingDetailsHandler_ReturnsForbidden_ForItOutsideCompany operation.
+    /// </summary>
     public async Task OffboardingDetailsHandler_ReturnsForbidden_ForItOutsideCompany()
     {
         await using var context = CreateContext();
@@ -442,6 +465,9 @@ public class RequestDetailsQueryHandlerTests
         Assert.Null(result.Data);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -458,6 +484,9 @@ public class RequestDetailsQueryHandlerTests
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreateUserManager operation.
+    /// </summary>
     private static UserManager<ApplicationUser> CreateUserManager(string signature)
     {
         var store = new Mock<IUserStore<ApplicationUser>>();
@@ -471,6 +500,9 @@ public class RequestDetailsQueryHandlerTests
         return manager.Object;
     }
 
+    /// <summary>
+    /// Defines the TestCurrentUserAccessor class used by the IT Form application.
+    /// </summary>
     private sealed class TestCurrentUserAccessor : ICurrentUserAccessor
     {
         public TestCurrentUserAccessor(

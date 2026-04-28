@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingIndexQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingIndex
 {
+    /// <summary>
+    /// Handles the GetOnboardingIndexQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingIndexQueryHandler : IRequestHandler<GetOnboardingIndexQuery, GetOnboardingIndexResult>
     {
         private readonly ApplicationDbContext _context;
@@ -21,6 +26,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingIndex
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<GetOnboardingIndexResult> Handle(GetOnboardingIndexQuery request, CancellationToken cancellationToken)
         {
             var user = _currentUserAccessor.User;

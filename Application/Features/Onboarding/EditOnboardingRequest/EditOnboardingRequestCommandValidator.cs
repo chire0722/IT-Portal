@@ -1,8 +1,13 @@
+// Project comment: EditOnboardingRequestCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Services;
 
 namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
 {
+    /// <summary>
+    /// Validates input for the EditOnboardingRequestCommand request.
+    /// </summary>
     public sealed class EditOnboardingRequestCommandValidator : AbstractValidator<EditOnboardingRequestCommand>
     {
         public EditOnboardingRequestCommandValidator(IOnboardingHodService onboardingHodService)

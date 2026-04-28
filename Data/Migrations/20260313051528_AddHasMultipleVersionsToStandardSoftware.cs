@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+// Project comment: 20260313051528_AddHasMultipleVersionsToStandardSoftware.cs is part of the IT Form application source code.
+
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 

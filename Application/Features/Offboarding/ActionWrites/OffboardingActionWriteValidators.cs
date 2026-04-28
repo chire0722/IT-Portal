@@ -1,7 +1,12 @@
+// Project comment: OffboardingActionWriteValidators.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Offboarding.ActionWrites
 {
+    /// <summary>
+    /// Validates input for the ProcessOffboardingHrSignatureCommand request.
+    /// </summary>
     public sealed class ProcessOffboardingHrSignatureCommandValidator : AbstractValidator<ProcessOffboardingHrSignatureCommand>
     {
         public ProcessOffboardingHrSignatureCommandValidator()
@@ -11,6 +16,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 
+    /// <summary>
+    /// Validates input for the ProcessOffboardingCheckerApprovalCommand request.
+    /// </summary>
     public sealed class ProcessOffboardingCheckerApprovalCommandValidator : AbstractValidator<ProcessOffboardingCheckerApprovalCommand>
     {
         public ProcessOffboardingCheckerApprovalCommandValidator()
@@ -20,6 +28,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 
+    /// <summary>
+    /// Validates input for the ProcessOffboardingManagerSignatureCommand request.
+    /// </summary>
     public sealed class ProcessOffboardingManagerSignatureCommandValidator : AbstractValidator<ProcessOffboardingManagerSignatureCommand>
     {
         public ProcessOffboardingManagerSignatureCommandValidator()
@@ -29,6 +40,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 
+    /// <summary>
+    /// Validates input for the ProcessOffboardingItSignatureCommand request.
+    /// </summary>
     public sealed class ProcessOffboardingItSignatureCommandValidator : AbstractValidator<ProcessOffboardingItSignatureCommand>
     {
         public ProcessOffboardingItSignatureCommandValidator()
@@ -38,6 +52,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 
+    /// <summary>
+    /// Validates input for the ProcessOffboardingEmployeeManualSignatureCommand request.
+    /// </summary>
     public sealed class ProcessOffboardingEmployeeManualSignatureCommandValidator : AbstractValidator<ProcessOffboardingEmployeeManualSignatureCommand>
     {
         public ProcessOffboardingEmployeeManualSignatureCommandValidator()
@@ -47,6 +64,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 
+    /// <summary>
+    /// Validates input for the ProcessOffboardingRejectionCommand request.
+    /// </summary>
     public sealed class ProcessOffboardingRejectionCommandValidator : AbstractValidator<ProcessOffboardingRejectionCommand>
     {
         public ProcessOffboardingRejectionCommandValidator()
@@ -56,6 +76,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 
+    /// <summary>
+    /// Validates input for the ProcessOffboardingTokenRegenerationCommand request.
+    /// </summary>
     public sealed class ProcessOffboardingTokenRegenerationCommandValidator : AbstractValidator<ProcessOffboardingTokenRegenerationCommand>
     {
         public ProcessOffboardingTokenRegenerationCommandValidator()

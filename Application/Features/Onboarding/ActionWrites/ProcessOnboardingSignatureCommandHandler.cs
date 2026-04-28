@@ -1,9 +1,14 @@
+// Project comment: ProcessOnboardingSignatureCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Onboarding.SignOnboardingRequest;
 using MediatR;
 
 namespace IT_Form.Application.Features.Onboarding.ActionWrites
 {
+    /// <summary>
+    /// Handles the ProcessOnboardingSignatureCommand command workflow.
+    /// </summary>
     public sealed class ProcessOnboardingSignatureCommandHandler
         : IRequestHandler<ProcessOnboardingSignatureCommand, CommandResponse>
     {
@@ -14,6 +19,9 @@ namespace IT_Form.Application.Features.Onboarding.ActionWrites
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<CommandResponse> Handle(ProcessOnboardingSignatureCommand request, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(

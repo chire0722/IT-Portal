@@ -1,5 +1,10 @@
+// Project comment: ForgotPasswordResult.cs is part of the IT Form application source code.
+
 namespace IT_Form.Application.Features.Account.ForgotPassword
 {
+    /// <summary>
+    /// Represents the result returned by the ForgotPassword workflow.
+    /// </summary>
     public sealed record ForgotPasswordResult(
         bool OtpSent,
         string Message,

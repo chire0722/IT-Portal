@@ -1,9 +1,14 @@
+// Project comment: DeleteStandardSoftwareCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware.Writes.DeleteStandardSoftware;
 
+/// <summary>
+/// Validates input for the DeleteStandardSoftwareCommand request.
+/// </summary>
 public sealed class DeleteStandardSoftwareCommandValidator : AbstractValidator<DeleteStandardSoftwareCommand>
 {
     public DeleteStandardSoftwareCommandValidator(ApplicationDbContext context)

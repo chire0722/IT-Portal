@@ -1,7 +1,12 @@
+// Project comment: VerifyOtpViewModel.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the VerifyOtp screen or form.
+    /// </summary>
     public class VerifyOtpViewModel
     {
         [Required]

@@ -1,3 +1,5 @@
+// Project comment: AuditLogApiFlows.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.AuditLogs.Shared;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.AuditLogs.Flows;
 
+/// <summary>
+/// Carries data needed to execute the GetAuditLogListApi query.
+/// </summary>
 public sealed record GetAuditLogListApiQuery(
     string? Entity,
     string? AuditAction,
@@ -17,12 +22,21 @@ public sealed record GetAuditLogListApiQuery(
     bool? IsSuccess,
     int Page = 1) : IRequest<AuditLogListApiResponse>;
 
+/// <summary>
+/// Carries data needed to execute the GetAuditLogDetailsApi query.
+/// </summary>
 public sealed record GetAuditLogDetailsApiQuery(int Id)
     : IRequest<ProcessResult<AuditLogDetailsApiResponse>>;
 
+/// <summary>
+/// Carries data needed to execute the GetAuditLogChainApi query.
+/// </summary>
 public sealed record GetAuditLogChainApiQuery(int Id, bool FailuresOnly = false)
     : IRequest<ProcessResult<AuditLogChainApiResponse>>;
 
+/// <summary>
+/// Carries data needed to execute the GetAuditLogSummaryApi query.
+/// </summary>
 public sealed record GetAuditLogSummaryApiQuery(
     string? Entity,
     string? AuditAction,
@@ -31,6 +45,9 @@ public sealed record GetAuditLogSummaryApiQuery(
     DateTime? EndDate,
     bool? IsSuccess) : IRequest<AuditLogSummaryApiResponse>;
 
+/// <summary>
+/// Handles the GetAuditLogListApiQuery query workflow.
+/// </summary>
 public sealed class GetAuditLogListApiQueryHandler
     : IRequestHandler<GetAuditLogListApiQuery, AuditLogListApiResponse>
 {
@@ -42,6 +59,9 @@ public sealed class GetAuditLogListApiQueryHandler
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<AuditLogListApiResponse> Handle(GetAuditLogListApiQuery request, CancellationToken cancellationToken)
     {
         var filter = request.ToFilterParameters();
@@ -76,6 +96,9 @@ public sealed class GetAuditLogListApiQueryHandler
     }
 }
 
+/// <summary>
+/// Handles the GetAuditLogDetailsApiQuery query workflow.
+/// </summary>
 public sealed class GetAuditLogDetailsApiQueryHandler
     : IRequestHandler<GetAuditLogDetailsApiQuery, ProcessResult<AuditLogDetailsApiResponse>>
 {
@@ -86,6 +109,9 @@ public sealed class GetAuditLogDetailsApiQueryHandler
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<ProcessResult<AuditLogDetailsApiResponse>> Handle(GetAuditLogDetailsApiQuery request, CancellationToken cancellationToken)
     {
         var log = await _context.AuditLogs
@@ -98,6 +124,9 @@ public sealed class GetAuditLogDetailsApiQueryHandler
     }
 }
 
+/// <summary>
+/// Handles the GetAuditLogChainApiQuery query workflow.
+/// </summary>
 public sealed class GetAuditLogChainApiQueryHandler
     : IRequestHandler<GetAuditLogChainApiQuery, ProcessResult<AuditLogChainApiResponse>>
 {
@@ -108,6 +137,9 @@ public sealed class GetAuditLogChainApiQueryHandler
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<ProcessResult<AuditLogChainApiResponse>> Handle(GetAuditLogChainApiQuery request, CancellationToken cancellationToken)
     {
         var anchor = await _context.AuditLogs
@@ -151,6 +183,9 @@ public sealed class GetAuditLogChainApiQueryHandler
     }
 }
 
+/// <summary>
+/// Handles the GetAuditLogSummaryApiQuery query workflow.
+/// </summary>
 public sealed class GetAuditLogSummaryApiQueryHandler
     : IRequestHandler<GetAuditLogSummaryApiQuery, AuditLogSummaryApiResponse>
 {
@@ -161,6 +196,9 @@ public sealed class GetAuditLogSummaryApiQueryHandler
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<AuditLogSummaryApiResponse> Handle(GetAuditLogSummaryApiQuery request, CancellationToken cancellationToken)
     {
         var filter = request.ToFilterParameters();
@@ -239,11 +277,20 @@ public sealed class GetAuditLogSummaryApiQueryHandler
     }
 }
 
+/// <summary>
+/// Defines the AuditLogApiQueryExtensions class used by the IT Form application.
+/// </summary>
 internal static class AuditLogApiQueryExtensions
 {
+    /// <summary>
+    /// Runs the ToFilterParameters operation.
+    /// </summary>
     public static AuditLogFilterParameters ToFilterParameters(this GetAuditLogListApiQuery request)
         => new(request.Entity, request.AuditAction, request.Search, request.StartDate, request.EndDate, request.IsSuccess);
 
+    /// <summary>
+    /// Runs the ToFilterParameters operation.
+    /// </summary>
     public static AuditLogFilterParameters ToFilterParameters(this GetAuditLogSummaryApiQuery request)
         => new(request.Entity, request.AuditAction, request.Search, request.StartDate, request.EndDate, request.IsSuccess);
 }

@@ -1,3 +1,5 @@
+// Project comment: AccountController.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Features.Account.ForgotPassword;
 using IT_Form.Application.Features.Account.LoginAccount;
@@ -19,6 +21,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IT_Form.Controllers
 {
+    /// <summary>
+    /// Handles web requests for the Account area.
+    /// </summary>
     public class AccountController : AppControllerBase
     {
         private readonly ISender _sender;
@@ -30,6 +35,9 @@ namespace IT_Form.Controllers
 
         // GET: /Account/Login
         [HttpGet]
+        /// <summary>
+        /// Runs the Login operation.
+        /// </summary>
         public async Task<IActionResult> Login(string? returnUrl = null)
         {
             if (User.Identity?.IsAuthenticated == true)
@@ -43,6 +51,9 @@ namespace IT_Form.Controllers
         // POST: /Account/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Login operation.
+        /// </summary>
         public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
             if (!ModelState.IsValid)
@@ -89,6 +100,9 @@ namespace IT_Form.Controllers
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Logout operation.
+        /// </summary>
         public async Task<IActionResult> Logout()
         {
             await _sender.Send(new LogoutCommand());
@@ -98,6 +112,9 @@ namespace IT_Form.Controllers
         // GET: /Account/ForgotPassword
         [HttpGet]
         [AllowAnonymous]
+        /// <summary>
+        /// Runs the ForgotPassword operation.
+        /// </summary>
         public IActionResult ForgotPassword()
         {
             return View();
@@ -107,6 +124,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ForgotPassword operation.
+        /// </summary>
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
         {
             if (!ModelState.IsValid)
@@ -133,6 +153,9 @@ namespace IT_Form.Controllers
         // GET: /Account/VerifyOtp
         [HttpGet]
         [AllowAnonymous]
+        /// <summary>
+        /// Runs the VerifyOtp operation.
+        /// </summary>
         public async Task<IActionResult> VerifyOtp(string email)
         {
             if (string.IsNullOrEmpty(email))
@@ -147,6 +170,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the VerifyOtp operation.
+        /// </summary>
         public async Task<IActionResult> VerifyOtp(VerifyOtpViewModel model)
         {
             if (!ModelState.IsValid)
@@ -177,6 +203,9 @@ namespace IT_Form.Controllers
         // GET: /Account/ResetPassword
         [HttpGet]
         [AllowAnonymous]
+        /// <summary>
+        /// Runs the ResetPassword operation.
+        /// </summary>
         public IActionResult ResetPassword(string email, string token)
         {
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
@@ -191,6 +220,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ResetPassword operation.
+        /// </summary>
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
         {
             if (!ModelState.IsValid)
@@ -227,6 +259,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ResendOtp operation.
+        /// </summary>
         public async Task<IActionResult> ResendOtp(string email)
         {
             if (string.IsNullOrEmpty(email))
@@ -249,6 +284,9 @@ namespace IT_Form.Controllers
         // GET: /Account/Profile
         [HttpGet]
         [Authorize]
+        /// <summary>
+        /// Runs the Profile operation.
+        /// </summary>
         public async Task<IActionResult> Profile()
         {
             var userId = GetCurrentUserId();
@@ -264,6 +302,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Updates data for the UpdateSignature operation.
+        /// </summary>
         public async Task<IActionResult> UpdateSignature(UpdateSignatureInputModel model)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -285,6 +326,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Updates data for the UpdateProfile operation.
+        /// </summary>
         public async Task<IActionResult> UpdateProfile(UpdateProfileInputModel model)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -305,6 +349,9 @@ namespace IT_Form.Controllers
         // GET: /Account/ForceChangePassword
         [HttpGet]
         [Authorize]
+        /// <summary>
+        /// Runs the ForceChangePassword operation.
+        /// </summary>
         public IActionResult ForceChangePassword()
         {
             return View(new ForceChangePasswordPageViewModel());
@@ -314,6 +361,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ForceChangePassword operation.
+        /// </summary>
         public async Task<IActionResult> ForceChangePassword(ForceChangePasswordPageViewModel model)
         {
             return await ExecuteWithValidationView(
@@ -333,15 +383,24 @@ namespace IT_Form.Controllers
         }
 
         [HttpGet]
+        /// <summary>
+        /// Runs the AccessDenied operation.
+        /// </summary>
         public IActionResult AccessDenied(string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
+        /// <summary>
+        /// Gets the data required by the GetCurrentUserId operation.
+        /// </summary>
         private string? GetCurrentUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+        /// <summary>
+        /// Builds the value returned by the BuildLoginPageAsync operation.
+        /// </summary>
         private async Task<LoginPageBrandingViewModel> BuildLoginPageAsync(
             LoginViewModel? form = null,
             string? lockoutEndTimeIso = null,
@@ -351,6 +410,9 @@ namespace IT_Form.Controllers
             return await _sender.Send(new GetLoginPageBrandingQuery(form, lockoutEndTimeIso));
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildVerifyOtpPageAsync operation.
+        /// </summary>
         private Task<VerifyOtpViewModel> BuildVerifyOtpPageAsync(string email, string? code = null)
             => _sender.Send(new GetVerifyOtpPageQuery(email, code));
     }

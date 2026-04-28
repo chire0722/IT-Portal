@@ -1,3 +1,5 @@
+// Project comment: OnboardingController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup;
 using IT_Form.Application.Features.Onboarding.Flows;
@@ -14,15 +16,27 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace IT_Form.Controllers
 {
     [Authorize, EnableRateLimiting("fixed")]
+    /// <summary>
+    /// Handles web requests for the Onboarding area.
+    /// </summary>
     public class OnboardingController : Controller
     {
         private readonly ISender _sender;
         public OnboardingController(ISender sender) => _sender = sender;
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(string searchString, RequestStatus? status, int page = 1) => HandleResult(await _sender.Send(new GetOnboardingIndexPageQuery(searchString, status, page)));
         [Authorize(Policy = "RequireHR")] public async Task<IActionResult> ExportCsv(string searchString, RequestStatus? status) => HandleResult(await _sender.Send(new ExportOnboardingCsvFileQuery(searchString, status)));
         [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")] public async Task<IActionResult> ExportBulkPdf([FromBody] int[] ids) => HandleResult(await _sender.Send(new ExportBulkOnboardingPdfFileCommand(ids)));
+        /// <summary>
+        /// Runs the GeneratePdf operation.
+        /// </summary>
         public async Task<IActionResult> GeneratePdf(int id) => HandleResult(await _sender.Send(new GenerateOnboardingPdfFileQuery(id)));
+        /// <summary>
+        /// Runs the Details operation.
+        /// </summary>
         public async Task<IActionResult> Details(int id) => HandleResult(await _sender.Send(new GetOnboardingDetailsPageQuery(id)));
         [HttpGet, Authorize(Policy = "RequireIT")] public async Task<IActionResult> ManageAccess(int id) => HandleResult(await _sender.Send(new GetManageAccessPageQuery(id)));
         [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireIT")] public async Task<IActionResult> ManageAccess(UpdateManageAccessCommand command) => HandleResult(await _sender.Send(new SubmitOnboardingManageAccessFlowCommand(command)));
@@ -78,8 +92,14 @@ namespace IT_Form.Controllers
             return View(result.Data);
         }
 
+        /// <summary>
+        /// Runs the IsAjaxRequest operation.
+        /// </summary>
         private bool IsAjaxRequest() => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
+        /// <summary>
+        /// Applies changes for the ApplyAutoOpenEmail operation.
+        /// </summary>
         private void ApplyAutoOpenEmail(string? autoOpenEmail)
         {
             if (string.IsNullOrWhiteSpace(autoOpenEmail)) return;

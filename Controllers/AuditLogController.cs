@@ -1,5 +1,8 @@
+// Project comment: AuditLogController.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Features.AuditLogs.Shared;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +12,9 @@ using Microsoft.EntityFrameworkCore;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireHROrIT")]
+    /// <summary>
+    /// Handles web requests for the AuditLog area.
+    /// </summary>
     public class AuditLogController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -19,6 +25,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: /AuditLog
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(string? entity, string? auditAction, string? search, DateTime? startDate, DateTime? endDate, bool? isSuccess, int page = 1)
         {
             const int pageSize = 25;
@@ -88,6 +97,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: /AuditLog/ExportCsv
+        /// <summary>
+        /// Runs the ExportCsv operation.
+        /// </summary>
         public async Task<IActionResult> ExportCsv(string? entity, string? auditAction, string? search, DateTime? startDate, DateTime? endDate, bool? isSuccess)
         {
             var query = BuildFilteredAuditQuery(entity, auditAction, search, startDate, endDate, isSuccess);
@@ -100,16 +112,28 @@ namespace IT_Form.Controllers
             {
                 var auditTime = log.CreatedAt == default ? log.Timestamp : log.CreatedAt;
                 var localTime = auditTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
-                var details = log.Details?.Replace("\"", "\"\"") ?? "";
-                var errorMessage = log.ErrorMessage?.Replace("\"", "\"\"") ?? "";
-                var payload = log.Payload?.Replace("\"", "\"\"") ?? "";
+                var details = log.Details ?? "";
+                var errorMessage = log.ErrorMessage ?? "";
+                var payload = AuditPayloadSanitizer.SanitizeJson(log.Payload);
                 
                 // Format the JSON changes to friendly text for the CSV
-                var changesFriendly = !string.IsNullOrEmpty(log.Changes) 
-                    ? IT_Form.Helpers.AuditFormatter.FormatChanges(log.Changes).Replace("\"", "\"\"") 
+                var changesFriendly = !string.IsNullOrEmpty(log.Changes)
+                    ? AuditFormatter.FormatChanges(AuditPayloadSanitizer.SanitizeJson(log.Changes))
                     : "";
-                    
-                csv.AppendLine($"\"{localTime}\",\"{log.UserId}\",\"{log.PerformedBy}\",\"{(log.IsSuccess ? "Success" : "Failed")}\",\"{log.IpAddress}\",\"{log.Action}\",\"{log.EntityName}\",\"{log.EntityId}\",\"{details}\",\"{errorMessage}\",\"{payload}\",\"{changesFriendly}\"");
+
+                csv.AppendLine(string.Join(",",
+                    CsvCell(localTime),
+                    CsvCell(log.UserId),
+                    CsvCell(log.PerformedBy),
+                    CsvCell(log.IsSuccess ? "Success" : "Failed"),
+                    CsvCell(log.IpAddress),
+                    CsvCell(log.Action),
+                    CsvCell(log.EntityName),
+                    CsvCell(log.EntityId),
+                    CsvCell(details),
+                    CsvCell(errorMessage),
+                    CsvCell(payload),
+                    CsvCell(changesFriendly)));
             }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
@@ -117,6 +141,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: /AuditLog/Details/5
+        /// <summary>
+        /// Runs the Details operation.
+        /// </summary>
         public async Task<IActionResult> Details(int id, bool failuresOnly = false)
         {
             var log = await _context.AuditLogs.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
@@ -139,7 +166,7 @@ namespace IT_Form.Controllers
             return View(new AuditLogDetailsPageViewModel
             {
                 Entry = log,
-                FormattedAuditDetails = IT_Form.Helpers.AuditFormatter.FormatChanges(log.Changes ?? log.Payload),
+                FormattedAuditDetails = AuditFormatter.FormatChanges(AuditPayloadSanitizer.SanitizeJson(log.Changes ?? log.Payload)),
                 RelatedEntries = relatedEntries,
                 FailuresOnly = failuresOnly,
                 ChainTotalCount = fullChain.Count,
@@ -148,6 +175,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: /AuditLog/Settings
+        /// <summary>
+        /// Runs the Settings operation.
+        /// </summary>
         public async Task<IActionResult> Settings()
         {
             var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "AuditNotificationEmail");
@@ -166,6 +196,9 @@ namespace IT_Form.Controllers
         // POST: /AuditLog/Settings
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Settings operation.
+        /// </summary>
         public async Task<IActionResult> Settings(SystemSetting model)
         {
             if (ModelState.IsValid)
@@ -188,6 +221,9 @@ namespace IT_Form.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildFilteredAuditQuery operation.
+        /// </summary>
         private IQueryable<AuditLog> BuildFilteredAuditQuery(
             string? entity,
             string? auditAction,
@@ -198,5 +234,19 @@ namespace IT_Form.Controllers
             => AuditLogReadSupport.ApplyFilters(
                 _context.AuditLogs.AsNoTracking(),
                 new AuditLogFilterParameters(entity, auditAction, search, startDate, endDate, isSuccess));
+
+        /// <summary>
+        /// Runs the CsvCell operation.
+        /// </summary>
+        private static string CsvCell(string? value)
+        {
+            value ??= string.Empty;
+            if (value.Length > 0 && value[0] is '=' or '+' or '-' or '@')
+            {
+                value = "'" + value;
+            }
+
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        }
     }
 }

@@ -1,3 +1,5 @@
+// Project comment: DownloadOffboardingResignationQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.DownloadOffboardingResignation
 {
+    /// <summary>
+    /// Handles the DownloadOffboardingResignationQuery query workflow.
+    /// </summary>
     public sealed class DownloadOffboardingResignationQueryHandler : IRequestHandler<DownloadOffboardingResignationQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -26,6 +31,9 @@ namespace IT_Form.Application.Features.Offboarding.DownloadOffboardingResignatio
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(DownloadOffboardingResignationQuery request, CancellationToken cancellationToken)
         {
             var offboardingRequest = await _context.OffboardingRequests

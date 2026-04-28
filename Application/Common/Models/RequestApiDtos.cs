@@ -1,9 +1,14 @@
+// Project comment: RequestApiDtos.cs is part of the IT Form application source code.
+
 using IT_Form.Helpers;
 using IT_Form.Models;
 using Mapster;
 
 namespace IT_Form.Application.Common.Models
 {
+    /// <summary>
+    /// Defines the ApiPageMetadata record used by the IT Form application.
+    /// </summary>
     public sealed record ApiPageMetadata(
         int PageIndex,
         int TotalPages,
@@ -11,6 +16,9 @@ namespace IT_Form.Application.Common.Models
         bool HasPreviousPage,
         bool HasNextPage);
 
+    /// <summary>
+    /// Defines the AssetApiItem record used by the IT Form application.
+    /// </summary>
     public sealed record AssetApiItem(
         string AssetType,
         string? Description,
@@ -19,16 +27,34 @@ namespace IT_Form.Application.Common.Models
         string? BrandModel,
         int? Qty);
 
+    /// <summary>
+    /// Defines the RequestedSoftwareApiItem record used by the IT Form application.
+    /// </summary>
     public sealed record RequestedSoftwareApiItem(int? Id, string Name);
 
+    /// <summary>
+    /// Defines the EmailGroupApiItem record used by the IT Form application.
+    /// </summary>
     public sealed record EmailGroupApiItem(int? Id, string Name, string? Email);
 
+    /// <summary>
+    /// Defines the SharedMailboxApiItem record used by the IT Form application.
+    /// </summary>
     public sealed record SharedMailboxApiItem(int? Id, string Name, string? Address);
 
+    /// <summary>
+    /// Defines the FolderPermissionApiItem record used by the IT Form application.
+    /// </summary>
     public sealed record FolderPermissionApiItem(string FolderName, bool CanRead, bool CanModify);
 
+    /// <summary>
+    /// Defines the SignatureApiItem record used by the IT Form application.
+    /// </summary>
     public sealed record SignatureApiItem(string Role, string? SignerName, DateTime? SignedAt);
 
+    /// <summary>
+    /// Defines the OnboardingListItemApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record OnboardingListItemApiResponse(
         int Id,
         string? FullName,
@@ -42,6 +68,9 @@ namespace IT_Form.Application.Common.Models
         DateTime? UpdatedAt,
         DateTime? CompletedAt);
 
+    /// <summary>
+    /// Defines the OnboardingListApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record OnboardingListApiResponse(
         ApiPageMetadata Pagination,
         int SlaTargetDays,
@@ -49,6 +78,9 @@ namespace IT_Form.Application.Common.Models
         string? StatusFilter,
         IReadOnlyCollection<OnboardingListItemApiResponse> Items);
 
+    /// <summary>
+    /// Defines the OnboardingDetailsApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record OnboardingDetailsApiResponse(
         int Id,
         string? FullName,
@@ -78,6 +110,9 @@ namespace IT_Form.Application.Common.Models
         IReadOnlyCollection<FolderPermissionApiItem> FolderPermissions,
         IReadOnlyCollection<SignatureApiItem> Signatures);
 
+    /// <summary>
+    /// Defines the OffboardingListItemApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record OffboardingListItemApiResponse(
         int Id,
         string FullName,
@@ -90,6 +125,9 @@ namespace IT_Form.Application.Common.Models
         DateTime? UpdatedAt,
         DateTime? CompletedAt);
 
+    /// <summary>
+    /// Defines the OffboardingListApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record OffboardingListApiResponse(
         ApiPageMetadata Pagination,
         int SlaTargetDays,
@@ -97,6 +135,9 @@ namespace IT_Form.Application.Common.Models
         string? StatusFilter,
         IReadOnlyCollection<OffboardingListItemApiResponse> Items);
 
+    /// <summary>
+    /// Defines the OffboardingDetailsApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record OffboardingDetailsApiResponse(
         int Id,
         string FullName,
@@ -134,6 +175,9 @@ namespace IT_Form.Application.Common.Models
         string? CompanyLogoPath,
         IReadOnlyCollection<SignatureApiItem> Signatures);
 
+    /// <summary>
+    /// Defines the AuditLogListItemApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogListItemApiResponse(
         int Id,
         string UserId,
@@ -147,6 +191,9 @@ namespace IT_Form.Application.Common.Models
         string? IpAddress,
         string? Details);
 
+    /// <summary>
+    /// Defines the AuditLogListApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogListApiResponse(
         ApiPageMetadata Pagination,
         string? Entity,
@@ -157,6 +204,9 @@ namespace IT_Form.Application.Common.Models
         bool? IsSuccess,
         IReadOnlyCollection<AuditLogListItemApiResponse> Items);
 
+    /// <summary>
+    /// Defines the AuditLogDetailsApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogDetailsApiResponse(
         int Id,
         string UserId,
@@ -176,14 +226,23 @@ namespace IT_Form.Application.Common.Models
         string? Changes,
         Guid? CorrelationId);
 
+    /// <summary>
+    /// Defines the AuditLogBreakdownApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogBreakdownApiResponse(
         string Label,
         int Count);
 
+    /// <summary>
+    /// Defines the AuditLogTrendPointApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogTrendPointApiResponse(
         DateTime Date,
         int Count);
 
+    /// <summary>
+    /// Defines the AuditLogSummaryApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogSummaryApiResponse(
         string? Entity,
         string? AuditAction,
@@ -200,6 +259,9 @@ namespace IT_Form.Application.Common.Models
         IReadOnlyCollection<AuditLogBreakdownApiResponse> TopFailedActors,
         IReadOnlyCollection<AuditLogTrendPointApiResponse> FailureTrend);
 
+    /// <summary>
+    /// Defines the AuditLogChainItemApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogChainItemApiResponse(
         int Id,
         string UserId,
@@ -214,6 +276,9 @@ namespace IT_Form.Application.Common.Models
         string? ErrorMessage,
         string? Details);
 
+    /// <summary>
+    /// Defines the AuditLogChainApiResponse record used by the IT Form application.
+    /// </summary>
     public sealed record AuditLogChainApiResponse(
         int AnchorId,
         Guid? CorrelationId,
@@ -223,6 +288,9 @@ namespace IT_Form.Application.Common.Models
         int FailureCount,
         IReadOnlyCollection<AuditLogChainItemApiResponse> Items);
 
+    /// <summary>
+    /// Defines the RequestApiMappers class used by the IT Form application.
+    /// </summary>
     public static class RequestApiMappers
     {
         public static ApiPageMetadata ToApiPageMetadata<T>(this PaginatedList<T> page)
@@ -233,18 +301,33 @@ namespace IT_Form.Application.Common.Models
                 page.HasPreviousPage,
                 page.HasNextPage);
 
+        /// <summary>
+        /// Runs the ToApiItem operation.
+        /// </summary>
         public static AssetApiItem ToApiItem(this IssuedAsset asset)
             => asset.Adapt<AssetApiItem>();
 
+        /// <summary>
+        /// Runs the ToApiItem operation.
+        /// </summary>
         public static RequestedSoftwareApiItem ToApiItem(this RequestSoftware software)
             => software.Adapt<RequestedSoftwareApiItem>();
 
+        /// <summary>
+        /// Runs the ToApiItem operation.
+        /// </summary>
         public static EmailGroupApiItem ToApiItem(this RequestEmailGroup group)
             => group.Adapt<EmailGroupApiItem>();
 
+        /// <summary>
+        /// Runs the ToApiItem operation.
+        /// </summary>
         public static SharedMailboxApiItem ToApiItem(this RequestSharedMailbox mailbox)
             => mailbox.Adapt<SharedMailboxApiItem>();
 
+        /// <summary>
+        /// Runs the ToApiItem operation.
+        /// </summary>
         public static FolderPermissionApiItem ToApiItem(this FolderPermission permission)
             => permission.Adapt<FolderPermissionApiItem>();
     }

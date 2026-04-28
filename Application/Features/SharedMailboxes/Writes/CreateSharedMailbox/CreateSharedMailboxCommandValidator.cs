@@ -1,9 +1,14 @@
+// Project comment: CreateSharedMailboxCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.SharedMailboxes.Writes.CreateSharedMailbox;
 
+/// <summary>
+/// Validates input for the CreateSharedMailboxCommand request.
+/// </summary>
 public sealed class CreateSharedMailboxCommandValidator : AbstractValidator<CreateSharedMailboxCommand>
 {
     public CreateSharedMailboxCommandValidator(ApplicationDbContext context)

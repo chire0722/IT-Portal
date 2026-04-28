@@ -1,7 +1,12 @@
+// Project comment: UserManagementPageModels.cs is part of the IT Form application source code.
+
 using IT_Form.ViewModels;
 
 namespace IT_Form.Application.Features.UserManagement;
 
+/// <summary>
+/// Defines the UserManagementIndexListItem class used by the IT Form application.
+/// </summary>
 public sealed class UserManagementIndexListItem
 {
     public string Id { get; init; } = string.Empty;
@@ -14,16 +19,25 @@ public sealed class UserManagementIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+/// <summary>
+/// Defines the UserManagementCompanyOption class used by the IT Form application.
+/// </summary>
 public sealed class UserManagementCompanyOption
 {
     public string DisplayName { get; init; } = string.Empty;
 }
 
+/// <summary>
+/// Defines the UserManagementDepartmentOption class used by the IT Form application.
+/// </summary>
 public sealed class UserManagementDepartmentOption
 {
     public string Name { get; init; } = string.Empty;
 }
 
+/// <summary>
+/// Provides view data for the UserManagementEditorPage screen or form.
+/// </summary>
 public sealed class UserManagementEditorPageViewModel : UserManagementViewModel
 {
     public List<UserManagementDepartmentOption> Departments { get; init; } = [];

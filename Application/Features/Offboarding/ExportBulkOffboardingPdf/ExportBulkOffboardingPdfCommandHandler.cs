@@ -1,3 +1,5 @@
+// Project comment: ExportBulkOffboardingPdfCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -11,6 +13,9 @@ using System.IO.Compression;
 
 namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
 {
+    /// <summary>
+    /// Handles the ExportBulkOffboardingPdfCommand command workflow.
+    /// </summary>
     public sealed class ExportBulkOffboardingPdfCommandHandler : IRequestHandler<ExportBulkOffboardingPdfCommand, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -26,6 +31,9 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(ExportBulkOffboardingPdfCommand request, CancellationToken cancellationToken)
         {
             if (request.Ids == null || request.Ids.Length == 0)

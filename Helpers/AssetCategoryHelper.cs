@@ -1,10 +1,18 @@
+// Project comment: AssetCategoryHelper.cs is part of the IT Form application source code.
+
 using System.Text;
 using IT_Form.Models.Enums;
 
 namespace IT_Form.Helpers;
 
+/// <summary>
+/// Defines the AssetCategoryHelper class used by the IT Form application.
+/// </summary>
 public static class AssetCategoryHelper
 {
+    /// <summary>
+    /// Runs the readonly operation.
+    /// </summary>
     private static readonly (AssetType AssetType, string? OtherAssetType)[] DefaultAccessoryCategories =
     [
         (AssetType.Others, "Power Adaptor"),
@@ -13,6 +21,9 @@ public static class AssetCategoryHelper
         (AssetType.Others, "Wired Mouse")
     ];
 
+    /// <summary>
+    /// Runs the readonly operation.
+    /// </summary>
     private static readonly (AssetType AssetType, string? OtherAssetType)[] DefaultOnboardingRequestCategories =
     [
         (AssetType.Laptop, null),
@@ -51,6 +62,9 @@ public static class AssetCategoryHelper
         ["Webcam"] = 140
     };
 
+    /// <summary>
+    /// Gets the data required by the GetCategoryName operation.
+    /// </summary>
     public static string GetCategoryName(AssetType assetType, string? otherAssetType = null)
     {
         if (assetType == AssetType.Others && !string.IsNullOrWhiteSpace(otherAssetType))
@@ -69,11 +83,17 @@ public static class AssetCategoryHelper
         };
     }
 
+    /// <summary>
+    /// Gets the data required by the GetCategoryKey operation.
+    /// </summary>
     public static string GetCategoryKey(AssetType assetType, string? otherAssetType = null)
         => assetType == AssetType.Others
             ? "Others:" + NormalizeText(otherAssetType)
             : assetType.ToString();
 
+    /// <summary>
+    /// Runs the MatchesCategory operation.
+    /// </summary>
     public static bool MatchesCategory(
         AssetType leftAssetType,
         string? leftOtherAssetType,
@@ -96,11 +116,17 @@ public static class AssetCategoryHelper
             StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Runs the HasSpecifiedCategory operation.
+    /// </summary>
     public static bool HasSpecifiedCategory(AssetType assetType, string? otherAssetType, string? description = null)
         => assetType != AssetType.Others
            || !string.IsNullOrWhiteSpace(otherAssetType)
            || !string.IsNullOrWhiteSpace(description);
 
+    /// <summary>
+    /// Gets the data required by the GetSortOrder operation.
+    /// </summary>
     public static int GetSortOrder(AssetType assetType, string? otherAssetType = null)
     {
         var categoryName = GetCategoryName(assetType, otherAssetType);
@@ -109,6 +135,9 @@ public static class AssetCategoryHelper
             : 1000;
     }
 
+    /// <summary>
+    /// Gets the data required by the GetRequestSelectionLabel operation.
+    /// </summary>
     public static string GetRequestSelectionLabel(
         AssetType assetType,
         string? otherAssetType,
@@ -130,10 +159,16 @@ public static class AssetCategoryHelper
     public static IReadOnlyList<(AssetType AssetType, string? OtherAssetType)> GetDefaultOnboardingRequestCategories()
         => DefaultOnboardingRequestCategories;
 
+    /// <summary>
+    /// Runs the IsDefaultOnboardingRequestCategory operation.
+    /// </summary>
     public static bool IsDefaultOnboardingRequestCategory(AssetType assetType, string? otherAssetType = null)
         => DefaultOnboardingRequestCategories.Any(category =>
             MatchesCategory(category.AssetType, category.OtherAssetType, assetType, otherAssetType));
 
+    /// <summary>
+    /// Runs the NormalizeText operation.
+    /// </summary>
     private static string NormalizeText(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -146,6 +181,9 @@ public static class AssetCategoryHelper
             value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
     }
 
+    /// <summary>
+    /// Runs the SplitPascalCase operation.
+    /// </summary>
     private static string SplitPascalCase(string value)
     {
         if (string.IsNullOrWhiteSpace(value))

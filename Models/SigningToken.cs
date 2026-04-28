@@ -1,7 +1,12 @@
+// Project comment: SigningToken.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the SigningToken class used by the IT Form application.
+    /// </summary>
     public class SigningToken
     {
         [Key]

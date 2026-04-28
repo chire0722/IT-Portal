@@ -1,3 +1,5 @@
+// Project comment: RecordIndexScopeTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.Offboarding.GetOffboardingIndex;
 using IT_Form.Application.Features.Onboarding.GetOnboardingIndex;
@@ -15,6 +17,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the RecordIndexScopeTests class used by the IT Form application.
+/// </summary>
 public class RecordIndexScopeTests
 {
     public RecordIndexScopeTests()
@@ -23,6 +28,9 @@ public class RecordIndexScopeTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OnboardingIndex_HrUserSeesRecordsAcrossCompanies operation.
+    /// </summary>
     public async Task OnboardingIndex_HrUserSeesRecordsAcrossCompanies()
     {
         await using var context = CreateContext();
@@ -57,6 +65,9 @@ public class RecordIndexScopeTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OnboardingIndex_ItUserSeesOnlyAssignedCompanyRecords operation.
+    /// </summary>
     public async Task OnboardingIndex_ItUserSeesOnlyAssignedCompanyRecords()
     {
         await using var context = CreateContext();
@@ -90,6 +101,9 @@ public class RecordIndexScopeTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OffboardingIndex_HrUserSeesRecordsAcrossCompanies operation.
+    /// </summary>
     public async Task OffboardingIndex_HrUserSeesRecordsAcrossCompanies()
     {
         await using var context = CreateContext();
@@ -132,6 +146,9 @@ public class RecordIndexScopeTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OffboardingIndex_ItUserSeesOnlyAssignedCompanyRecords operation.
+    /// </summary>
     public async Task OffboardingIndex_ItUserSeesOnlyAssignedCompanyRecords()
     {
         await using var context = CreateContext();
@@ -172,6 +189,9 @@ public class RecordIndexScopeTests
         Assert.Contains(result.Data.Requests, request => request.Id == 12 && request.Branch == "Alpha");
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -188,6 +208,9 @@ public class RecordIndexScopeTests
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreateUserManager operation.
+    /// </summary>
     private static UserManager<ApplicationUser> CreateUserManager()
     {
         var store = new Mock<IUserStore<ApplicationUser>>();

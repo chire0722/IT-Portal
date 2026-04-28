@@ -1,7 +1,12 @@
+// Project comment: EditSoftwareLicenseCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense
 {
+    /// <summary>
+    /// Validates input for the EditSoftwareLicenseCommand request.
+    /// </summary>
     public sealed class EditSoftwareLicenseCommandValidator : AbstractValidator<EditSoftwareLicenseCommand>
     {
         public EditSoftwareLicenseCommandValidator()

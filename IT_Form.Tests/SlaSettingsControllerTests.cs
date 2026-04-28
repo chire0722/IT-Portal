@@ -1,3 +1,5 @@
+// Project comment: SlaSettingsControllerTests.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,9 +11,15 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the SlaSettingsControllerTests class used by the IT Form application.
+    /// </summary>
     public class SlaSettingsControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsDefaultRows_WhenTableIsEmpty operation.
+        /// </summary>
         public async Task Index_ReturnsDefaultRows_WhenTableIsEmpty()
         {
             using var context = CreateContext();
@@ -27,6 +35,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Index_AddsMissingDefaultRows_WithoutReplacingExistingValues operation.
+        /// </summary>
         public async Task Index_AddsMissingDefaultRows_WithoutReplacingExistingValues()
         {
             using var context = CreateContext();
@@ -45,6 +56,9 @@ namespace IT_Form.Tests
         // SlaSettingsController only has Index and Update
         
         [Fact]
+        /// <summary>
+        /// Runs the Index_Forbidden_ForHR_Adversarial operation.
+        /// </summary>
         public async Task Index_Forbidden_ForHR_Adversarial()
         {
             // SLA Settings should be IT-only

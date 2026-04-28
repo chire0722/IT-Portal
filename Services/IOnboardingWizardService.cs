@@ -1,9 +1,14 @@
+// Project comment: IOnboardingWizardService.cs is part of the IT Form application source code.
+
 using IT_Form.Models;
 using IT_Form.ViewModels;
 using Microsoft.AspNetCore.Http;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides IOnboardingWizard service behavior for the application.
+    /// </summary>
     public interface IOnboardingWizardService
     {
         OnboardingViewModel GetFromSession(ISession session);

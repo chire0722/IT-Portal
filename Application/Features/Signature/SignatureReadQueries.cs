@@ -1,3 +1,5 @@
+// Project comment: SignatureReadQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -9,9 +11,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Signature;
 
+/// <summary>
+/// Carries data needed to execute the GetSignatureAcknowledgePage query.
+/// </summary>
 public sealed record GetSignatureAcknowledgePageQuery(Guid Token, string Type) : IRequest<GetSignatureAcknowledgePageResult>;
+/// <summary>
+/// Carries data needed to execute the GetSignaturePdf query.
+/// </summary>
 public sealed record GetSignaturePdfQuery(Guid Token, string Type) : IRequest<GetSignaturePdfResult>;
 
+/// <summary>
+/// Lists the supported GetSignatureAcknowledgePageStatus values used by the application.
+/// </summary>
 public enum GetSignatureAcknowledgePageStatus
 {
     Ready,
@@ -20,11 +31,17 @@ public enum GetSignatureAcknowledgePageStatus
     IntegrityFailed
 }
 
+/// <summary>
+/// Represents the result returned by the GetSignatureAcknowledgePage workflow.
+/// </summary>
 public sealed record GetSignatureAcknowledgePageResult(
     GetSignatureAcknowledgePageStatus Status,
     SignatureAcknowledgePageViewModel? ViewModel = null,
     string? Message = null);
 
+/// <summary>
+/// Lists the supported GetSignaturePdfStatus values used by the application.
+/// </summary>
 public enum GetSignaturePdfStatus
 {
     Ready,
@@ -34,16 +51,25 @@ public enum GetSignaturePdfStatus
     IntegrityFailed
 }
 
+/// <summary>
+/// Defines the SignaturePdfFilePayload record used by the IT Form application.
+/// </summary>
 public sealed record SignaturePdfFilePayload(
     byte[] Content,
     string ContentType,
     string FileDownloadName);
 
+/// <summary>
+/// Represents the result returned by the GetSignaturePdf workflow.
+/// </summary>
 public sealed record GetSignaturePdfResult(
     GetSignaturePdfStatus Status,
     SignaturePdfFilePayload? File = null,
     string? Message = null);
 
+/// <summary>
+/// Handles the GetSignatureAcknowledgePageQuery query workflow.
+/// </summary>
 public sealed class GetSignatureAcknowledgePageQueryHandler
     : IRequestHandler<GetSignatureAcknowledgePageQuery, GetSignatureAcknowledgePageResult>
 {
@@ -58,6 +84,9 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
         _integrityService = integrityService;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<GetSignatureAcknowledgePageResult> Handle(GetSignatureAcknowledgePageQuery request, CancellationToken cancellationToken)
     {
         if (request.Token == Guid.Empty || string.IsNullOrWhiteSpace(request.Type))
@@ -189,6 +218,9 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
     }
 }
 
+/// <summary>
+/// Handles the GetSignaturePdfQuery query workflow.
+/// </summary>
 public sealed class GetSignaturePdfQueryHandler
     : IRequestHandler<GetSignaturePdfQuery, GetSignaturePdfResult>
 {
@@ -206,6 +238,9 @@ public sealed class GetSignaturePdfQueryHandler
         _integrityService = integrityService;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<GetSignaturePdfResult> Handle(GetSignaturePdfQuery request, CancellationToken cancellationToken)
     {
         if (request.Token == Guid.Empty || string.IsNullOrWhiteSpace(request.Type))

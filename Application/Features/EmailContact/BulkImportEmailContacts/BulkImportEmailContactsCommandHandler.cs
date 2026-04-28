@@ -1,3 +1,5 @@
+// Project comment: BulkImportEmailContactsCommandHandler.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Data;
 using MediatR;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
 {
+    /// <summary>
+    /// Handles the BulkImportEmailContactsCommand command workflow.
+    /// </summary>
     public sealed class BulkImportEmailContactsCommandHandler : IRequestHandler<BulkImportEmailContactsCommand, BulkImportEmailContactsResult>
     {
         private readonly ApplicationDbContext _context;
@@ -14,6 +19,9 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
             _context = context;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<BulkImportEmailContactsResult> Handle(BulkImportEmailContactsCommand request, CancellationToken cancellationToken)
         {
             if (request.File == null || request.File.Length == 0)

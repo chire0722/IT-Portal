@@ -1,7 +1,12 @@
+// Project comment: RejectOnboardingRequestCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Onboarding.RejectOnboardingRequest
 {
+    /// <summary>
+    /// Validates input for the RejectOnboardingRequestCommand request.
+    /// </summary>
     public sealed class RejectOnboardingRequestCommandValidator : AbstractValidator<RejectOnboardingRequestCommand>
     {
         public RejectOnboardingRequestCommandValidator()

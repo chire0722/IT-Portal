@@ -1,3 +1,5 @@
+// Project comment: SubmitOffboardingStep2CommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Features.Offboarding.ActionWrites;
@@ -9,6 +11,9 @@ using MediatR;
 
 namespace IT_Form.Application.Features.Offboarding.Step2
 {
+    /// <summary>
+    /// Handles the SubmitOffboardingStep2Command command workflow.
+    /// </summary>
     public sealed class SubmitOffboardingStep2CommandHandler : IRequestHandler<SubmitOffboardingStep2Command, ProcessResult<object>>
     {
         private readonly ApplicationDbContext _context;
@@ -25,6 +30,9 @@ namespace IT_Form.Application.Features.Offboarding.Step2
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(SubmitOffboardingStep2Command request, CancellationToken cancellationToken)
         {
             var existing = await _context.OffboardingRequests.FindAsync([request.Id], cancellationToken);

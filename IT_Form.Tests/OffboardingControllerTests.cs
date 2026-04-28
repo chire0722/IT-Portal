@@ -1,3 +1,5 @@
+// Project comment: OffboardingControllerTests.cs is part of the IT Form application source code.
+
 using System.Threading;
 using System.Threading.Tasks;
 using IT_Form.Application.Common.Models;
@@ -21,9 +23,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the OffboardingControllerTests class used by the IT Form application.
+/// </summary>
 public class OffboardingControllerTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the Index_ReturnsViewModel_WhenQuerySucceeds operation.
+    /// </summary>
     public async Task Index_ReturnsViewModel_WhenQuerySucceeds()
     {
         var sender = new Mock<ISender>();
@@ -43,6 +51,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Details_NullId_ReturnsNotFound operation.
+    /// </summary>
     public async Task Details_NullId_ReturnsNotFound()
     {
         var controller = CreateController(new Mock<ISender>().Object);
@@ -53,6 +64,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Details_ReturnsView_WhenQuerySucceeds operation.
+    /// </summary>
     public async Task Details_ReturnsView_WhenQuerySucceeds()
     {
         var sender = new Mock<ISender>();
@@ -73,6 +87,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateGet_ReturnsView_WhenQuerySucceeds operation.
+    /// </summary>
     public async Task CreateGet_ReturnsView_WhenQuerySucceeds()
     {
         var sender = new Mock<ISender>();
@@ -93,6 +110,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetEmployeeDetails_ReturnsJson_WhenQueryReturnsModel operation.
+    /// </summary>
     public async Task GetEmployeeDetails_ReturnsJson_WhenQueryReturnsModel()
     {
         var sender = new Mock<ISender>();
@@ -113,6 +133,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetEmployeeDetails_ReturnsNotFound_WhenQueryReturnsNull operation.
+    /// </summary>
     public async Task GetEmployeeDetails_ReturnsNotFound_WhenQueryReturnsNull()
     {
         var sender = new Mock<ISender>();
@@ -127,6 +150,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreatePost_RedirectsToDetails_WhenCommandSucceeds operation.
+    /// </summary>
     public async Task CreatePost_RedirectsToDetails_WhenCommandSucceeds()
     {
         var sender = new Mock<ISender>();
@@ -149,6 +175,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the Delete_Ajax_ReturnsJsonSuccess_WhenCommandSucceeds operation.
+    /// </summary>
     public async Task Delete_Ajax_ReturnsJsonSuccess_WhenCommandSucceeds()
     {
         var sender = new Mock<ISender>();
@@ -171,6 +200,9 @@ public class OffboardingControllerTests
     }
 
         [Fact]
+        /// <summary>
+        /// Deletes data for the Delete_ReturnsForbid_WhenCommandIsForbidden operation.
+        /// </summary>
         public async Task Delete_ReturnsForbid_WhenCommandIsForbidden()
         {
             var sender = new Mock<ISender>();
@@ -188,6 +220,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SignOffHr_Ajax_ReturnsJsonAndSetsAutoOpenEmail_WhenCommandSucceeds operation.
+    /// </summary>
     public async Task SignOffHr_Ajax_ReturnsJsonAndSetsAutoOpenEmail_WhenCommandSucceeds()
     {
         var sender = new Mock<ISender>();
@@ -212,6 +247,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Reject_NonAjax_RedirectsWithError_WhenCommandFails operation.
+    /// </summary>
     public async Task Reject_NonAjax_RedirectsWithError_WhenCommandFails()
     {
         var sender = new Mock<ISender>();
@@ -235,6 +273,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the RegenerateToken_Ajax_ReturnsJsonFailure_WhenCommandFails operation.
+    /// </summary>
     public async Task RegenerateToken_Ajax_ReturnsJsonFailure_WhenCommandFails()
     {
         var sender = new Mock<ISender>();
@@ -259,6 +300,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the GeneratePdf_ReturnsFileResult_WhenQuerySucceeds operation.
+    /// </summary>
     public async Task GeneratePdf_ReturnsFileResult_WhenQuerySucceeds()
     {
         var sender = new Mock<ISender>();
@@ -278,6 +322,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the DownloadResignation_ReturnsNotFound_WhenQueryDoesNotFindFile operation.
+    /// </summary>
     public async Task DownloadResignation_ReturnsNotFound_WhenQueryDoesNotFindFile()
     {
         var sender = new Mock<ISender>();
@@ -294,6 +341,9 @@ public class OffboardingControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ApproveChecker_SetsAutoOpenEmail_WhenCommandSucceeds operation.
+    /// </summary>
     public async Task ApproveChecker_SetsAutoOpenEmail_WhenCommandSucceeds()
     {
         var sender = new Mock<ISender>();
@@ -316,6 +366,9 @@ public class OffboardingControllerTests
         Assert.Equal("http://test/checker-email", controller.TempData["AutoOpenEmail"]);
     }
 
+    /// <summary>
+    /// Creates data for the CreateController operation.
+    /// </summary>
     private static OffboardingController CreateController(ISender sender, bool ajax = false, string composeUrl = "http://test/email")
     {
         var controller = new OffboardingController(sender);

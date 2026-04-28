@@ -1,3 +1,5 @@
+// Project comment: SecureFilesController.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -10,6 +12,9 @@ using Microsoft.AspNetCore.Identity;
 namespace IT_Form.Controllers
 {
     [Authorize]
+    /// <summary>
+    /// Handles web requests for the SecureFiles area.
+    /// </summary>
     public class SecureFilesController : Controller
     {
         private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
@@ -29,6 +34,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpGet("/secure-files/{category}/{fileName}")]
+        /// <summary>
+        /// Runs the Download operation.
+        /// </summary>
         public async Task<IActionResult> Download(string category, string fileName)
         {
             if (!SensitiveFileStorage.IsSensitiveCategory(category))
@@ -64,6 +72,9 @@ namespace IT_Form.Controllers
             return PhysicalFile(physicalPath, contentType);
         }
 
+        /// <summary>
+        /// Runs the CanAccessOffboardingFileAsync operation.
+        /// </summary>
         private async Task<bool> CanAccessOffboardingFileAsync(string storedPath, bool isResignation)
         {
             var request = await _context.OffboardingRequests

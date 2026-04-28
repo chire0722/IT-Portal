@@ -1,3 +1,5 @@
+// Project comment: OnboardingHodService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides OnboardingHod service behavior for the application.
+    /// </summary>
     public sealed class OnboardingHodService : IOnboardingHodService
     {
         private readonly ApplicationDbContext _context;
@@ -14,6 +19,9 @@ namespace IT_Form.Services
             _context = context;
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildHodSelectListAsync operation.
+        /// </summary>
         public async Task<SelectList> BuildHodSelectListAsync(string? company, string? selectedHodEmail = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(company))
@@ -39,6 +47,9 @@ namespace IT_Form.Services
             return new SelectList(hodUsers, "Email", "Display", selectedHodEmail);
         }
 
+        /// <summary>
+        /// Runs the IsValidHodForCompanyAsync operation.
+        /// </summary>
         public async Task<bool> IsValidHodForCompanyAsync(string? company, string? hodEmail, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(company) || string.IsNullOrWhiteSpace(hodEmail))

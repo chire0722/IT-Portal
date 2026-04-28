@@ -1,9 +1,14 @@
+// Project comment: UpdateEmailGroupCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroups.Writes.UpdateEmailGroup;
 
+/// <summary>
+/// Validates input for the UpdateEmailGroupCommand request.
+/// </summary>
 public sealed class UpdateEmailGroupCommandValidator : AbstractValidator<UpdateEmailGroupCommand>
 {
     public UpdateEmailGroupCommandValidator(ApplicationDbContext context)

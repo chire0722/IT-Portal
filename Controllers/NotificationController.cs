@@ -1,3 +1,5 @@
+// Project comment: NotificationController.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +14,9 @@ using IT_Form.Helpers;
 namespace IT_Form.Controllers
 {
     [Authorize]
+    /// <summary>
+    /// Handles web requests for the Notification area.
+    /// </summary>
     public class NotificationController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -41,11 +46,17 @@ namespace IT_Form.Controllers
             return (user?.FullName, user?.JobTitle, user?.EmailSignatureImage);
         }
 
+        /// <summary>
+        /// Gets the data required by the GetAppDomain operation.
+        /// </summary>
         private string GetAppDomain()
         {
             return $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
         }
 
+        /// <summary>
+        /// Runs the IsAuthorizedForBranch operation.
+        /// </summary>
         private bool IsAuthorizedForBranch(string? requestBranch, string? createdBy)
         {
             if (!CompanyScopeHelper.CanAccessCompany(User, requestBranch)) return false;
@@ -54,6 +65,9 @@ namespace IT_Form.Controllers
             return string.Equals(createdBy, User.Identity?.Name, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Runs the IsAuthorizedAsHOD operation.
+        /// </summary>
         private async Task<bool> IsAuthorizedAsHOD(string? requestBranch, string? hodEmail, string? assignedHodId = null)
         {
             if (!CompanyScopeHelper.CanAccessCompany(User, requestBranch)) return false;
@@ -67,6 +81,9 @@ namespace IT_Form.Controllers
                    IT_Form.Helpers.UserHelper.EmailsMatch(hodEmails, hodEmail);
         }
 
+        /// <summary>
+        /// Runs the ComposeEmail operation.
+        /// </summary>
         public async Task<IActionResult> ComposeEmail(int id)
         {
             var request = await _context.OnboardingRequests
@@ -148,6 +165,9 @@ namespace IT_Form.Controllers
             return View("ConfirmEmail", vm);
         }
 
+        /// <summary>
+        /// Runs the ComposeOffboardingEmail operation.
+        /// </summary>
         public async Task<IActionResult> ComposeOffboardingEmail(int id)
         {
             var request = await _context.OffboardingRequests.FirstOrDefaultAsync(r => r.Id == id);
@@ -227,6 +247,9 @@ namespace IT_Form.Controllers
             return View("ConfirmEmail", vm);
         }
 
+        /// <summary>
+        /// Runs the ComposeRejectionEmail operation.
+        /// </summary>
         public async Task<IActionResult> ComposeRejectionEmail(int id, string type)
         {
             string fullName = "";
@@ -294,6 +317,9 @@ namespace IT_Form.Controllers
 
 
 
+        /// <summary>
+        /// Runs the ComposeEmployeeSignatureEmail operation.
+        /// </summary>
         public async Task<IActionResult> ComposeEmployeeSignatureEmail(int id, string type)
         {
             // Any user carrying the IT title must be blocked from employee-link generation.
@@ -377,6 +403,9 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the SendConfirmedEmail operation.
+        /// </summary>
         public async Task<IActionResult> SendConfirmedEmail(EmailConfirmationViewModel model)
         {
             if (!ModelState.IsValid)
@@ -438,6 +467,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpGet]
+        /// <summary>
+        /// Runs the PreviewAttachment operation.
+        /// </summary>
         public async Task<IActionResult> PreviewAttachment(int id, string type)
         {
             byte[]? pdfBytes = null;
@@ -465,6 +497,9 @@ namespace IT_Form.Controllers
             return NotFound("Attachment preview not available.");
         }
 
+        /// <summary>
+        /// Runs the ComposeNudgeEmail operation.
+        /// </summary>
         public async Task<IActionResult> ComposeNudgeEmail(int id, string type)
         {
             string fullName = "";

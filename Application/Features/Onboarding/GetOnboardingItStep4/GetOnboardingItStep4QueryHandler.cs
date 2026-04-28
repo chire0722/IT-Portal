@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingItStep4QueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Helpers;
@@ -8,6 +10,9 @@ using MediatR;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep4
 {
+    /// <summary>
+    /// Handles the GetOnboardingItStep4Query query workflow.
+    /// </summary>
     public sealed class GetOnboardingItStep4QueryHandler : IRequestHandler<GetOnboardingItStep4Query, GetOnboardingItStep4Result>
     {
         private readonly ApplicationDbContext _context;
@@ -24,6 +29,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep4
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<GetOnboardingItStep4Result> Handle(GetOnboardingItStep4Query request, CancellationToken cancellationToken)
         {
             var model = request.SessionModel;

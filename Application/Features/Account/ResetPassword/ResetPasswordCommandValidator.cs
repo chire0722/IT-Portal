@@ -1,7 +1,12 @@
+// Project comment: ResetPasswordCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Account.ResetPassword
 {
+    /// <summary>
+    /// Validates input for the ResetPasswordCommand request.
+    /// </summary>
     public sealed class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordCommand>
     {
         public ResetPasswordCommandValidator()

@@ -1,9 +1,17 @@
+// Project comment: AuditLogClassifier.cs is part of the IT Form application source code.
+
 using IT_Form.Models;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the AuditLogClassifier class used by the IT Form application.
+    /// </summary>
     public static class AuditLogClassifier
     {
+        /// <summary>
+        /// Gets the data required by the GetSourceType operation.
+        /// </summary>
         public static string GetSourceType(AuditLog log)
         {
             if (log.EntityName == "Command")
@@ -25,6 +33,9 @@ namespace IT_Form.Helpers
             return "Entity Change";
         }
 
+        /// <summary>
+        /// Gets the data required by the GetStageLabel operation.
+        /// </summary>
         public static string GetStageLabel(AuditLog log)
         {
             if (log.EntityName == "Command")
@@ -47,6 +58,9 @@ namespace IT_Form.Helpers
             };
         }
 
+        /// <summary>
+        /// Runs the IsSecurityEvent operation.
+        /// </summary>
         private static bool IsSecurityEvent(AuditLog log)
         {
             if (log.EntityName == "User Account" || log.EntityName == nameof(ApplicationUser))

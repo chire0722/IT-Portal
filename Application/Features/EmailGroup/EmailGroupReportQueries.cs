@@ -1,3 +1,5 @@
+// Project comment: EmailGroupReportQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -12,9 +14,18 @@ using System.Text;
 
 namespace IT_Form.Application.Features.EmailGroup
 {
+    /// <summary>
+    /// Carries data needed to execute the GetEmailGroupReportPage query.
+    /// </summary>
     public sealed record GetEmailGroupReportPageQuery(int? Id, string? SearchString, int Page = 1) : IRequest<ProcessResult<EmailGroupReportPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the ExportEmailGroupReportCsv query.
+    /// </summary>
     public sealed record ExportEmailGroupReportCsvQuery(int? Id, string? SearchString) : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the GetEmailGroupReportPageQuery query workflow.
+    /// </summary>
     public sealed class GetEmailGroupReportPageQueryHandler : IRequestHandler<GetEmailGroupReportPageQuery, ProcessResult<EmailGroupReportPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -26,6 +37,9 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<EmailGroupReportPageViewModel>> Handle(GetEmailGroupReportPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -76,6 +90,9 @@ namespace IT_Form.Application.Features.EmailGroup
         }
     }
 
+    /// <summary>
+    /// Handles the ExportEmailGroupReportCsvQuery query workflow.
+    /// </summary>
     public sealed class ExportEmailGroupReportCsvQueryHandler : IRequestHandler<ExportEmailGroupReportCsvQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -87,6 +104,9 @@ namespace IT_Form.Application.Features.EmailGroup
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(ExportEmailGroupReportCsvQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -148,8 +168,14 @@ namespace IT_Form.Application.Features.EmailGroup
         }
     }
 
+    /// <summary>
+    /// Defines the EmailGroupReportBuilder class used by the IT Form application.
+    /// </summary>
     internal static class EmailGroupReportBuilder
     {
+        /// <summary>
+        /// Builds the value returned by the BuildReportQuery operation.
+        /// </summary>
         public static IQueryable<EmailGroupAccessReportViewModel> BuildReportQuery(
             ApplicationDbContext context,
             int? groupId,

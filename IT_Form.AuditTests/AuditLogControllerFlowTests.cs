@@ -1,3 +1,5 @@
+// Project comment: AuditLogControllerFlowTests.cs is part of the IT Form application source code.
+
 using IT_Form.Controllers;
 using IT_Form.Models;
 using IT_Form.Models.ViewModels;
@@ -5,9 +7,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IT_Form.AuditTests;
 
+/// <summary>
+/// Defines the AuditLogControllerFlowTests class used by the IT Form application.
+/// </summary>
 public class AuditLogControllerFlowTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the Details_FailuresOnly_KeepsAnchorAndOnlyFailedChainEntries operation.
+    /// </summary>
     public async Task Details_FailuresOnly_KeepsAnchorAndOnlyFailedChainEntries()
     {
         var (context, _) = TestContextFactory.Create();

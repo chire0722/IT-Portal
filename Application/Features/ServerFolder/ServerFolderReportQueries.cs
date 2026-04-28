@@ -1,3 +1,5 @@
+// Project comment: ServerFolderReportQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -12,9 +14,18 @@ using System.Text;
 
 namespace IT_Form.Application.Features.ServerFolder
 {
+    /// <summary>
+    /// Carries data needed to execute the GetServerFolderReportPage query.
+    /// </summary>
     public sealed record GetServerFolderReportPageQuery(int? Id, string? SearchString, int Page = 1) : IRequest<ProcessResult<ServerFolderReportPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the ExportServerFolderReportCsv query.
+    /// </summary>
     public sealed record ExportServerFolderReportCsvQuery(int? Id, string? SearchString) : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the GetServerFolderReportPageQuery query workflow.
+    /// </summary>
     public sealed class GetServerFolderReportPageQueryHandler : IRequestHandler<GetServerFolderReportPageQuery, ProcessResult<ServerFolderReportPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -26,6 +37,9 @@ namespace IT_Form.Application.Features.ServerFolder
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<ServerFolderReportPageViewModel>> Handle(GetServerFolderReportPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -76,6 +90,9 @@ namespace IT_Form.Application.Features.ServerFolder
         }
     }
 
+    /// <summary>
+    /// Handles the ExportServerFolderReportCsvQuery query workflow.
+    /// </summary>
     public sealed class ExportServerFolderReportCsvQueryHandler : IRequestHandler<ExportServerFolderReportCsvQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -87,6 +104,9 @@ namespace IT_Form.Application.Features.ServerFolder
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(ExportServerFolderReportCsvQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -151,8 +171,14 @@ namespace IT_Form.Application.Features.ServerFolder
         }
     }
 
+    /// <summary>
+    /// Defines the ServerFolderReportBuilder class used by the IT Form application.
+    /// </summary>
     internal static class ServerFolderReportBuilder
     {
+        /// <summary>
+        /// Builds the value returned by the BuildReportQuery operation.
+        /// </summary>
         public static IQueryable<ServerFolderAccessReportViewModel> BuildReportQuery(
             ApplicationDbContext context,
             string? folderName,

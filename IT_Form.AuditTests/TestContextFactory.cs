@@ -1,3 +1,5 @@
+// Project comment: TestContextFactory.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Services;
@@ -10,6 +12,9 @@ using Moq;
 
 namespace IT_Form.AuditTests;
 
+/// <summary>
+/// Defines the TestContextFactory class used by the IT Form application.
+/// </summary>
 internal static class TestContextFactory
 {
     public static (ApplicationDbContext Context, DefaultHttpContext HttpContext) Create(string? userName = "auditor@ytc.com")

@@ -1,3 +1,5 @@
+// Project comment: LicenseService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,6 +9,9 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides ILicense service behavior for the application.
+    /// </summary>
     public interface ILicenseService
     {
         Task<(bool Success, string Message)> AssignKeyAsync(int licenseId, string? userId, string? machineName = null);
@@ -14,6 +19,9 @@ namespace IT_Form.Services
         Task<int> GetAvailableSeatCountAsync(int licenseId);
     }
 
+    /// <summary>
+    /// Provides License service behavior for the application.
+    /// </summary>
     public class LicenseService : ILicenseService
     {
         private readonly ApplicationDbContext _context;
@@ -169,6 +177,9 @@ namespace IT_Form.Services
             }
         }
 
+        /// <summary>
+        /// Gets the data required by the GetAvailableSeatCountAsync operation.
+        /// </summary>
         public async Task<int> GetAvailableSeatCountAsync(int licenseId)
         {
             var license = await _context.SoftwareLicenses
@@ -182,6 +193,9 @@ namespace IT_Form.Services
             return Math.Max(0, license.ContractLimit - assigned);
         }
 
+        /// <summary>
+        /// Runs the ComputeHash operation.
+        /// </summary>
         private string ComputeHash(string input)
         {
             using var sha256 = SHA256.Create();

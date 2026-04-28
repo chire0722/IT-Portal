@@ -1,3 +1,5 @@
+// Project comment: ForceChangePasswordCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Common.Validation;
 using IT_Form.Data;
@@ -11,6 +13,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.Account.Writes.ForceChangePassword;
 
+/// <summary>
+/// Handles the ForceChangePasswordCommand command workflow.
+/// </summary>
 public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceChangePasswordCommand, Unit>
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -33,6 +38,9 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
         _logger = logger;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(ForceChangePasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByIdAsync(request.UserId);
@@ -71,6 +79,9 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the QueueSecurityAlertAsync operation.
+    /// </summary>
     private async Task QueueSecurityAlertAsync(ApplicationUser user, string method, CancellationToken cancellationToken)
     {
         const string subject = "IT Form - Security Alert: Password Changed";

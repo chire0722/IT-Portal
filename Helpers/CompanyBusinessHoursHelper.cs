@@ -1,7 +1,12 @@
+// Project comment: CompanyBusinessHoursHelper.cs is part of the IT Form application source code.
+
 using IT_Form.Models;
 
 namespace IT_Form.Helpers;
 
+/// <summary>
+/// Defines the struct record used by the IT Form application.
+/// </summary>
 public readonly record struct CompanyBusinessSchedule(
     TimeSpan StartTime,
     TimeSpan EndTime,
@@ -16,11 +21,20 @@ public readonly record struct CompanyBusinessSchedule(
 
     public double HoursPerDay => Math.Max((EndTime - StartTime).TotalHours, 0);
 
+    /// <summary>
+    /// Runs the IsWorkingDay operation.
+    /// </summary>
     public bool IsWorkingDay(DayOfWeek dayOfWeek) => WorkingDays.Contains(dayOfWeek);
 }
 
+/// <summary>
+/// Defines the CompanyBusinessHoursHelper class used by the IT Form application.
+/// </summary>
 public static class CompanyBusinessHoursHelper
 {
+    /// <summary>
+    /// Runs the CalculateSlaDeadline operation.
+    /// </summary>
     public static DateTime CalculateSlaDeadline(
         IEnumerable<Company> companies,
         string? companyReference,
@@ -37,6 +51,9 @@ public static class CompanyBusinessHoursHelper
             businessSchedule.TimeZoneId);
     }
 
+    /// <summary>
+    /// Runs the IsSlaOverdue operation.
+    /// </summary>
     public static bool IsSlaOverdue(
         IEnumerable<Company> companies,
         string? companyReference,
@@ -53,6 +70,9 @@ public static class CompanyBusinessHoursHelper
             businessSchedule.TimeZoneId);
     }
 
+    /// <summary>
+    /// Runs the CalculateBusinessHoursSpent operation.
+    /// </summary>
     public static double CalculateBusinessHoursSpent(
         IEnumerable<Company> companies,
         string? companyReference,
@@ -69,6 +89,9 @@ public static class CompanyBusinessHoursHelper
             businessSchedule.TimeZoneId);
     }
 
+    /// <summary>
+    /// Runs the Resolve operation.
+    /// </summary>
     public static CompanyBusinessSchedule Resolve(IEnumerable<Company> companies, string? companyReference)
     {
         var company = ResolveCompany(companies, companyReference);
@@ -81,6 +104,9 @@ public static class CompanyBusinessHoursHelper
                 CompanyTimeZoneHelper.NormalizeTimeZoneId(company.TimeZoneId));
     }
 
+    /// <summary>
+    /// Runs the FormatWorkingDays operation.
+    /// </summary>
     public static string FormatWorkingDays(
         bool worksOnMonday,
         bool worksOnTuesday,
@@ -103,6 +129,9 @@ public static class CompanyBusinessHoursHelper
         return labels.Count > 0 ? string.Join(", ", labels) : "No business days";
     }
 
+    /// <summary>
+    /// Runs the ResolveCompany operation.
+    /// </summary>
     public static Company? ResolveCompany(IEnumerable<Company> companies, string? companyReference)
     {
         if (string.IsNullOrWhiteSpace(companyReference))
@@ -122,6 +151,9 @@ public static class CompanyBusinessHoursHelper
                    CompanyHelper.IsMatch(company.Name, normalizedReference));
     }
 
+    /// <summary>
+    /// Gets the data required by the GetWorkingDays operation.
+    /// </summary>
     private static HashSet<DayOfWeek> GetWorkingDays(Company company)
     {
         var workingDays = new HashSet<DayOfWeek>();

@@ -1,7 +1,12 @@
+// Project comment: StandardSoftwarePageModels.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 
 namespace IT_Form.Application.Features.StandardSoftware;
 
+/// <summary>
+/// Provides view data for the StandardSoftwareIndexPage screen or form.
+/// </summary>
 public sealed class StandardSoftwareIndexPageViewModel
 {
     public int TotalSoftwareCount { get; set; }
@@ -22,6 +27,9 @@ public sealed class StandardSoftwareIndexPageViewModel
         : 0;
 }
 
+/// <summary>
+/// Defines the StandardSoftwareIndexItem class used by the IT Form application.
+/// </summary>
 public sealed class StandardSoftwareIndexItem
 {
     public int Id { get; set; }
@@ -33,6 +41,9 @@ public sealed class StandardSoftwareIndexItem
     public List<StandardSoftwareLicenseListItem> Licenses { get; set; } = [];
 }
 
+/// <summary>
+/// Defines the StandardSoftwareLicenseListItem class used by the IT Form application.
+/// </summary>
 public sealed class StandardSoftwareLicenseListItem
 {
     public int Id { get; set; }
@@ -49,6 +60,9 @@ public sealed class StandardSoftwareLicenseListItem
     public List<string> Companies { get; set; } = [];
 }
 
+/// <summary>
+/// Provides view data for the StandardSoftwareEditorPage screen or form.
+/// </summary>
 public sealed class StandardSoftwareEditorPageViewModel
 {
     public int Id { get; set; }
@@ -59,6 +73,9 @@ public sealed class StandardSoftwareEditorPageViewModel
     public bool HasMultipleVersions { get; set; }
 }
 
+/// <summary>
+/// Defines the StandardSoftwareKeysResponseDto class used by the IT Form application.
+/// </summary>
 public sealed class StandardSoftwareKeysResponseDto
 {
     public bool IsSubscription { get; set; }
@@ -66,6 +83,9 @@ public sealed class StandardSoftwareKeysResponseDto
     public List<StandardSoftwareKeyDto> Keys { get; set; } = [];
 }
 
+/// <summary>
+/// Defines the StandardSoftwareKeyDto class used by the IT Form application.
+/// </summary>
 public sealed class StandardSoftwareKeyDto
 {
     public int Id { get; set; }
@@ -76,6 +96,9 @@ public sealed class StandardSoftwareKeyDto
     public DateTime? ExpiryDate { get; set; }
 }
 
+/// <summary>
+/// Defines the StandardSoftwareEmployeeOptionDto class used by the IT Form application.
+/// </summary>
 public sealed class StandardSoftwareEmployeeOptionDto
 {
     public int Id { get; set; }

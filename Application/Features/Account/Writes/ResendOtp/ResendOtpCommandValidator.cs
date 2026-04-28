@@ -1,7 +1,12 @@
+// Project comment: ResendOtpCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Account.Writes.ResendOtp;
 
+/// <summary>
+/// Validates input for the ResendOtpCommand request.
+/// </summary>
 public sealed class ResendOtpCommandValidator : AbstractValidator<ResendOtpCommand>
 {
     public ResendOtpCommandValidator()

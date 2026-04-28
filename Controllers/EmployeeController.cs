@@ -1,3 +1,5 @@
+// Project comment: EmployeeController.cs is part of the IT Form application source code.
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +11,9 @@ using IT_Form.Helpers;
 namespace IT_Form.Controllers
 {
     [Authorize]
+    /// <summary>
+    /// Handles web requests for the Employee area.
+    /// </summary>
     public class EmployeeController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -19,6 +24,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: Employee Current Roster
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(string searchString, string department, string branch, int page = 1)
         {
             // Only pull Onboarding requests that are Fully Completed (Approved)

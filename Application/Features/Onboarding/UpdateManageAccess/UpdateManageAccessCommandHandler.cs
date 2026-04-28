@@ -1,3 +1,5 @@
+// Project comment: UpdateManageAccessCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Services;
@@ -6,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.UpdateManageAccess
 {
+    /// <summary>
+    /// Handles the UpdateManageAccessCommand command workflow.
+    /// </summary>
     public sealed class UpdateManageAccessCommandHandler
         : IRequestHandler<UpdateManageAccessCommand, UpdateManageAccessResult>
     {
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateManageAccess
             _accessService = accessService;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<UpdateManageAccessResult> Handle(UpdateManageAccessCommand request, CancellationToken cancellationToken)
         {
             var context = await _accessService.GetEmployeeContextAsync(request.OnboardingId, cancellationToken);

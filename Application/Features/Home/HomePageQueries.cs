@@ -1,3 +1,5 @@
+// Project comment: HomePageQueries.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -13,6 +15,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace IT_Form.Application.Features.Home;
 
+/// <summary>
+/// Handles the GetHomeDashboardQuery query workflow.
+/// </summary>
 public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashboardQuery, HomePageResult>
 {
     private readonly ApplicationDbContext _context;
@@ -29,6 +34,9 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
         _cache = cache;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<HomePageResult> Handle(GetHomeDashboardQuery request, CancellationToken cancellationToken)
     {
         var user = _currentUserAccessor.User;
@@ -443,6 +451,9 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
         return result;
     }
 
+    /// <summary>
+    /// Builds the value returned by the BuildCacheKey operation.
+    /// </summary>
     private static string BuildCacheKey(
         string? currentUserId,
         string currentUserName,
@@ -455,6 +466,9 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
             $"home-dashboard:{currentUserId ?? currentUserName}:{year?.ToString() ?? "current"}:{isIt}:{isManager}:{isHr}");
 }
 
+/// <summary>
+/// Handles the GetHomeAnalyticsQuery query workflow.
+/// </summary>
 public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyticsQuery, ProcessResult<HomePageResult>>
 {
     private readonly ApplicationDbContext _context;
@@ -468,6 +482,9 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<ProcessResult<HomePageResult>> Handle(GetHomeAnalyticsQuery request, CancellationToken cancellationToken)
     {
         var user = _currentUserAccessor.User;
@@ -1033,6 +1050,9 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
     }
 }
 
+/// <summary>
+/// Handles the GetHomeDiagAnalyticsQuery query workflow.
+/// </summary>
 public sealed class GetHomeDiagAnalyticsQueryHandler : IRequestHandler<GetHomeDiagAnalyticsQuery, HomeDiagAnalyticsResult>
 {
     private readonly ApplicationDbContext _context;
@@ -1042,6 +1062,9 @@ public sealed class GetHomeDiagAnalyticsQueryHandler : IRequestHandler<GetHomeDi
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<HomeDiagAnalyticsResult> Handle(GetHomeDiagAnalyticsQuery request, CancellationToken cancellationToken)
     {
         var assetTypeDistribution = (await _context.ITAssets

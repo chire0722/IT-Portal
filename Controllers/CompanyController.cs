@@ -1,3 +1,5 @@
+// Project comment: CompanyController.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Features.Company.SyncCompanyNames;
 using IT_Form.Application.Features.Company;
@@ -14,6 +16,9 @@ namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
     [Authorize(Policy = "RequireHROrIT")]
+    /// <summary>
+    /// Handles web requests for the Company area.
+    /// </summary>
     public class CompanyController : AppControllerBase
     {
         private readonly ISender _sender;
@@ -23,13 +28,22 @@ namespace IT_Form.Controllers
             _sender = sender;
         }
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index()
             => HandleProcessResult(await _sender.Send(new GetCompanyIndexPageQuery()));
 
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _sender.Send(new GetCompanyCreatePageQuery()));
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(CompanyEditorPageViewModel model, IFormFile? logo = null)
         {
             if (model == null) return HandleProcessResult(await _sender.Send(new GetCompanyCreatePageQuery()));
@@ -60,6 +74,9 @@ namespace IT_Form.Controllers
                 async () => HandleProcessResult(await _sender.Send(new GetCompanyCreatePageQuery(model))));
         }
 
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -67,6 +84,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, CompanyEditorPageViewModel model, IFormFile? logo = null)
         {
             if (id != model.Id) return NotFound();
@@ -101,6 +121,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(int id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -115,6 +138,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "RequireIT")]
+        /// <summary>
+        /// Runs the SyncCompanyNames operation.
+        /// </summary>
         public async Task<IActionResult> SyncCompanyNames()
             => await ExecuteWithValidationRedirect(
                 async () =>

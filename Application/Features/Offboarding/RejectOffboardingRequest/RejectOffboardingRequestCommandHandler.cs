@@ -1,3 +1,5 @@
+// Project comment: RejectOffboardingRequestCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.RejectOffboardingRequest
 {
+    /// <summary>
+    /// Handles the RejectOffboardingRequestCommand command workflow.
+    /// </summary>
     public sealed class RejectOffboardingRequestCommandHandler : IRequestHandler<RejectOffboardingRequestCommand, ProcessResult<object>>
     {
         private readonly ApplicationDbContext _context;
@@ -25,6 +30,9 @@ namespace IT_Form.Application.Features.Offboarding.RejectOffboardingRequest
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(RejectOffboardingRequestCommand request, CancellationToken cancellationToken)
         {
             var user = _currentUserAccessor.User;
@@ -70,6 +78,9 @@ namespace IT_Form.Application.Features.Offboarding.RejectOffboardingRequest
             };
         }
 
+        /// <summary>
+        /// Runs the IsUserAuthorizedForRequest operation.
+        /// </summary>
         private async Task<bool> IsUserAuthorizedForRequest(OffboardingRequest request)
         {
             var user = _currentUserAccessor.User;

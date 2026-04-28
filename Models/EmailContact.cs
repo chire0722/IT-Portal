@@ -1,3 +1,5 @@
+// Project comment: EmailContact.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using IT_Form.Attributes;
@@ -5,6 +7,9 @@ using IT_Form.Attributes;
 namespace IT_Form.Models
 {
     [Index(nameof(EmailAddress), IsUnique = false)]
+    /// <summary>
+    /// Defines the EmailContact class used by the IT Form application.
+    /// </summary>
     public class EmailContact
     {
         public int Id { get; set; }

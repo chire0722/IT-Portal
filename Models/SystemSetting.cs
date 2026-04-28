@@ -1,7 +1,12 @@
+// Project comment: SystemSetting.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the SystemSetting class used by the IT Form application.
+    /// </summary>
     public class SystemSetting
     {
         [Key]

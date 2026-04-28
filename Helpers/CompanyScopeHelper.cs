@@ -1,3 +1,5 @@
+// Project comment: CompanyScopeHelper.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using System.Linq.Expressions;
 using IT_Form.Data;
@@ -6,10 +8,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Helpers;
 
+/// <summary>
+/// Defines the CompanyScopeHelper class used by the IT Form application.
+/// </summary>
 public static class CompanyScopeHelper
 {
     private const string NoCompanyAccessSentinel = "__NO_COMPANY_ACCESS__";
 
+    /// <summary>
+    /// Gets the data required by the GetScopedCompanies operation.
+    /// </summary>
     public static List<string> GetScopedCompanies(ClaimsPrincipal? user)
     {
         var companies = UserHelper.GetClaimValues(user, "UserCompany")
@@ -27,12 +35,21 @@ public static class CompanyScopeHelper
             : [];
     }
 
+    /// <summary>
+    /// Runs the HasScopedCompanies operation.
+    /// </summary>
     public static bool HasScopedCompanies(ClaimsPrincipal? user)
         => GetScopedCompanies(user).Count > 0;
 
+    /// <summary>
+    /// Runs the CanAccessCompany operation.
+    /// </summary>
     public static bool CanAccessCompany(ClaimsPrincipal? user, string? company)
         => CanAccessCompany(GetScopedCompanies(user), company);
 
+    /// <summary>
+    /// Runs the CanAccessCompany operation.
+    /// </summary>
     public static bool CanAccessCompany(IEnumerable<string> scopedCompanies, string? company)
     {
         var normalizedScope = NormalizeCompanies(scopedCompanies);
@@ -49,9 +66,15 @@ public static class CompanyScopeHelper
         return normalizedScope.Any(scopedCompany => CompanyHelper.IsMatch(scopedCompany, company));
     }
 
+    /// <summary>
+    /// Runs the CanAccessAnyCompany operation.
+    /// </summary>
     public static bool CanAccessAnyCompany(ClaimsPrincipal? user, params string?[] companies)
         => CanAccessAnyCompany(GetScopedCompanies(user), companies);
 
+    /// <summary>
+    /// Runs the CanAccessAnyCompany operation.
+    /// </summary>
     public static bool CanAccessAnyCompany(IEnumerable<string> scopedCompanies, params string?[] companies)
     {
         var normalizedScope = NormalizeCompanies(scopedCompanies);
@@ -63,6 +86,9 @@ public static class CompanyScopeHelper
         return companies.Any(company => CanAccessCompany(normalizedScope, company));
     }
 
+    /// <summary>
+    /// Runs the HasAnyAllowedCompany operation.
+    /// </summary>
     public static bool HasAnyAllowedCompany(IEnumerable<string> scopedCompanies, IEnumerable<string> targetCompanies)
     {
         var normalizedScope = NormalizeCompanies(scopedCompanies);
@@ -75,6 +101,9 @@ public static class CompanyScopeHelper
         return targets.Any(targetCompany => CanAccessCompany(normalizedScope, targetCompany));
     }
 
+    /// <summary>
+    /// Runs the AreAllCompaniesAllowed operation.
+    /// </summary>
     public static bool AreAllCompaniesAllowed(IEnumerable<string> scopedCompanies, IEnumerable<string> targetCompanies)
     {
         var normalizedScope = NormalizeCompanies(scopedCompanies);
@@ -88,6 +117,9 @@ public static class CompanyScopeHelper
                targets.All(targetCompany => CanAccessCompany(normalizedScope, targetCompany));
     }
 
+    /// <summary>
+    /// Runs the LoadAccessibleCompanyDisplayNamesAsync operation.
+    /// </summary>
     public static async Task<List<string>> LoadAccessibleCompanyDisplayNamesAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -114,6 +146,9 @@ public static class CompanyScopeHelper
             .ToList();
     }
 
+    /// <summary>
+    /// Runs the LoadAccessibleCompanyIdsAsync operation.
+    /// </summary>
     public static async Task<HashSet<int>> LoadAccessibleCompanyIdsAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -148,6 +183,9 @@ public static class CompanyScopeHelper
             .ToHashSet();
     }
 
+    /// <summary>
+    /// Runs the AreRequestedCompanyIdsAssignableAsync operation.
+    /// </summary>
     public static async Task<bool> AreRequestedCompanyIdsAssignableAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -172,6 +210,9 @@ public static class CompanyScopeHelper
         return requestedIds.All(accessibleActiveCompanyIds.Contains);
     }
 
+    /// <summary>
+    /// Applies changes for the ApplyOnboardingCompanyScope operation.
+    /// </summary>
     public static IQueryable<OnboardingRequest> ApplyOnboardingCompanyScope(
         IQueryable<OnboardingRequest> query,
         IEnumerable<string> scopedCompanies)
@@ -203,18 +244,27 @@ public static class CompanyScopeHelper
         return query.Where(Expression.Lambda<Func<T, bool>>(combinedBody!, parameter));
     }
 
+    /// <summary>
+    /// Runs the NormalizeCompanies operation.
+    /// </summary>
     private static List<string> NormalizeCompanies(IEnumerable<string> companies)
         => companies
             .Where(company => !string.IsNullOrWhiteSpace(company))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+    /// <summary>
+    /// Runs the RequiresExplicitCompanyScope operation.
+    /// </summary>
     private static bool RequiresExplicitCompanyScope(ClaimsPrincipal? user)
         => user?.Identity?.IsAuthenticated == true &&
            user.HasClaim(claim =>
                claim.Type == "UserTitle" &&
                !string.IsNullOrWhiteSpace(claim.Value));
 
+    /// <summary>
+    /// Builds the value returned by the BuildQueryMatchers operation.
+    /// </summary>
     private static List<CompanyScopeQueryMatcher> BuildQueryMatchers(IEnumerable<string> scopedCompanies)
         => NormalizeCompanies(scopedCompanies)
             .Select(company =>
@@ -225,6 +275,9 @@ public static class CompanyScopeHelper
             })
             .ToList();
 
+    /// <summary>
+    /// Builds the value returned by the BuildCompanyMatchBody operation.
+    /// </summary>
     private static Expression BuildCompanyMatchBody(
         Expression companyExpression,
         IReadOnlyList<CompanyScopeQueryMatcher> matchers)
@@ -266,14 +319,23 @@ public static class CompanyScopeHelper
         return Expression.AndAlso(notNull, combinedMatch ?? Expression.Constant(false));
     }
 
+    /// <summary>
+    /// Runs the ReplaceParameter operation.
+    /// </summary>
     private static Expression ReplaceParameter(Expression expression, ParameterExpression source, Expression target)
         => new ParameterReplaceVisitor(source, target).Visit(expression)!;
 
+    /// <summary>
+    /// Defines the CompanyScopeQueryMatcher record used by the IT Form application.
+    /// </summary>
     private sealed record CompanyScopeQueryMatcher(
         string ExactCompany,
         string NormalizedCompany,
         bool AllowPrefixMatch);
 
+    /// <summary>
+    /// Defines the ParameterReplaceVisitor class used by the IT Form application.
+    /// </summary>
     private sealed class ParameterReplaceVisitor : ExpressionVisitor
     {
         private readonly ParameterExpression _source;
@@ -285,6 +347,9 @@ public static class CompanyScopeHelper
             _target = target;
         }
 
+        /// <summary>
+        /// Runs the VisitParameter operation.
+        /// </summary>
         protected override Expression VisitParameter(ParameterExpression node)
             => node == _source ? _target : base.VisitParameter(node);
     }

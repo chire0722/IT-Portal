@@ -1,7 +1,12 @@
+// Project comment: DashboardReadModels.cs is part of the IT Form application source code.
+
 using IT_Form.Models.Enums;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the DashboardOnboardingQueueItem class used by the IT Form application.
+    /// </summary>
     public sealed class DashboardOnboardingQueueItem
     {
         public int Id { get; set; }
@@ -14,6 +19,9 @@ namespace IT_Form.Models
         public RequestStatus Status { get; set; }
     }
 
+    /// <summary>
+    /// Defines the DashboardOffboardingQueueItem class used by the IT Form application.
+    /// </summary>
     public sealed class DashboardOffboardingQueueItem
     {
         public int Id { get; set; }
@@ -26,6 +34,9 @@ namespace IT_Form.Models
         public RequestStatus Status { get; set; }
     }
 
+    /// <summary>
+    /// Defines the DashboardRequestSummaryItem class used by the IT Form application.
+    /// </summary>
     public sealed class DashboardRequestSummaryItem
     {
         public int Id { get; set; }
@@ -35,18 +46,27 @@ namespace IT_Form.Models
         public DateTime? EmployeeSignedAt { get; set; }
     }
 
+    /// <summary>
+    /// Defines the DashboardLicenseAlertItem class used by the IT Form application.
+    /// </summary>
     public sealed class DashboardLicenseAlertItem
     {
         public string SoftwareName { get; set; } = string.Empty;
         public DateTime? ExpiryDate { get; set; }
     }
 
+    /// <summary>
+    /// Defines the DashboardAssetAlertItem class used by the IT Form application.
+    /// </summary>
     public sealed class DashboardAssetAlertItem
     {
         public string AssetTag { get; set; } = string.Empty;
         public DateTime? WarrantyExpiry { get; set; }
     }
 
+    /// <summary>
+    /// Defines the DashboardAuditLogItem class used by the IT Form application.
+    /// </summary>
     public sealed class DashboardAuditLogItem
     {
         public int Id { get; set; }

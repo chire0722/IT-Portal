@@ -1,3 +1,5 @@
+// Project comment: StandardSoftwareController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Application.Features.StandardSoftware.AddSoftwareKey;
 using IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense;
@@ -19,19 +21,31 @@ using Microsoft.AspNetCore.Mvc;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the StandardSoftware area.
+    /// </summary>
     public class StandardSoftwareController : AppControllerBase
     {
         private readonly ISender _sender;
 
         public StandardSoftwareController(ISender sender) => _sender = sender;
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index(string? searchString, bool? isMandatory, bool? isSubscription, int? companyId = null)
             => HandleProcessResult(await _sender.Send(new GetStandardSoftwareIndexPageQuery(searchString, isMandatory, isSubscription, companyId)));
 
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _sender.Send(new GetStandardSoftwareCreatePageQuery()));
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(StandardSoftwareEditorPageViewModel model)
         {
             return await ExecuteWithValidationResult(
@@ -50,6 +64,9 @@ namespace IT_Form.Controllers
                 async () => HandleProcessResult(await _sender.Send(new GetStandardSoftwareCreatePageQuery(model))));
         }
 
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -57,6 +74,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, StandardSoftwareEditorPageViewModel model)
         {
             if (id != model.Id) return NotFound();
@@ -78,6 +98,9 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(int id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -93,6 +116,9 @@ namespace IT_Form.Controllers
                 new { });
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the AddLicense operation.
+        /// </summary>
         public async Task<IActionResult> AddLicense(int standardSoftwareId, string softwareName,
             string? description, bool isSubscription, bool isFree, DateTime? expiryDate, int? contractLimit,
             string? vendorName, string? supportContact, int? selectedCompanyId)
@@ -126,6 +152,9 @@ namespace IT_Form.Controllers
                 new { });
 
         [HttpPost]
+        /// <summary>
+        /// Runs the EditLicense operation.
+        /// </summary>
         public async Task<IActionResult> EditLicense(int id, string softwareName,
             string? description, bool isSubscription, bool isFree, DateTime? expiryDate, int? contractLimit,
             string? vendorName, string? supportContact, int? selectedCompanyId)
@@ -152,6 +181,9 @@ namespace IT_Form.Controllers
                 async () => Json(new { success = false, message = GetFirstModelStateErrorMessage() }));
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the DeleteLicense operation.
+        /// </summary>
         public async Task<IActionResult> DeleteLicense(int id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -173,10 +205,16 @@ namespace IT_Form.Controllers
                 nameof(Index),
                 new { });
 
+        /// <summary>
+        /// Runs the DownloadTemplate operation.
+        /// </summary>
         public async Task<IActionResult> DownloadTemplate()
             => HandleProcessResult(await _sender.Send(new DownloadStandardSoftwareTemplateQuery()));
 
         [HttpPost, ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ImportExcel operation.
+        /// </summary>
         public async Task<IActionResult> ImportExcel(IFormFile file)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -198,6 +236,9 @@ namespace IT_Form.Controllers
                 new { });
 
         [HttpPost]
+        /// <summary>
+        /// Runs the AddKey operation.
+        /// </summary>
         public async Task<IActionResult> AddKey(int softwareId, string keyValue)
             => await ExecuteWithValidationResult(
                 async () =>
@@ -213,6 +254,9 @@ namespace IT_Form.Controllers
                 async () => BadRequest("Key value is required."));
 
         [HttpPost]
+        /// <summary>
+        /// Deletes data for the DeleteKey operation.
+        /// </summary>
         public async Task<IActionResult> DeleteKey(int id)
             => await ExecuteWithValidationResult(
                 async () =>
@@ -232,10 +276,16 @@ namespace IT_Form.Controllers
                 async () => BadRequest("Invalid key id."));
 
         [HttpGet]
+        /// <summary>
+        /// Gets the data required by the GetKeys operation.
+        /// </summary>
         public async Task<IActionResult> GetKeys(int softwareId)
             => HandleJsonProcessResult(await _sender.Send(new GetStandardSoftwareKeysQuery(softwareId)));
 
         [HttpPost]
+        /// <summary>
+        /// Runs the QuickAllocateSeat operation.
+        /// </summary>
         public async Task<IActionResult> QuickAllocateSeat(int softwareId)
             => await ExecuteWithValidationResult(
                 async () =>
@@ -251,6 +301,9 @@ namespace IT_Form.Controllers
                 async () => BadRequest("Invalid software id."));
 
         [HttpPost]
+        /// <summary>
+        /// Updates data for the UpdateKey operation.
+        /// </summary>
         public async Task<IActionResult> UpdateKey(int id, string keyValue)
             => await ExecuteWithValidationResult(
                 async () =>
@@ -264,6 +317,9 @@ namespace IT_Form.Controllers
                 async () => BadRequest("Key value is required."));
 
         [HttpPost]
+        /// <summary>
+        /// Runs the AssignKey operation.
+        /// </summary>
         public async Task<IActionResult> AssignKey(int id, int? onboardingRequestId)
             => await ExecuteWithValidationResult(
                 async () =>
@@ -278,6 +334,9 @@ namespace IT_Form.Controllers
                 async () => BadRequest("Invalid key id."));
 
         [HttpGet]
+        /// <summary>
+        /// Gets the data required by the GetEmployees operation.
+        /// </summary>
         public async Task<IActionResult> GetEmployees()
             => HandleJsonProcessResult(await _sender.Send(new GetStandardSoftwareEmployeesQuery()));
     }

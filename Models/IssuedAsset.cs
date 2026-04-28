@@ -1,8 +1,13 @@
+// Project comment: IssuedAsset.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Models.Enums;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the IssuedAsset class used by the IT Form application.
+    /// </summary>
     public class IssuedAsset
     {
         public int Id { get; set; }

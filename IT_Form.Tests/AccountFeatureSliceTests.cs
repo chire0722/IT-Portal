@@ -1,3 +1,5 @@
+// Project comment: AccountFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +43,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the AccountFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class AccountFeatureSliceTests
 {
     public AccountFeatureSliceTests()
@@ -49,6 +54,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the LoginValidator_Fails_WhenUsernameMissing operation.
+    /// </summary>
     public void LoginValidator_Fails_WhenUsernameMissing()
     {
         var validator = new LoginAccountCommandValidator();
@@ -59,6 +67,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the LoginHandler_ReturnsInvalidCredentials_WhenUserMissing operation.
+    /// </summary>
     public async Task LoginHandler_ReturnsInvalidCredentials_WhenUserMissing()
     {
         using var context = CreateContext();
@@ -89,6 +100,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the LoginHandler_QueuesLockoutAlert_WhenThresholdReached operation.
+    /// </summary>
     public async Task LoginHandler_QueuesLockoutAlert_WhenThresholdReached()
     {
         using var context = CreateContext();
@@ -151,6 +165,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Argon2idPasswordHasher_ReturnsSuccessRehashNeeded_ForLegacyCustomHash operation.
+    /// </summary>
     public void Argon2idPasswordHasher_ReturnsSuccessRehashNeeded_ForLegacyCustomHash()
     {
         var settings = CreateTestSecuritySettings();
@@ -164,6 +181,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the LoginHandler_RehashesLegacyIdentityPassword_OnSuccessfulLogin operation.
+    /// </summary>
     public async Task LoginHandler_RehashesLegacyIdentityPassword_OnSuccessfulLogin()
     {
         using var context = CreateContext();
@@ -219,6 +239,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ForgotPasswordValidator_Fails_WhenUsernameMissing operation.
+    /// </summary>
     public void ForgotPasswordValidator_Fails_WhenUsernameMissing()
     {
         var validator = new ForgotPasswordCommandValidator();
@@ -229,6 +252,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ForgotPasswordHandler_ReturnsInvalidUser_WhenUserMissing operation.
+    /// </summary>
     public async Task ForgotPasswordHandler_ReturnsInvalidUser_WhenUserMissing()
     {
         using var context = CreateContext();
@@ -250,6 +276,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the SecureOtpGenerator_GeneratesSixCharacterHighEntropyCodes operation.
+    /// </summary>
     public void SecureOtpGenerator_GeneratesSixCharacterHighEntropyCodes()
     {
         var generator = new SecureOtpGenerator();
@@ -263,6 +292,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EmailOtpService_ReusesExistingTransaction_WhenOneIsAlreadyOpen operation.
+    /// </summary>
     public async Task EmailOtpService_ReusesExistingTransaction_WhenOneIsAlreadyOpen()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -300,6 +332,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the VerifyOtpValidator_Fails_WhenCodeMissing operation.
+    /// </summary>
     public void VerifyOtpValidator_Fails_WhenCodeMissing()
     {
         var validator = new VerifyOtpCommandValidator();
@@ -310,6 +345,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the VerifyOtpHandler_ThrowsValidationException_WhenOtpIsMissing operation.
+    /// </summary>
     public async Task VerifyOtpHandler_ThrowsValidationException_WhenOtpIsMissing()
     {
         using var context = CreateContext();
@@ -333,6 +371,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the VerifyOtpHandler_InvalidatesOtpAfterThreeFailures operation.
+    /// </summary>
     public async Task VerifyOtpHandler_InvalidatesOtpAfterThreeFailures()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -375,6 +416,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the VerifyOtpHandler_ConsumesOtpOnlyOnce_WhenRequestsRace operation.
+    /// </summary>
     public async Task VerifyOtpHandler_ConsumesOtpOnlyOnce_WhenRequestsRace()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -447,6 +491,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ResetPasswordValidator_Fails_WhenFieldsMissing operation.
+    /// </summary>
     public void ResetPasswordValidator_Fails_WhenFieldsMissing()
     {
         var validator = new ResetPasswordCommandValidator();
@@ -457,6 +504,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ResetPasswordHandler_ReturnsUserNotFound_WhenEmailUnknown operation.
+    /// </summary>
     public async Task ResetPasswordHandler_ReturnsUserNotFound_WhenEmailUnknown()
     {
         using var context = CreateContext();
@@ -479,6 +529,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetProfilePageQueryHandler_ReturnsTypedProfile operation.
+    /// </summary>
     public async Task GetProfilePageQueryHandler_ReturnsTypedProfile()
     {
         using var context = CreateContext();
@@ -505,6 +558,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetLoginPageBrandingQueryHandler_ReturnsConfiguredBrandingAndSelectedLogo operation.
+    /// </summary>
     public async Task GetLoginPageBrandingQueryHandler_ReturnsConfiguredBrandingAndSelectedLogo()
     {
         using var context = CreateContext();
@@ -558,6 +614,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetVerifyOtpPageQueryHandler_ReturnsRemainingCooldown operation.
+    /// </summary>
     public async Task GetVerifyOtpPageQueryHandler_ReturnsRemainingCooldown()
     {
         using var context = CreateContext();
@@ -588,6 +647,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ResendOtpCommandHandler_QueuesOtpEmail_WhenEligible operation.
+    /// </summary>
     public async Task ResendOtpCommandHandler_QueuesOtpEmail_WhenEligible()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -643,6 +705,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the LogoutCommandHandler_SignsOutAndWritesAuditLog operation.
+    /// </summary>
     public async Task LogoutCommandHandler_SignsOutAndWritesAuditLog()
     {
         using var context = CreateContext();
@@ -668,6 +733,9 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ForceChangePasswordValidator_Fails_WhenNewPasswordMatchesCurrent operation.
+    /// </summary>
     public void ForceChangePasswordValidator_Fails_WhenNewPasswordMatchesCurrent()
     {
         var validator = new ForceChangePasswordCommandValidator(
@@ -694,6 +762,9 @@ public class AccountFeatureSliceTests
         Assert.Contains(result.Errors, error => error.ErrorMessage == "New password must be different from the current password.");
     }
 
+    /// <summary>
+    /// Creates data for the CreateUserManager operation.
+    /// </summary>
     private static Mock<UserManager<ApplicationUser>> CreateUserManager()
     {
         var store = new Mock<IUserStore<ApplicationUser>>();
@@ -709,6 +780,9 @@ public class AccountFeatureSliceTests
             null!);
     }
 
+    /// <summary>
+    /// Creates data for the CreateSignInManager operation.
+    /// </summary>
     private static Mock<SignInManager<ApplicationUser>> CreateSignInManager(UserManager<ApplicationUser> userManager)
     {
         var contextAccessor = new Mock<IHttpContextAccessor>();
@@ -730,6 +804,9 @@ public class AccountFeatureSliceTests
             confirmation.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -746,6 +823,9 @@ public class AccountFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreateSqliteContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateSqliteContext(SqliteConnection connection)
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -761,9 +841,15 @@ public class AccountFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreatePostCommitActionQueue operation.
+    /// </summary>
     private static PostCommitActionQueue CreatePostCommitActionQueue()
         => new(Mock.Of<ILogger<PostCommitActionQueue>>());
 
+    /// <summary>
+    /// Creates data for the CreateTestSecuritySettings operation.
+    /// </summary>
     private static SecuritySettings CreateTestSecuritySettings()
         => new()
         {
@@ -786,6 +872,9 @@ public class AccountFeatureSliceTests
             }
         };
 
+    /// <summary>
+    /// Creates data for the CreateLegacyArgon2Hash operation.
+    /// </summary>
     private static string CreateLegacyArgon2Hash(string password, Argon2idSettings settings)
     {
         var salt = Enumerable.Range(1, settings.SaltSize).Select(value => (byte)value).ToArray();

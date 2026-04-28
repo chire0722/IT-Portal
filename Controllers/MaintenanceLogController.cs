@@ -1,3 +1,5 @@
+// Project comment: MaintenanceLogController.cs is part of the IT Form application source code.
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +10,9 @@ using System.Threading.Tasks;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the MaintenanceLog area.
+    /// </summary>
     public class MaintenanceLogController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -18,6 +23,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: MaintenanceLog/Create/5 (AssetId)
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(int itAssetId)
         {
             var asset = await _context.ITAssets.FindAsync(itAssetId);
@@ -30,6 +38,9 @@ namespace IT_Form.Controllers
         // POST: MaintenanceLog/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create([Bind("ITAssetId,ServiceDate,Description,ServiceProvider,Cost,Notes")] MaintenanceLog maintenanceLog)
         {
             if (maintenanceLog == null) return View();
@@ -43,6 +54,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: MaintenanceLog/Edit/5
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -59,6 +73,9 @@ namespace IT_Form.Controllers
         // POST: MaintenanceLog/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, [Bind("Id,ITAssetId,ServiceDate,Description,ServiceProvider,Cost,Notes")] MaintenanceLog maintenanceLog)
         {
             if (id != maintenanceLog.Id) return NotFound();
@@ -81,6 +98,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: MaintenanceLog/Delete/5
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -96,6 +116,9 @@ namespace IT_Form.Controllers
         // POST: MaintenanceLog/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the DeleteConfirmed operation.
+        /// </summary>
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var maintenanceLog = await _context.MaintenanceLogs.FindAsync(id);
@@ -109,6 +132,9 @@ namespace IT_Form.Controllers
             return RedirectToAction("Index", "ITAsset");
         }
 
+        /// <summary>
+        /// Runs the MaintenanceLogExists operation.
+        /// </summary>
         private bool MaintenanceLogExists(int id)
         {
             return _context.MaintenanceLogs.Any(e => e.Id == id);

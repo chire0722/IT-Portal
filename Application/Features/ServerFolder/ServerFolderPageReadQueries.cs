@@ -1,3 +1,5 @@
+// Project comment: ServerFolderPageReadQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -9,11 +11,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ServerFolder
 {
+    /// <summary>
+    /// Carries data needed to execute the GetServerFolderIndexPage query.
+    /// </summary>
     public sealed record GetServerFolderIndexPageQuery(int? CompanyId = null) : IRequest<ProcessResult<ServerFolderIndexPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetServerFolderCreatePage query.
+    /// </summary>
     public sealed record GetServerFolderCreatePageQuery(ServerFolderEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<ServerFolderEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetServerFolderEditPage query.
+    /// </summary>
     public sealed record GetServerFolderEditPageQuery(int Id, ServerFolderEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<ServerFolderEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetServerFolderMembersPage query.
+    /// </summary>
     public sealed record GetServerFolderMembersPageQuery(int Id, int? OnboardingRequestId = null) : IRequest<ProcessResult<ServerFolderMembersPageViewModel>>;
 
+    /// <summary>
+    /// Handles the GetServerFolderIndexPageQuery query workflow.
+    /// </summary>
     public sealed class GetServerFolderIndexPageQueryHandler : IRequestHandler<GetServerFolderIndexPageQuery, ProcessResult<ServerFolderIndexPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -25,6 +42,9 @@ namespace IT_Form.Application.Features.ServerFolder
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<ServerFolderIndexPageViewModel>> Handle(GetServerFolderIndexPageQuery request, CancellationToken cancellationToken)
         {
             var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
@@ -70,6 +90,9 @@ namespace IT_Form.Application.Features.ServerFolder
         }
     }
 
+    /// <summary>
+    /// Handles the GetServerFolderCreatePageQuery query workflow.
+    /// </summary>
     public sealed class GetServerFolderCreatePageQueryHandler : IRequestHandler<GetServerFolderCreatePageQuery, ProcessResult<ServerFolderEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -81,6 +104,9 @@ namespace IT_Form.Application.Features.ServerFolder
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<ServerFolderEditorPageViewModel>> Handle(GetServerFolderCreatePageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -102,6 +128,9 @@ namespace IT_Form.Application.Features.ServerFolder
         }
     }
 
+    /// <summary>
+    /// Handles the GetServerFolderEditPageQuery query workflow.
+    /// </summary>
     public sealed class GetServerFolderEditPageQueryHandler : IRequestHandler<GetServerFolderEditPageQuery, ProcessResult<ServerFolderEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -113,6 +142,9 @@ namespace IT_Form.Application.Features.ServerFolder
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<ServerFolderEditorPageViewModel>> Handle(GetServerFolderEditPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -159,6 +191,9 @@ namespace IT_Form.Application.Features.ServerFolder
         }
     }
 
+    /// <summary>
+    /// Handles the GetServerFolderMembersPageQuery query workflow.
+    /// </summary>
     public sealed class GetServerFolderMembersPageQueryHandler : IRequestHandler<GetServerFolderMembersPageQuery, ProcessResult<ServerFolderMembersPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -170,6 +205,9 @@ namespace IT_Form.Application.Features.ServerFolder
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<ServerFolderMembersPageViewModel>> Handle(GetServerFolderMembersPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

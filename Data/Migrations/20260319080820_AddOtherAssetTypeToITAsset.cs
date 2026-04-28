@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+// Project comment: 20260319080820_AddOtherAssetTypeToITAsset.cs is part of the IT Form application source code.
+
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 

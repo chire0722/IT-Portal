@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingItStep3QueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.DTOs.Options;
 using IT_Form.Application.Common.Abstractions;
@@ -12,6 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
 {
+    /// <summary>
+    /// Handles the GetOnboardingItStep3Query query workflow.
+    /// </summary>
     public sealed class GetOnboardingItStep3QueryHandler : IRequestHandler<GetOnboardingItStep3Query, GetOnboardingItStep3Result>
     {
         private readonly ApplicationDbContext _context;
@@ -23,6 +28,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<GetOnboardingItStep3Result> Handle(GetOnboardingItStep3Query request, CancellationToken cancellationToken)
         {
             var model = request.SessionModel;
@@ -191,6 +199,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
                 model.Id);
         }
 
+        /// <summary>
+        /// Runs the Empty operation.
+        /// </summary>
         private static GetOnboardingItStep3Result Empty(GetOnboardingItStep3Status status, string? message = null, int requestId = 0)
             => new(
                 status,
@@ -199,6 +210,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
                 message,
                 requestId);
 
+        /// <summary>
+        /// Maps data for the MapToViewModel operation.
+        /// </summary>
         private static OnboardingStep3PageViewModel MapToViewModel(
             OnboardingViewModel model,
             int requestId,
@@ -222,6 +236,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
             return viewModel;
         }
 
+        /// <summary>
+        /// Runs the EnsureIssuedAssetsLoadedAsync operation.
+        /// </summary>
         private async Task EnsureIssuedAssetsLoadedAsync(OnboardingViewModel model, CancellationToken cancellationToken)
         {
             if (model.IssuedAssets != null && model.IssuedAssets.Any())
@@ -248,6 +265,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep3
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the ResolveCompanyIdsAsync operation.
+        /// </summary>
         private async Task<List<int>> ResolveCompanyIdsAsync(string? companyName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(companyName))

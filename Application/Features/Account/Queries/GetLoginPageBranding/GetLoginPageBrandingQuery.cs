@@ -1,3 +1,5 @@
+// Project comment: GetLoginPageBrandingQuery.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.ViewModels;
 using MediatR;
@@ -6,10 +8,16 @@ using Microsoft.Extensions.Options;
 
 namespace IT_Form.Application.Features.Account.Queries.GetLoginPageBranding;
 
+/// <summary>
+/// Carries data needed to execute the GetLoginPageBranding query.
+/// </summary>
 public sealed record GetLoginPageBrandingQuery(
     LoginViewModel? Form = null,
     string? LockoutEndTimeIso = null) : IRequest<LoginPageBrandingViewModel>;
 
+/// <summary>
+/// Handles the GetLoginPageBrandingQuery query workflow.
+/// </summary>
 public sealed class GetLoginPageBrandingQueryHandler : IRequestHandler<GetLoginPageBrandingQuery, LoginPageBrandingViewModel>
 {
     private readonly ApplicationDbContext _context;
@@ -23,6 +31,9 @@ public sealed class GetLoginPageBrandingQueryHandler : IRequestHandler<GetLoginP
         _options = options.Value;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<LoginPageBrandingViewModel> Handle(
         GetLoginPageBrandingQuery request,
         CancellationToken cancellationToken)

@@ -1,3 +1,5 @@
+// Project comment: DepartmentControllerTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,9 +18,15 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the DepartmentControllerTests class used by the IT Form application.
+    /// </summary>
     public class DepartmentControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsView_ForITRole operation.
+        /// </summary>
         public async Task Index_ReturnsView_ForITRole()
         {
             using var context = CreateContext();
@@ -37,6 +45,9 @@ namespace IT_Form.Tests
 
 
         [Fact]
+        /// <summary>
+        /// Creates data for the Create_Post_ReturnsView_WhenModelIsNull_Adversarial operation.
+        /// </summary>
         public async Task Create_Post_ReturnsView_WhenModelIsNull_Adversarial()
         {
             using var context = CreateContext();
@@ -50,6 +61,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Edit_Post_GuardAgainstTampering_Adversarial operation.
+        /// </summary>
         public async Task Edit_Post_GuardAgainstTampering_Adversarial()
         {
             using var context = CreateContext();
@@ -70,6 +84,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Deletes data for the Delete_RemovesDepartment_ForITRole operation.
+        /// </summary>
         public async Task Delete_RemovesDepartment_ForITRole()
         {
             using var context = CreateContext();

@@ -1,3 +1,5 @@
+// Project comment: EmailContactController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Features.EmailContact.BulkImportEmailContacts;
 using IT_Form.Application.Features.EmailContact;
 using CreateEmailContactWriteCommand = IT_Form.Application.Features.EmailContact.Writes.CreateEmailContact.CreateEmailContactCommand;
@@ -16,6 +18,9 @@ using System;
 namespace IT_Form.Controllers
 {
     [Authorize]
+    /// <summary>
+    /// Handles web requests for the EmailContact area.
+    /// </summary>
     public class EmailContactController : AppControllerBase
     {
         private readonly ISender _sender;
@@ -25,14 +30,23 @@ namespace IT_Form.Controllers
             _sender = sender;
         }
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index()
             => HandleProcessResult(await _sender.Send(new GetEmailContactIndexPageQuery()));
 
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
             => HandleProcessResult(await _sender.Send(new GetEmailContactCreatePageQuery()));
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(EmailContactEditorPageViewModel contact)
             => contact == null
                 ? HandleProcessResult(await _sender.Send(new GetEmailContactCreatePageQuery()))
@@ -50,6 +64,9 @@ namespace IT_Form.Controllers
                     async () => HandleProcessResult(await _sender.Send(new GetEmailContactCreatePageQuery(contact))));
 
         [Authorize(Policy = "RequireIT")]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -59,6 +76,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "RequireIT")]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(int id, EmailContactEditorPageViewModel contact)
             => contact == null
                 ? HandleProcessResult(await _sender.Send(new GetEmailContactEditPageQuery(id)))
@@ -81,6 +101,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "RequireIT")]
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(int id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -93,11 +116,17 @@ namespace IT_Form.Controllers
                 new { });
 
         [HttpGet]
+        /// <summary>
+        /// Runs the SearchContacts operation.
+        /// </summary>
         public async Task<IActionResult> SearchContacts(string term)
             => HandleJsonProcessResult(await _sender.Send(new SearchEmailContactsQuery(term)));
 
         // GET: EmailContact/DownloadImportTemplate
         [Authorize(Policy = "RequireIT")]
+        /// <summary>
+        /// Runs the DownloadImportTemplate operation.
+        /// </summary>
         public async Task<IActionResult> DownloadImportTemplate()
         {
             using (var workbook = new XLWorkbook())
@@ -132,6 +161,9 @@ namespace IT_Form.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "RequireIT")]
+        /// <summary>
+        /// Runs the BulkImport operation.
+        /// </summary>
         public async Task<IActionResult> BulkImport(IFormFile file)
             => await ExecuteWithValidationRedirect(
                 async () =>

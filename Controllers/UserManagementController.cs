@@ -1,3 +1,5 @@
+// Project comment: UserManagementController.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.UserManagement;
 using CreateUserManagementWriteCommand = IT_Form.Application.Features.UserManagement.Writes.CreateUserManagement.CreateUserManagementCommand;
@@ -12,21 +14,33 @@ using Mapster;
 namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the UserManagement area.
+    /// </summary>
     public class UserManagementController : AppControllerBase
     {
         private readonly ISender _sender;
 
         public UserManagementController(ISender sender) => _sender = sender;
 
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index()
             => HandleUserManagementIndexPage(await _sender.Send(new GetUserManagementIndexPageQuery()));
 
         [HttpGet]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create()
             => HandleUserManagementEditorPage(await _sender.Send(new GetUserManagementCreatePageQuery()), "Create");
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Creates data for the Create operation.
+        /// </summary>
         public async Task<IActionResult> Create(UserManagementEditorPageViewModel model)
         {
             if (model == null)
@@ -43,11 +57,17 @@ namespace IT_Form.Controllers
         }
 
         [HttpGet]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(string id)
             => HandleUserManagementEditorPage(await _sender.Send(new GetUserManagementEditPageQuery(id)), "Edit");
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Edit operation.
+        /// </summary>
         public async Task<IActionResult> Edit(string id, UserManagementEditorPageViewModel model)
         {
             if (model == null)
@@ -66,6 +86,9 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the ToggleActive operation.
+        /// </summary>
         public async Task<IActionResult> ToggleActive(string id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -81,6 +104,9 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Deletes data for the Delete operation.
+        /// </summary>
         public async Task<IActionResult> Delete(string id)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -92,6 +118,9 @@ namespace IT_Form.Controllers
                 nameof(Index),
                 new { });
 
+        /// <summary>
+        /// Runs the HandleUserManagementIndexPage operation.
+        /// </summary>
         private IActionResult HandleUserManagementIndexPage(ProcessResult<List<UserManagementIndexListItem>> result)
         {
             if (result.IsNotFound)
@@ -103,6 +132,9 @@ namespace IT_Form.Controllers
             return View(result.Data ?? []);
         }
 
+        /// <summary>
+        /// Runs the HandleUserManagementEditorPage operation.
+        /// </summary>
         private IActionResult HandleUserManagementEditorPage(
             ProcessResult<UserManagementEditorPageViewModel> result,
             string viewName)

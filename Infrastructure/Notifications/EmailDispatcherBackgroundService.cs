@@ -1,3 +1,5 @@
+// Project comment: EmailDispatcherBackgroundService.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Models.Enums;
@@ -6,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Infrastructure.Notifications
 {
+    /// <summary>
+    /// Provides EmailDispatcherBackground service behavior for the application.
+    /// </summary>
     public sealed class EmailDispatcherBackgroundService : BackgroundService
     {
         private const int BatchSize = 20;
@@ -24,12 +29,18 @@ namespace IT_Form.Infrastructure.Notifications
             _logger = logger;
         }
 
+        /// <summary>
+        /// Runs the StopAsync operation.
+        /// </summary>
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Email dispatcher is stopping. Pending messages remain durable in the email outbox.");
             await base.StopAsync(cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the ExecuteAsync operation.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Email dispatcher background service started.");
@@ -58,6 +69,9 @@ namespace IT_Form.Infrastructure.Notifications
             _logger.LogInformation("Email dispatcher background service stopped.");
         }
 
+        /// <summary>
+        /// Processes data for the ProcessBatchAsync operation.
+        /// </summary>
         private async Task<bool> ProcessBatchAsync(CancellationToken cancellationToken)
         {
             using var scope = _serviceScopeFactory.CreateScope();
@@ -88,6 +102,9 @@ namespace IT_Form.Infrastructure.Notifications
             return processedAny;
         }
 
+        /// <summary>
+        /// Runs the TryProcessMessageAsync operation.
+        /// </summary>
         private async Task<bool> TryProcessMessageAsync(int messageId, CancellationToken cancellationToken)
         {
             var claimTimestamp = DateTime.UtcNow;
@@ -133,6 +150,9 @@ namespace IT_Form.Infrastructure.Notifications
             }
         }
 
+        /// <summary>
+        /// Runs the MarkMessageSentAsync operation.
+        /// </summary>
         private async Task MarkMessageSentAsync(int messageId, CancellationToken cancellationToken)
         {
             using var scope = _serviceScopeFactory.CreateScope();
@@ -149,6 +169,9 @@ namespace IT_Form.Infrastructure.Notifications
                     .SetProperty(message => message.LastError, (string?)null), cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the MarkMessageFailedAsync operation.
+        /// </summary>
         private async Task MarkMessageFailedAsync(int messageId, int attemptCount, Exception exception, CancellationToken cancellationToken)
         {
             using var scope = _serviceScopeFactory.CreateScope();
@@ -175,6 +198,9 @@ namespace IT_Form.Infrastructure.Notifications
                 MaxAttemptCount);
         }
 
+        /// <summary>
+        /// Runs the DispatchMessageAsync operation.
+        /// </summary>
         private async Task DispatchMessageAsync(IEmailBackgroundMessage message, CancellationToken cancellationToken)
         {
             using var scope = _serviceScopeFactory.CreateScope();
@@ -257,12 +283,18 @@ namespace IT_Form.Infrastructure.Notifications
             }
         }
 
+        /// <summary>
+        /// Gets the data required by the GetRetryDelay operation.
+        /// </summary>
         private static TimeSpan GetRetryDelay(int attemptCount)
         {
             var seconds = Math.Min(300, Math.Max(5, attemptCount * 15));
             return TimeSpan.FromSeconds(seconds);
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildWelcomeEmailBody operation.
+        /// </summary>
         private static string BuildWelcomeEmailBody(string employeeName) => $@"
             <div style='font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;'>
                 <h2 style='color: #2563eb;'>Welcome to the company</h2>
@@ -273,6 +305,9 @@ namespace IT_Form.Infrastructure.Notifications
                 <small>IT Asset Management System</small>
             </div>";
 
+        /// <summary>
+        /// Builds the value returned by the BuildLockoutAlertBody operation.
+        /// </summary>
         private static string BuildLockoutAlertBody(string lockedUserEmail, string userId, DateTime timestamp) => $@"
             <div style='font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;'>
                 <h2 style='color: #dc3545;'>Security Alert: Account Lockout</h2>

@@ -1,3 +1,5 @@
+// Project comment: StandardSoftwareKeyManagementFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -20,9 +22,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the StandardSoftwareKeyManagementFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class StandardSoftwareKeyManagementFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the AddSoftwareKeyValidator_Fails_WhenKeyValueMissing operation.
+    /// </summary>
     public void AddSoftwareKeyValidator_Fails_WhenKeyValueMissing()
     {
         var validator = new AddSoftwareKeyCommandValidator();
@@ -33,6 +41,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddSoftwareKeyHandler_ReturnsFailed_WhenImportFails operation.
+    /// </summary>
     public async Task AddSoftwareKeyHandler_ReturnsFailed_WhenImportFails()
     {
         var licenseService = new Mock<ILicenseService>();
@@ -47,6 +58,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteSoftwareKeyHandler_ReturnsAssignedBlocked_WhenKeyAssigned operation.
+    /// </summary>
     public async Task DeleteSoftwareKeyHandler_ReturnsAssignedBlocked_WhenKeyAssigned()
     {
         using var context = CreateContext();
@@ -75,6 +89,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the QuickAllocateSeatHandler_ReturnsNotSubscription_WhenLicenseIsPerpetual operation.
+    /// </summary>
     public async Task QuickAllocateSeatHandler_ReturnsNotSubscription_WhenLicenseIsPerpetual()
     {
         using var context = CreateContext();
@@ -97,6 +114,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the QuickAllocateSeatHandler_IncrementsSeatLimitAndAddsSeatPlaceholder operation.
+    /// </summary>
     public async Task QuickAllocateSeatHandler_IncrementsSeatLimitAndAddsSeatPlaceholder()
     {
         using var context = CreateContext();
@@ -133,6 +153,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateSoftwareKeyHandler_ReturnsNotFound_WhenKeyMissing operation.
+    /// </summary>
     public async Task UpdateSoftwareKeyHandler_ReturnsNotFound_WhenKeyMissing()
     {
         using var context = CreateContext();
@@ -146,6 +169,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AssignSoftwareKeyHandler_ReturnsEmployeeNotFound_WhenEmployeeMissing operation.
+    /// </summary>
     public async Task AssignSoftwareKeyHandler_ReturnsEmployeeNotFound_WhenEmployeeMissing()
     {
         using var context = CreateContext();
@@ -176,6 +202,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteSoftwareKeyHandler_DecrementsSeatLimit_WhenDeletingUnassignedSubscriptionSeat operation.
+    /// </summary>
     public async Task DeleteSoftwareKeyHandler_DecrementsSeatLimit_WhenDeletingUnassignedSubscriptionSeat()
     {
         using var context = CreateContext();
@@ -205,6 +234,9 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         Assert.Single(updatedLicense.Keys);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

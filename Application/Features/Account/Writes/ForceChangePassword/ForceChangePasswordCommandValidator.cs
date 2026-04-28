@@ -1,9 +1,14 @@
+// Project comment: ForceChangePasswordCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
 namespace IT_Form.Application.Features.Account.Writes.ForceChangePassword;
 
+/// <summary>
+/// Validates input for the ForceChangePasswordCommand request.
+/// </summary>
 public sealed class ForceChangePasswordCommandValidator : AbstractValidator<ForceChangePasswordCommand>
 {
     public ForceChangePasswordCommandValidator(IOptions<IdentityOptions> identityOptions)

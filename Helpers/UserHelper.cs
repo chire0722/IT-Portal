@@ -1,3 +1,5 @@
+// Project comment: UserHelper.cs is part of the IT Form application source code.
+
 using System;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
@@ -8,8 +10,14 @@ using System.Threading.Tasks;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the UserHelper class used by the IT Form application.
+    /// </summary>
     public static class UserHelper
     {
+        /// <summary>
+        /// Gets the data required by the GetClaimValues operation.
+        /// </summary>
         public static List<string> GetClaimValues(ClaimsPrincipal? principal, string claimType)
         {
             if (principal == null || string.IsNullOrWhiteSpace(claimType))
@@ -23,6 +31,9 @@ namespace IT_Form.Helpers
                 .ToList();
         }
 
+        /// <summary>
+        /// Runs the NormalizeEmailOrUserName operation.
+        /// </summary>
         public static string NormalizeEmailOrUserName(string? value)
         {
             if (string.IsNullOrWhiteSpace(value)) return string.Empty;
@@ -31,6 +42,9 @@ namespace IT_Form.Helpers
             return normalized.Replace(".locla", ".local", StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Gets the data required by the GetEmailLocalPart operation.
+        /// </summary>
         public static string GetEmailLocalPart(string? value)
         {
             var normalized = NormalizeEmailOrUserName(value);
@@ -40,6 +54,9 @@ namespace IT_Form.Helpers
             return atIndex > 0 ? normalized[..atIndex] : normalized;
         }
 
+        /// <summary>
+        /// Runs the EmailsMatch operation.
+        /// </summary>
         public static bool EmailsMatch(IEnumerable<string> candidates, string? target)
         {
             if (string.IsNullOrWhiteSpace(target)) return false;
@@ -99,6 +116,9 @@ namespace IT_Form.Helpers
                 .ToList();
         }
 
+        /// <summary>
+        /// Runs the ResolveUserEmailAsync operation.
+        /// </summary>
         public static async Task<string?> ResolveUserEmailAsync(ApplicationDbContext context, string? emailOrUsername, params string[] allowedTitles)
         {
             if (string.IsNullOrWhiteSpace(emailOrUsername)) return null;

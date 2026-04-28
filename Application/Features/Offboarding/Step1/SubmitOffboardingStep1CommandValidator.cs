@@ -1,7 +1,12 @@
+// Project comment: SubmitOffboardingStep1CommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Offboarding.Step1
 {
+    /// <summary>
+    /// Validates input for the SubmitOffboardingStep1Command request.
+    /// </summary>
     public sealed class SubmitOffboardingStep1CommandValidator : AbstractValidator<SubmitOffboardingStep1Command>
     {
         public SubmitOffboardingStep1CommandValidator()

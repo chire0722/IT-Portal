@@ -1,5 +1,8 @@
+// Project comment: SignatureIntegrityService.cs is part of the IT Form application source code.
+
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 
 namespace IT_Form.Services
@@ -32,11 +35,14 @@ namespace IT_Form.Services
         bool Verify(string entityType, string entityId, string signerUserId, DateTime signedAtUtc, string signatureBase64, string storedHmac);
     }
 
+    /// <summary>
+    /// Provides SignatureIntegrity service behavior for the application.
+    /// </summary>
     public class SignatureIntegrityService : ISignatureIntegrityService
     {
         private readonly byte[] _keyBytes;
 
-        public SignatureIntegrityService(IConfiguration configuration)
+        public SignatureIntegrityService(IConfiguration configuration, IWebHostEnvironment environment)
         {
             // Read HMAC key from configuration — must be at least 32 bytes.
             // Add "SignatureHmac:Key" to appsettings.json or a "IT_FORM__SignatureHmac__Key" machine environment variable.
@@ -44,9 +50,16 @@ namespace IT_Form.Services
 
             if (string.IsNullOrWhiteSpace(keyStr) ||
                 keyStr.Contains("SET_VIA_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
+                keyStr.Contains("SET_VIA_USER_SECRETS", StringComparison.OrdinalIgnoreCase) ||
                 keyStr.Contains("ROTATE_AND_USE_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
                 (keyStr.StartsWith('<') && keyStr.EndsWith('>')))
             {
+                if (environment.IsDevelopment())
+                {
+                    _keyBytes = RandomNumberGenerator.GetBytes(32);
+                    return;
+                }
+
                 throw new InvalidOperationException(
                     "SignatureHmac:Key is not configured. " +
                     "Please set the 'IT_FORM__SignatureHmac__Key' machine environment variable.");
@@ -61,8 +74,16 @@ namespace IT_Form.Services
                 throw new InvalidOperationException(
                     "SignatureHmac:Key is not a valid Base64 string. Check your environment variables.", ex);
             }
+
+            if (_keyBytes.Length < 32)
+            {
+                throw new InvalidOperationException("SignatureHmac:Key must decode to at least 32 bytes.");
+            }
         }
 
+        /// <summary>
+        /// Runs the ComputeHmac operation.
+        /// </summary>
         public string ComputeHmac(string entityType, string entityId, string signerUserId, DateTime signedAtUtc, string signatureBase64)
         {
             // Fix DateTimeKind loss from SQLite which drops the trailing 'Z' when loaded from DB
@@ -77,6 +98,9 @@ namespace IT_Form.Services
             return Convert.ToHexString(hashBytes); // uppercase hex
         }
 
+        /// <summary>
+        /// Runs the Verify operation.
+        /// </summary>
         public bool Verify(string entityType, string entityId, string signerUserId, DateTime signedAtUtc, string signatureBase64, string storedHmac)
         {
             if (string.IsNullOrEmpty(storedHmac)) return false;

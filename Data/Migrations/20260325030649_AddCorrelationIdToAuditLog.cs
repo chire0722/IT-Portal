@@ -1,4 +1,6 @@
-﻿using System;
+// Project comment: 20260325030649_AddCorrelationIdToAuditLog.cs is part of the IT Form application source code.
+
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable

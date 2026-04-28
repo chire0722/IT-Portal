@@ -1,3 +1,5 @@
+// Project comment: Program.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Services;
@@ -33,6 +35,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using System.Net;
 
 
 
@@ -98,8 +101,8 @@ builder.Configuration.AddEnvironmentVariables(prefix: "IT_FORM__");
 
 if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
 {
-    // Default to listening on all interfaces for folder-published deployments.
-    builder.WebHost.UseUrls("http://0.0.0.0:5063");
+    // Prefer a loopback default. Published/LAN deployments should set ASPNETCORE_URLS explicitly.
+    builder.WebHost.UseUrls("http://127.0.0.1:5063");
 }
 
 MapsterConfig.RegisterMappings();
@@ -195,8 +198,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;           // SECURITY: Prevent CSRF via top-level navigation
     options.Cookie.Name = "YTC.IT.Auth.v2";                  // Rotate cookie name to avoid reading stale auth cookies
-    // Allow the app to run behind plain HTTP on the internal network.
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
 });
 
 // Hardened: Global Forced Logout - check security stamp on EVERY request
@@ -314,7 +318,9 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-XSRF-TOKEN"; // Support for AJAX/Fetch
     options.Cookie.Name = ".ITPortal.XSRF.v2";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
 });
 
 // Configure SmtpSettings
@@ -494,9 +500,23 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedProto |
         ForwardedHeaders.XForwardedHost;
 
-    // Trust upstream proxy entries configured at infrastructure boundary.
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    var configuredProxies = builder.Configuration
+        .GetSection("SecuritySettings:KnownProxies")
+        .Get<string[]>() ?? [];
+
+    if (configuredProxies.Length > 0)
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+
+        foreach (var configuredProxy in configuredProxies)
+        {
+            if (IPAddress.TryParse(configuredProxy, out var proxyAddress))
+            {
+                options.KnownProxies.Add(proxyAddress);
+            }
+        }
+    }
 });
 
 // Bindings are managed via launchSettings.json or environment variables
@@ -506,12 +526,15 @@ var app = builder.Build();
 // --- Middleware Pipeline ---
 app.UseForwardedHeaders();
 
-/*if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-}*/
-
-app.UseDeveloperExceptionPage();
+    app.UseHsts();
+}
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 app.Use(async (context, next) =>
 {
     if (SensitiveFileStorage.IsLegacySensitiveUploadPath(context.Request.Path))
@@ -654,8 +677,14 @@ static string ResolveSqliteConnectionString(string? connectionString, string con
     return connectionString[..dataSourceStart] + dbPath + connectionString[dataSourceEnd..];
 }
 
+/// <summary>
+/// Defines the StartupUrlGuard class used by the IT Form application.
+/// </summary>
 internal static class StartupUrlGuard
 {
+    /// <summary>
+    /// Runs the TryGetConflictingUrls operation.
+    /// </summary>
     public static bool TryGetConflictingUrls(string? urls, out IReadOnlyCollection<string> conflictingUrls)
     {
         var conflicts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -690,11 +719,17 @@ internal static class StartupUrlGuard
     }
 }
 
+/// <summary>
+/// Defines the ApiOpenApiTagResolver class used by the IT Form application.
+/// </summary>
 internal static class ApiOpenApiTagResolver
 {
     public static IReadOnlyCollection<string> All { get; } =
         ["Onboarding", "Offboarding", "Employees", "Inventory", "Audit Logs"];
 
+    /// <summary>
+    /// Runs the Resolve operation.
+    /// </summary>
     public static string? Resolve(string? relativePath)
     {
         if (string.IsNullOrWhiteSpace(relativePath))

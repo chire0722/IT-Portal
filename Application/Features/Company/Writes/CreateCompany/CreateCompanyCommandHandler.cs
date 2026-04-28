@@ -1,3 +1,5 @@
+// Project comment: CreateCompanyCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using Mapster;
 using MediatR;
@@ -6,6 +8,9 @@ using CompanyEntity = IT_Form.Models.Company;
 
 namespace IT_Form.Application.Features.Company.Writes.CreateCompany;
 
+/// <summary>
+/// Handles the CreateCompanyCommand command workflow.
+/// </summary>
 public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyCommand, int>
 {
     private readonly ApplicationDbContext _context;
@@ -19,6 +24,9 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
         _hostEnvironment = hostEnvironment;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<int> Handle(CreateCompanyCommand request, CancellationToken cancellationToken)
     {
         if (request.IsLoginPageLogo)
@@ -40,7 +48,8 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
 
         if (request.Logo != null && request.Logo.Length > 0)
         {
-            var fileName = entity.Id + "_Logo_" + Path.GetFileName(request.Logo.FileName);
+            var extension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
+            var fileName = $"{entity.Id}_Logo_{Guid.NewGuid():N}{extension}";
             var relativePath = Path.Combine("uploads", "companies", "logos", fileName).Replace("\\", "/");
             var directoryPath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "companies", "logos");
 

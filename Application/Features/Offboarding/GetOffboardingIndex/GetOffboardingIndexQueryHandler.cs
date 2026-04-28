@@ -1,3 +1,5 @@
+// Project comment: GetOffboardingIndexQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -13,6 +15,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.GetOffboardingIndex
 {
+    /// <summary>
+    /// Handles the GetOffboardingIndexQuery query workflow.
+    /// </summary>
     public sealed class GetOffboardingIndexQueryHandler
         : IRequestHandler<GetOffboardingIndexQuery, ProcessResult<OffboardingIndexPageViewModel>>
     {
@@ -30,6 +35,9 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingIndex
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OffboardingIndexPageViewModel>> Handle(GetOffboardingIndexQuery request, CancellationToken cancellationToken)
         {
             var user = _currentUserAccessor.User;

@@ -1,3 +1,5 @@
+// Project comment: DeleteUserManagementCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Support;
@@ -13,6 +15,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.UserManagement.Writes.DeleteUserManagement;
 
+/// <summary>
+/// Handles the DeleteUserManagementCommand command workflow.
+/// </summary>
 public sealed class DeleteUserManagementCommandHandler : IRequestHandler<DeleteUserManagementCommand, string>
 {
     private readonly ApplicationDbContext _context;
@@ -32,6 +37,9 @@ public sealed class DeleteUserManagementCommandHandler : IRequestHandler<DeleteU
         _logger = logger;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<string> Handle(DeleteUserManagementCommand request, CancellationToken cancellationToken)
     {
         var user = await _context.Users

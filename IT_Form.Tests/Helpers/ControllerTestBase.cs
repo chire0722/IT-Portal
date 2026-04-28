@@ -1,3 +1,5 @@
+// Project comment: ControllerTestBase.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -46,6 +48,9 @@ using Xunit;
 
 namespace IT_Form.Tests.Helpers
 {
+    /// <summary>
+    /// Defines the ControllerTestBase class used by the IT Form application.
+    /// </summary>
     public abstract class ControllerTestBase : IDisposable
     {
         protected readonly DbContextOptions<ApplicationDbContext> DbOptions;
@@ -73,6 +78,9 @@ namespace IT_Form.Tests.Helpers
             MockEncryptionService.Setup(s => s.DecryptKey(It.IsAny<string>())).Returns((string s) => s);
         }
 
+        /// <summary>
+        /// Creates data for the CreateContext operation.
+        /// </summary>
         protected ApplicationDbContext CreateContext()
         {
             return new ApplicationDbContext(DbOptions, MockHttpContextAccessor.Object, new Mock<ILogger<ApplicationDbContext>>().Object, MockEncryptionService.Object);
@@ -111,6 +119,9 @@ namespace IT_Form.Tests.Helpers
             return controller;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetConstructorArgs operation.
+        /// </summary>
         private object[] GetConstructorArgs(Type controllerType, ApplicationDbContext context)
         {
             var constructor = controllerType.GetConstructors()[0];
@@ -341,6 +352,9 @@ namespace IT_Form.Tests.Helpers
             return args.ToArray();
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildRequestServices operation.
+        /// </summary>
         private IServiceProvider BuildRequestServices()
         {
             var services = new ServiceCollection();
@@ -379,6 +393,9 @@ namespace IT_Form.Tests.Helpers
             return services.BuildServiceProvider();
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildViewResult operation.
+        /// </summary>
         private static ViewResult BuildViewResult(object? model)
         {
             return new ViewResult
@@ -392,29 +409,56 @@ namespace IT_Form.Tests.Helpers
             };
         }
 
+        /// <summary>
+        /// Gets the data required by the GetMockUserManager operation.
+        /// </summary>
         protected Mock<UserManager<ApplicationUser>> GetMockUserManager()
         {
             var store = new Mock<IUserStore<ApplicationUser>>();
             return new Mock<UserManager<ApplicationUser>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
         }
 
+        /// <summary>
+        /// Runs the Dispose operation.
+        /// </summary>
         public void Dispose()
         {
             // Cleanup database if needed
         }
     }
 
+    /// <summary>
+    /// Defines the MockSession class used by the IT Form application.
+    /// </summary>
     public class MockSession : ISession
     {
         private readonly Dictionary<string, byte[]> _data = new();
         public bool IsAvailable => true;
         public string Id => Guid.NewGuid().ToString();
         public IEnumerable<string> Keys => _data.Keys;
+        /// <summary>
+        /// Runs the Clear operation.
+        /// </summary>
         public void Clear() => _data.Clear();
+        /// <summary>
+        /// Runs the CommitAsync operation.
+        /// </summary>
         public Task CommitAsync(System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+        /// <summary>
+        /// Runs the LoadAsync operation.
+        /// </summary>
         public Task LoadAsync(System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+        /// <summary>
+        /// Runs the Remove operation.
+        /// </summary>
         public void Remove(string key) => _data.Remove(key);
+        /// <summary>
+        /// Runs the Set operation.
+        /// </summary>
         public void Set(string key, byte[] value) => _data[key] = value;
+        /// <summary>
+        /// Runs the TryGetValue operation.
+        /// </summary>
         public bool TryGetValue(string key, out byte[] value) => _data.TryGetValue(key, out value!);
     }
 }

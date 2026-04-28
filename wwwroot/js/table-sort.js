@@ -1,3 +1,5 @@
+// Project comment: table-sort.js contains client-side behavior used by the IT Form web interface.
+
 // Table-sort: click column headers to sort asc/desc
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('th[data-sort]').forEach(function (th) {

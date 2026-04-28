@@ -1,3 +1,5 @@
+// Project comment: SharedMailboxReportQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -12,9 +14,18 @@ using System.Text;
 
 namespace IT_Form.Application.Features.SharedMailbox
 {
+    /// <summary>
+    /// Carries data needed to execute the GetSharedMailboxReportPage query.
+    /// </summary>
     public sealed record GetSharedMailboxReportPageQuery(int? Id, string? SearchString, int Page = 1) : IRequest<ProcessResult<SharedMailboxReportPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the ExportSharedMailboxReportCsv query.
+    /// </summary>
     public sealed record ExportSharedMailboxReportCsvQuery(int? Id, string? SearchString) : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the GetSharedMailboxReportPageQuery query workflow.
+    /// </summary>
     public sealed class GetSharedMailboxReportPageQueryHandler : IRequestHandler<GetSharedMailboxReportPageQuery, ProcessResult<SharedMailboxReportPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -26,6 +37,9 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<SharedMailboxReportPageViewModel>> Handle(GetSharedMailboxReportPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -76,6 +90,9 @@ namespace IT_Form.Application.Features.SharedMailbox
         }
     }
 
+    /// <summary>
+    /// Handles the ExportSharedMailboxReportCsvQuery query workflow.
+    /// </summary>
     public sealed class ExportSharedMailboxReportCsvQueryHandler : IRequestHandler<ExportSharedMailboxReportCsvQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -87,6 +104,9 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(ExportSharedMailboxReportCsvQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -147,8 +167,14 @@ namespace IT_Form.Application.Features.SharedMailbox
         }
     }
 
+    /// <summary>
+    /// Defines the SharedMailboxReportBuilder class used by the IT Form application.
+    /// </summary>
     internal static class SharedMailboxReportBuilder
     {
+        /// <summary>
+        /// Builds the value returned by the BuildReportQuery operation.
+        /// </summary>
         public static IQueryable<SharedMailboxAccessReportViewModel> BuildReportQuery(
             ApplicationDbContext context,
             int? mailboxId,

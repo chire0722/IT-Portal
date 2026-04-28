@@ -1,9 +1,14 @@
+// Project comment: UpdateServerFolderCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ServerFolders.Writes.UpdateServerFolder;
 
+/// <summary>
+/// Validates input for the UpdateServerFolderCommand request.
+/// </summary>
 public sealed class UpdateServerFolderCommandValidator : AbstractValidator<UpdateServerFolderCommand>
 {
     public UpdateServerFolderCommandValidator(ApplicationDbContext context)

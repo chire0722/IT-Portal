@@ -1,3 +1,5 @@
+// Project comment: DepartmentFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.IO;
 using System.Linq;
@@ -22,6 +24,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the DepartmentFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class DepartmentFeatureSliceTests
 {
     public DepartmentFeatureSliceTests()
@@ -30,6 +35,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateDepartmentValidator_Fails_WhenNameMissing operation.
+    /// </summary>
     public async Task CreateDepartmentValidator_Fails_WhenNameMissing()
     {
         using var context = CreateContext();
@@ -43,6 +51,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateDepartmentValidator_Fails_WhenNameIsDuplicate operation.
+    /// </summary>
     public async Task CreateDepartmentValidator_Fails_WhenNameIsDuplicate()
     {
         using var context = CreateContext();
@@ -58,6 +69,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateDepartmentHandler_CreatesDepartment_WithDescriptionAndCompanies operation.
+    /// </summary>
     public async Task CreateDepartmentHandler_CreatesDepartment_WithDescriptionAndCompanies()
     {
         using var context = CreateContext();
@@ -82,6 +96,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies operation.
+    /// </summary>
     public async Task CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies()
     {
         using var context = CreateContext();
@@ -107,6 +124,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateDepartmentHandler_ThrowsNotFound_WhenDepartmentMissing operation.
+    /// </summary>
     public async Task UpdateDepartmentHandler_ThrowsNotFound_WhenDepartmentMissing()
     {
         using var context = CreateContext();
@@ -119,6 +139,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteDepartmentHandler_DeletesDepartment_WhenFound operation.
+    /// </summary>
     public async Task DeleteDepartmentHandler_DeletesDepartment_WhenFound()
     {
         using var context = CreateContext();
@@ -138,6 +161,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ImportDepartmentsValidator_Fails_WhenFileMissing operation.
+    /// </summary>
     public void ImportDepartmentsValidator_Fails_WhenFileMissing()
     {
         var validator = new ImportDepartmentsCommandValidator();
@@ -148,6 +174,9 @@ public class DepartmentFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ImportDepartmentsHandler_CreatesDepartment_WithDescription_FromNewTemplate operation.
+    /// </summary>
     public async Task ImportDepartmentsHandler_CreatesDepartment_WithDescription_FromNewTemplate()
     {
         using var context = CreateContext();
@@ -181,6 +210,9 @@ public class DepartmentFeatureSliceTests
         Assert.Equal("Handles finance operations.", department.Description);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

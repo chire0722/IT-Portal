@@ -1,8 +1,13 @@
+// Project comment: Company.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Helpers;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the Company class used by the IT Form application.
+    /// </summary>
     public class Company
     {
         public int Id { get; set; }

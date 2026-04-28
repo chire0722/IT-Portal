@@ -1,7 +1,12 @@
+// Project comment: VerifyOtpCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Account.VerifyOtp
 {
+    /// <summary>
+    /// Validates input for the VerifyOtpCommand request.
+    /// </summary>
     public sealed class VerifyOtpCommandValidator : AbstractValidator<VerifyOtpCommand>
     {
         public VerifyOtpCommandValidator()

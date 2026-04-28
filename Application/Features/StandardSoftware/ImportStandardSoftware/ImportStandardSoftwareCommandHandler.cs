@@ -1,3 +1,5 @@
+// Project comment: ImportStandardSoftwareCommandHandler.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Data;
 using IT_Form.Application.Features.StandardSoftware;
@@ -7,6 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 {
+    /// <summary>
+    /// Handles the ImportStandardSoftwareCommand command workflow.
+    /// </summary>
     public sealed class ImportStandardSoftwareCommandHandler : IRequestHandler<ImportStandardSoftwareCommand, ImportStandardSoftwareResult>
     {
         private readonly ApplicationDbContext _context;
@@ -16,6 +21,9 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
             _context = context;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ImportStandardSoftwareResult> Handle(ImportStandardSoftwareCommand request, CancellationToken cancellationToken)
         {
             if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage))

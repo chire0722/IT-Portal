@@ -1,3 +1,5 @@
+// Project comment: EmailGroupFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,9 +23,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the EmailGroupFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class EmailGroupFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateEmailGroupValidator_Fails_WhenEmailInvalid operation.
+    /// </summary>
     public async Task CreateEmailGroupValidator_Fails_WhenEmailInvalid()
     {
         using var context = CreateContext();
@@ -35,6 +43,9 @@ public class EmailGroupFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateEmailGroupHandler_ThrowsNotFound_WhenGroupMissing operation.
+    /// </summary>
     public async Task UpdateEmailGroupHandler_ThrowsNotFound_WhenGroupMissing()
     {
         using var context = CreateContext();
@@ -45,6 +56,9 @@ public class EmailGroupFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteEmailGroupHandler_Deletes_WhenFound operation.
+    /// </summary>
     public async Task DeleteEmailGroupHandler_Deletes_WhenFound()
     {
         using var context = CreateContext();
@@ -59,6 +73,9 @@ public class EmailGroupFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddCurrentEmployeeHandler_ReturnsAlreadyExists_WhenAlreadyAssigned operation.
+    /// </summary>
     public async Task AddCurrentEmployeeHandler_ReturnsAlreadyExists_WhenAlreadyAssigned()
     {
         using var context = CreateContext();
@@ -76,6 +93,9 @@ public class EmailGroupFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AddCurrentEmployeeHandler_AllowsItUserAcrossCompanies operation.
+    /// </summary>
     public async Task AddCurrentEmployeeHandler_AllowsItUserAcrossCompanies()
     {
         using var context = CreateContext();
@@ -111,6 +131,9 @@ public class EmailGroupFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ImportEmailGroupsValidator_Fails_WhenFileMissing operation.
+    /// </summary>
     public void ImportEmailGroupsValidator_Fails_WhenFileMissing()
     {
         var validator = new ImportEmailGroupsCommandValidator();
@@ -120,6 +143,9 @@ public class EmailGroupFeatureSliceTests
         Assert.False(result.IsValid);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

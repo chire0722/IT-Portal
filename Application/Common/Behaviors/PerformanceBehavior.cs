@@ -1,9 +1,14 @@
+// Project comment: PerformanceBehavior.cs is part of the IT Form application source code.
+
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
 namespace IT_Form.Application.Common.Behaviors
 {
+    /// <summary>
+    /// Defines the PerformanceBehavior class used by the IT Form application.
+    /// </summary>
     public sealed class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -17,6 +22,9 @@ namespace IT_Form.Application.Common.Behaviors
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<TResponse> Handle(
             TRequest request,
             RequestHandlerDelegate<TResponse> next,
@@ -49,6 +57,9 @@ namespace IT_Form.Application.Common.Behaviors
             return response;
         }
 
+        /// <summary>
+        /// Runs the ResolveWarningThreshold operation.
+        /// </summary>
         private static TimeSpan ResolveWarningThreshold(string requestName)
         {
             if (requestName.EndsWith("Command", StringComparison.Ordinal))

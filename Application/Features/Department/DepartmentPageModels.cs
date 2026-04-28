@@ -1,8 +1,13 @@
+// Project comment: DepartmentPageModels.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Application.Common.Models;
 
 namespace IT_Form.Application.Features.Department;
 
+/// <summary>
+/// Defines the DepartmentIndexListItem class used by the IT Form application.
+/// </summary>
 public sealed class DepartmentIndexListItem
 {
     public int Id { get; init; }
@@ -11,6 +16,9 @@ public sealed class DepartmentIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+/// <summary>
+/// Provides view data for the DepartmentEditorPage screen or form.
+/// </summary>
 public sealed class DepartmentEditorPageViewModel
 {
     public int Id { get; set; }

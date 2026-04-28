@@ -1,3 +1,5 @@
+// Project comment: ImportSharedMailboxesCommandHandler.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.SharedMailbox.ImportSharedMailboxes
 {
+    /// <summary>
+    /// Handles the ImportSharedMailboxesCommand command workflow.
+    /// </summary>
     public sealed class ImportSharedMailboxesCommandHandler : IRequestHandler<ImportSharedMailboxesCommand, ImportSharedMailboxesResult>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.SharedMailbox.ImportSharedMailboxes
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ImportSharedMailboxesResult> Handle(ImportSharedMailboxesCommand request, CancellationToken cancellationToken)
         {
             if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage))

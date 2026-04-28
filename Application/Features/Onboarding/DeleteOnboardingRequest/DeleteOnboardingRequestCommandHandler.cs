@@ -1,3 +1,5 @@
+// Project comment: DeleteOnboardingRequestCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.DeleteOnboardingRequest
 {
+    /// <summary>
+    /// Handles the DeleteOnboardingRequestCommand command workflow.
+    /// </summary>
     public sealed class DeleteOnboardingRequestCommandHandler
         : IRequestHandler<DeleteOnboardingRequestCommand, ProcessResult<object>>
     {
@@ -25,6 +30,9 @@ namespace IT_Form.Application.Features.Onboarding.DeleteOnboardingRequest
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(DeleteOnboardingRequestCommand request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests

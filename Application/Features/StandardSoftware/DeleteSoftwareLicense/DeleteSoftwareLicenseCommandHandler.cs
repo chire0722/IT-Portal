@@ -1,9 +1,14 @@
+// Project comment: DeleteSoftwareLicenseCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareLicense
 {
+    /// <summary>
+    /// Handles the DeleteSoftwareLicenseCommand command workflow.
+    /// </summary>
     public sealed class DeleteSoftwareLicenseCommandHandler : IRequestHandler<DeleteSoftwareLicenseCommand, DeleteSoftwareLicenseResult>
     {
         private readonly ApplicationDbContext _context;
@@ -13,6 +18,9 @@ namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareLicense
             _context = context;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<DeleteSoftwareLicenseResult> Handle(DeleteSoftwareLicenseCommand request, CancellationToken cancellationToken)
         {
             var license = await _context.SoftwareLicenses

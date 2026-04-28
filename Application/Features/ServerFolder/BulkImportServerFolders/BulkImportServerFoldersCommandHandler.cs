@@ -1,3 +1,5 @@
+// Project comment: BulkImportServerFoldersCommandHandler.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
 {
+    /// <summary>
+    /// Handles the BulkImportServerFoldersCommand command workflow.
+    /// </summary>
     public sealed class BulkImportServerFoldersCommandHandler : IRequestHandler<BulkImportServerFoldersCommand, BulkImportServerFoldersResult>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<BulkImportServerFoldersResult> Handle(BulkImportServerFoldersCommand request, CancellationToken cancellationToken)
         {
             if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage))

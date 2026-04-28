@@ -1,3 +1,5 @@
+// Project comment: EditSoftwareLicenseCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using FluentValidation;
 using FluentValidation.Results;
@@ -10,6 +12,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense
 {
+    /// <summary>
+    /// Handles the EditSoftwareLicenseCommand command workflow.
+    /// </summary>
     public sealed class EditSoftwareLicenseCommandHandler : IRequestHandler<EditSoftwareLicenseCommand, EditSoftwareLicenseResult>
     {
         private readonly ApplicationDbContext _context;
@@ -21,6 +26,9 @@ namespace IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<EditSoftwareLicenseResult> Handle(EditSoftwareLicenseCommand request, CancellationToken cancellationToken)
         {
             var license = await _context.SoftwareLicenses
@@ -92,6 +100,9 @@ namespace IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense
             return new EditSoftwareLicenseResult(EditSoftwareLicenseStatus.Updated, "Version updated.");
         }
 
+        /// <summary>
+        /// Runs the EnsureExistingLicenseIsInScopeAsync operation.
+        /// </summary>
         private async Task EnsureExistingLicenseIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
         {
             if (ItAdminCompanyScopeSupport.HasGlobalAccess(_currentUserAccessor.User))
@@ -113,6 +124,9 @@ namespace IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense
             }
         }
 
+        /// <summary>
+        /// Runs the EnsureRequestedCompaniesAreAllowedAsync operation.
+        /// </summary>
         private async Task EnsureRequestedCompaniesAreAllowedAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
         {
             var requestedCompanyIds = selectedCompanyIds

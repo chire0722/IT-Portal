@@ -1,3 +1,5 @@
+// Project comment: CreateStandardSoftwareCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using Mapster;
 using MediatR;
@@ -5,6 +7,9 @@ using StandardSoftwareEntity = IT_Form.Models.StandardSoftware;
 
 namespace IT_Form.Application.Features.StandardSoftware.Writes.CreateStandardSoftware;
 
+/// <summary>
+/// Handles the CreateStandardSoftwareCommand command workflow.
+/// </summary>
 public sealed class CreateStandardSoftwareCommandHandler : IRequestHandler<CreateStandardSoftwareCommand, int>
 {
     private readonly ApplicationDbContext _context;
@@ -14,6 +19,9 @@ public sealed class CreateStandardSoftwareCommandHandler : IRequestHandler<Creat
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<int> Handle(CreateStandardSoftwareCommand request, CancellationToken cancellationToken)
     {
         var entity = request.Adapt<StandardSoftwareEntity>();

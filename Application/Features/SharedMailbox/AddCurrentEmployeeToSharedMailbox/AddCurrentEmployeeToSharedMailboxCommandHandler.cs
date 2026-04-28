@@ -1,3 +1,5 @@
+// Project comment: AddCurrentEmployeeToSharedMailboxCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.SharedMailbox.AddCurrentEmployeeToSharedMailbox
 {
+    /// <summary>
+    /// Handles the AddCurrentEmployeeToSharedMailboxCommand command workflow.
+    /// </summary>
     public sealed class AddCurrentEmployeeToSharedMailboxCommandHandler : IRequestHandler<AddCurrentEmployeeToSharedMailboxCommand, AddCurrentEmployeeToSharedMailboxResult>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.SharedMailbox.AddCurrentEmployeeToSharedM
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<AddCurrentEmployeeToSharedMailboxResult> Handle(AddCurrentEmployeeToSharedMailboxCommand request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

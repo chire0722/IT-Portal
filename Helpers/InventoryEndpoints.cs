@@ -1,3 +1,5 @@
+// Project comment: InventoryEndpoints.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
@@ -6,8 +8,14 @@ using System.Text.Json;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the InventoryEndpoints class used by the IT Form application.
+    /// </summary>
     public static class InventoryEndpoints
     {
+        /// <summary>
+        /// Maps data for the MapInventoryEndpoints operation.
+        /// </summary>
         public static void MapInventoryEndpoints(this IEndpointRouteBuilder app)
         {
             app.MapPost("/api/inventory/sync", async (HardwareReport report, HttpContext httpContext, ApplicationDbContext dbContext, IConfiguration config) =>
@@ -168,6 +176,9 @@ namespace IT_Form.Helpers
             .RequireRateLimiting("strict");
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyVerificationAssignmentAsync operation.
+        /// </summary>
         public static async Task ApplyVerificationAssignmentAsync(
             ApplicationDbContext dbContext,
             ITAsset asset,
@@ -211,6 +222,9 @@ namespace IT_Form.Helpers
             });
         }
 
+    /// <summary>
+    /// Runs the ResolveVerificationAssignmentAsync operation.
+    /// </summary>
     public static async Task<InventoryVerificationAssignment?> ResolveVerificationAssignmentAsync(
         ApplicationDbContext dbContext,
         string? applicationUserId)
@@ -261,10 +275,16 @@ namespace IT_Form.Helpers
                     : null;
         }
 
+        /// <summary>
+        /// Runs the HasExpiredVerificationToken operation.
+        /// </summary>
         private static bool HasExpiredVerificationToken(DeviceVerificationToken token, int tokenLifetimeMinutes)
             => !string.IsNullOrWhiteSpace(token.EmployeeId) &&
                token.CreatedAt.AddMinutes(tokenLifetimeMinutes) <= DateTime.UtcNow;
 
+        /// <summary>
+        /// Applies changes for the ApplyHardwareFingerprintTelemetry operation.
+        /// </summary>
         public static HardwareFingerprintSyncResult ApplyHardwareFingerprintTelemetry(
             ITAsset asset,
             string? incomingHardwareHash,
@@ -321,9 +341,15 @@ namespace IT_Form.Helpers
                 asset.HardwareFingerprintWarning);
         }
 
+        /// <summary>
+        /// Runs the NormalizeFingerprintValue operation.
+        /// </summary>
         private static string? NormalizeFingerprintValue(string? value)
             => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+        /// <summary>
+        /// Builds the value returned by the BuildHardwareFingerprintWarning operation.
+        /// </summary>
         private static string BuildHardwareFingerprintWarning(ITAsset asset)
         {
             var assetLabel = string.IsNullOrWhiteSpace(asset.AssetTag)
@@ -334,6 +360,9 @@ namespace IT_Form.Helpers
         }
     }
 
+    /// <summary>
+    /// Defines the HardwareReport record used by the IT Form application.
+    /// </summary>
     public record HardwareReport(
         string? EmployeeId,
         string SN,
@@ -348,10 +377,16 @@ namespace IT_Form.Helpers
         string? HardwareHash = null,
         JsonElement? Audit = null);
 
+    /// <summary>
+    /// Defines the InventoryVerificationAssignment record used by the IT Form application.
+    /// </summary>
     public sealed record InventoryVerificationAssignment(
         int? OnboardingRequestId,
         string? CustomEmployeeName);
 
+    /// <summary>
+    /// Represents the result returned by the HardwareFingerprintSync workflow.
+    /// </summary>
     public sealed record HardwareFingerprintSyncResult(
         bool IsMismatch,
         string? WarningMessage);

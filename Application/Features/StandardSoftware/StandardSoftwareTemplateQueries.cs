@@ -1,14 +1,25 @@
+// Project comment: StandardSoftwareTemplateQueries.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Models;
 using MediatR;
 
 namespace IT_Form.Application.Features.StandardSoftware
 {
+    /// <summary>
+    /// Carries data needed to execute the DownloadStandardSoftwareTemplate query.
+    /// </summary>
     public sealed record DownloadStandardSoftwareTemplateQuery() : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the DownloadStandardSoftwareTemplateQuery query workflow.
+    /// </summary>
     public sealed class DownloadStandardSoftwareTemplateQueryHandler
         : IRequestHandler<DownloadStandardSoftwareTemplateQuery, ProcessResult<BinaryFilePayload>>
     {
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public Task<ProcessResult<BinaryFilePayload>> Handle(DownloadStandardSoftwareTemplateQuery request, CancellationToken cancellationToken)
         {
             using var workbook = new XLWorkbook();

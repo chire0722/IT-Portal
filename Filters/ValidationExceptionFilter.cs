@@ -1,3 +1,5 @@
+// Project comment: ValidationExceptionFilter.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +9,9 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace IT_Form.Filters
 {
+    /// <summary>
+    /// Defines the ValidationExceptionFilter class used by the IT Form application.
+    /// </summary>
     public sealed class ValidationExceptionFilter : IAsyncExceptionFilter
     {
         private readonly ITempDataDictionaryFactory _tempDataDictionaryFactory;
@@ -16,6 +21,9 @@ namespace IT_Form.Filters
             _tempDataDictionaryFactory = tempDataDictionaryFactory;
         }
 
+        /// <summary>
+        /// Runs the OnExceptionAsync operation.
+        /// </summary>
         public Task OnExceptionAsync(ExceptionContext context)
         {
             if (context.Exception is not ValidationException validationException)
@@ -64,10 +72,16 @@ namespace IT_Form.Filters
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Runs the HasModelLevelError operation.
+        /// </summary>
         private static bool HasModelLevelError(ExceptionContext context, string message)
             => context.ModelState.TryGetValue(string.Empty, out var entry) &&
                entry.Errors.Any(error => string.Equals(error.ErrorMessage, message, StringComparison.Ordinal));
 
+        /// <summary>
+        /// Runs the IsApiRequest operation.
+        /// </summary>
         private static bool IsApiRequest(ExceptionContext context)
             => context.HttpContext.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
     }

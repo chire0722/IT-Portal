@@ -1,3 +1,5 @@
+// Project comment: UpdateEmailGroupCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -12,6 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.EmailGroups.Writes.UpdateEmailGroup;
 
+/// <summary>
+/// Handles the UpdateEmailGroupCommand command workflow.
+/// </summary>
 public sealed class UpdateEmailGroupCommandHandler : IRequestHandler<UpdateEmailGroupCommand, Unit>
 {
     private readonly ApplicationDbContext _context;
@@ -23,6 +28,9 @@ public sealed class UpdateEmailGroupCommandHandler : IRequestHandler<UpdateEmail
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(UpdateEmailGroupCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.EmailGroups
@@ -70,6 +78,9 @@ public sealed class UpdateEmailGroupCommandHandler : IRequestHandler<UpdateEmail
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the EnsureExistingEmailGroupIsInScopeAsync operation.
+    /// </summary>
     private async Task EnsureExistingEmailGroupIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
     {
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -85,6 +96,9 @@ public sealed class UpdateEmailGroupCommandHandler : IRequestHandler<UpdateEmail
         }
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
         var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(

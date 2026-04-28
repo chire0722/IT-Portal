@@ -1,3 +1,5 @@
+// Project comment: DeleteDepartmentCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Departments.Writes.DeleteDepartment;
 
+/// <summary>
+/// Handles the DeleteDepartmentCommand command workflow.
+/// </summary>
 public sealed class DeleteDepartmentCommandHandler : IRequestHandler<DeleteDepartmentCommand, Unit>
 {
     private readonly ApplicationDbContext _context;
@@ -22,6 +27,9 @@ public sealed class DeleteDepartmentCommandHandler : IRequestHandler<DeleteDepar
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(DeleteDepartmentCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Departments
@@ -42,6 +50,9 @@ public sealed class DeleteDepartmentCommandHandler : IRequestHandler<DeleteDepar
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the EnsureExistingDepartmentIsInScopeAsync operation.
+    /// </summary>
     private async Task EnsureExistingDepartmentIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
     {
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

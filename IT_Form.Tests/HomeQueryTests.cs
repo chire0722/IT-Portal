@@ -1,3 +1,5 @@
+// Project comment: HomeQueryTests.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Mapping;
@@ -15,6 +17,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the HomeQueryTests class used by the IT Form application.
+/// </summary>
 public class HomeQueryTests
 {
     public HomeQueryTests()
@@ -23,6 +28,9 @@ public class HomeQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AnalyticsQuery_ReturnsForbidden_ForNonHrAndNonItUsers operation.
+    /// </summary>
     public async Task AnalyticsQuery_ReturnsForbidden_ForNonHrAndNonItUsers()
     {
         await using var context = CreateContext();
@@ -36,6 +44,9 @@ public class HomeQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AnalyticsQuery_BuildsMonthlyTrendFromGroupedQueries operation.
+    /// </summary>
     public async Task AnalyticsQuery_BuildsMonthlyTrendFromGroupedQueries()
     {
         await using var context = CreateContext();
@@ -108,6 +119,9 @@ public class HomeQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AnalyticsQuery_FiltersMetricsBySelectedCompany operation.
+    /// </summary>
     public async Task AnalyticsQuery_FiltersMetricsBySelectedCompany()
     {
         await using var context = CreateContext();
@@ -293,6 +307,9 @@ public class HomeQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AnalyticsQuery_UsesAssignedCompanyScope_WhenNoCompanyIsSelected operation.
+    /// </summary>
     public async Task AnalyticsQuery_UsesAssignedCompanyScope_WhenNoCompanyIsSelected()
     {
         await using var context = CreateContext();
@@ -375,6 +392,9 @@ public class HomeQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the DashboardQuery_FiltersPendingQueues_ByItAssignedCompany operation.
+    /// </summary>
     public async Task DashboardQuery_FiltersPendingQueues_ByItAssignedCompany()
     {
         await using var context = CreateContext();
@@ -485,6 +505,9 @@ public class HomeQueryTests
         Assert.Equal(["Alpha Exit Awaiting Sign"], result.ViewModel.PendingEmployeeSignOffboarding.Select(item => item.FullName!).ToArray());
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -501,6 +524,9 @@ public class HomeQueryTests
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Defines the TestCurrentUserAccessor class used by the IT Form application.
+    /// </summary>
     private sealed class TestCurrentUserAccessor : ICurrentUserAccessor
     {
         public TestCurrentUserAccessor(string userName, string userId, params string[] titles)

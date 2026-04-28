@@ -1,3 +1,5 @@
+// Project comment: ServerFolderTemplateQueries.cs is part of the IT Form application source code.
+
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -9,8 +11,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ServerFolder
 {
+    /// <summary>
+    /// Carries data needed to execute the DownloadServerFolderTemplate query.
+    /// </summary>
     public sealed record DownloadServerFolderTemplateQuery() : IRequest<ProcessResult<BinaryFilePayload>>;
 
+    /// <summary>
+    /// Handles the DownloadServerFolderTemplateQuery query workflow.
+    /// </summary>
     public sealed class DownloadServerFolderTemplateQueryHandler : IRequestHandler<DownloadServerFolderTemplateQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
@@ -22,6 +30,9 @@ namespace IT_Form.Application.Features.ServerFolder
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(DownloadServerFolderTemplateQuery request, CancellationToken cancellationToken)
         {
             var companyDisplayNames = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyDisplayNamesAsync(

@@ -1,7 +1,12 @@
+// Project comment: ProcessOnboardingSignatureCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Onboarding.ActionWrites
 {
+    /// <summary>
+    /// Validates input for the ProcessOnboardingSignatureCommand request.
+    /// </summary>
     public sealed class ProcessOnboardingSignatureCommandValidator : AbstractValidator<ProcessOnboardingSignatureCommand>
     {
         public ProcessOnboardingSignatureCommandValidator()

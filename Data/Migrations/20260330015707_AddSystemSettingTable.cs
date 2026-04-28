@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+// Project comment: 20260330015707_AddSystemSettingTable.cs is part of the IT Form application source code.
+
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 

@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingDetailsQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
@@ -13,6 +15,9 @@ using CompanyEntity = IT_Form.Models.Company;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
 {
+    /// <summary>
+    /// Handles the GetOnboardingDetailsQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingDetailsQueryHandler : IRequestHandler<GetOnboardingDetailsQuery, GetOnboardingDetailsResult>
     {
         private readonly ApplicationDbContext _context;
@@ -32,6 +37,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<GetOnboardingDetailsResult> Handle(GetOnboardingDetailsQuery request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests
@@ -98,6 +106,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
                 viewModel);
         }
 
+        /// <summary>
+        /// Runs the VerifyIntegrity operation.
+        /// </summary>
         private string? VerifyIntegrity(OnboardingRequest request)
         {
             try
@@ -128,6 +139,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
             return null;
         }
 
+        /// <summary>
+        /// Runs the ResolveCompanyAsync operation.
+        /// </summary>
         private async Task<CompanyEntity?> ResolveCompanyAsync(string? branchName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(branchName))
@@ -142,6 +156,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
             return CompanyBusinessHoursHelper.ResolveCompany(companies, branchName);
         }
 
+        /// <summary>
+        /// Runs the Empty operation.
+        /// </summary>
         private static GetOnboardingDetailsResult Empty(GetOnboardingDetailsStatus status)
             => new(status, null);
     }

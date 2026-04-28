@@ -1,3 +1,5 @@
+// Project comment: AuditLogApiFlowTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Linq;
 using System.Threading;
@@ -17,6 +19,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the AuditLogApiFlowTests class used by the IT Form application.
+/// </summary>
 public class AuditLogApiFlowTests
 {
     public AuditLogApiFlowTests()
@@ -25,6 +30,9 @@ public class AuditLogApiFlowTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetList_ReturnsProjectedItemsAndPagination operation.
+    /// </summary>
     public async Task GetList_ReturnsProjectedItemsAndPagination()
     {
         await using var context = CreateContext();
@@ -82,6 +90,9 @@ public class AuditLogApiFlowTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetDetails_MapsDerivedFields operation.
+    /// </summary>
     public async Task GetDetails_MapsDerivedFields()
     {
         await using var context = CreateContext();
@@ -113,6 +124,9 @@ public class AuditLogApiFlowTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetChain_FailuresOnly_KeepsAnchorAndFailures operation.
+    /// </summary>
     public async Task GetChain_FailuresOnly_KeepsAnchorAndFailures()
     {
         await using var context = CreateContext();
@@ -172,6 +186,9 @@ public class AuditLogApiFlowTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetSummary_ReturnsAggregatedCounts operation.
+    /// </summary>
     public async Task GetSummary_ReturnsAggregatedCounts()
     {
         await using var context = CreateContext();
@@ -230,6 +247,9 @@ public class AuditLogApiFlowTests
         Assert.Single(result.FailureTrend);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

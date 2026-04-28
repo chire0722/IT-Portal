@@ -1,3 +1,5 @@
+// Project comment: QuickAllocateSubscriptionSeatCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Services;
@@ -5,6 +7,9 @@ using MediatR;
 
 namespace IT_Form.Application.Features.StandardSoftware.QuickAllocateSubscriptionSeat
 {
+    /// <summary>
+    /// Handles the QuickAllocateSubscriptionSeatCommand command workflow.
+    /// </summary>
     public sealed class QuickAllocateSubscriptionSeatCommandHandler : IRequestHandler<QuickAllocateSubscriptionSeatCommand, QuickAllocateSubscriptionSeatResult>
     {
         private readonly ApplicationDbContext _context;
@@ -15,6 +20,9 @@ namespace IT_Form.Application.Features.StandardSoftware.QuickAllocateSubscriptio
             _context = context;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<QuickAllocateSubscriptionSeatResult> Handle(QuickAllocateSubscriptionSeatCommand request, CancellationToken cancellationToken)
         {
             var license = await _context.SoftwareLicenses.FindAsync(new object[] { request.SoftwareId }, cancellationToken);

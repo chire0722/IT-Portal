@@ -1,3 +1,5 @@
+// Project comment: UserManagementDynamicTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,8 +24,14 @@ using MediatR;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the UserManagementDynamicTests class used by the IT Form application.
+    /// </summary>
     public class UserManagementDynamicTests
     {
+        /// <summary>
+        /// Gets the data required by the GetContext operation.
+        /// </summary>
         private ApplicationDbContext GetContext()
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -38,6 +46,9 @@ namespace IT_Form.Tests
             return new ApplicationDbContext(options, mockHttpContextAccessor.Object, mockDbLogger.Object, mockLicenseEncryption.Object);
         }
 
+        /// <summary>
+        /// Gets the data required by the GetController operation.
+        /// </summary>
         private UserManagementController GetController(ApplicationDbContext context)
         {
             var sender = new Mock<ISender>();
@@ -78,6 +89,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Creates data for the Create_Post_AssignsMultipleCompanies operation.
+        /// </summary>
         public async Task Create_Post_AssignsMultipleCompanies()
         {
             using var context = GetContext();

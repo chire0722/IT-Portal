@@ -1,3 +1,5 @@
+// Project comment: ExcelReader.cs is part of the IT Form application source code.
+
 using System;
 using System.IO;
 using ClosedXML.Excel;

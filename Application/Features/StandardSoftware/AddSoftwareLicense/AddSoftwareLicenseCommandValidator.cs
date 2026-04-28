@@ -1,7 +1,12 @@
+// Project comment: AddSoftwareLicenseCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
 {
+    /// <summary>
+    /// Validates input for the AddSoftwareLicenseCommand request.
+    /// </summary>
     public sealed class AddSoftwareLicenseCommandValidator : AbstractValidator<AddSoftwareLicenseCommand>
     {
         public AddSoftwareLicenseCommandValidator()

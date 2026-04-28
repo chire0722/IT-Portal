@@ -1,3 +1,5 @@
+// Project comment: MapsterConfig.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Department;
 using IT_Form.Application.Features.Account.Queries.GetProfilePage;
@@ -45,10 +47,16 @@ using StandardSoftwareEntity = IT_Form.Models.StandardSoftware;
 
 namespace IT_Form.Application.Common.Mapping;
 
+/// <summary>
+/// Defines the MapsterConfig class used by the IT Form application.
+/// </summary>
 public static class MapsterConfig
 {
     private static bool _isRegistered;
 
+    /// <summary>
+    /// Runs the RegisterMappings operation.
+    /// </summary>
     public static void RegisterMappings()
     {
         if (_isRegistered)
@@ -647,6 +655,9 @@ public static class MapsterConfig
             page.HasPreviousPage,
             page.HasNextPage);
 
+    /// <summary>
+    /// Builds the value returned by the BuildOnboardingSignatures operation.
+    /// </summary>
     private static IReadOnlyCollection<SignatureApiItem> BuildOnboardingSignatures(OnboardingDetailsPageViewModel source)
         => new List<SignatureApiItem>
         {
@@ -657,6 +668,9 @@ public static class MapsterConfig
         .Where(signature => signature.SignedAt.HasValue || !string.IsNullOrWhiteSpace(signature.SignerName))
         .ToList();
 
+    /// <summary>
+    /// Builds the value returned by the BuildOffboardingSignatures operation.
+    /// </summary>
     private static IReadOnlyCollection<SignatureApiItem> BuildOffboardingSignatures(OffboardingDetailsPageViewModel source)
         => new List<SignatureApiItem>
         {

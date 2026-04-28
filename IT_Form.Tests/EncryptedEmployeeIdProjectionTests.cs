@@ -1,3 +1,5 @@
+// Project comment: EncryptedEmployeeIdProjectionTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.EmailGroup;
 using IT_Form.Application.Features.Offboarding.Create;
@@ -14,6 +16,9 @@ using Moq;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the EncryptedEmployeeIdProjectionTests class used by the IT Form application.
+/// </summary>
 public sealed class EncryptedEmployeeIdProjectionTests
 {
     public EncryptedEmployeeIdProjectionTests()
@@ -22,6 +27,9 @@ public sealed class EncryptedEmployeeIdProjectionTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EmailGroupMembersQuery_ReturnsDecryptedEmployeeIdLabels_WithSqliteEncryption operation.
+    /// </summary>
     public async Task EmailGroupMembersQuery_ReturnsDecryptedEmployeeIdLabels_WithSqliteEncryption()
     {
         await using var harness = await CreateSqliteHarnessAsync();
@@ -75,6 +83,9 @@ public sealed class EncryptedEmployeeIdProjectionTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the OffboardingEmployeeDetailsQuery_ReturnsDecryptedEmployeeId_WithSqliteEncryption operation.
+    /// </summary>
     public async Task OffboardingEmployeeDetailsQuery_ReturnsDecryptedEmployeeId_WithSqliteEncryption()
     {
         await using var harness = await CreateSqliteHarnessAsync();
@@ -107,6 +118,9 @@ public sealed class EncryptedEmployeeIdProjectionTests
         Assert.Equal("Finance", model.Department);
     }
 
+    /// <summary>
+    /// Creates data for the CreateSqliteHarnessAsync operation.
+    /// </summary>
     private static async Task<SqliteHarness> CreateSqliteHarnessAsync()
     {
         var connection = new SqliteConnection("Data Source=:memory:");
@@ -133,6 +147,9 @@ public sealed class EncryptedEmployeeIdProjectionTests
         return new SqliteHarness(context, connection);
     }
 
+    /// <summary>
+    /// Runs the ReadStoredEmployeeIdAsync operation.
+    /// </summary>
     private static async Task<string?> ReadStoredEmployeeIdAsync(SqliteConnection connection, int onboardingRequestId)
     {
         await using var command = connection.CreateCommand();
@@ -143,6 +160,9 @@ public sealed class EncryptedEmployeeIdProjectionTests
         return value as string;
     }
 
+    /// <summary>
+    /// Defines the SqliteHarness class used by the IT Form application.
+    /// </summary>
     private sealed class SqliteHarness : IAsyncDisposable
     {
         public SqliteHarness(ApplicationDbContext context, SqliteConnection connection)
@@ -155,6 +175,9 @@ public sealed class EncryptedEmployeeIdProjectionTests
 
         public SqliteConnection Connection { get; }
 
+        /// <summary>
+        /// Runs the DisposeAsync operation.
+        /// </summary>
         public async ValueTask DisposeAsync()
         {
             await Context.DisposeAsync();

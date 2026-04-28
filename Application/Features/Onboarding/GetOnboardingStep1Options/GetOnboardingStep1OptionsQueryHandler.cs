@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingStep1OptionsQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Application.Common.Abstractions;
@@ -8,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingStep1Options
 {
+    /// <summary>
+    /// Handles the GetOnboardingStep1OptionsQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingStep1OptionsQueryHandler
         : IRequestHandler<GetOnboardingStep1OptionsQuery, OnboardingStep1PageViewModel>
     {
@@ -25,6 +30,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingStep1Options
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<OnboardingStep1PageViewModel> Handle(GetOnboardingStep1OptionsQuery request, CancellationToken cancellationToken)
         {
             var model = request.Model;

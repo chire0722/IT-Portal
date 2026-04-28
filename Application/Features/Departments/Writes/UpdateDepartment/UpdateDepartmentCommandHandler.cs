@@ -1,3 +1,5 @@
+// Project comment: UpdateDepartmentCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -12,6 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Departments.Writes.UpdateDepartment;
 
+/// <summary>
+/// Handles the UpdateDepartmentCommand command workflow.
+/// </summary>
 public sealed class UpdateDepartmentCommandHandler : IRequestHandler<UpdateDepartmentCommand, Unit>
 {
     private readonly ApplicationDbContext _context;
@@ -23,6 +28,9 @@ public sealed class UpdateDepartmentCommandHandler : IRequestHandler<UpdateDepar
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(UpdateDepartmentCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Departments
@@ -70,6 +78,9 @@ public sealed class UpdateDepartmentCommandHandler : IRequestHandler<UpdateDepar
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the EnsureExistingDepartmentIsInScopeAsync operation.
+    /// </summary>
     private async Task EnsureExistingDepartmentIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
     {
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -85,6 +96,9 @@ public sealed class UpdateDepartmentCommandHandler : IRequestHandler<UpdateDepar
         }
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
         var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(

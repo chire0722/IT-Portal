@@ -1,3 +1,5 @@
+// Project comment: AcknowledgeEmployeeSignatureCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
@@ -13,6 +15,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
 {
+    /// <summary>
+    /// Handles the AcknowledgeEmployeeSignatureCommand command workflow.
+    /// </summary>
     public sealed class AcknowledgeEmployeeSignatureCommandHandler
         : IRequestHandler<AcknowledgeEmployeeSignatureCommand, ProcessResult<object>>
     {
@@ -42,6 +47,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             _httpContextAccessor = httpContextAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(
             AcknowledgeEmployeeSignatureCommand request,
             CancellationToken cancellationToken)
@@ -59,6 +67,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             return ProcessResult<object>.Failure("Unknown request type.");
         }
 
+        /// <summary>
+        /// Runs the HandleOnboardingAsync operation.
+        /// </summary>
         private async Task<ProcessResult<object>> HandleOnboardingAsync(
             AcknowledgeEmployeeSignatureCommand request,
             CancellationToken cancellationToken)
@@ -117,6 +128,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             return ProcessResult<object>.Success(message: "Acknowledgement completed successfully.");
         }
 
+        /// <summary>
+        /// Runs the HandleOffboardingAsync operation.
+        /// </summary>
         private async Task<ProcessResult<object>> HandleOffboardingAsync(
             AcknowledgeEmployeeSignatureCommand request,
             CancellationToken cancellationToken)
@@ -191,6 +205,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             return ProcessResult<object>.Success(message: "Acknowledgement completed successfully.");
         }
 
+        /// <summary>
+        /// Runs the QueueCompletionNotificationAsync operation.
+        /// </summary>
         private async Task QueueCompletionNotificationAsync(
             string employeeName,
             string type,

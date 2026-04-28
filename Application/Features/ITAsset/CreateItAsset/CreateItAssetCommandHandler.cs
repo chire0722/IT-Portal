@@ -1,3 +1,5 @@
+// Project comment: CreateItAssetCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
@@ -8,6 +10,9 @@ using MediatR;
 
 namespace IT_Form.Application.Features.ITAsset.CreateItAsset
 {
+    /// <summary>
+    /// Handles the CreateItAssetCommand command workflow.
+    /// </summary>
     public sealed class CreateItAssetCommandHandler : IRequestHandler<CreateItAssetCommand, CommandResponse>
     {
         private readonly ApplicationDbContext _context;
@@ -19,6 +24,9 @@ namespace IT_Form.Application.Features.ITAsset.CreateItAsset
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<CommandResponse> Handle(CreateItAssetCommand request, CancellationToken cancellationToken)
         {
             if (!ItAdminCompanyScopeSupport.CanAccessCompany(_currentUserAccessor.User, request.Asset.Company))

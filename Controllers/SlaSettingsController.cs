@@ -1,3 +1,5 @@
+// Project comment: SlaSettingsController.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +10,9 @@ namespace IT_Form.Controllers
 {
     [Authorize(Policy = "RequireHROrIT")]
     [Authorize(Policy = "RequireIT")]
+    /// <summary>
+    /// Handles web requests for the SlaSettings area.
+    /// </summary>
     public class SlaSettingsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -18,6 +23,9 @@ namespace IT_Form.Controllers
         }
 
         // GET: SlaSettings
+        /// <summary>
+        /// Runs the Index operation.
+        /// </summary>
         public async Task<IActionResult> Index()
         {
             if (!User.HasClaim("UserTitle", "IT")) return Forbid();
@@ -35,6 +43,9 @@ namespace IT_Form.Controllers
         // POST: SlaSettings/Update
         [HttpPost]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Updates data for the Update operation.
+        /// </summary>
         public async Task<IActionResult> Update(List<SlaSetting> settings)
         {
             if (ModelState.IsValid)

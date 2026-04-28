@@ -1,3 +1,5 @@
+// Project comment: OnboardingItFlows.Steps.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
@@ -11,12 +13,30 @@ using MediatR;
 
 namespace IT_Form.Application.Features.Onboarding.Flows
 {
+    /// <summary>
+    /// Carries data needed to execute the GetOnboardingStep3Page query.
+    /// </summary>
     public sealed record GetOnboardingStep3PageQuery() : IRequest<ProcessResult<OnboardingStep3PageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the StartOnboardingItSetup query.
+    /// </summary>
     public sealed record StartOnboardingItSetupQuery(int Id) : IRequest<ProcessResult<object>>;
+    /// <summary>
+    /// Carries data needed to execute the SubmitOnboardingStep3Flow command.
+    /// </summary>
     public sealed record SubmitOnboardingStep3FlowCommand(OnboardingViewModel Model, string? SaveAction) : IRequest<ProcessResult<object>>;
+    /// <summary>
+    /// Carries data needed to execute the GetOnboardingStep4Page query.
+    /// </summary>
     public sealed record GetOnboardingStep4PageQuery() : IRequest<ProcessResult<OnboardingViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the SubmitOnboardingStep4Flow command.
+    /// </summary>
     public sealed record SubmitOnboardingStep4FlowCommand(OnboardingViewModel Model, string? SaveAction) : IRequest<ProcessResult<object>>;
 
+    /// <summary>
+    /// Handles the GetOnboardingStep3PageQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingStep3PageQueryHandler : IRequestHandler<GetOnboardingStep3PageQuery, ProcessResult<OnboardingStep3PageViewModel>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
@@ -28,6 +48,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OnboardingStep3PageViewModel>> Handle(GetOnboardingStep3PageQuery request, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(new GetOnboardingItStep3Query(_sessionAccessor.Get()), cancellationToken);
@@ -45,6 +68,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the StartOnboardingItSetupQuery query workflow.
+    /// </summary>
     public sealed class StartOnboardingItSetupQueryHandler : IRequestHandler<StartOnboardingItSetupQuery, ProcessResult<object>>
     {
         private readonly ISender _sender;
@@ -56,6 +82,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sessionAccessor = sessionAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(StartOnboardingItSetupQuery request, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(new GetOnboardingItSetupQuery(request.Id), cancellationToken);
@@ -71,6 +100,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the SubmitOnboardingStep3FlowCommand command workflow.
+    /// </summary>
     public sealed class SubmitOnboardingStep3FlowCommandHandler : IRequestHandler<SubmitOnboardingStep3FlowCommand, ProcessResult<object>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
@@ -82,6 +114,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(SubmitOnboardingStep3FlowCommand request, CancellationToken cancellationToken)
         {
             var session = _sessionAccessor.Get();
@@ -106,6 +141,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the GetOnboardingStep4PageQuery query workflow.
+    /// </summary>
     public sealed class GetOnboardingStep4PageQueryHandler : IRequestHandler<GetOnboardingStep4PageQuery, ProcessResult<OnboardingViewModel>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
@@ -117,6 +155,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OnboardingViewModel>> Handle(GetOnboardingStep4PageQuery request, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(new GetOnboardingItStep4Query(_sessionAccessor.Get()), cancellationToken);
@@ -134,6 +175,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Handles the SubmitOnboardingStep4FlowCommand command workflow.
+    /// </summary>
     public sealed class SubmitOnboardingStep4FlowCommandHandler : IRequestHandler<SubmitOnboardingStep4FlowCommand, ProcessResult<object>>
     {
         private readonly IOnboardingSessionAccessor _sessionAccessor;
@@ -145,6 +189,9 @@ namespace IT_Form.Application.Features.Onboarding.Flows
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(SubmitOnboardingStep4FlowCommand request, CancellationToken cancellationToken)
         {
             var session = _sessionAccessor.Get();
@@ -169,11 +216,17 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         }
     }
 
+    /// <summary>
+    /// Validates input for the SubmitOnboardingStep3FlowCommand request.
+    /// </summary>
     public sealed class SubmitOnboardingStep3FlowCommandValidator : AbstractValidator<SubmitOnboardingStep3FlowCommand>
     {
         public SubmitOnboardingStep3FlowCommandValidator() => RuleFor(x => x.Model).NotNull();
     }
 
+    /// <summary>
+    /// Validates input for the SubmitOnboardingStep4FlowCommand request.
+    /// </summary>
     public sealed class SubmitOnboardingStep4FlowCommandValidator : AbstractValidator<SubmitOnboardingStep4FlowCommand>
     {
         public SubmitOnboardingStep4FlowCommandValidator() => RuleFor(x => x.Model).NotNull();

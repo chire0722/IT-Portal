@@ -1,3 +1,5 @@
+// Project comment: AuditLoggingBehaviorTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Behaviors;
 using IT_Form.Data;
 using IT_Form.Models;
@@ -7,12 +9,24 @@ using Moq;
 
 namespace IT_Form.AuditTests;
 
+/// <summary>
+/// Defines the AuditLoggingBehaviorTests class used by the IT Form application.
+/// </summary>
 public class AuditLoggingBehaviorTests
 {
+    /// <summary>
+    /// Carries data needed to execute the SampleSuccess command.
+    /// </summary>
     private sealed record SampleSuccessCommand(string Name);
+    /// <summary>
+    /// Carries data needed to execute the SampleFailure command.
+    /// </summary>
     private sealed record SampleFailureCommand(string Name);
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_Success_WritesCommandAndEntityAudits_WithSharedCorrelationId operation.
+    /// </summary>
     public async Task Handle_Success_WritesCommandAndEntityAudits_WithSharedCorrelationId()
     {
         var (context, httpContext) = TestContextFactory.Create();
@@ -47,6 +61,9 @@ public class AuditLoggingBehaviorTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_Success_DoesNotOpenSecondaryScopeForCommandAudit operation.
+    /// </summary>
     public async Task Handle_Success_DoesNotOpenSecondaryScopeForCommandAudit()
     {
         var (context, httpContext) = TestContextFactory.Create();
@@ -73,6 +90,9 @@ public class AuditLoggingBehaviorTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_Failure_WritesFailedCommandAudit_AndRethrows operation.
+    /// </summary>
     public async Task Handle_Failure_WritesFailedCommandAudit_AndRethrows()
     {
         var (context, httpContext) = TestContextFactory.Create();

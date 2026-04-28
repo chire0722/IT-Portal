@@ -1,3 +1,5 @@
+// Project comment: SignatureReadQueryHandlerTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.Signature;
 using IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature;
@@ -18,6 +20,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the SignatureReadQueryHandlerTests class used by the IT Form application.
+/// </summary>
 public class SignatureReadQueryHandlerTests
 {
     public SignatureReadQueryHandlerTests()
@@ -26,6 +31,9 @@ public class SignatureReadQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetSignatureAcknowledgePageQuery_ReturnsTypedOnboardingViewModel operation.
+    /// </summary>
     public async Task GetSignatureAcknowledgePageQuery_ReturnsTypedOnboardingViewModel()
     {
         await using var context = CreateContext();
@@ -60,6 +68,9 @@ public class SignatureReadQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetSignatureAcknowledgePageQuery_UsesRegeneratedTimestamp_WhenCompletedAtIsOld operation.
+    /// </summary>
     public async Task GetSignatureAcknowledgePageQuery_UsesRegeneratedTimestamp_WhenCompletedAtIsOld()
     {
         await using var context = CreateContext();
@@ -91,6 +102,9 @@ public class SignatureReadQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the AcknowledgeEmployeeSignatureCommand_UsesRegeneratedTimestamp_WhenCompletedAtIsOld operation.
+    /// </summary>
     public async Task AcknowledgeEmployeeSignatureCommand_UsesRegeneratedTimestamp_WhenCompletedAtIsOld()
     {
         await using var context = CreateContext();
@@ -139,6 +153,9 @@ public class SignatureReadQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetSignatureAcknowledgePageQuery_ReturnsBadRequestWhenIntegrityFails operation.
+    /// </summary>
     public async Task GetSignatureAcknowledgePageQuery_ReturnsBadRequestWhenIntegrityFails()
     {
         await using var context = CreateContext();
@@ -178,6 +195,9 @@ public class SignatureReadQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetSignaturePdfQuery_ReturnsForbiddenObjectWhenOnboardingLinkExpired operation.
+    /// </summary>
     public async Task GetSignaturePdfQuery_ReturnsForbiddenObjectWhenOnboardingLinkExpired()
     {
         await using var context = CreateContext();
@@ -204,6 +224,9 @@ public class SignatureReadQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetSignaturePdfQuery_UsesRegeneratedTimestamp_WhenCompletedAtIsOld operation.
+    /// </summary>
     public async Task GetSignaturePdfQuery_UsesRegeneratedTimestamp_WhenCompletedAtIsOld()
     {
         await using var context = CreateContext();
@@ -235,6 +258,9 @@ public class SignatureReadQueryHandlerTests
         pdfService.Verify(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()), Times.Once);
     }
 
+    /// <summary>
+    /// Creates data for the CreateAcknowledgeHandler operation.
+    /// </summary>
     private static AcknowledgeEmployeeSignatureCommandHandler CreateAcknowledgeHandler(
         ApplicationDbContext context,
         ISignatureIntegrityService integrity)
@@ -256,6 +282,9 @@ public class SignatureReadQueryHandlerTests
             Mock.Of<IHttpContextAccessor>());
     }
 
+    /// <summary>
+    /// Creates data for the CreateUserManager operation.
+    /// </summary>
     private static Mock<UserManager<ApplicationUser>> CreateUserManager()
     {
         var store = new Mock<IUserStore<ApplicationUser>>();
@@ -271,6 +300,9 @@ public class SignatureReadQueryHandlerTests
             null!);
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

@@ -1,3 +1,5 @@
+// Project comment: ServerFolderControllerTests.cs is part of the IT Form application source code.
+
 using System.Threading.Tasks;
 using IT_Form.Application.Features.ServerFolder;
 using IT_Form.Controllers;
@@ -7,9 +9,15 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the ServerFolderControllerTests class used by the IT Form application.
+    /// </summary>
     public class ServerFolderControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsView_ForITRole operation.
+        /// </summary>
         public async Task Index_ReturnsView_ForITRole()
         {
             using var context = CreateContext();
@@ -25,6 +33,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Creates data for the Create_Post_ReturnsView_WhenModelIsNull_Adversarial operation.
+        /// </summary>
         public async Task Create_Post_ReturnsView_WhenModelIsNull_Adversarial()
         {
             using var context = CreateContext();

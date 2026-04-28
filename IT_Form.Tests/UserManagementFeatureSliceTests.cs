@@ -1,3 +1,5 @@
+// Project comment: UserManagementFeatureSliceTests.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using FluentValidation;
 using IT_Form.Application.Common.Exceptions;
@@ -18,9 +20,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the UserManagementFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class UserManagementFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateValidator_Fails_WhenUsernameAlreadyExists operation.
+    /// </summary>
     public async Task CreateValidator_Fails_WhenUsernameAlreadyExists()
     {
         var userManager = CreateUserManager();
@@ -46,6 +54,9 @@ public class UserManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Updates data for the UpdateHandler_ThrowsNotFound_WhenUserMissing operation.
+    /// </summary>
     public async Task UpdateHandler_ThrowsNotFound_WhenUserMissing()
     {
         using var context = CreateContext();
@@ -74,6 +85,9 @@ public class UserManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ToggleHandler_TogglesUserActiveState operation.
+    /// </summary>
     public async Task ToggleHandler_TogglesUserActiveState()
     {
         using var context = CreateContext();
@@ -99,6 +113,9 @@ public class UserManagementFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Deletes data for the DeleteHandler_ThrowsValidation_WhenDeletingOwnAccount operation.
+    /// </summary>
     public async Task DeleteHandler_ThrowsValidation_WhenDeletingOwnAccount()
     {
         using var context = CreateContext();
@@ -135,6 +152,9 @@ public class UserManagementFeatureSliceTests
         Assert.Contains(exception.Errors, error => error.ErrorMessage == "You cannot delete your own account.");
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -151,6 +171,9 @@ public class UserManagementFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Creates data for the CreateUserManager operation.
+    /// </summary>
     private static Mock<UserManager<ApplicationUser>> CreateUserManager()
     {
         var store = new Mock<IUserStore<ApplicationUser>>();

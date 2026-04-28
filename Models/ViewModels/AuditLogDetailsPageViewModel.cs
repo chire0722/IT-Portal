@@ -1,7 +1,12 @@
+// Project comment: AuditLogDetailsPageViewModel.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 
 namespace IT_Form.Models.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the AuditLogDetailsPage screen or form.
+    /// </summary>
     public class AuditLogDetailsPageViewModel
     {
         public AuditLog Entry { get; set; } = null!;

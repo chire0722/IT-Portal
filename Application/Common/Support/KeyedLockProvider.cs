@@ -1,12 +1,20 @@
+// Project comment: KeyedLockProvider.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 
 namespace IT_Form.Application.Common.Support;
 
+/// <summary>
+/// Defines the KeyedLockProvider class used by the IT Form application.
+/// </summary>
 public sealed class KeyedLockProvider : IKeyedLockProvider
 {
     private readonly object _syncRoot = new();
     private readonly Dictionary<string, LockEntry> _entries = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Runs the ExecuteAsync operation.
+    /// </summary>
     public Task ExecuteAsync(
         string key,
         Func<CancellationToken, Task> action,
@@ -51,6 +59,9 @@ public sealed class KeyedLockProvider : IKeyedLockProvider
         }
     }
 
+    /// <summary>
+    /// Runs the AcquireEntry operation.
+    /// </summary>
     private LockEntry AcquireEntry(string key)
     {
         lock (_syncRoot)
@@ -66,6 +77,9 @@ public sealed class KeyedLockProvider : IKeyedLockProvider
         }
     }
 
+    /// <summary>
+    /// Runs the ReleaseEntry operation.
+    /// </summary>
     private void ReleaseEntry(string key, LockEntry entry)
     {
         SemaphoreSlim? semaphoreToDispose = null;
@@ -82,6 +96,9 @@ public sealed class KeyedLockProvider : IKeyedLockProvider
         semaphoreToDispose?.Dispose();
     }
 
+    /// <summary>
+    /// Defines the LockEntry class used by the IT Form application.
+    /// </summary>
     private sealed class LockEntry
     {
         public SemaphoreSlim Semaphore { get; } = new(1, 1);

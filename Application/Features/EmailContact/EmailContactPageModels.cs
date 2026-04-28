@@ -1,7 +1,12 @@
+// Project comment: EmailContactPageModels.cs is part of the IT Form application source code.
+
 using System.Text.Json.Serialization;
 
 namespace IT_Form.Application.Features.EmailContact;
 
+/// <summary>
+/// Defines the EmailContactIndexListItem class used by the IT Form application.
+/// </summary>
 public sealed class EmailContactIndexListItem
 {
     public int Id { get; init; }
@@ -10,6 +15,9 @@ public sealed class EmailContactIndexListItem
     public string? Department { get; init; }
 }
 
+/// <summary>
+/// Provides view data for the EmailContactEditorPage screen or form.
+/// </summary>
 public sealed class EmailContactEditorPageViewModel
 {
     public int Id { get; set; }
@@ -19,6 +27,9 @@ public sealed class EmailContactEditorPageViewModel
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>
+/// Defines the EmailContactSearchItem class used by the IT Form application.
+/// </summary>
 public sealed class EmailContactSearchItem
 {
     [JsonPropertyName("id")]

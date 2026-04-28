@@ -1,3 +1,5 @@
+// Project comment: SharedMailboxPageReadQueries.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
@@ -9,11 +11,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.SharedMailbox
 {
+    /// <summary>
+    /// Carries data needed to execute the GetSharedMailboxIndexPage query.
+    /// </summary>
     public sealed record GetSharedMailboxIndexPageQuery(int? CompanyId = null) : IRequest<ProcessResult<SharedMailboxIndexPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetSharedMailboxCreatePage query.
+    /// </summary>
     public sealed record GetSharedMailboxCreatePageQuery(SharedMailboxEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<SharedMailboxEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetSharedMailboxEditPage query.
+    /// </summary>
     public sealed record GetSharedMailboxEditPageQuery(int Id, SharedMailboxEditorPageViewModel? Model = null, int[]? SelectedCompanyIds = null) : IRequest<ProcessResult<SharedMailboxEditorPageViewModel>>;
+    /// <summary>
+    /// Carries data needed to execute the GetSharedMailboxMembersPage query.
+    /// </summary>
     public sealed record GetSharedMailboxMembersPageQuery(int Id, int? OnboardingRequestId = null) : IRequest<ProcessResult<SharedMailboxMembersPageViewModel>>;
 
+    /// <summary>
+    /// Handles the GetSharedMailboxIndexPageQuery query workflow.
+    /// </summary>
     public sealed class GetSharedMailboxIndexPageQueryHandler : IRequestHandler<GetSharedMailboxIndexPageQuery, ProcessResult<SharedMailboxIndexPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -25,6 +42,9 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<SharedMailboxIndexPageViewModel>> Handle(GetSharedMailboxIndexPageQuery request, CancellationToken cancellationToken)
         {
             var companyOptions = await ItAdminCompanyScopeSupport.LoadCompanyOptionsAsync(_context, _currentUserAccessor.User, cancellationToken);
@@ -70,6 +90,9 @@ namespace IT_Form.Application.Features.SharedMailbox
         }
     }
 
+    /// <summary>
+    /// Handles the GetSharedMailboxCreatePageQuery query workflow.
+    /// </summary>
     public sealed class GetSharedMailboxCreatePageQueryHandler : IRequestHandler<GetSharedMailboxCreatePageQuery, ProcessResult<SharedMailboxEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -81,6 +104,9 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<SharedMailboxEditorPageViewModel>> Handle(GetSharedMailboxCreatePageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -102,6 +128,9 @@ namespace IT_Form.Application.Features.SharedMailbox
         }
     }
 
+    /// <summary>
+    /// Handles the GetSharedMailboxEditPageQuery query workflow.
+    /// </summary>
     public sealed class GetSharedMailboxEditPageQueryHandler : IRequestHandler<GetSharedMailboxEditPageQuery, ProcessResult<SharedMailboxEditorPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -113,6 +142,9 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<SharedMailboxEditorPageViewModel>> Handle(GetSharedMailboxEditPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
@@ -159,6 +191,9 @@ namespace IT_Form.Application.Features.SharedMailbox
         }
     }
 
+    /// <summary>
+    /// Handles the GetSharedMailboxMembersPageQuery query workflow.
+    /// </summary>
     public sealed class GetSharedMailboxMembersPageQueryHandler : IRequestHandler<GetSharedMailboxMembersPageQuery, ProcessResult<SharedMailboxMembersPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -170,6 +205,9 @@ namespace IT_Form.Application.Features.SharedMailbox
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<SharedMailboxMembersPageViewModel>> Handle(GetSharedMailboxMembersPageQuery request, CancellationToken cancellationToken)
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

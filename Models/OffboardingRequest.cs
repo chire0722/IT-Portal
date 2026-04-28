@@ -1,3 +1,5 @@
+// Project comment: OffboardingRequest.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -7,6 +9,9 @@ using IT_Form.Attributes;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the OffboardingRequest class used by the IT Form application.
+    /// </summary>
     public class OffboardingRequest : ISlaTrackable
     {
         public int Id { get; set; }
@@ -173,10 +178,16 @@ namespace IT_Form.Models
 
         public virtual ApplicationUser? AssignedHod { get; set; }
 
+        /// <summary>
+        /// Runs the CanBeCheckerApprovedBy operation.
+        /// </summary>
         public bool CanBeCheckerApprovedBy(string? userName) =>
             string.IsNullOrWhiteSpace(CreatedByUserId) ||
             !CreatedByUserId.Equals(userName ?? string.Empty, StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Runs the ApproveChecker operation.
+        /// </summary>
         public void ApproveChecker(string? approverId, string? fallbackUserName, DateTime updatedAtUtc)
         {
             ApprovedByUserId = !string.IsNullOrWhiteSpace(approverId) ? approverId : fallbackUserName;
@@ -194,16 +205,31 @@ namespace IT_Form.Models
             UpdatedAt = updatedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the CanBeSignedByManager operation.
+        /// </summary>
         public bool CanBeSignedByManager(bool assignedMatch, bool emailMatch) => assignedMatch || emailMatch;
 
+        /// <summary>
+        /// Runs the CanEditItChecklist operation.
+        /// </summary>
         public bool CanEditItChecklist() =>
             Status != RequestStatus.PendingEmployeeSign &&
             Status != RequestStatus.Completed;
 
+        /// <summary>
+        /// Runs the CanStartItSetup operation.
+        /// </summary>
         public bool CanStartItSetup() => Status == RequestStatus.PendingITApproval;
 
+        /// <summary>
+        /// Runs the CanRegenerateToken operation.
+        /// </summary>
         public bool CanRegenerateToken() => Status == RequestStatus.PendingEmployeeSign;
 
+        /// <summary>
+        /// Runs the SignByHr operation.
+        /// </summary>
         public void SignByHr(string signatureBase64, string signerName, string signatureHmac, DateTime signedAtUtc)
         {
             HRSignature = signatureBase64;
@@ -214,6 +240,9 @@ namespace IT_Form.Models
             UpdatedAt = signedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the SignByManager operation.
+        /// </summary>
         public void SignByManager(string signatureBase64, string signerName, string signatureHmac, DateTime signedAtUtc)
         {
             HODSignature = signatureBase64;
@@ -224,6 +253,9 @@ namespace IT_Form.Models
             UpdatedAt = signedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the SignByIt operation.
+        /// </summary>
         public void SignByIt(string signatureBase64, string signerName, string signatureHmac, DateTime signedAtUtc)
         {
             ITAdminSignature = signatureBase64;
@@ -234,6 +266,9 @@ namespace IT_Form.Models
             UpdatedAt = signedAtUtc;
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyStep2Checklist operation.
+        /// </summary>
         public void ApplyStep2Checklist(OffboardingRequest source, DateTime updatedAtUtc)
         {
             ClearedLaptop = source.ClearedLaptop;
@@ -275,6 +310,9 @@ namespace IT_Form.Models
             UpdatedAt = updatedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the CanBeDeletedBy operation.
+        /// </summary>
         public bool CanBeDeletedBy(bool isHr)
         {
             var isSignedByHrOnly = !string.IsNullOrEmpty(HRSignature)
@@ -286,11 +324,17 @@ namespace IT_Form.Models
                 || (isHr && isSignedByHrOnly);
         }
 
+        /// <summary>
+        /// Runs the CanBeRejected operation.
+        /// </summary>
         public bool CanBeRejected() =>
             Status != RequestStatus.Completed &&
             Status != RequestStatus.Approved &&
             Status != RequestStatus.PendingEmployeeSign;
 
+        /// <summary>
+        /// Runs the Reject operation.
+        /// </summary>
         public void Reject(string reason, string? rejectedByUserId, DateTime updatedAtUtc)
         {
             Status = RequestStatus.Rejected;
@@ -299,12 +343,18 @@ namespace IT_Form.Models
             UpdatedAt = updatedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the RegenerateAccessToken operation.
+        /// </summary>
         public void RegenerateAccessToken(DateTime updatedAtUtc)
         {
             AccessToken = Guid.NewGuid();
             UpdatedAt = updatedAtUtc;
         }
 
+        /// <summary>
+        /// Runs the RefreshStatusFromApprovals operation.
+        /// </summary>
         private void RefreshStatusFromApprovals(DateTime signedAtUtc)
         {
             var hasHR = !string.IsNullOrEmpty(HRSignature);

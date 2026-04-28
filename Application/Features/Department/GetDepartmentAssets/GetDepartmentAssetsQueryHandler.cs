@@ -1,3 +1,5 @@
+// Project comment: GetDepartmentAssetsQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using Mapster;
 using MediatR;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Department.GetDepartmentAssets;
 
+/// <summary>
+/// Handles the GetDepartmentAssetsQuery query workflow.
+/// </summary>
 public sealed class GetDepartmentAssetsQueryHandler
     : IRequestHandler<GetDepartmentAssetsQuery, List<DepartmentAssetDto>>
 {
@@ -15,6 +20,9 @@ public sealed class GetDepartmentAssetsQueryHandler
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<List<DepartmentAssetDto>> Handle(
         GetDepartmentAssetsQuery request,
         CancellationToken cancellationToken)

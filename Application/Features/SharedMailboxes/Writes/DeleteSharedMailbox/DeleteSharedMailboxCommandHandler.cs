@@ -1,3 +1,5 @@
+// Project comment: DeleteSharedMailboxCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.SharedMailboxes.Writes.DeleteSharedMailbox;
 
+/// <summary>
+/// Handles the DeleteSharedMailboxCommand command workflow.
+/// </summary>
 public sealed class DeleteSharedMailboxCommandHandler : IRequestHandler<DeleteSharedMailboxCommand, Unit>
 {
     private readonly ApplicationDbContext _context;
@@ -22,6 +27,9 @@ public sealed class DeleteSharedMailboxCommandHandler : IRequestHandler<DeleteSh
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(DeleteSharedMailboxCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.SharedMailboxes
@@ -42,6 +50,9 @@ public sealed class DeleteSharedMailboxCommandHandler : IRequestHandler<DeleteSh
         return Unit.Value;
     }
 
+    /// <summary>
+    /// Runs the EnsureExistingSharedMailboxIsInScopeAsync operation.
+    /// </summary>
     private async Task EnsureExistingSharedMailboxIsInScopeAsync(IEnumerable<int> existingCompanyIds, CancellationToken cancellationToken)
     {
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

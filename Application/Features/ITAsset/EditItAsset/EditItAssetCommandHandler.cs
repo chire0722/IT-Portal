@@ -1,3 +1,5 @@
+// Project comment: EditItAssetCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.ITAsset.EditItAsset
 {
+    /// <summary>
+    /// Handles the EditItAssetCommand command workflow.
+    /// </summary>
     public sealed class EditItAssetCommandHandler : IRequestHandler<EditItAssetCommand, CommandResponse>
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +25,9 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<CommandResponse> Handle(EditItAssetCommand request, CancellationToken cancellationToken)
         {
             var existingAsset = await _context.ITAssets

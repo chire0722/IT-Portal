@@ -1,7 +1,12 @@
+// Project comment: ExportBulkOnboardingPdfCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Onboarding.ExportBulkOnboardingPdf
 {
+    /// <summary>
+    /// Validates input for the ExportBulkOnboardingPdfCommand request.
+    /// </summary>
     public sealed class ExportBulkOnboardingPdfCommandValidator : AbstractValidator<ExportBulkOnboardingPdfCommand>
     {
         public ExportBulkOnboardingPdfCommandValidator()

@@ -1,8 +1,13 @@
+// Project comment: OffboardingDetailsPageViewModel.cs is part of the IT Form application source code.
+
 using IT_Form.Models.Enums;
 using IT_Form.Helpers;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the OffboardingDetailsPage screen or form.
+    /// </summary>
     public sealed class OffboardingDetailsPageViewModel
     {
         public int Id { get; set; }
@@ -89,6 +94,9 @@ namespace IT_Form.ViewModels
         public OffboardingOnboardingSnapshotViewModel? OnboardingRequest { get; set; }
     }
 
+    /// <summary>
+    /// Provides view data for the OffboardingOnboardingSnapshot screen or form.
+    /// </summary>
     public sealed class OffboardingOnboardingSnapshotViewModel
     {
         public string? FullName { get; set; }

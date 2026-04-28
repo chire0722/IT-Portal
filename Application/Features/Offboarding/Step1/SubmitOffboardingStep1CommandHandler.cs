@@ -1,3 +1,5 @@
+// Project comment: SubmitOffboardingStep1CommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Offboarding.ActionWrites;
@@ -14,6 +16,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.Step1
 {
+    /// <summary>
+    /// Handles the SubmitOffboardingStep1Command command workflow.
+    /// </summary>
     public sealed class SubmitOffboardingStep1CommandHandler
         : IRequestHandler<SubmitOffboardingStep1Command, ProcessResult<OffboardingStep1PageViewModel>>
     {
@@ -34,6 +39,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OffboardingStep1PageViewModel>> Handle(
             SubmitOffboardingStep1Command command,
             CancellationToken cancellationToken)
@@ -70,6 +78,12 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             if (damageValidation != null)
             {
                 return await OffboardingStep1Support.FailureAsync(_context, damageValidation, command.Request, cancellationToken);
+            }
+
+            var returnValidation = OffboardingStep1Support.ValidateReturnFile(command.HardwareReturnImage);
+            if (returnValidation != null)
+            {
+                return await OffboardingStep1Support.FailureAsync(_context, returnValidation, command.Request, cancellationToken);
             }
 
             await OffboardingStep1Support.SaveDamageFileAsync(_env, existing, command.Id, command.HardwareDamageImage, cancellationToken);

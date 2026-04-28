@@ -1,3 +1,5 @@
+// Project comment: UpdateSoftwareKeyCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Services;
 using MediatR;
@@ -6,6 +8,9 @@ using System.Text;
 
 namespace IT_Form.Application.Features.StandardSoftware.UpdateSoftwareKey
 {
+    /// <summary>
+    /// Handles the UpdateSoftwareKeyCommand command workflow.
+    /// </summary>
     public sealed class UpdateSoftwareKeyCommandHandler : IRequestHandler<UpdateSoftwareKeyCommand, UpdateSoftwareKeyResult>
     {
         private readonly ApplicationDbContext _context;
@@ -19,6 +24,9 @@ namespace IT_Form.Application.Features.StandardSoftware.UpdateSoftwareKey
             _encryptionService = encryptionService;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<UpdateSoftwareKeyResult> Handle(UpdateSoftwareKeyCommand request, CancellationToken cancellationToken)
         {
             var key = await _context.SoftwareKeys.FindAsync(new object[] { request.Id }, cancellationToken);

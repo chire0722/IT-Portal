@@ -1,8 +1,13 @@
+// Project comment: RegisterViewModel.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Validation;
 
 namespace IT_Form.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the Register screen or form.
+    /// </summary>
     public class RegisterViewModel
     {
         [Required(ErrorMessage = "Full name is required.")]

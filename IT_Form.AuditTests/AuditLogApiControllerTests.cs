@@ -1,3 +1,5 @@
+// Project comment: AuditLogApiControllerTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.AuditLogs.Flows;
@@ -9,6 +11,9 @@ using Moq;
 
 namespace IT_Form.AuditTests;
 
+/// <summary>
+/// Defines the AuditLogApiControllerTests class used by the IT Form application.
+/// </summary>
 public class AuditLogApiControllerTests
 {
     public AuditLogApiControllerTests()
@@ -17,6 +22,9 @@ public class AuditLogApiControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetChain_FailuresOnly_ReturnsFilteredItemsWithClassification operation.
+    /// </summary>
     public async Task GetChain_FailuresOnly_ReturnsFilteredItemsWithClassification()
     {
         var (context, _) = TestContextFactory.Create();
@@ -92,6 +100,9 @@ public class AuditLogApiControllerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Gets the data required by the GetSummary_ReturnsFailureBreakdowns_ForCurrentFilterScope operation.
+    /// </summary>
     public async Task GetSummary_ReturnsFailureBreakdowns_ForCurrentFilterScope()
     {
         var (context, _) = TestContextFactory.Create();

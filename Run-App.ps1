@@ -1,3 +1,5 @@
+# Project comment: Run-App.ps1 contains PowerShell automation for the IT Form project.
+
 param(
     [switch]$Build,
     [switch]$Restore

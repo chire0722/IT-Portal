@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+// Project comment: 20260326023244_AddJobTitleToUser.cs is part of the IT Form application source code.
+
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 

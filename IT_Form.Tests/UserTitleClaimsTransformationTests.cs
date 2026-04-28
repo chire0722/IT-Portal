@@ -1,3 +1,5 @@
+// Project comment: UserTitleClaimsTransformationTests.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Data;
 using IT_Form.Models;
@@ -12,9 +14,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the UserTitleClaimsTransformationTests class used by the IT Form application.
+/// </summary>
 public class UserTitleClaimsTransformationTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the TransformAsync_AddsUserCompanyClaims_WhenUserTitleAlreadyExists operation.
+    /// </summary>
     public async Task TransformAsync_AddsUserCompanyClaims_WhenUserTitleAlreadyExists()
     {
         await using var context = CreateContext();
@@ -53,6 +61,9 @@ public class UserTitleClaimsTransformationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the TransformAsync_RemovesStaleMustChangePasswordClaim_WhenFlagIsCleared operation.
+    /// </summary>
     public async Task TransformAsync_RemovesStaleMustChangePasswordClaim_WhenFlagIsCleared()
     {
         await using var context = CreateContext();
@@ -81,6 +92,9 @@ public class UserTitleClaimsTransformationTests
         Assert.DoesNotContain(transformed.Claims, claim => claim.Type == "MustChangePassword");
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

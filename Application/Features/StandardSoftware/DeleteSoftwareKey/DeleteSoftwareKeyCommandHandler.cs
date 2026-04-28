@@ -1,9 +1,14 @@
+// Project comment: DeleteSoftwareKeyCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareKey
 {
+    /// <summary>
+    /// Handles the DeleteSoftwareKeyCommand command workflow.
+    /// </summary>
     public sealed class DeleteSoftwareKeyCommandHandler : IRequestHandler<DeleteSoftwareKeyCommand, DeleteSoftwareKeyResult>
     {
         private readonly ApplicationDbContext _context;
@@ -13,6 +18,9 @@ namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareKey
             _context = context;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<DeleteSoftwareKeyResult> Handle(DeleteSoftwareKeyCommand request, CancellationToken cancellationToken)
         {
             var key = await _context.SoftwareKeys

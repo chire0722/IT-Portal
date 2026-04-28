@@ -1,3 +1,5 @@
+// Project comment: ITAsset.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -5,6 +7,9 @@ using IT_Form.Models.Enums;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the ITAsset class used by the IT Form application.
+    /// </summary>
     public class ITAsset : ISoftDeletable
     {
         public int Id { get; set; }

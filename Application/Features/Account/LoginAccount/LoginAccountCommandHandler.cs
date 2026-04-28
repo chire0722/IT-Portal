@@ -1,3 +1,5 @@
+// Project comment: LoginAccountCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
@@ -9,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace IT_Form.Application.Features.Account.LoginAccount
 {
+    /// <summary>
+    /// Handles the LoginAccountCommand command workflow.
+    /// </summary>
     public sealed class LoginAccountCommandHandler : IRequestHandler<LoginAccountCommand, LoginAccountResult>
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -40,6 +45,9 @@ namespace IT_Form.Application.Features.Account.LoginAccount
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<LoginAccountResult> Handle(LoginAccountCommand request, CancellationToken cancellationToken)
         {
             var normalizedUserName = request.Username.Trim().ToUpperInvariant();
@@ -82,6 +90,9 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the HandleCoreAsync operation.
+        /// </summary>
         private async Task<LoginAccountResult> HandleCoreAsync(LoginAccountCommand request, string userId, CancellationToken cancellationToken)
         {
             var maxAttempts = _securitySettings.MaxOtpAttempts;

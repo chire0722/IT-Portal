@@ -1,3 +1,5 @@
+// Project comment: ManageAccessQueryHandlerTests.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Mapping;
@@ -16,6 +18,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the ManageAccessQueryHandlerTests class used by the IT Form application.
+/// </summary>
 public class ManageAccessQueryHandlerTests
 {
     public ManageAccessQueryHandlerTests()
@@ -24,6 +29,9 @@ public class ManageAccessQueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_ReturnsReadModelUsingCurrentEmployeeContext operation.
+    /// </summary>
     public async Task Handle_ReturnsReadModelUsingCurrentEmployeeContext()
     {
         await using var context = CreateContext();
@@ -138,6 +146,9 @@ public class ManageAccessQueryHandlerTests
         Assert.Contains(model.FolderPermissions, folder => folder.FolderName == "Finance");
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -154,6 +165,9 @@ public class ManageAccessQueryHandlerTests
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
     }
 
+    /// <summary>
+    /// Defines the TestCurrentUserAccessor class used by the IT Form application.
+    /// </summary>
     private sealed class TestCurrentUserAccessor : ICurrentUserAccessor
     {
         public TestCurrentUserAccessor(string userName, string userId, params string[] titles)

@@ -1,3 +1,5 @@
+// Project comment: ExportOnboardingCsvQueryHandler.cs is part of the IT Form application source code.
+
 using System.Text;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -6,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
 {
+    /// <summary>
+    /// Handles the ExportOnboardingCsvQuery query workflow.
+    /// </summary>
     public sealed class ExportOnboardingCsvQueryHandler
         : IRequestHandler<ExportOnboardingCsvQuery, ProcessResult<BinaryFilePayload>>
     {
@@ -16,6 +21,9 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
             _context = context;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(
             ExportOnboardingCsvQuery request,
             CancellationToken cancellationToken)
@@ -61,6 +69,9 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
                 $"onboarding_export_{DateTime.Now:yyyyMMdd}.csv"));
         }
 
+        /// <summary>
+        /// Runs the Escape operation.
+        /// </summary>
         private static string Escape(string? value)
         {
             return value?.Replace("\"", "\"\"") ?? string.Empty;

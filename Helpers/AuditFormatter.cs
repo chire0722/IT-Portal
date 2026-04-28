@@ -1,11 +1,19 @@
+// Project comment: AuditFormatter.cs is part of the IT Form application source code.
+
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the AuditFormatter class used by the IT Form application.
+    /// </summary>
     public static class AuditFormatter
     {
+        /// <summary>
+        /// Runs the FormatChanges operation.
+        /// </summary>
         public static string FormatChanges(string? changesJson)
         {
             if (string.IsNullOrWhiteSpace(changesJson)) return "No data changes recorded.";
@@ -115,6 +123,9 @@ namespace IT_Form.Helpers
             }
         }
 
+        /// <summary>
+        /// Gets the data required by the GetFriendlyName operation.
+        /// </summary>
         private static string GetFriendlyName(string name)
         {
             return name switch
@@ -134,6 +145,9 @@ namespace IT_Form.Helpers
             };
         }
 
+        /// <summary>
+        /// Gets the data required by the GetFriendlyValue operation.
+        /// </summary>
         private static string GetFriendlyValue(string name, JsonElement value)
         {
             if (value.ValueKind == JsonValueKind.Null) return "none";
@@ -166,6 +180,9 @@ namespace IT_Form.Helpers
             return value.ToString();
         }
 
+        /// <summary>
+        /// Runs the PrettyPrintJson operation.
+        /// </summary>
         public static string PrettyPrintJson(string? json)
         {
             if (string.IsNullOrWhiteSpace(json)) return string.Empty;
@@ -180,6 +197,9 @@ namespace IT_Form.Helpers
             }
         }
 
+        /// <summary>
+        /// Runs the SplitCamelCase operation.
+        /// </summary>
         private static string SplitCamelCase(string input)
         {
             if (string.IsNullOrEmpty(input)) return input;

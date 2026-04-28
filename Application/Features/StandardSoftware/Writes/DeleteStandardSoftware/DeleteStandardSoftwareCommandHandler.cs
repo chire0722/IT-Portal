@@ -1,3 +1,5 @@
+// Project comment: DeleteStandardSoftwareCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Data;
 using IT_Form.Models;
@@ -6,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware.Writes.DeleteStandardSoftware;
 
+/// <summary>
+/// Handles the DeleteStandardSoftwareCommand command workflow.
+/// </summary>
 public sealed class DeleteStandardSoftwareCommandHandler : IRequestHandler<DeleteStandardSoftwareCommand, Unit>
 {
     private readonly ApplicationDbContext _context;
@@ -15,6 +20,9 @@ public sealed class DeleteStandardSoftwareCommandHandler : IRequestHandler<Delet
         _context = context;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<Unit> Handle(DeleteStandardSoftwareCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.StandardSoftware

@@ -1,3 +1,5 @@
+// Project comment: CompleteOnboardingHrStep2CommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingHrStep2
 {
+    /// <summary>
+    /// Handles the CompleteOnboardingHrStep2Command command workflow.
+    /// </summary>
     public sealed class CompleteOnboardingHrStep2CommandHandler
         : IRequestHandler<CompleteOnboardingHrStep2Command, CompleteOnboardingHrStep2Result>
     {
@@ -31,6 +36,9 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingHrStep2
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<CompleteOnboardingHrStep2Result> Handle(CompleteOnboardingHrStep2Command request, CancellationToken cancellationToken)
         {
             var session = request.Session;

@@ -1,3 +1,5 @@
+// Project comment: ProcessOffboardingCheckerApprovalCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
@@ -9,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.ActionWrites
 {
+    /// <summary>
+    /// Handles the ProcessOffboardingCheckerApprovalCommand command workflow.
+    /// </summary>
     public sealed class ProcessOffboardingCheckerApprovalCommandHandler
         : IRequestHandler<ProcessOffboardingCheckerApprovalCommand, CommandResponse>
     {
@@ -29,6 +34,9 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
             _sender = sender;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<CommandResponse> Handle(ProcessOffboardingCheckerApprovalCommand request, CancellationToken cancellationToken)
         {
             var user = _currentUserAccessor.User;

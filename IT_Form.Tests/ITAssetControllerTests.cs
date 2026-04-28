@@ -1,3 +1,5 @@
+// Project comment: ITAssetControllerTests.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,9 +13,15 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the ITAssetControllerTests class used by the IT Form application.
+    /// </summary>
     public class ITAssetControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsView_ForITRole operation.
+        /// </summary>
         public async Task Index_ReturnsView_ForITRole()
         {
             using var context = CreateContext();
@@ -29,6 +37,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Index_ShowsAssetsAcrossCompanies_ForCompanyScopedItUser operation.
+        /// </summary>
         public async Task Index_ShowsAssetsAcrossCompanies_ForCompanyScopedItUser()
         {
             using var context = CreateContext();
@@ -51,6 +62,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Index_FiltersAssetsBySelectedCompany operation.
+        /// </summary>
         public async Task Index_FiltersAssetsBySelectedCompany()
         {
             using var context = CreateContext();
@@ -73,6 +87,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Edit_AllowsCompanyScopedItUser_ToOpenAssetFromAnotherCompany operation.
+        /// </summary>
         public async Task Edit_AllowsCompanyScopedItUser_ToOpenAssetFromAnotherCompany()
         {
             using var context = CreateContext();
@@ -89,6 +106,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Details_ReturnsNotFound_ForInvalidId_Adversarial operation.
+        /// </summary>
         public async Task Details_ReturnsNotFound_ForInvalidId_Adversarial()
         {
             using var context = CreateContext();
@@ -100,6 +120,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Creates data for the Create_Post_FailsIfModelIsNull_Adversarial operation.
+        /// </summary>
         public async Task Create_Post_FailsIfModelIsNull_Adversarial()
         {
             using var context = CreateContext();
@@ -111,6 +134,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Edit_Post_GuardAgainstTampering_Adversarial operation.
+        /// </summary>
         public async Task Edit_Post_GuardAgainstTampering_Adversarial()
         {
             using var context = CreateContext();

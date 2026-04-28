@@ -1,3 +1,5 @@
+// Project comment: EmployeeApiController.cs is part of the IT Form application source code.
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +18,9 @@ namespace IT_Form.Controllers
     [Route("api/employees")]
     [ApiController]
     [EnableRateLimiting("strict")]
+    /// <summary>
+    /// Handles web requests for the EmployeeApi area.
+    /// </summary>
     public class EmployeeApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -29,6 +34,9 @@ namespace IT_Form.Controllers
 
         [Authorize(Policy = "RequireHR")]
         [HttpGet("import-template")]
+        /// <summary>
+        /// Runs the DownloadTemplate operation.
+        /// </summary>
         public async Task<IActionResult> DownloadTemplate()
         {
             var cancellationToken = HttpContext?.RequestAborted ?? CancellationToken.None;
@@ -131,6 +139,9 @@ namespace IT_Form.Controllers
         [Authorize(Policy = "RequireHR")]
         [HttpPost("import")]
         [ValidateAntiForgeryToken]
+        /// <summary>
+        /// Runs the Import operation.
+        /// </summary>
         public async Task<IActionResult> Import(IFormFile file)
         {
             if (!FileUploadHelper.IsValidExcelFile(file, out string errorMessage))
@@ -279,6 +290,9 @@ namespace IT_Form.Controllers
             });
         }
         [HttpGet("{id}/details")]
+        /// <summary>
+        /// Gets the data required by the GetEmployeeDetails operation.
+        /// </summary>
         public async Task<IActionResult> GetEmployeeDetails(int id)
         {
             var employee = await _context.OnboardingRequests
@@ -319,6 +333,9 @@ namespace IT_Form.Controllers
 
         [Authorize(Policy = "RequireHR")]
         [HttpGet("hods-by-company")]
+        /// <summary>
+        /// Gets the data required by the GetHodsByCompany operation.
+        /// </summary>
         public async Task<IActionResult> GetHodsByCompany([FromQuery] string? company)
         {
             if (string.IsNullOrWhiteSpace(company))
@@ -385,6 +402,9 @@ namespace IT_Form.Controllers
 
         private static readonly string[] CompanyHeaders = { "Company", "Branch", "Company Branch" };
 
+        /// <summary>
+        /// Builds the value returned by the BuildColumnMap operation.
+        /// </summary>
         private static Dictionary<string, int> BuildColumnMap(IXLRangeRow? headerRow)
         {
             var columnMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -406,6 +426,9 @@ namespace IT_Form.Controllers
             return columnMap;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetColumnNumber operation.
+        /// </summary>
         private static int GetColumnNumber(IReadOnlyDictionary<string, int> columnMap, IEnumerable<string> headerAliases, int fallbackColumn)
         {
             foreach (var alias in headerAliases)
@@ -420,6 +443,9 @@ namespace IT_Form.Controllers
             return fallbackColumn;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetCellValue operation.
+        /// </summary>
         private static string? GetCellValue(IXLRangeRow row, IReadOnlyDictionary<string, int> columnMap, IEnumerable<string> headerAliases, int fallbackColumn)
         {
             var columnNumber = GetColumnNumber(columnMap, headerAliases, fallbackColumn);
@@ -431,6 +457,9 @@ namespace IT_Form.Controllers
             return row.Cell(columnNumber).GetString().Trim();
         }
 
+        /// <summary>
+        /// Runs the NormalizeHeader operation.
+        /// </summary>
         private static string NormalizeHeader(string? header)
         {
             if (string.IsNullOrWhiteSpace(header))

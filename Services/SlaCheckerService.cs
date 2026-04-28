@@ -1,3 +1,5 @@
+// Project comment: SlaCheckerService.cs is part of the IT Form application source code.
+
 using System;
 using System.Linq;
 using System.Threading;
@@ -17,19 +19,31 @@ using System.Web;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Periodically checks onboarding and offboarding requests against configured SLA thresholds.
+    /// Sends the primary SLA alert first, then tiered escalation emails if the request remains open.
+    /// </summary>
     public class SlaCheckerService : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<SlaCheckerService> _logger;
         private readonly TimeSpan _checkInterval = TimeSpan.FromHours(1);
+
+        // A dispatch lease keeps a request from sending duplicate alerts if the process restarts mid-send.
         private static readonly TimeSpan DispatchLeaseDuration = TimeSpan.FromHours(2);
 
+        /// <summary>
+        /// Creates the SLA background worker with scoped service access and logging.
+        /// </summary>
         public SlaCheckerService(IServiceScopeFactory scopeFactory, ILogger<SlaCheckerService> logger)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Runs the SLA scan loop until the host requests shutdown.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("SLA Checker Background Service is starting.");
@@ -58,6 +72,9 @@ namespace IT_Form.Services
             _logger.LogInformation("SLA Checker Background Service is stopping.");
         }
 
+        /// <summary>
+        /// Loads SLA settings and company calendars, then checks each supported request type.
+        /// </summary>
         private async Task ProcessOverdueSlasAsync(CancellationToken stoppingToken)
         {
             using var scope = _scopeFactory.CreateScope();
@@ -74,7 +91,7 @@ namespace IT_Form.Services
                 .AsNoTracking()
                 .ToListAsync(stoppingToken);
 
-            // 1. Onboarding
+            // Onboarding SLA timing starts from the requester signature date, falling back to request date.
             await ProcessTiersAsync(
                 context,
                 slaSettings,
@@ -88,7 +105,7 @@ namespace IT_Form.Services
                 baseDomain,
                 stoppingToken);
 
-            // 2. Offboarding
+            // Offboarding SLA timing starts from the HR signature date, falling back to request date.
             await ProcessTiersAsync(
                 context,
                 slaSettings,
@@ -103,6 +120,9 @@ namespace IT_Form.Services
                 stoppingToken);
         }
 
+        /// <summary>
+        /// Checks one request type against primary, tier 1, and tier 2 SLA thresholds.
+        /// </summary>
         private async Task ProcessTiersAsync<T>(
             ApplicationDbContext context,
             List<SlaSetting> settings,
@@ -119,6 +139,7 @@ namespace IT_Form.Services
             var setting = settings.FirstOrDefault(s => s.RequestType == requestType);
             if (setting == null) return;
 
+            // Draft, completed, and rejected requests are excluded because they should not trigger SLA mail.
             var pendingRequests = await dbSet
                 .Where(r => r.Status != RequestStatus.Draft && r.Status != RequestStatus.Completed && r.Status != RequestStatus.Rejected)
                 .ToListAsync(ct);
@@ -133,7 +154,7 @@ namespace IT_Form.Services
                 string detailsPath = $"/{requestType}/Details/{reqId}";
                 string detailsUrl = $"{baseDomain.TrimEnd('/')}{detailsPath}";
 
-                // --- Level 0: Primary Notification ---
+                // Primary notification goes to the configured SLA owner once the target days are exceeded.
                 if (ShouldDispatch(req, SlaNotifyStatus.Pending, SlaNotifyStatus.PrimaryDispatchPending))
                 {
                     if (CompanyBusinessHoursHelper.IsSlaOverdue(companies, companyReference, baseDate, setting.TargetDays) &&
@@ -161,7 +182,7 @@ namespace IT_Form.Services
                             ct);
                     }
                 }
-                // --- Level 1: Tier 1 Escalation ---
+                // Tier 1 escalation is sent only after the primary notification has already been recorded.
                 else if (ShouldDispatch(req, SlaNotifyStatus.Sent, SlaNotifyStatus.Tier1DispatchPending))
                 {
                     if (CompanyBusinessHoursHelper.IsSlaOverdue(companies, companyReference, baseDate, setting.EscalationDaysTier1) &&
@@ -189,7 +210,7 @@ namespace IT_Form.Services
                             ct);
                     }
                 }
-                // --- Level 2: Tier 2 Escalation ---
+                // Tier 2 escalation is the final critical alert level for unresolved requests.
                 else if (ShouldDispatch(req, SlaNotifyStatus.Tier1Sent, SlaNotifyStatus.Tier2DispatchPending))
                 {
                     if (CompanyBusinessHoursHelper.IsSlaOverdue(companies, companyReference, baseDate, setting.EscalationDaysTier2) &&
@@ -220,6 +241,9 @@ namespace IT_Form.Services
             }
         }
 
+        /// <summary>
+        /// Builds the HTML table rows inserted into the SLA alert email template.
+        /// </summary>
         private string CreateSlaDetailsTable(string type, int id, string? name, DateTime date, int limit, string level)
         {
             return $@"
@@ -241,6 +265,9 @@ namespace IT_Form.Services
                 </tr>";
         }
 
+        /// <summary>
+        /// Determines whether an alert can be sent now, including recovery from an expired pending lease.
+        /// </summary>
         private bool ShouldDispatch(ISlaTrackable request, SlaNotifyStatus currentStatus, SlaNotifyStatus pendingStatus)
         {
             if (request.SlaNotifyStatus == currentStatus)
@@ -256,6 +283,9 @@ namespace IT_Form.Services
             return !request.UpdatedAt.HasValue || request.UpdatedAt.Value <= DateTime.UtcNow - DispatchLeaseDuration;
         }
 
+        /// <summary>
+        /// Marks an SLA alert as pending, sends the email, then records the final alert status.
+        /// </summary>
         private async Task DispatchLevelEmailAsync(
             ApplicationDbContext context,
             ISlaTrackable request,
@@ -268,6 +298,7 @@ namespace IT_Form.Services
             IOutlookService outlook,
             CancellationToken cancellationToken)
         {
+            // Persist the pending status before sending so another scan will not duplicate the same alert.
             request.SlaNotifyStatus = pendingStatus;
             request.UpdatedAt = DateTime.UtcNow;
             await context.SaveChangesAsync(cancellationToken);
@@ -295,6 +326,7 @@ namespace IT_Form.Services
             }
             catch (Exception ex) when (!CriticalExceptionDetector.IsCritical(ex))
             {
+                // The email already left Outlook; leave the pending lease in place so retry behavior is controlled.
                 _logger.LogError(
                     ex,
                     "SLA email for Request {Id} was sent, but the final status update to {Status} failed. The request remains lease-protected in {PendingStatus}.",

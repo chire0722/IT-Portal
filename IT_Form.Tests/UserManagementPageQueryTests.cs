@@ -1,3 +1,5 @@
+// Project comment: UserManagementPageQueryTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.UserManagement;
 using IT_Form.Data;
@@ -13,6 +15,9 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the UserManagementPageQueryTests class used by the IT Form application.
+/// </summary>
 public class UserManagementPageQueryTests
 {
     public UserManagementPageQueryTests()
@@ -21,6 +26,9 @@ public class UserManagementPageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the IndexQuery_ReturnsTypedItemsWithTitlesAndCompanies operation.
+    /// </summary>
     public async Task IndexQuery_ReturnsTypedItemsWithTitlesAndCompanies()
     {
         await using var context = CreateContext();
@@ -62,6 +70,9 @@ public class UserManagementPageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Creates data for the CreatePageQuery_ReturnsEditorPageWithActiveCompaniesAndPreservesModel operation.
+    /// </summary>
     public async Task CreatePageQuery_ReturnsEditorPageWithActiveCompaniesAndPreservesModel()
     {
         await using var context = CreateContext();
@@ -98,6 +109,9 @@ public class UserManagementPageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the EditPageQuery_LoadsExistingUserAndReturnsNotFoundWhenMissing operation.
+    /// </summary>
     public async Task EditPageQuery_LoadsExistingUserAndReturnsNotFoundWhenMissing()
     {
         await using var context = CreateContext();
@@ -146,6 +160,9 @@ public class UserManagementPageQueryTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies operation.
+    /// </summary>
     public async Task ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies()
     {
         await using var context = CreateContext();
@@ -222,6 +239,9 @@ public class UserManagementPageQueryTests
         Assert.Equal(["Alpha", "Beta"], editResult.Data.Companies.Select(company => company.DisplayName).ToList());
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

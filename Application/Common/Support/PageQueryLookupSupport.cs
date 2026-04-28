@@ -1,3 +1,5 @@
+// Project comment: PageQueryLookupSupport.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -8,8 +10,14 @@ using System.Security.Claims;
 
 namespace IT_Form.Application.Common.Support;
 
+/// <summary>
+/// Defines the PageQueryLookupSupport class used by the IT Form application.
+/// </summary>
 internal static class PageQueryLookupSupport
 {
+    /// <summary>
+    /// Runs the LoadActiveCompaniesAsync operation.
+    /// </summary>
     public static Task<List<PageCompanyOption>> LoadActiveCompaniesAsync(
         ApplicationDbContext context,
         CancellationToken cancellationToken)
@@ -20,6 +28,9 @@ internal static class PageQueryLookupSupport
             .ProjectToType<PageCompanyOption>()
             .ToListAsync(cancellationToken);
 
+    /// <summary>
+    /// Runs the LoadActiveCompaniesAsync operation.
+    /// </summary>
     public static async Task<List<PageCompanyOption>> LoadActiveCompaniesAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -49,6 +60,9 @@ internal static class PageQueryLookupSupport
             .ToList();
     }
 
+    /// <summary>
+    /// Runs the LoadCurrentEmployeesAsync operation.
+    /// </summary>
     public static async Task<List<PageCurrentEmployeeOption>> LoadCurrentEmployeesAsync(
         ApplicationDbContext context,
         CancellationToken cancellationToken)
@@ -68,6 +82,9 @@ internal static class PageQueryLookupSupport
             .ToList();
     }
 
+    /// <summary>
+    /// Runs the LoadCurrentEmployeesAsync operation.
+    /// </summary>
     public static async Task<List<PageCurrentEmployeeOption>> LoadCurrentEmployeesAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
@@ -93,6 +110,9 @@ internal static class PageQueryLookupSupport
             .ToList();
     }
 
+    /// <summary>
+    /// Runs the LoadCurrentEmployeeDisplayNameAsync operation.
+    /// </summary>
     public static Task<string?> LoadCurrentEmployeeDisplayNameAsync(
         ApplicationDbContext context,
         int? onboardingRequestId,
@@ -106,6 +126,9 @@ internal static class PageQueryLookupSupport
         return LoadCurrentEmployeeDisplayNameCoreAsync(context, onboardingRequestId.Value, cancellationToken);
     }
 
+    /// <summary>
+    /// Runs the LoadCurrentEmployeeDisplayNameCoreAsync operation.
+    /// </summary>
     private static async Task<string?> LoadCurrentEmployeeDisplayNameCoreAsync(
         ApplicationDbContext context,
         int onboardingRequestId,
@@ -120,6 +143,9 @@ internal static class PageQueryLookupSupport
             : FormatCurrentEmployeeLabel(currentEmployee.FullName, currentEmployee.EmployeeID);
     }
 
+    /// <summary>
+    /// Runs the FormatCurrentEmployeeLabel operation.
+    /// </summary>
     private static string FormatCurrentEmployeeLabel(string? fullName, string? employeeId)
         => (fullName ?? "Unknown") + " (" + (employeeId ?? "-") + ")";
 }

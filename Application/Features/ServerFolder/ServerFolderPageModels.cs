@@ -1,3 +1,5 @@
+// Project comment: ServerFolderPageModels.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 using IT_Form.Application.Common.Models;
 using IT_Form.Helpers;
@@ -5,6 +7,9 @@ using IT_Form.Models.Enums;
 
 namespace IT_Form.Application.Features.ServerFolder;
 
+/// <summary>
+/// Defines the ServerFolderIndexListItem class used by the IT Form application.
+/// </summary>
 public sealed class ServerFolderIndexListItem
 {
     public int Id { get; init; }
@@ -13,6 +18,9 @@ public sealed class ServerFolderIndexListItem
     public List<string> Companies { get; init; } = [];
 }
 
+/// <summary>
+/// Provides view data for the ServerFolderIndexPage screen or form.
+/// </summary>
 public sealed class ServerFolderIndexPageViewModel
 {
     public int? SelectedCompanyId { get; init; }
@@ -20,6 +28,9 @@ public sealed class ServerFolderIndexPageViewModel
     public List<ServerFolderIndexListItem> Items { get; init; } = [];
 }
 
+/// <summary>
+/// Provides view data for the ServerFolderEditorPage screen or form.
+/// </summary>
 public sealed class ServerFolderEditorPageViewModel
 {
     public int Id { get; set; }
@@ -36,6 +47,9 @@ public sealed class ServerFolderEditorPageViewModel
     public List<PageCompanyOption> CompanyOptions { get; set; } = [];
 }
 
+/// <summary>
+/// Provides view data for the ServerFolderMembersPage screen or form.
+/// </summary>
 public sealed class ServerFolderMembersPageViewModel
 {
     public int FolderId { get; init; }
@@ -46,6 +60,9 @@ public sealed class ServerFolderMembersPageViewModel
     public List<ServerFolderMemberListItem> Members { get; init; } = [];
 }
 
+/// <summary>
+/// Defines the ServerFolderMemberListItem class used by the IT Form application.
+/// </summary>
 public sealed class ServerFolderMemberListItem
 {
     public string EmployeeName { get; init; } = "Unknown";
@@ -59,6 +76,9 @@ public sealed class ServerFolderMemberListItem
     public string ControllerName { get; init; } = string.Empty;
 }
 
+/// <summary>
+/// Provides view data for the ServerFolderReportPage screen or form.
+/// </summary>
 public sealed class ServerFolderReportPageViewModel
 {
     public PaginatedList<IT_Form.ViewModels.ServerFolderAccessReportViewModel> Report { get; init; }

@@ -1,8 +1,13 @@
+// Project comment: OnboardingIndexListItem.cs is part of the IT Form application source code.
+
 using IT_Form.Models.Enums;
 using IT_Form.Helpers;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingIndex
 {
+    /// <summary>
+    /// Defines the OnboardingIndexListItem class used by the IT Form application.
+    /// </summary>
     public sealed class OnboardingIndexListItem
     {
         public int Id { get; set; }

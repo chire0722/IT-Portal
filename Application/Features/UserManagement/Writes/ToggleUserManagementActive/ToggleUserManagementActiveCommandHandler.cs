@@ -1,3 +1,5 @@
+// Project comment: ToggleUserManagementActiveCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Exceptions;
@@ -12,6 +14,9 @@ using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Application.Features.UserManagement.Writes.ToggleUserManagementActive;
 
+/// <summary>
+/// Handles the ToggleUserManagementActiveCommand command workflow.
+/// </summary>
 public sealed class ToggleUserManagementActiveCommandHandler : IRequestHandler<ToggleUserManagementActiveCommand, ToggleUserManagementActiveResult>
 {
     private readonly ApplicationDbContext _context;
@@ -28,6 +33,9 @@ public sealed class ToggleUserManagementActiveCommandHandler : IRequestHandler<T
         _logger = logger;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<ToggleUserManagementActiveResult> Handle(
         ToggleUserManagementActiveCommand request,
         CancellationToken cancellationToken)

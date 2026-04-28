@@ -1,3 +1,5 @@
+// Project comment: OffboardingReadAccessSupport.cs is part of the IT Form application source code.
+
 using System.Security.Claims;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
@@ -7,8 +9,14 @@ using Microsoft.AspNetCore.Identity;
 
 namespace IT_Form.Application.Features.Offboarding;
 
+/// <summary>
+/// Defines the OffboardingReadAccessSupport class used by the IT Form application.
+/// </summary>
 internal static class OffboardingReadAccessSupport
 {
+    /// <summary>
+    /// Runs the IsUserAuthorizedForRequest operation.
+    /// </summary>
     internal static async Task<bool> IsUserAuthorizedForRequest(
         ApplicationDbContext context,
         ClaimsPrincipal user,

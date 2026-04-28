@@ -1,3 +1,5 @@
+// Project comment: CompanyScopeFeatureSliceTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.Onboarding.SaveOnboardingStep1;
 using IT_Form.Data;
@@ -14,9 +16,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the CompanyScopeFeatureSliceTests class used by the IT Form application.
+/// </summary>
 public class CompanyScopeFeatureSliceTests
 {
     [Fact]
+    /// <summary>
+    /// Creates data for the CreateItAssetHandler_AllowsItUserWithoutCompanyAssignment operation.
+    /// </summary>
     public async Task CreateItAssetHandler_AllowsItUserWithoutCompanyAssignment()
     {
         await using var context = CreateContext();
@@ -42,6 +50,9 @@ public class CompanyScopeFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Saves data for the SaveOnboardingStep1Handler_ReturnsForbidden_WhenHrUserHasNoCompanyAssignment operation.
+    /// </summary>
     public async Task SaveOnboardingStep1Handler_ReturnsForbidden_WhenHrUserHasNoCompanyAssignment()
     {
         await using var context = CreateContext();
@@ -71,6 +82,9 @@ public class CompanyScopeFeatureSliceTests
     }
 
     [Fact]
+    /// <summary>
+    /// Saves data for the SaveOnboardingStep1Handler_ReturnsForbidden_WhenHrUserTargetsDifferentCompany operation.
+    /// </summary>
     public async Task SaveOnboardingStep1Handler_ReturnsForbidden_WhenHrUserTargetsDifferentCompany()
     {
         await using var context = CreateContext();
@@ -99,6 +113,9 @@ public class CompanyScopeFeatureSliceTests
         Assert.Equal(0, await context.OnboardingRequests.CountAsync());
     }
 
+    /// <summary>
+    /// Creates data for the CreateContext operation.
+    /// </summary>
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

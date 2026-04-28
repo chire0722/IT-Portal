@@ -1,11 +1,19 @@
+// Project comment: AppApiControllerBase.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IT_Form.Controllers
 {
     [ApiController]
+    /// <summary>
+    /// Defines the AppApiControllerBase class used by the IT Form application.
+    /// </summary>
     public abstract class AppApiControllerBase : ControllerBase
     {
+        /// <summary>
+        /// Runs the HandleCommandResponse operation.
+        /// </summary>
         protected IActionResult HandleCommandResponse(CommandResponse result, int successStatusCode = StatusCodes.Status200OK)
         {
             if (result.IsNotFound)

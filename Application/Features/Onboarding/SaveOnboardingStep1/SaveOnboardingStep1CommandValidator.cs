@@ -1,8 +1,13 @@
+// Project comment: SaveOnboardingStep1CommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Services;
 
 namespace IT_Form.Application.Features.Onboarding.SaveOnboardingStep1
 {
+    /// <summary>
+    /// Validates input for the SaveOnboardingStep1Command request.
+    /// </summary>
     public sealed class SaveOnboardingStep1CommandValidator : AbstractValidator<SaveOnboardingStep1Command>
     {
         public SaveOnboardingStep1CommandValidator(IOnboardingHodService onboardingHodService)

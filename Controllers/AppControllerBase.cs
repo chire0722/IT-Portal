@@ -1,3 +1,5 @@
+// Project comment: AppControllerBase.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using IT_Form.Application.Common.Models;
 using IT_Form.Helpers;
@@ -5,11 +7,20 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace IT_Form.Controllers
 {
+    /// <summary>
+    /// Defines the AppControllerBase class used by the IT Form application.
+    /// </summary>
     public abstract class AppControllerBase : Controller
     {
+        /// <summary>
+        /// Runs the IsAjaxRequest operation.
+        /// </summary>
         protected bool IsAjaxRequest() =>
             Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
+        /// <summary>
+        /// Gets the data required by the GetValidationErrorMessage operation.
+        /// </summary>
         protected string GetValidationErrorMessage(ValidationException ex)
         {
             ModelState.AddFluentValidationErrors(ex);
@@ -19,6 +30,9 @@ namespace IT_Form.Controllers
             return message;
         }
 
+        /// <summary>
+        /// Gets the data required by the GetFirstModelStateErrorMessage operation.
+        /// </summary>
         protected string GetFirstModelStateErrorMessage()
         {
             return ModelState.Values
@@ -27,6 +41,9 @@ namespace IT_Form.Controllers
                 .FirstOrDefault() ?? "Validation failed.";
         }
 
+        /// <summary>
+        /// Runs the AjaxErrorOrRedirect operation.
+        /// </summary>
         protected IActionResult AjaxErrorOrRedirect(string message, string actionName, object routeValues)
         {
             if (IsAjaxRequest())
@@ -36,6 +53,9 @@ namespace IT_Form.Controllers
             return RedirectToAction(actionName, routeValues);
         }
 
+        /// <summary>
+        /// Runs the AjaxSuccessOrRedirect operation.
+        /// </summary>
         protected IActionResult AjaxSuccessOrRedirect(string message, string actionName, object routeValues)
         {
             if (IsAjaxRequest())
@@ -45,12 +65,18 @@ namespace IT_Form.Controllers
             return RedirectToAction(actionName, routeValues);
         }
 
+        /// <summary>
+        /// Runs the RedirectWithError operation.
+        /// </summary>
         protected IActionResult RedirectWithError(string message, string actionName, object routeValues)
         {
             TempData["ErrorMessage"] = message;
             return RedirectToAction(actionName, routeValues);
         }
 
+        /// <summary>
+        /// Runs the RedirectWithSuccess operation.
+        /// </summary>
         protected IActionResult RedirectWithSuccess(
             string message,
             string actionName,
@@ -73,6 +99,9 @@ namespace IT_Form.Controllers
             return RedirectToAction(actionName, routeValues);
         }
 
+        /// <summary>
+        /// Processes data for the ProcessResponse operation.
+        /// </summary>
         protected IActionResult ProcessResponse(
             CommandResponse result,
             string actionName,
@@ -102,6 +131,9 @@ namespace IT_Form.Controllers
                 : RedirectWithError(result.Message, actionName, new { id = requestId });
         }
 
+        /// <summary>
+        /// Runs the ExecuteWithValidationRedirect operation.
+        /// </summary>
         protected async Task<IActionResult> ExecuteWithValidationRedirect(
             Func<Task<IActionResult>> action,
             string actionName,
@@ -136,6 +168,9 @@ namespace IT_Form.Controllers
             }
         }
 
+        /// <summary>
+        /// Runs the ExecuteWithValidationResult operation.
+        /// </summary>
         protected async Task<IActionResult> ExecuteWithValidationResult(
             Func<Task<IActionResult>> action,
             Func<Task<IActionResult>> onValidationFailure)
@@ -196,6 +231,9 @@ namespace IT_Form.Controllers
             return View(result.Data);
         }
 
+        /// <summary>
+        /// Runs the AddModelLevelError operation.
+        /// </summary>
         private void AddModelLevelError(string message)
         {
             if (string.IsNullOrWhiteSpace(message))

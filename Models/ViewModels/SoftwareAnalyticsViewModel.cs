@@ -1,7 +1,12 @@
+// Project comment: SoftwareAnalyticsViewModel.cs is part of the IT Form application source code.
+
 using System.Collections.Generic;
 
 namespace IT_Form.Models.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the SoftwareAnalytics screen or form.
+    /// </summary>
     public class SoftwareAnalyticsViewModel
     {
         public int TotalSoftwareCount { get; set; }

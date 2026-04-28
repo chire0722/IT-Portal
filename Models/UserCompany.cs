@@ -1,7 +1,12 @@
+// Project comment: UserCompany.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Models
 {
+    /// <summary>
+    /// Defines the UserCompany class used by the IT Form application.
+    /// </summary>
     public class UserCompany
     {
         public int Id { get; set; }

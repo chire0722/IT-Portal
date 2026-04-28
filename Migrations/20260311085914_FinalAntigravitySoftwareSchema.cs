@@ -1,4 +1,6 @@
-﻿using System;
+// Project comment: 20260311085914_FinalAntigravitySoftwareSchema.cs is part of the IT Form application source code.
+
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable

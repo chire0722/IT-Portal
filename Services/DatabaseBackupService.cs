@@ -1,31 +1,47 @@
+// Project comment: DatabaseBackupService.cs is part of the IT Form application source code.
+
 using System.IO;
 using System.Linq;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Creates encrypted SQLite database backups on startup and on a daily schedule.
+    /// </summary>
     public class DatabaseBackupService : BackgroundService
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<DatabaseBackupService> _logger;
         private readonly IWebHostEnvironment _environment;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IDataProtector _backupProtector;
 
+        /// <summary>
+        /// Creates the backup worker and its data protector for encrypted backup files.
+        /// </summary>
         public DatabaseBackupService(
             IConfiguration configuration,
             ILogger<DatabaseBackupService> logger,
             IWebHostEnvironment environment,
-            IServiceScopeFactory scopeFactory)
+            IServiceScopeFactory scopeFactory,
+            IDataProtectionProvider dataProtectionProvider)
         {
             _configuration = configuration;
             _logger = logger;
             _environment = environment;
             _scopeFactory = scopeFactory;
+            _backupProtector = dataProtectionProvider.CreateProtector("IT_Form.DatabaseBackups.v1");
         }
 
+        /// <summary>
+        /// Runs one startup backup, then schedules recurring backups for 2:00 AM local server time.
+        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // --- Initial Backup on Startup ---
+            // Create an immediate restore point whenever the application starts.
             try
             {
                 RunBackup();
@@ -36,17 +52,15 @@ namespace IT_Form.Services
                 await NotifyITAsync($"Initial startup database backup failed: {ex.Message}");
             }
 
-            // --- Periodic Backup Loop (Targeting 2:00 AM daily) ---
+            // Keep scheduling the next daily backup until the host is shutting down.
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    // Calculate time until next 2:00 AM
                     var now = DateTime.Now;
-                    var nextRunTime = now.Date.AddDays(1).AddHours(2); // Default to tomorrow at 2 AM
+                    var nextRunTime = now.Date.AddDays(1).AddHours(2);
                     
-                    // If it's already past 2 AM today, next run is tomorrow at 2 AM
-                    // If it's before 2 AM today, next run is today at 2 AM
+                    // Before 2:00 AM, schedule today's run; otherwise schedule tomorrow's run.
                     if (now.Hour < 2)
                     {
                         nextRunTime = now.Date.AddHours(2);
@@ -62,7 +76,7 @@ namespace IT_Form.Services
                 }
                 catch (OperationCanceledException)
                 {
-                    // Shutdown requested via stoppingToken
+                    // The host requested shutdown through the cancellation token.
                     break;
                 }
                 catch (Exception ex)
@@ -70,12 +84,15 @@ namespace IT_Form.Services
                     _logger.LogError(ex, "Periodic daily database backup failed.");
                     await NotifyITAsync($"Periodic scheduled database backup failed: {ex.Message}");
                     
-                    // On error, wait at least 1 hour before retrying to avoid spamming
+                    // Back off after a failure so logs and IT notifications are not spammed.
                     await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
                 }
             }
         }
 
+        /// <summary>
+        /// Resolves the configured SQLite database, creates an encrypted backup, and copies it to all configured locations.
+        /// </summary>
         private void RunBackup()
         {
             var connectionString = _configuration.GetConnectionString("DefaultConnection");
@@ -93,18 +110,25 @@ namespace IT_Form.Services
                 return;
             }
 
-            var backupDir = Path.Combine(_environment.ContentRootPath, "App_Data", "backups");
+            var resolvedConnectionString = BuildConnectionStringWithDataSource(connectionString, dbPath);
+            var configuredBackupPath = _configuration["DatabaseBackup:BackupPath"];
+            var backupDir = string.IsNullOrWhiteSpace(configuredBackupPath)
+                ? Path.Combine(_environment.ContentRootPath, "App_Data", "backups")
+                : ResolvePath(configuredBackupPath);
             if (!Directory.Exists(backupDir))
             {
                 Directory.CreateDirectory(backupDir);
             }
 
+            // Create one clean SQLite snapshot and reuse the same encrypted payload for each destination.
+            var backupBytes = CreateSqliteBackupBytes(resolvedConnectionString, backupDir);
+
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var fileName = Path.GetFileNameWithoutExtension(dbPath);
             var extension = Path.GetExtension(dbPath);
-            var backupFileName = $"{fileName}_{timestamp}{extension}";
+            var backupFileName = $"{fileName}_{timestamp}{extension}.protected";
 
-            CopyBackupToDirectory(dbPath, backupDir, backupFileName, fileName, extension);
+            CopyBackupToDirectory(backupBytes, backupDir, backupFileName, fileName, extension);
 
             foreach (var additionalBackupPath in GetAdditionalBackupPaths())
             {
@@ -112,11 +136,14 @@ namespace IT_Form.Services
                 _logger.LogInformation("Additional database backup path resolved to: {Path}", additionalBackupDir);
                 if (!Path.GetFullPath(additionalBackupDir).Equals(Path.GetFullPath(backupDir), StringComparison.OrdinalIgnoreCase))
                 {
-                    CopyBackupToDirectory(dbPath, additionalBackupDir, backupFileName, fileName, extension);
+                    CopyBackupToDirectory(backupBytes, additionalBackupDir, backupFileName, fileName, extension);
                 }
             }
         }
 
+        /// <summary>
+        /// Reads optional secondary backup locations from configuration.
+        /// </summary>
         private IEnumerable<string> GetAdditionalBackupPaths()
         {
             var configuredPaths = new[]
@@ -131,20 +158,89 @@ namespace IT_Form.Services
                 .Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
-        private void CopyBackupToDirectory(string dbPath, string backupDir, string backupFileName, string fileName, string extension)
+        /// <summary>
+        /// Encrypts and writes the backup file into one directory, then rotates old files.
+        /// </summary>
+        private void CopyBackupToDirectory(byte[] backupBytes, string backupDir, string backupFileName, string fileName, string extension)
         {
             Directory.CreateDirectory(backupDir);
 
             var backupPath = Path.Combine(backupDir, backupFileName);
-            File.Copy(dbPath, backupPath);
-            _logger.LogInformation("Database backup created successfully: {Path}", backupPath);
+            var encryptedBackup = _backupProtector.Protect(backupBytes);
+            File.WriteAllBytes(backupPath, encryptedBackup);
+            _logger.LogInformation("Encrypted database backup created successfully: {Path}", backupPath);
 
             RotateBackups(backupDir, fileName, extension);
         }
 
+        /// <summary>
+        /// Uses SQLite's backup API to create a consistent database snapshot in a temporary file.
+        /// </summary>
+        private byte[] CreateSqliteBackupBytes(string sourceConnectionString, string backupDir)
+        {
+            var tempBackupDir = Path.Combine(backupDir, "temp");
+            Directory.CreateDirectory(tempBackupDir);
+
+            var tempBackupPath = Path.Combine(
+                tempBackupDir,
+                $"IT_FormDB_backup_{Guid.NewGuid():N}.db");
+
+            try
+            {
+                // The destination is a temporary SQLite database file that is deleted after bytes are read.
+                var destinationConnectionString = new SqliteConnectionStringBuilder
+                {
+                    DataSource = tempBackupPath,
+                    Mode = SqliteOpenMode.ReadWriteCreate,
+                    Pooling = false
+                }.ToString();
+
+                using (var source = new SqliteConnection(sourceConnectionString))
+                using (var destination = new SqliteConnection(destinationConnectionString))
+                {
+                    source.Open();
+                    destination.Open();
+                    source.BackupDatabase(destination);
+                }
+
+                return File.ReadAllBytes(tempBackupPath);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempBackupPath))
+                    {
+                        File.Delete(tempBackupPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete temporary SQLite backup snapshot {Path}.", tempBackupPath);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the SQLite connection string with a resolved absolute DataSource path.
+        /// </summary>
+        private static string BuildConnectionStringWithDataSource(string connectionString, string dbPath)
+        {
+            var builder = new SqliteConnectionStringBuilder(connectionString)
+            {
+                DataSource = dbPath
+            };
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Keeps the newest ten backups in a destination directory and deletes older matching files.
+        /// </summary>
         private void RotateBackups(string backupDir, string fileName, string extension)
         {
             var files = new DirectoryInfo(backupDir).GetFiles($"{fileName}_*{extension}")
+                .Concat(new DirectoryInfo(backupDir).GetFiles($"{fileName}_*{extension}.protected"))
                 .OrderByDescending(f => f.CreationTime)
                 .Skip(10)
                 .ToList();
@@ -159,11 +255,14 @@ namespace IT_Form.Services
                 catch (Exception ex)
                 {
                     _logger.LogWarning("Failed to delete old backup {Name}: {Msg}", file.Name, ex.Message);
-                    // Non-critical failure, no need to alert everyone
+                    // Rotation cleanup failure does not block future backup attempts.
                 }
             }
         }
 
+        /// <summary>
+        /// Extracts the Data Source value from the configured SQLite connection string.
+        /// </summary>
         private string GetDataSourcePath(string connectionString)
         {
             const string dataSourcePrefix = "Data Source=";
@@ -174,11 +273,15 @@ namespace IT_Form.Services
             return connectionString[dataSourceStart..dataSourceEnd].Trim();
         }
 
+        /// <summary>
+        /// Resolves relative paths and the |DataDirectory| token against the application content root.
+        /// </summary>
         private string ResolvePath(string path)
         {
             const string dataDirectoryToken = "|DataDirectory|";
             if (path.Contains(dataDirectoryToken, StringComparison.OrdinalIgnoreCase))
             {
+                // ASP.NET-style |DataDirectory| points at App_Data unless a custom value is registered.
                 var configuredDataDirectory = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
                 var dataDirectory = string.IsNullOrWhiteSpace(configuredDataDirectory)
                     ? Path.Combine(_environment.ContentRootPath, "App_Data")
@@ -198,6 +301,9 @@ namespace IT_Form.Services
             return path;
         }
 
+        /// <summary>
+        /// Sends a background-service failure email to active users with the IT title.
+        /// </summary>
         private async Task NotifyITAsync(string errorMessage)
         {
             try
@@ -206,7 +312,7 @@ namespace IT_Form.Services
                 var dbContext = scope.ServiceProvider.GetRequiredService<IT_Form.Data.ApplicationDbContext>();
                 var outlookService = scope.ServiceProvider.GetRequiredService<IT_Form.Services.IOutlookService>();
 
-                // Get all active IT users
+                // Notify only active IT users with email addresses configured.
                 var itUsers = await dbContext.Users
                     .Where(u => u.IsActive && !string.IsNullOrEmpty(u.Email))
                     .Join(dbContext.UserTitles,

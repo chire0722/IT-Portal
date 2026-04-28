@@ -1,5 +1,10 @@
+// Project comment: AuditLogReadSupport.cs is part of the IT Form application source code.
+
 namespace IT_Form.Application.Features.AuditLogs.Shared;
 
+/// <summary>
+/// Defines the AuditLogFilterParameters record used by the IT Form application.
+/// </summary>
 public sealed record AuditLogFilterParameters(
     string? Entity,
     string? AuditAction,
@@ -8,8 +13,14 @@ public sealed record AuditLogFilterParameters(
     DateTime? EndDate,
     bool? IsSuccess);
 
+/// <summary>
+/// Defines the AuditLogReadSupport class used by the IT Form application.
+/// </summary>
 public static class AuditLogReadSupport
 {
+    /// <summary>
+    /// Applies changes for the ApplyFilters operation.
+    /// </summary>
     public static IQueryable<IT_Form.Models.AuditLog> ApplyFilters(
         IQueryable<IT_Form.Models.AuditLog> query,
         AuditLogFilterParameters filter)

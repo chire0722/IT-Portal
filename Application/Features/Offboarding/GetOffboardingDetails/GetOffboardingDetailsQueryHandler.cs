@@ -1,3 +1,5 @@
+// Project comment: GetOffboardingDetailsQueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Offboarding;
@@ -15,6 +17,9 @@ using CompanyEntity = IT_Form.Models.Company;
 
 namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
 {
+    /// <summary>
+    /// Handles the GetOffboardingDetailsQuery query workflow.
+    /// </summary>
     public sealed class GetOffboardingDetailsQueryHandler : IRequestHandler<GetOffboardingDetailsQuery, ProcessResult<OffboardingDetailsPageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -34,6 +39,9 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OffboardingDetailsPageViewModel>> Handle(GetOffboardingDetailsQuery request, CancellationToken cancellationToken)
         {
             var offboardingRequest = await _context.OffboardingRequests
@@ -112,6 +120,9 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
             return ProcessResult<OffboardingDetailsPageViewModel>.Success(viewModel);
         }
 
+        /// <summary>
+        /// Runs the ResolveManagerDisplayNameAsync operation.
+        /// </summary>
         private async Task<string> ResolveManagerDisplayNameAsync(OffboardingRequest request, string? latestHodEmail, CancellationToken cancellationToken)
         {
             if (request.AssignedHod != null)
@@ -154,6 +165,9 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
             return latestHodEmail ?? request.HODEmail ?? "-";
         }
 
+        /// <summary>
+        /// Runs the VerifyIntegrity operation.
+        /// </summary>
         private string? VerifyIntegrity(OffboardingRequest request)
         {
             try
@@ -190,6 +204,9 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
             return null;
         }
 
+        /// <summary>
+        /// Runs the ResolveCompanyAsync operation.
+        /// </summary>
         private async Task<CompanyEntity?> ResolveCompanyAsync(string? branchName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(branchName))

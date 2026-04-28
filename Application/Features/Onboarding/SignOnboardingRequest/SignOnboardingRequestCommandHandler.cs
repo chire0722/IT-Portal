@@ -1,3 +1,5 @@
+// Project comment: SignOnboardingRequestCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Helpers;
@@ -10,6 +12,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.SignOnboardingRequest
 {
+    /// <summary>
+    /// Handles the SignOnboardingRequestCommand command workflow.
+    /// </summary>
     public sealed class SignOnboardingRequestCommandHandler : IRequestHandler<SignOnboardingRequestCommand, SignOnboardingRequestResult>
     {
         private readonly ApplicationDbContext _context;
@@ -32,6 +37,9 @@ namespace IT_Form.Application.Features.Onboarding.SignOnboardingRequest
             _logger = logger;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<SignOnboardingRequestResult> Handle(SignOnboardingRequestCommand request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests

@@ -1,9 +1,14 @@
+// Project comment: AuditLogIndexPageViewModel.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using IT_Form.Helpers;
 
 namespace IT_Form.Models.ViewModels
 {
+    /// <summary>
+    /// Provides view data for the AuditLogIndexPage screen or form.
+    /// </summary>
     public class AuditLogIndexPageViewModel
     {
         public PaginatedList<AuditLog> Entries { get; set; } = new(new List<AuditLog>(), 0, 1, 25);
@@ -29,12 +34,18 @@ namespace IT_Form.Models.ViewModels
         public IEnumerable<AuditLogTrendPointViewModel> FailureTrend { get; set; } = new List<AuditLogTrendPointViewModel>();
     }
 
+    /// <summary>
+    /// Provides view data for the AuditLogActionStat screen or form.
+    /// </summary>
     public class AuditLogActionStatViewModel
     {
         public string Action { get; set; } = string.Empty;
         public int Count { get; set; }
     }
 
+    /// <summary>
+    /// Provides view data for the AuditLogTrendPoint screen or form.
+    /// </summary>
     public class AuditLogTrendPointViewModel
     {
         public DateTime Date { get; set; }
@@ -42,6 +53,9 @@ namespace IT_Form.Models.ViewModels
         public string Label => Date.ToString("dd MMM");
     }
 
+    /// <summary>
+    /// Provides view data for the AuditLogActorStat screen or form.
+    /// </summary>
     public class AuditLogActorStatViewModel
     {
         public string Actor { get; set; } = string.Empty;

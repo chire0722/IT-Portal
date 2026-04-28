@@ -1,11 +1,19 @@
+// Project comment: SecurityHeadersMiddleware.cs is part of the IT Form application source code.
+
 namespace IT_Form.Security
 {
+    /// <summary>
+    /// Defines the SecurityHeadersMiddleware class used by the IT Form application.
+    /// </summary>
     public class SecurityHeadersMiddleware
     {
         private readonly RequestDelegate _next;
 
         public SecurityHeadersMiddleware(RequestDelegate next) => _next = next;
 
+        /// <summary>
+        /// Runs the InvokeAsync operation.
+        /// </summary>
         public async Task InvokeAsync(HttpContext context)
         {
             // 1. Content Security Policy (CSP)

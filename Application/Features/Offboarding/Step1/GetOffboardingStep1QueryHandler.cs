@@ -1,3 +1,5 @@
+// Project comment: GetOffboardingStep1QueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.Offboarding.ActionWrites;
@@ -11,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Offboarding.Step1
 {
+    /// <summary>
+    /// Handles the GetOffboardingStep1Query query workflow.
+    /// </summary>
     public sealed class GetOffboardingStep1QueryHandler : IRequestHandler<GetOffboardingStep1Query, ProcessResult<OffboardingStep1PageViewModel>>
     {
         private readonly ApplicationDbContext _context;
@@ -27,6 +32,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<OffboardingStep1PageViewModel>> Handle(GetOffboardingStep1Query request, CancellationToken cancellationToken)
         {
             var offboardingRequest = await _context.OffboardingRequests

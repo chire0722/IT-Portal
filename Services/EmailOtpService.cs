@@ -1,3 +1,5 @@
+// Project comment: EmailOtpService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using Microsoft.AspNetCore.DataProtection;
@@ -9,12 +11,18 @@ using System.Security.Cryptography; // Added this namespace
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides IEmailOtp service behavior for the application.
+    /// </summary>
     public interface IEmailOtpService
     {
         Task<string> GenerateOtpAsync(string email, string ipAddress, bool sendEmail = true);
         Task<bool> ValidateOtpAsync(string email, string code);
     }
 
+    /// <summary>
+    /// Provides EmailOtp service behavior for the application.
+    /// </summary>
     public class EmailOtpService : IEmailOtpService
     {
         private readonly ApplicationDbContext _context;
@@ -37,6 +45,9 @@ namespace IT_Form.Services
             _otpProtector = dataProtectionProvider.CreateProtector("IT_Form.EmailOtpService.Code");
         }
 
+        /// <summary>
+        /// Runs the GenerateOtpAsync operation.
+        /// </summary>
         public async Task<string> GenerateOtpAsync(string email, string ipAddress, bool sendEmail = true)
         {
             // Reuse the MediatR pipeline transaction when one already exists.
@@ -119,6 +130,9 @@ namespace IT_Form.Services
             }
         }
 
+        /// <summary>
+        /// Validates data for the ValidateOtpAsync operation.
+        /// </summary>
         public async Task<bool> ValidateOtpAsync(string email, string code)
         {
             var otpRecord = await _context.OtpRecords
@@ -166,8 +180,14 @@ namespace IT_Form.Services
             return true;
         }
 
+        /// <summary>
+        /// Runs the ProtectCode operation.
+        /// </summary>
         private string ProtectCode(string code) => _otpProtector.Protect(code);
 
+        /// <summary>
+        /// Runs the UnprotectCodeOrFallback operation.
+        /// </summary>
         private string UnprotectCodeOrFallback(string protectedOrPlainCode)
         {
             try

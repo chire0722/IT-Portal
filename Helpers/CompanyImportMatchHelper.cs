@@ -1,8 +1,13 @@
+// Project comment: CompanyImportMatchHelper.cs is part of the IT Form application source code.
+
 using System.Text.RegularExpressions;
 using IT_Form.Models;
 
 namespace IT_Form.Helpers
 {
+    /// <summary>
+    /// Defines the CompanyImportMatchHelper class used by the IT Form application.
+    /// </summary>
     public static class CompanyImportMatchHelper
     {
         private static readonly string[] LegalSuffixes =
@@ -16,6 +21,9 @@ namespace IT_Form.Helpers
             "PTE. LTD."
         };
 
+        /// <summary>
+        /// Runs the FindCompanyByReference operation.
+        /// </summary>
         public static Company? FindCompanyByReference(IEnumerable<Company> companies, string? reference)
         {
             if (string.IsNullOrWhiteSpace(reference))
@@ -83,6 +91,9 @@ namespace IT_Form.Helpers
             return partialMatches.Count == 1 ? partialMatches[0] : null;
         }
 
+        /// <summary>
+        /// Runs the SplitCompanyReferences operation.
+        /// </summary>
         public static List<string> SplitCompanyReferences(string? input)
         {
             var results = new List<string>();
@@ -118,6 +129,9 @@ namespace IT_Form.Helpers
             return results;
         }
 
+        /// <summary>
+        /// Runs the NormalizeForComparison operation.
+        /// </summary>
         private static string NormalizeForComparison(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -133,6 +147,9 @@ namespace IT_Form.Helpers
             return normalized.ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Runs the AddSegment operation.
+        /// </summary>
         private static void AddSegment(List<string> results, System.Text.StringBuilder current)
         {
             var value = current.ToString().Trim();
@@ -144,6 +161,9 @@ namespace IT_Form.Helpers
             current.Clear();
         }
 
+        /// <summary>
+        /// Runs the NormalizeCompanyName operation.
+        /// </summary>
         private static string NormalizeCompanyName(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -165,6 +185,9 @@ namespace IT_Form.Helpers
             return normalized;
         }
 
+        /// <summary>
+        /// Runs the NormalizeLotKey operation.
+        /// </summary>
         private static string NormalizeLotKey(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -199,12 +222,18 @@ namespace IT_Form.Helpers
             return string.Empty;
         }
 
+        /// <summary>
+        /// Runs the CompanyMatchesTokens operation.
+        /// </summary>
         private static bool CompanyMatchesTokens(Company company, IReadOnlyCollection<string> referenceTokens)
         {
             var companyTokens = BuildCompanyTokens(company);
             return referenceTokens.All(companyTokens.Contains);
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildCompanyTokens operation.
+        /// </summary>
         private static HashSet<string> BuildCompanyTokens(Company company)
         {
             var tokens = new HashSet<string>(StringComparer.Ordinal);
@@ -228,6 +257,9 @@ namespace IT_Form.Helpers
             return tokens;
         }
 
+        /// <summary>
+        /// Runs the TokenizeReference operation.
+        /// </summary>
         private static HashSet<string> TokenizeReference(string reference)
         {
             var tokens = new HashSet<string>(StringComparer.Ordinal);
@@ -249,6 +281,9 @@ namespace IT_Form.Helpers
             return tokens;
         }
 
+        /// <summary>
+        /// Runs the AddNormalizedTokens operation.
+        /// </summary>
         private static void AddNormalizedTokens(HashSet<string> tokens, string? value, bool keepLegalSuffixes)
         {
             foreach (var token in NormalizeToSearchTokens(value, keepLegalSuffixes))
@@ -257,6 +292,9 @@ namespace IT_Form.Helpers
             }
         }
 
+        /// <summary>
+        /// Runs the NormalizeToSearchTokens operation.
+        /// </summary>
         private static IEnumerable<string> NormalizeToSearchTokens(string? value, bool keepLegalSuffixes)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -282,6 +320,9 @@ namespace IT_Form.Helpers
                 .Where(IsMeaningfulSearchToken);
         }
 
+        /// <summary>
+        /// Runs the IsMeaningfulSearchToken operation.
+        /// </summary>
         private static bool IsMeaningfulSearchToken(string token)
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -294,6 +335,9 @@ namespace IT_Form.Helpers
                 : token.Length >= 3;
         }
 
+        /// <summary>
+        /// Runs the StripLotPrefix operation.
+        /// </summary>
         private static string StripLotPrefix(string token)
         {
             if (!token.StartsWith("LOT", StringComparison.Ordinal) || token.Length <= 3)
@@ -304,11 +348,17 @@ namespace IT_Form.Helpers
             return token[3..];
         }
 
+        /// <summary>
+        /// Defines the struct record used by the IT Form application.
+        /// </summary>
         private readonly record struct CompanyReferenceIdentity(
             string NormalizedDisplay,
             string NormalizedName,
             string NormalizedLot)
         {
+            /// <summary>
+            /// Runs the FromReference operation.
+            /// </summary>
             public static CompanyReferenceIdentity FromReference(string? value)
             {
                 if (string.IsNullOrWhiteSpace(value))

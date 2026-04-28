@@ -1,3 +1,5 @@
+// Project comment: LegacySensitiveUploadMigrationService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides LegacySensitiveUploadMigration service behavior for the application.
+    /// </summary>
     public class LegacySensitiveUploadMigrationService
     {
         private readonly ApplicationDbContext _context;
@@ -21,6 +26,9 @@ namespace IT_Form.Services
             _logger = logger;
         }
 
+        /// <summary>
+        /// Runs the MigrateAsync operation.
+        /// </summary>
         public async Task<int> MigrateAsync(CancellationToken cancellationToken = default)
         {
             var updatedRecords = 0;
@@ -36,6 +44,9 @@ namespace IT_Form.Services
             return updatedRecords;
         }
 
+        /// <summary>
+        /// Runs the MigrateOffboardingFilesAsync operation.
+        /// </summary>
         private async Task<int> MigrateOffboardingFilesAsync(CancellationToken cancellationToken)
         {
             var updated = 0;

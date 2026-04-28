@@ -1,3 +1,5 @@
+// Project comment: EditOnboardingRequestSupport.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -6,8 +8,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
 {
+    /// <summary>
+    /// Defines the EditOnboardingRequestSupport class used by the IT Form application.
+    /// </summary>
     internal static class EditOnboardingRequestSupport
     {
+        /// <summary>
+        /// Applies changes for the ApplyCoreFields operation.
+        /// </summary>
         internal static void ApplyCoreFields(OnboardingRequest target, OnboardingRequest source)
         {
             target.FullName = source.FullName;
@@ -36,6 +44,9 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
             target.OtherFolderDetails = source.OtherFolderDetails;
         }
 
+        /// <summary>
+        /// Runs the ReplaceRequestedSoftwareAsync operation.
+        /// </summary>
         internal static async Task ReplaceRequestedSoftwareAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -61,6 +72,9 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
             }
         }
 
+        /// <summary>
+        /// Runs the ReplaceEmailGroupsAsync operation.
+        /// </summary>
         internal static async Task ReplaceEmailGroupsAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -86,6 +100,9 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
             }
         }
 
+        /// <summary>
+        /// Runs the ReplaceSharedMailboxesAsync operation.
+        /// </summary>
         internal static async Task ReplaceSharedMailboxesAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -111,6 +128,9 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
             }
         }
 
+        /// <summary>
+        /// Runs the ReplaceIssuedAssets operation.
+        /// </summary>
         internal static void ReplaceIssuedAssets(OnboardingRequest onboardingRequest, IReadOnlyCollection<IssuedAsset>? issuedAssets)
         {
             onboardingRequest.IssuedAssets = issuedAssets?
@@ -128,6 +148,9 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
                 .ToList() ?? [];
         }
 
+        /// <summary>
+        /// Runs the ReplaceIssuedAssets operation.
+        /// </summary>
         internal static void ReplaceIssuedAssets(OnboardingRequest onboardingRequest, IReadOnlyCollection<IT_Form.ViewModels.AssetItemViewModel>? issuedAssets)
         {
             onboardingRequest.IssuedAssets = issuedAssets?
@@ -145,6 +168,9 @@ namespace IT_Form.Application.Features.Onboarding.EditOnboardingRequest
                 .ToList() ?? [];
         }
 
+        /// <summary>
+        /// Applies changes for the ApplyLegacySoftwareFlags operation.
+        /// </summary>
         internal static void ApplyLegacySoftwareFlags(OnboardingRequest target, OnboardingRequest source)
         {
             target.HasAdobe = source.HasAdobe;

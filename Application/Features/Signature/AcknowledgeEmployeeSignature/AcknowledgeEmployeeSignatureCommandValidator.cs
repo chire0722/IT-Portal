@@ -1,7 +1,12 @@
+// Project comment: AcknowledgeEmployeeSignatureCommandValidator.cs is part of the IT Form application source code.
+
 using FluentValidation;
 
 namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
 {
+    /// <summary>
+    /// Validates input for the AcknowledgeEmployeeSignatureCommand request.
+    /// </summary>
     public sealed class AcknowledgeEmployeeSignatureCommandValidator : AbstractValidator<AcknowledgeEmployeeSignatureCommand>
     {
         public AcknowledgeEmployeeSignatureCommandValidator()

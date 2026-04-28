@@ -1,3 +1,5 @@
+// Project comment: OnboardingStep2QueryHandlerTests.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Features.Onboarding.Flows;
 using IT_Form.Models.Enums;
@@ -7,9 +9,15 @@ using Xunit;
 
 namespace IT_Form.Tests;
 
+/// <summary>
+/// Defines the OnboardingStep2QueryHandlerTests class used by the IT Form application.
+/// </summary>
 public class OnboardingStep2QueryHandlerTests
 {
     [Fact]
+    /// <summary>
+    /// Runs the Handle_LoadsDefaultRequestCategories_AndKeepsCustomRows operation.
+    /// </summary>
     public async Task Handle_LoadsDefaultRequestCategories_AndKeepsCustomRows()
     {
         var sessionModel = new OnboardingViewModel
@@ -67,6 +75,9 @@ public class OnboardingStep2QueryHandlerTests
     }
 
     [Fact]
+    /// <summary>
+    /// Runs the Handle_PreservesSelectedCategory_WhenItIsNotPartOfTheDefaultList operation.
+    /// </summary>
     public async Task Handle_PreservesSelectedCategory_WhenItIsNotPartOfTheDefaultList()
     {
         var sessionModel = new OnboardingViewModel

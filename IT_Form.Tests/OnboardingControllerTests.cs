@@ -1,3 +1,5 @@
+// Project comment: OnboardingControllerTests.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,9 +32,15 @@ using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
 {
+    /// <summary>
+    /// Defines the OnboardingControllerTests class used by the IT Form application.
+    /// </summary>
     public class OnboardingControllerTests : ControllerTestBase
     {
         [Fact]
+        /// <summary>
+        /// Runs the Index_ReturnsView_ForHRRole operation.
+        /// </summary>
         public async Task Index_ReturnsView_ForHRRole()
         {
             using var context = CreateContext();
@@ -55,6 +63,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Step1_Post_SavesToSession_ValidData operation.
+        /// </summary>
         public async Task Step1_Post_SavesToSession_ValidData()
         {
             using var context = CreateContext();
@@ -88,6 +99,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Step1_Post_ReturnsView_WhenModelIsNull_Adversarial operation.
+        /// </summary>
         public async Task Step1_Post_ReturnsView_WhenModelIsNull_Adversarial()
         {
             using var context = CreateContext();
@@ -102,6 +116,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the GeneratePdf_ReturnsFileResult_WhenQueryReturnsBinaryPayload operation.
+        /// </summary>
         public async Task GeneratePdf_ReturnsFileResult_WhenQueryReturnsBinaryPayload()
         {
             var sender = new Mock<MediatR.ISender>();
@@ -119,6 +136,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the Edit_Post_BlockedIfPendingSign_Adversarial operation.
+        /// </summary>
         public async Task Edit_Post_BlockedIfPendingSign_Adversarial()
         {
             using var context = CreateContext();
@@ -142,6 +162,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Deletes data for the Delete_Blocked_ForHR_WhenNotDraft_Adversarial operation.
+        /// </summary>
         public async Task Delete_Blocked_ForHR_WhenNotDraft_Adversarial()
         {
             using var context = CreateContext();
@@ -162,6 +185,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the ManageAccess_Get_ReturnsCurrentEmployeeAssignments_ForIT operation.
+        /// </summary>
         public async Task ManageAccess_Get_ReturnsCurrentEmployeeAssignments_ForIT()
         {
             using var context = CreateContext();
@@ -199,6 +225,9 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        /// <summary>
+        /// Runs the ManageAccess_Post_UpdatesAssignments_ForCurrentEmployee operation.
+        /// </summary>
         public async Task ManageAccess_Post_UpdatesAssignments_ForCurrentEmployee()
         {
             using var context = CreateContext();
@@ -293,6 +322,9 @@ namespace IT_Form.Tests
             Assert.True(updated.HasOtherFolder);
         }
 
+        /// <summary>
+        /// Builds the value returned by the BuildController operation.
+        /// </summary>
         private static OnboardingController BuildController(MediatR.ISender sender, string role = "HR", string username = "testuser", ISession? session = null)
         {
             var controller = new OnboardingController(sender);

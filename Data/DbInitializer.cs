@@ -1,3 +1,5 @@
+// Project comment: DbInitializer.cs is part of the IT Form application source code.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +12,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace IT_Form.Data
 {
+    /// <summary>
+    /// Defines the DbInitializer class used by the IT Form application.
+    /// </summary>
     public static class DbInitializer
     {
         private const string HardcodedBootstrapPassword = "Abc123!xyz";
@@ -21,12 +26,18 @@ namespace IT_Form.Data
             new("itdept", "it@itportal.com", "IT Administrator", "IT", "IT", ["it@ytcprecast.com"])
         ];
 
+        /// <summary>
+        /// Runs the readonly operation.
+        /// </summary>
         private static readonly (string RequestType, int TargetDays, int EscalationDaysTier1, int EscalationDaysTier2)[] DefaultSlaSettings =
         {
             ("Onboarding", 3, 3, 7),
             ("Offboarding", 3, 3, 7)
         };
 
+        /// <summary>
+        /// Runs the EnsureDefaultSlaSettingsAsync operation.
+        /// </summary>
         public static async Task EnsureDefaultSlaSettingsAsync(ApplicationDbContext context)
         {
             var existingSettings = await context.SlaSettings.ToListAsync();
@@ -62,6 +73,9 @@ namespace IT_Form.Data
             }
         }
 
+        /// <summary>
+        /// Runs the NormalizeSlaRequestType operation.
+        /// </summary>
         public static string NormalizeSlaRequestType(string? requestType)
         {
             if (string.IsNullOrWhiteSpace(requestType))
@@ -72,6 +86,9 @@ namespace IT_Form.Data
             return requestType.Trim();
         }
 
+        /// <summary>
+        /// Runs the Seed operation.
+        /// </summary>
         public static void Seed(ApplicationDbContext context)
         {
             // Only seed if there are no companies
@@ -302,6 +319,9 @@ namespace IT_Form.Data
             context.SaveChanges();
         }
 
+        /// <summary>
+        /// Runs the SeedUsersAsync operation.
+        /// </summary>
         public static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration)
         {
             var seedPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"])
@@ -397,6 +417,9 @@ namespace IT_Form.Data
             }
         }
 
+        /// <summary>
+        /// Runs the SeedUserAsync operation.
+        /// </summary>
         private static async Task SeedUserAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, string username, string email, string fullName, string department, string title, string password)
         {
             var existingUser = await userManager.FindByEmailAsync(email);
@@ -431,19 +454,25 @@ namespace IT_Form.Data
                     await context.SaveChangesAsync();
                 }
 
-                // Ensure Username and Sync Password if changed in config (only for seeds)
+                // Keep the bootstrap password strictly first-use only. Do not reset an
+                // existing seed user's password after they have completed first login.
                 if (existingUser.UserName != username)
                 {
                     existingUser.UserName = username;
-                    await userManager.RemovePasswordAsync(existingUser);
-                    await userManager.AddPasswordAsync(existingUser, password);
                 }
 
-                existingUser.MustChangePassword = true;
+                if (string.IsNullOrWhiteSpace(existingUser.PasswordHash))
+                {
+                    existingUser.MustChangePassword = true;
+                }
+
                 await userManager.UpdateAsync(existingUser);
             }
         }
 
+        /// <summary>
+        /// Runs the NormalizeSeedPassword operation.
+        /// </summary>
         private static string? NormalizeSeedPassword(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -460,6 +489,9 @@ namespace IT_Form.Data
             return trimmed;
         }
 
+        /// <summary>
+        /// Defines the SeedUserDefinition record used by the IT Form application.
+        /// </summary>
         private sealed record SeedUserDefinition(
             string UserName,
             string Email,

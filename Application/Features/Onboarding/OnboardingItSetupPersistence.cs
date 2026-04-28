@@ -1,11 +1,19 @@
+// Project comment: OnboardingItSetupPersistence.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.ViewModels;
 
 namespace IT_Form.Application.Features.Onboarding
 {
+    /// <summary>
+    /// Defines the OnboardingItSetupPersistence class used by the IT Form application.
+    /// </summary>
     internal static class OnboardingItSetupPersistence
     {
+        /// <summary>
+        /// Saves data for the SaveDraftAsync operation.
+        /// </summary>
         public static async Task SaveDraftAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -43,6 +51,9 @@ namespace IT_Form.Application.Features.Onboarding
             await context.SaveChangesAsync(cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the ReplaceRequestSoftwareAsync operation.
+        /// </summary>
         public static async Task ReplaceRequestSoftwareAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -69,6 +80,9 @@ namespace IT_Form.Application.Features.Onboarding
             }
         }
 
+        /// <summary>
+        /// Runs the ReplaceRequestEmailGroupsAsync operation.
+        /// </summary>
         public static async Task ReplaceRequestEmailGroupsAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -96,6 +110,9 @@ namespace IT_Form.Application.Features.Onboarding
             }
         }
 
+        /// <summary>
+        /// Runs the ReplaceRequestSharedMailboxesAsync operation.
+        /// </summary>
         public static async Task ReplaceRequestSharedMailboxesAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -123,6 +140,9 @@ namespace IT_Form.Application.Features.Onboarding
             }
         }
 
+        /// <summary>
+        /// Runs the ReplaceFolderPermissions operation.
+        /// </summary>
         public static void ReplaceFolderPermissions(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
@@ -142,6 +162,9 @@ namespace IT_Form.Application.Features.Onboarding
             }
         }
 
+        /// <summary>
+        /// Applies changes for the ApplySessionDetails operation.
+        /// </summary>
         public static void ApplySessionDetails(OnboardingRequest onboardingRequest, OnboardingViewModel session)
         {
             onboardingRequest.OtherGroup = session.OtherGroup;

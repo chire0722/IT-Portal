@@ -1,7 +1,12 @@
+// Project comment: ForceChangePasswordPageViewModel.cs is part of the IT Form application source code.
+
 using System.ComponentModel.DataAnnotations;
 
 namespace IT_Form.Application.Features.Account.Writes.ForceChangePassword;
 
+/// <summary>
+/// Provides view data for the ForceChangePasswordPage screen or form.
+/// </summary>
 public sealed class ForceChangePasswordPageViewModel
 {
     [Display(Name = "Current Password")]

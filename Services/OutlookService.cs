@@ -1,3 +1,5 @@
+// Project comment: OutlookService.cs is part of the IT Form application source code.
+
 using IT_Form.Data;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.InteropServices;
@@ -5,6 +7,9 @@ using System.Runtime.Versioning;
 
 namespace IT_Form.Services
 {
+    /// <summary>
+    /// Provides Outlook service behavior for the application.
+    /// </summary>
     public class OutlookService : IOutlookService
     {
         private readonly ILogger<OutlookService> _logger;
@@ -21,6 +26,9 @@ namespace IT_Form.Services
             _scopeFactory = scopeFactory;
         }
 
+        /// <summary>
+        /// Runs the DisplayEmail operation.
+        /// </summary>
         public void DisplayEmail(string to, string subject, string htmlBody, byte[]? attachment = null, string? attachmentName = null, string cc = "", string? signatureBase64 = null, bool bypassActiveCheck = false)
         {
             try

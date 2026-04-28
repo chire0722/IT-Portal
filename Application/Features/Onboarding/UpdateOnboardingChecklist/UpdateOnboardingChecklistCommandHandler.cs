@@ -1,3 +1,5 @@
+// Project comment: UpdateOnboardingChecklistCommandHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using MediatR;
@@ -5,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingChecklist
 {
+    /// <summary>
+    /// Handles the UpdateOnboardingChecklistCommand command workflow.
+    /// </summary>
     public sealed class UpdateOnboardingChecklistCommandHandler : IRequestHandler<UpdateOnboardingChecklistCommand, ProcessResult<object>>
     {
         private readonly ApplicationDbContext _context;
@@ -14,6 +19,9 @@ namespace IT_Form.Application.Features.Onboarding.UpdateOnboardingChecklist
             _context = context;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<ProcessResult<object>> Handle(UpdateOnboardingChecklistCommand request, CancellationToken cancellationToken)
         {
             var onboardingRequest = await _context.OnboardingRequests

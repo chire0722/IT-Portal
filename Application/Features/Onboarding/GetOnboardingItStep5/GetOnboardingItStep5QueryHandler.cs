@@ -1,3 +1,5 @@
+// Project comment: GetOnboardingItStep5QueryHandler.cs is part of the IT Form application source code.
+
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Models;
 using IT_Form.ViewModels;
@@ -6,6 +8,9 @@ using Microsoft.AspNetCore.Identity;
 
 namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep5
 {
+    /// <summary>
+    /// Handles the GetOnboardingItStep5Query query workflow.
+    /// </summary>
     public sealed class GetOnboardingItStep5QueryHandler : IRequestHandler<GetOnboardingItStep5Query, GetOnboardingItStep5Result>
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -19,6 +24,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep5
             _currentUserAccessor = currentUserAccessor;
         }
 
+        /// <summary>
+        /// Executes the request and returns the workflow result.
+        /// </summary>
         public async Task<GetOnboardingItStep5Result> Handle(GetOnboardingItStep5Query request, CancellationToken cancellationToken)
         {
             var model = request.SessionModel;
@@ -43,6 +51,9 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingItStep5
                 model.Id);
         }
 
+        /// <summary>
+        /// Maps data for the MapToViewModel operation.
+        /// </summary>
         private static OnboardingStep5PageViewModel MapToViewModel(
             OnboardingViewModel model,
             int requestId,

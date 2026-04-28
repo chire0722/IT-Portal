@@ -1,3 +1,5 @@
+// Project comment: CreateSharedMailboxCommandHandler.cs is part of the IT Form application source code.
+
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
@@ -10,6 +12,9 @@ using SharedMailboxEntity = IT_Form.Models.SharedMailbox;
 
 namespace IT_Form.Application.Features.SharedMailboxes.Writes.CreateSharedMailbox;
 
+/// <summary>
+/// Handles the CreateSharedMailboxCommand command workflow.
+/// </summary>
 public sealed class CreateSharedMailboxCommandHandler : IRequestHandler<CreateSharedMailboxCommand, int>
 {
     private readonly ApplicationDbContext _context;
@@ -21,6 +26,9 @@ public sealed class CreateSharedMailboxCommandHandler : IRequestHandler<CreateSh
         _currentUserAccessor = currentUserAccessor;
     }
 
+    /// <summary>
+    /// Executes the request and returns the workflow result.
+    /// </summary>
     public async Task<int> Handle(CreateSharedMailboxCommand request, CancellationToken cancellationToken)
     {
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanyIds, cancellationToken);
@@ -33,6 +41,9 @@ public sealed class CreateSharedMailboxCommandHandler : IRequestHandler<CreateSh
         return entity.Id;
     }
 
+    /// <summary>
+    /// Runs the EnsureRequestedCompaniesAreInScopeAsync operation.
+    /// </summary>
     private async Task EnsureRequestedCompaniesAreInScopeAsync(IEnumerable<int> selectedCompanyIds, CancellationToken cancellationToken)
     {
         var isAssignable = await ItAdminCompanyScopeSupport.AreRequestedCompanyIdsAssignableAsync(

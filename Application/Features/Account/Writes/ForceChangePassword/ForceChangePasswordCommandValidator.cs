@@ -18,16 +18,12 @@ public sealed class ForceChangePasswordCommandValidator : AbstractValidator<Forc
         RuleFor(x => x.UserId)
             .NotEmpty();
 
-        RuleFor(x => x.CurrentPassword)
-            .NotEmpty()
-            .WithMessage("Current password is required.");
-
         RuleFor(x => x.NewPassword)
             .NotEmpty()
             .WithMessage("New password is required.")
             .MinimumLength(passwordOptions.RequiredLength)
             .WithMessage($"Password must be at least {passwordOptions.RequiredLength} characters.")
-            .Must((command, password) => !string.Equals(command.CurrentPassword, password, StringComparison.Ordinal))
+            .Must((command, password) => string.IsNullOrEmpty(command.CurrentPassword) || !string.Equals(command.CurrentPassword, password, StringComparison.Ordinal))
             .WithMessage("New password must be different from the current password.");
 
         RuleFor(x => x.ConfirmPassword)

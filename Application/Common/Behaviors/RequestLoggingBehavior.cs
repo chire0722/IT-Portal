@@ -1,5 +1,6 @@
 // Project comment: RequestLoggingBehavior.cs is part of the IT Form application source code.
 
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -42,6 +43,25 @@ namespace IT_Form.Application.Common.Behaviors
                 }
 
                 return response;
+            }
+            catch (ValidationException ex)
+            {
+                if (isCommand)
+                {
+                    _logger.LogInformation(
+                        "Validation failed for command {CommandName}: {ValidationErrors}",
+                        requestName,
+                        string.Join("; ", ex.Errors.Select(error => $"{error.PropertyName}: {error.ErrorMessage}")));
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Validation failed for MediatR request {RequestName}: {ValidationErrors}",
+                        requestName,
+                        string.Join("; ", ex.Errors.Select(error => $"{error.PropertyName}: {error.ErrorMessage}")));
+                }
+
+                throw;
             }
             catch (Exception ex)
             {

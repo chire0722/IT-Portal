@@ -5,8 +5,10 @@ using FluentValidation.Results;
 using IT_Form.Application.Common.Support;
 using IT_Form.Helpers;
 using IT_Form.Application.Common.Exceptions;
+using IT_Form.Application.Features.UserManagement;
 using IT_Form.Data;
 using IT_Form.Models;
+using IT_Form.Security;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -57,6 +59,16 @@ public sealed class DeleteUserManagementCommandHandler : IRequestHandler<DeleteU
         if (currentUser != null && currentUser.Id == user.Id)
         {
             throw new ValidationException([new ValidationFailure(string.Empty, "You cannot delete your own account.")]);
+        }
+
+        if (UserManagementVisibility.IsSuperAdminUser(user))
+        {
+            if (!UserManagementVisibility.CanSeeSuperAdminUsers(principal))
+            {
+                throw new NotFoundException(nameof(ApplicationUser), request.Id);
+            }
+
+            throw new ValidationException([new ValidationFailure(string.Empty, "The Super Admin account cannot be deleted.")]);
         }
 
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(principal);

@@ -72,7 +72,7 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
                     var cooldownCutoff = now - AccountOtpSupport.RequestCooldown;
                     var lastRequestedAtUtc = await _context.OtpRecords
                         .AsNoTracking()
-                        .Where(otp => otp.Email == user.Email)
+                        .Where(otp => otp.Email == user.Email && otp.Purpose == OtpPurposes.PasswordReset)
                         .OrderByDescending(otp => otp.CreatedAt)
                         .Select(otp => (DateTime?)otp.CreatedAt)
                         .FirstOrDefaultAsync(ct);
@@ -87,7 +87,7 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
                     }
 
                     await _context.OtpRecords
-                        .Where(otp => otp.Email == user.Email && !otp.IsUsed && !otp.IsLocked)
+                        .Where(otp => otp.Email == user.Email && otp.Purpose == OtpPurposes.PasswordReset && !otp.IsUsed && !otp.IsLocked)
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(otp => otp.IsUsed, true)
                             .SetProperty(otp => otp.IsLocked, true), ct);
@@ -97,6 +97,7 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
                     {
                         Email = user.Email,
                         Code = AccountOtpSupport.HashCode(code),
+                        Purpose = OtpPurposes.PasswordReset,
                         ExpiresAt = now.Add(AccountOtpSupport.OtpLifetime),
                         IpAddress = request.ClientIp,
                         CreatedAt = now

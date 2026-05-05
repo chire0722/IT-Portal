@@ -21,6 +21,7 @@ using IT_Form.Application.Features.Account.ResetPassword;
 using IT_Form.Application.Features.Account.VerifyOtp;
 using IT_Form.Application.Features.Account.Writes.ForceChangePassword;
 using IT_Form.Application.Features.Account.Writes.Logout;
+using IT_Form.Application.Features.Account.Writes.ProfilePasswordChange;
 using IT_Form.Application.Features.Account.Writes.ResendOtp;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
@@ -760,6 +761,85 @@ public class AccountFeatureSliceTests
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.ErrorMessage == "New password must be different from the current password.");
+    }
+
+    [Fact]
+    public void BeginProfilePasswordChangeValidator_RequiresDoubleVerificationInputs()
+    {
+        var validator = new BeginProfilePasswordChangeCommandValidator(
+            Options.Create(new IdentityOptions
+            {
+                Password =
+                {
+                    RequiredLength = 10,
+                    RequireDigit = true,
+                    RequireLowercase = true,
+                    RequireUppercase = true,
+                    RequireNonAlphanumeric = true,
+                    RequiredUniqueChars = 4
+                }
+            }));
+
+        var result = validator.Validate(new BeginProfilePasswordChangeCommand(
+            "user-id",
+            "CurrentPassword123!",
+            "CurrentPassword123!",
+            "DifferentPassword123!",
+            "127.0.0.1"));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.ErrorMessage == "New password must be different from the current password.");
+        Assert.Contains(result.Errors, error => error.ErrorMessage == "Passwords do not match.");
+    }
+
+    [Fact]
+    public async Task BeginProfilePasswordChangeHandler_VerifiesCurrentPasswordAndQueuesOtp()
+    {
+        using var context = CreateContext();
+        var user = new ApplicationUser
+        {
+            Id = "profile-change-user",
+            UserName = "profile.user",
+            Email = "profile.user@example.com",
+            FullName = "Profile User",
+            IsActive = true
+        };
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        var userManager = CreateUserManager();
+        userManager.Setup(manager => manager.FindByIdAsync(user.Id)).ReturnsAsync(user);
+        userManager.Setup(manager => manager.CheckPasswordAsync(user, "CurrentPassword123!")).ReturnsAsync(true);
+        var queue = new Mock<IEmailBackgroundQueue>();
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var dataProtectionProvider = DataProtectionProvider.Create(new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())));
+        var handler = new BeginProfilePasswordChangeCommandHandler(
+            userManager.Object,
+            context,
+            new SecureOtpGenerator(),
+            queue.Object,
+            new KeyedLockProvider(),
+            cache,
+            dataProtectionProvider,
+            Mock.Of<ILogger<BeginProfilePasswordChangeCommandHandler>>());
+
+        var result = await handler.Handle(new BeginProfilePasswordChangeCommand(
+            user.Id,
+            "CurrentPassword123!",
+            "NewPassword123!",
+            "NewPassword123!",
+            "127.0.0.1"), CancellationToken.None);
+
+        Assert.False(string.IsNullOrWhiteSpace(result.RequestId));
+        Assert.Equal(user.Email, result.Email);
+        Assert.Single(context.OtpRecords.Where(otp => otp.Email == user.Email && otp.Purpose == OtpPurposes.ProfilePasswordChange));
+        Assert.True(cache.TryGetValue($"profile-password-change:{user.Id}:{result.RequestId}", out string? protectedPayload));
+        Assert.False(string.IsNullOrWhiteSpace(protectedPayload));
+        queue.Verify(queue => queue.QueueEmailAsync(
+            It.Is<OtpEmailMessage>(message =>
+                message.Email == user.Email &&
+                message.Subject.Contains("Confirm Password Change")),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     /// <summary>

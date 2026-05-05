@@ -2,6 +2,7 @@
 
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Features.AuditLogs.Flows;
+using IT_Form.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -10,7 +11,7 @@ using MediatR;
 namespace IT_Form.Controllers
 {
     [ApiController]
-    [Authorize(Policy = "RequireHROrIT")]
+    [Authorize(Policy = "RequireIT")]
     [Route("api/audit-logs")]
     [EnableRateLimiting("fixed")]
     /// <summary>
@@ -37,21 +38,21 @@ namespace IT_Form.Controllers
             [FromQuery] DateTime? endDate,
             [FromQuery] bool? isSuccess,
             [FromQuery] int page = 1)
-            => Ok(await _sender.Send(new GetAuditLogListApiQuery(entity, auditAction, search, startDate, endDate, isSuccess, page)));
+            => Ok(await _sender.Send(new GetAuditLogListApiQuery(entity, auditAction, search, startDate, endDate, isSuccess, page, !PortalTitles.IsSuperAdmin(User))));
 
         [HttpGet("{id:int}")]
         /// <summary>
         /// Gets the data required by the GetDetails operation.
         /// </summary>
         public async Task<IActionResult> GetDetails(int id)
-            => HandleProcessResult(await _sender.Send(new GetAuditLogDetailsApiQuery(id)));
+            => HandleProcessResult(await _sender.Send(new GetAuditLogDetailsApiQuery(id, !PortalTitles.IsSuperAdmin(User))));
 
         [HttpGet("{id:int}/chain")]
         /// <summary>
         /// Gets the data required by the GetChain operation.
         /// </summary>
         public async Task<IActionResult> GetChain(int id, [FromQuery] bool failuresOnly = false)
-            => HandleProcessResult(await _sender.Send(new GetAuditLogChainApiQuery(id, failuresOnly)));
+            => HandleProcessResult(await _sender.Send(new GetAuditLogChainApiQuery(id, failuresOnly, !PortalTitles.IsSuperAdmin(User))));
 
         [HttpGet("summary")]
         /// <summary>
@@ -64,6 +65,6 @@ namespace IT_Form.Controllers
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
             [FromQuery] bool? isSuccess)
-            => Ok(await _sender.Send(new GetAuditLogSummaryApiQuery(entity, auditAction, search, startDate, endDate, isSuccess)));
+            => Ok(await _sender.Send(new GetAuditLogSummaryApiQuery(entity, auditAction, search, startDate, endDate, isSuccess, !PortalTitles.IsSuperAdmin(User))));
     }
 }

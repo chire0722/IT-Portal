@@ -294,8 +294,9 @@
       <li><span class="toc-num">9</span><span class="toc-label">Digital Signatures & PDF Export</span></li>
       <li><span class="toc-num">10</span><span class="toc-label">Email Notifications</span></li>
       <li><span class="toc-num">11</span><span class="toc-label">User Roles & Permissions</span></li>
-      <li><span class="toc-num">12</span><span class="toc-label">Configuration (IT Admin Only)</span></li>
-      <li><span class="toc-num">13</span><span class="toc-label">Frequently Asked Questions (FAQ)</span></li>
+      <li><span class="toc-num">12</span><span class="toc-label">Reserved Technical Administration Control</span></li>
+      <li><span class="toc-num">13</span><span class="toc-label">Configuration (IT Admin Only)</span></li>
+      <li><span class="toc-num">14</span><span class="toc-label">Frequently Asked Questions (FAQ)</span></li>
     </ul>
   </div>
 
@@ -339,6 +340,7 @@
       <a href="#signatures">Signatures & PDF</a>
       <a href="#email">Email Notifications</a>
       <a href="#roles">Roles & Permissions</a>
+      <a href="#reserved-admin">Reserved Technical Control</a>
       <a href="#config">Configuration</a>
       <a href="#faq">FAQ</a>
     </nav>
@@ -850,7 +852,7 @@
           <thead><tr><th>Form Type</th><th>Signature Chain</th></tr></thead>
           <tbody>
             <tr><td><strong>Onboarding</strong></td><td>HR (Requester) → IT Admin → Employee</td></tr>
-            <tr><td><strong>Offboarding</strong></td><td>HR → HOD (Manager) → IT Admin → Employee</td></tr>
+            <tr><td><strong>Offboarding</strong></td><td>HR → HOD → IT Admin → Employee</td></tr>
           </tbody>
         </table>
       </section>
@@ -867,7 +869,7 @@
           <tbody>
             <tr><td>HR submits onboarding</td><td>IT Department</td><td>Notify IT to begin provisioning</td></tr>
             <tr><td>IT completes onboarding</td><td>Employee</td><td>Send acknowledgement link</td></tr>
-            <tr><td>HR submits offboarding</td><td>HOD</td><td>Request manager sign-off</td></tr>
+            <tr><td>HR submits offboarding</td><td>HOD</td><td>Request HOD sign-off</td></tr>
             <tr><td>HOD signs offboarding</td><td>IT Department</td><td>Notify IT to begin deprovisioning</td></tr>
             <tr><td>IT completes offboarding</td><td>Employee</td><td>Send acknowledgement link</td></tr>
             <tr><td>Request rejected</td><td>Original submitter</td><td>Inform with rejection reason</td></tr>
@@ -915,7 +917,7 @@
             <tr><td>IT Assets</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>Software List</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>System Users</td><td>—</td><td>✅</td><td>—</td></tr>
-            <tr><td>Audit Logs</td><td>✅</td><td>✅</td><td>—</td></tr>
+            <tr><td>Audit Logs</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>Due Date Setup</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>Configuration (Companies, Depts, etc.)</td><td>—</td><td>✅</td><td>—</td></tr>
           </tbody>
@@ -923,8 +925,20 @@
       </section>
 
       <!-- ══════════════════════════════════════════════════════════════ -->
-      <!-- SECTION 12: CONFIGURATION                                      -->
+      <!-- SECTION 12: RESERVED TECHNICAL ADMINISTRATION CONTROL           -->
       <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="reserved-admin">
+        <h2>Reserved Technical Administration Control</h2>
+        <p>The System contains normal Company user roles such as IT, HR, and HOD. In addition, the System may contain a reserved technical administration control used only for limited technical purposes authorised under the applicable agreement.</p>
+        <p>This reserved technical administration control is not a normal Company user role and is not intended for daily operational use by Company staff. Its purpose may include backup-related controls, quota or usage-limit controls, service-plan controls, authorised troubleshooting, and protection of system stability.</p>
+        <p>The user guide does not disclose passwords, secret keys, private tokens, privileged routes, credential recovery methods, or internal implementation details for security and confidentiality reasons.</p>
+        <div class="note info">
+          <span class="label info">PDPA</span><br>
+          Technical administration activity is purpose-limited. Any support activity involving personal data should be handled only where authorised and necessary for the agreed technical purpose, and should follow applicable Personal Data Protection Act 2010 (PDPA), confidentiality, and security requirements.
+        </div>
+      </section>
+
+      <!-- SECTION 13: CONFIGURATION                                      -->
       <section class="panel" id="config">
         <h2>Configuration (IT Admin Only)</h2>
 

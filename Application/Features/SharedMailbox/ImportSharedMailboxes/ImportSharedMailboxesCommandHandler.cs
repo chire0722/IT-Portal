@@ -3,6 +3,7 @@
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -18,11 +19,13 @@ namespace IT_Form.Application.Features.SharedMailbox.ImportSharedMailboxes
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IQuotaControl _quotaControl;
 
-        public ImportSharedMailboxesCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        public ImportSharedMailboxesCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
+            _quotaControl = quotaControl ?? new QuotaControl(context);
         }
 
         /// <summary>
@@ -49,6 +52,24 @@ namespace IT_Form.Application.Features.SharedMailbox.ImportSharedMailboxes
                 return new ImportSharedMailboxesResult(false, string.Empty, "The Excel file appears to be empty.");
             }
             var rows = usedRange.RowsUsed().Skip(1);
+            var rowList = rows.ToList();
+            var candidateAddresses = rowList
+                .Where(row => !string.IsNullOrWhiteSpace(row.Cell(1).GetString().Trim()))
+                .Select(row => row.Cell(2).GetString().Trim())
+                .Where(address => !string.IsNullOrWhiteSpace(address))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var existingAddresses = await _context.SharedMailboxes
+                .Where(mailbox => candidateAddresses.Contains(mailbox.MailboxAddress))
+                .Select(mailbox => mailbox.MailboxAddress)
+                .ToListAsync(cancellationToken);
+            var newCount = candidateAddresses.Count(address => !existingAddresses.Contains(address, StringComparer.OrdinalIgnoreCase));
+            if (newCount > 0)
+            {
+                await _quotaControl.EnsureAvailableAsync(QuotaControl.SharedMailboxes, newCount, _currentUserAccessor.User, cancellationToken);
+            }
+
+            rows = rowList;
 
             var allCompanies = await _context.Companies.ToListAsync(cancellationToken);
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

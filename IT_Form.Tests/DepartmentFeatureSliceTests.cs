@@ -125,6 +125,30 @@ public class DepartmentFeatureSliceTests
 
     [Fact]
     /// <summary>
+    /// Creates data for the CreateDepartmentHandler_AllowsGlobalAccessUserToCreateGlobalDepartment operation.
+    /// </summary>
+    public async Task CreateDepartmentHandler_AllowsGlobalAccessUserToCreateGlobalDepartment()
+    {
+        using var context = CreateContext();
+
+        var handler = new CreateDepartmentCommandHandler(
+            context,
+            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+
+        var id = await handler.Handle(
+            new CreateDepartmentCommand("Global Support", null, true, []),
+            CancellationToken.None);
+
+        var entity = await context.Departments
+            .Include(department => department.DepartmentCompanies)
+            .SingleAsync(department => department.Id == id);
+
+        Assert.Equal("Global Support", entity.Name);
+        Assert.Empty(entity.DepartmentCompanies);
+    }
+
+    [Fact]
+    /// <summary>
     /// Updates data for the UpdateDepartmentHandler_ThrowsNotFound_WhenDepartmentMissing operation.
     /// </summary>
     public async Task UpdateDepartmentHandler_ThrowsNotFound_WhenDepartmentMissing()

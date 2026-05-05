@@ -1,7 +1,11 @@
 // Project comment: CreateCompanyCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
+using IT_Form.Services;
 using Mapster;
+using Microsoft.AspNetCore.Http;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using CompanyEntity = IT_Form.Models.Company;
@@ -15,13 +19,19 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
 {
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _hostEnvironment;
+    private readonly IQuotaControl _quotaControl;
+    private readonly ICurrentUserAccessor _currentUserAccessor;
 
     public CreateCompanyCommandHandler(
         ApplicationDbContext context,
-        IWebHostEnvironment hostEnvironment)
+        IWebHostEnvironment hostEnvironment,
+        IQuotaControl? quotaControl = null,
+        ICurrentUserAccessor? currentUserAccessor = null)
     {
         _context = context;
         _hostEnvironment = hostEnvironment;
+        _quotaControl = quotaControl ?? new QuotaControl(context);
+        _currentUserAccessor = currentUserAccessor ?? new CurrentUserAccessor(new HttpContextAccessor());
     }
 
     /// <summary>
@@ -29,6 +39,8 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
     /// </summary>
     public async Task<int> Handle(CreateCompanyCommand request, CancellationToken cancellationToken)
     {
+        await _quotaControl.EnsureAvailableAsync(QuotaControl.Companies, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
+
         if (request.IsLoginPageLogo)
         {
             var companiesWithLoginLogo = await _context.Companies

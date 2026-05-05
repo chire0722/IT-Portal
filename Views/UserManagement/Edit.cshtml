@@ -90,6 +90,15 @@
                         <span class="badge-completed">HOD</span>
                     </label>
                 </div>
+                @if (User.HasClaim("UserTitle", "SuperAdmin"))
+                {
+                    <div class="form-check">
+                        <input asp-for="IsSuperAdmin" class="form-check-input" />
+                        <label asp-for="IsSuperAdmin" class="form-check-label">
+                            <span class="badge-danger">Super Admin</span>
+                        </label>
+                    </div>
+                }
             </div>
 
             <hr class="my-4" />

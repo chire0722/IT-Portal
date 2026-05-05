@@ -8,6 +8,7 @@ using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
+using IT_Form.Security;
 using Mapster;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -488,10 +489,11 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
     public async Task<ProcessResult<HomePageResult>> Handle(GetHomeAnalyticsQuery request, CancellationToken cancellationToken)
     {
         var user = _currentUserAccessor.User;
-        var isHr = user.HasClaim("UserTitle", "HR");
-        var isIt = user.HasClaim("UserTitle", "IT");
+        var isHr = user.HasClaim("UserTitle", PortalTitles.HR);
+        var isSuperAdmin = PortalTitles.IsSuperAdmin(user);
+        var isIt = PortalTitles.IsPrivilegedIt(user);
 
-        if (!isHr && !isIt)
+        if (!isHr && !isIt && !isSuperAdmin)
         {
             return ProcessResult<HomePageResult>.Forbidden();
         }
@@ -1040,6 +1042,11 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
                 1);
         }
 
+        if (isSuperAdmin)
+        {
+            await PopulateSuperAdminAnalyticsAsync(viewModel, cancellationToken);
+        }
+
         return ProcessResult<HomePageResult>.Success(new HomePageResult(
             viewModel,
             period.IsCurrentYear,
@@ -1048,6 +1055,102 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
             selectedCompany?.Id,
             selectedCompany?.DisplayName));
     }
+
+    private async Task PopulateSuperAdminAnalyticsAsync(DashboardViewModel viewModel, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var since24h = DateTime.UtcNow.AddHours(-24);
+        var since7d = DateTime.UtcNow.AddDays(-7);
+        var settings = await _context.SystemSettings
+            .AsNoTracking()
+            .ToDictionaryAsync(setting => setting.Key, setting => setting.Value, cancellationToken);
+
+        viewModel.SuperAdminActiveCompanyCount = await _context.Companies.CountAsync(company => company.IsActive, cancellationToken);
+        viewModel.SuperAdminInactiveCompanyCount = await _context.Companies.CountAsync(company => !company.IsActive, cancellationToken);
+        viewModel.SuperAdminActiveUserCount = await _context.Users.CountAsync(user => user.IsActive, cancellationToken);
+        viewModel.SuperAdminInactiveUserCount = await _context.Users.CountAsync(user => !user.IsActive, cancellationToken);
+        viewModel.SuperAdminLockedUserCount = (await _context.Users
+            .AsNoTracking()
+            .Where(user => user.LockoutEnd != null)
+            .Select(user => user.LockoutEnd)
+            .ToListAsync(cancellationToken))
+            .Count(lockoutEnd => lockoutEnd > now);
+        viewModel.SuperAdminFailedLoginCount24h = await _context.AuditLogs.CountAsync(log => log.CreatedAt >= since24h && log.Action.Contains("Login") && !log.IsSuccess, cancellationToken);
+        viewModel.SuperAdminFailedOtpCount24h = await _context.OtpRecords.CountAsync(otp => otp.CreatedAt >= since24h && otp.FailedAttempts > 0, cancellationToken);
+        viewModel.SuperAdminAuditFailureCount7d = await _context.AuditLogs.CountAsync(log => log.CreatedAt >= since7d && !log.IsSuccess, cancellationToken);
+        viewModel.SuperAdminHighRiskAuditCount7d = await _context.AuditLogs.CountAsync(log =>
+            log.CreatedAt >= since7d &&
+            (!log.IsSuccess ||
+             log.Action.Contains("Delete") ||
+             log.Action.Contains("Quota") ||
+             log.Action.Contains("SuperAdmin") ||
+             log.Action.Contains("Maintenance") ||
+             log.Action.Contains("Backup")),
+            cancellationToken);
+        viewModel.SuperAdminMaintenanceModeEnabled = ReadBool(settings, "ControlPlane.Maintenance.Enabled");
+        viewModel.SuperAdminMaintenanceModeReason = settings.GetValueOrDefault("ControlPlane.Maintenance.Reason");
+
+        var quotaRows = await BuildSuperAdminQuotaRowsAsync(settings, cancellationToken);
+        viewModel.SuperAdminQuotaUsage = quotaRows.ToDictionary(row => row.Label, row => row.Usage);
+        viewModel.SuperAdminQuotaLimits = quotaRows.ToDictionary(row => row.Label, row => row.Limit);
+        viewModel.SuperAdminQuotaFrozenCount = quotaRows.Count(row => row.ReadOnly);
+        viewModel.SuperAdminQuotaPressureCount = quotaRows.Count(row => row.Limit > 0 && row.Usage >= Math.Ceiling(row.Limit * 0.9m));
+
+        viewModel.SuperAdminControlPlaneActions = await _context.AuditLogs
+            .AsNoTracking()
+            .Where(log => log.CreatedAt >= since7d && (log.EntityName == "ControlPlane" || log.EntityName == "License"))
+            .GroupBy(log => log.Action)
+            .Select(group => new { Action = group.Key, Count = group.Count() })
+            .OrderByDescending(item => item.Count)
+            .Take(8)
+            .ToDictionaryAsync(item => item.Action, item => item.Count, cancellationToken);
+        viewModel.SuperAdminRecentControlEvents = await _context.AuditLogs
+            .AsNoTracking()
+            .Where(log => log.CreatedAt >= since7d && (log.EntityName == "ControlPlane" || log.EntityName == "License" || log.Action.Contains("SuperAdmin")))
+            .OrderByDescending(log => log.CreatedAt)
+            .Take(10)
+            .Select(log => new DashboardAuditLogItem
+            {
+                Id = log.Id,
+                UserId = log.UserId,
+                Timestamp = log.Timestamp,
+                CreatedAt = log.CreatedAt,
+                EntityName = log.EntityName,
+                EntityId = log.EntityId,
+                Action = log.Action,
+                PerformedBy = log.PerformedBy,
+                Details = log.Details,
+                IsSuccess = log.IsSuccess,
+                ErrorMessage = log.ErrorMessage
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<SuperAdminQuotaRow>> BuildSuperAdminQuotaRowsAsync(IReadOnlyDictionary<string, string> settings, CancellationToken cancellationToken)
+    {
+        var rows = new List<SuperAdminQuotaRow>
+        {
+            new("Assets", await _context.ITAssets.CountAsync(cancellationToken), ReadInt(settings, "ControlPlane.Quota.assets.Limit", 100), ReadBool(settings, "ControlPlane.Quota.assets.ReadOnly")),
+            new("Software", await _context.StandardSoftware.CountAsync(cancellationToken), ReadInt(settings, "ControlPlane.Quota.software.Limit", 10), ReadBool(settings, "ControlPlane.Quota.software.ReadOnly")),
+            new("Software Versions", await _context.SoftwareLicenses.CountAsync(cancellationToken), ReadInt(settings, "ControlPlane.Quota.softwareVersions.Limit", 20), ReadBool(settings, "ControlPlane.Quota.softwareVersions.ReadOnly")),
+            new("Companies", await _context.Companies.CountAsync(company => company.IsActive, cancellationToken), ReadInt(settings, "ControlPlane.Quota.companies.Limit", 3), ReadBool(settings, "ControlPlane.Quota.companies.ReadOnly")),
+            new("Users", await SystemUserQuotaSupport.CountableSystemUsers(_context.Users.AsNoTracking()).CountAsync(cancellationToken), ReadInt(settings, "ControlPlane.Quota.users.Limit", 10), ReadBool(settings, "ControlPlane.Quota.users.ReadOnly")),
+            new("Departments", await _context.Departments.CountAsync(department => department.IsActive, cancellationToken), ReadInt(settings, "ControlPlane.Quota.departments.Limit", 10), ReadBool(settings, "ControlPlane.Quota.departments.ReadOnly")),
+            new("Email Groups", await _context.EmailGroups.CountAsync(group => group.IsActive, cancellationToken), ReadInt(settings, "ControlPlane.Quota.emailGroups.Limit", 25), ReadBool(settings, "ControlPlane.Quota.emailGroups.ReadOnly")),
+            new("Shared Mailboxes", await _context.SharedMailboxes.CountAsync(mailbox => mailbox.IsActive, cancellationToken), ReadInt(settings, "ControlPlane.Quota.sharedMailboxes.Limit", 25), ReadBool(settings, "ControlPlane.Quota.sharedMailboxes.ReadOnly")),
+            new("Server Folders", await _context.ServerFolders.CountAsync(folder => folder.IsActive, cancellationToken), ReadInt(settings, "ControlPlane.Quota.serverFolders.Limit", 25), ReadBool(settings, "ControlPlane.Quota.serverFolders.ReadOnly"))
+        };
+
+        return rows;
+    }
+
+    private static int ReadInt(IReadOnlyDictionary<string, string> settings, string key, int fallback)
+        => settings.TryGetValue(key, out var value) && int.TryParse(value, out var parsed) && parsed >= 0 ? parsed : fallback;
+
+    private static bool ReadBool(IReadOnlyDictionary<string, string> settings, string key)
+        => settings.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed) && parsed;
+
+    private sealed record SuperAdminQuotaRow(string Label, int Usage, int Limit, bool ReadOnly);
 }
 
 /// <summary>

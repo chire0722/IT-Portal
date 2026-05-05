@@ -9,6 +9,6 @@ namespace IT_Form.Application.Features.Account.Writes.ForceChangePassword;
 /// </summary>
 public sealed record ForceChangePasswordCommand(
     string UserId,
-    string CurrentPassword,
+    string? CurrentPassword,
     string NewPassword,
     string ConfirmPassword) : IRequest<Unit>;

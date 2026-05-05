@@ -13,7 +13,8 @@ namespace IT_Form.Application.Features.Account.Queries.GetVerifyOtpPage;
 /// </summary>
 public sealed record GetVerifyOtpPageQuery(
     string Email,
-    string? Code = null) : IRequest<VerifyOtpViewModel>;
+    string? Code = null,
+    string Purpose = OtpPurposes.PasswordReset) : IRequest<VerifyOtpViewModel>;
 
 /// <summary>
 /// Handles the GetVerifyOtpPageQuery query workflow.
@@ -43,7 +44,7 @@ public sealed class GetVerifyOtpPageQueryHandler : IRequestHandler<GetVerifyOtpP
         {
             var lastRequestedAtUtc = await _context.OtpRecords
                 .AsNoTracking()
-                .Where(otp => otp.Email == userEmail)
+                .Where(otp => otp.Email == userEmail && otp.Purpose == request.Purpose)
                 .OrderByDescending(otp => otp.CreatedAt)
                 .Select(otp => (DateTime?)otp.CreatedAt)
                 .FirstOrDefaultAsync(cancellationToken);
@@ -62,6 +63,7 @@ public sealed class GetVerifyOtpPageQueryHandler : IRequestHandler<GetVerifyOtpP
         {
             Email = request.Email,
             Code = request.Code ?? string.Empty,
+            Purpose = request.Purpose,
             RemainingCooldownSeconds = remainingSeconds
         };
     }

@@ -16,8 +16,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                 .WithMessage("Username is required.");
 
             RuleFor(x => x.Password)
-                .NotEmpty()
-                .WithMessage("Password is required.");
+                .MaximumLength(256);
         }
     }
 }

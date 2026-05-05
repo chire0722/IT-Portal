@@ -3,6 +3,8 @@
 using ClosedXML.Excel;
 using IT_Form.Data;
 using IT_Form.Application.Features.StandardSoftware;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Helpers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +17,14 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
     public sealed class ImportStandardSoftwareCommandHandler : IRequestHandler<ImportStandardSoftwareCommand, ImportStandardSoftwareResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly IQuotaControl _quotaControl;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public ImportStandardSoftwareCommandHandler(ApplicationDbContext context)
+        public ImportStandardSoftwareCommandHandler(ApplicationDbContext context, IQuotaControl quotaControl, ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _quotaControl = quotaControl;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -49,6 +55,29 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             var rows = usedRange.RowsUsed().Skip(1);
+            var rowList = rows.ToList();
+            var candidateSoftware = rowList
+                .Select(row => row.Cell(1).GetString().Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var existingSoftware = await _context.StandardSoftware
+                .Where(software => candidateSoftware.Contains(software.SoftwareName))
+                .Select(software => software.SoftwareName)
+                .ToListAsync(cancellationToken);
+            var newSoftwareCount = candidateSoftware.Count(name => !existingSoftware.Contains(name, StringComparer.OrdinalIgnoreCase));
+            if (newSoftwareCount > 0)
+            {
+                await _quotaControl.EnsureAvailableAsync(QuotaControl.Software, newSoftwareCount, _currentUserAccessor.User, cancellationToken);
+            }
+
+            var candidateVersionCount = rowList.Count(row => !string.IsNullOrWhiteSpace(row.Cell(4).GetString().Trim()));
+            if (candidateVersionCount > 0)
+            {
+                await _quotaControl.EnsureAvailableAsync(QuotaControl.SoftwareVersions, candidateVersionCount, _currentUserAccessor.User, cancellationToken);
+            }
+
+            rows = rowList;
             foreach (var row in rows)
             {
                 var softwareName = row.Cell(1).GetString().Trim();

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Common.Support;
@@ -17,7 +18,7 @@ internal static class ItAdminCompanyScopeSupport
     /// Runs the HasGlobalAccess operation.
     /// </summary>
     public static bool HasGlobalAccess(ClaimsPrincipal? user)
-        => user?.HasClaim("UserTitle", "IT") == true;
+        => PortalTitles.HasGlobalCompanyAccess(user);
 
     /// <summary>
     /// Gets the data required by the GetScopedCompanies operation.
@@ -114,7 +115,7 @@ internal static class ItAdminCompanyScopeSupport
 
         if (requestedIds.Count == 0)
         {
-            return false;
+            return GetScopedCompanies(user).Count == 0;
         }
 
         if (!HasGlobalAccess(user))

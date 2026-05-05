@@ -49,6 +49,9 @@ namespace IT_Form.ViewModels
         [Display(Name = "HOD")]
         public bool IsHOD { get; set; }
 
+        [Display(Name = "Super Admin")]
+        public bool IsSuperAdmin { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         // Company checkboxes (Dynamic)

@@ -3,6 +3,7 @@
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -18,11 +19,13 @@ namespace IT_Form.Application.Features.Department.ImportDepartments
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IQuotaControl _quotaControl;
 
-        public ImportDepartmentsCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        public ImportDepartmentsCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
+            _quotaControl = quotaControl ?? new QuotaControl(context);
         }
 
         /// <summary>
@@ -55,6 +58,21 @@ namespace IT_Form.Application.Features.Department.ImportDepartments
                 StringComparison.OrdinalIgnoreCase);
 
             var rows = usedRange.RowsUsed().Skip(1);
+            var candidateAdditions = rows
+                .Select(row => row.Cell(1).GetString().Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var existingNames = await _context.Departments
+                .Where(department => candidateAdditions.Contains(department.Name))
+                .Select(department => department.Name)
+                .ToListAsync(cancellationToken);
+            var newCount = candidateAdditions.Count(name => !existingNames.Contains(name, StringComparer.OrdinalIgnoreCase));
+            if (newCount > 0)
+            {
+                await _quotaControl.EnsureAvailableAsync(QuotaControl.Departments, newCount, _currentUserAccessor.User, cancellationToken);
+            }
+
             var allCompanies = await _context.Companies.ToListAsync(cancellationToken);
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0

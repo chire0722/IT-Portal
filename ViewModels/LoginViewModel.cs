@@ -13,10 +13,9 @@ namespace IT_Form.ViewModels
         [Display(Name = "Username")]
         public string Username { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Password is required.")]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
-        public string Password { get; set; } = string.Empty;
+        public string? Password { get; set; }
 
         [Display(Name = "Remember me")]
         public bool RememberMe { get; set; }

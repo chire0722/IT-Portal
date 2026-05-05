@@ -20,18 +20,19 @@ public sealed record GetAuditLogListApiQuery(
     DateTime? StartDate,
     DateTime? EndDate,
     bool? IsSuccess,
-    int Page = 1) : IRequest<AuditLogListApiResponse>;
+    int Page = 1,
+    bool HideProtectedActorEntries = false) : IRequest<AuditLogListApiResponse>;
 
 /// <summary>
 /// Carries data needed to execute the GetAuditLogDetailsApi query.
 /// </summary>
-public sealed record GetAuditLogDetailsApiQuery(int Id)
+public sealed record GetAuditLogDetailsApiQuery(int Id, bool HideProtectedActorEntries = false)
     : IRequest<ProcessResult<AuditLogDetailsApiResponse>>;
 
 /// <summary>
 /// Carries data needed to execute the GetAuditLogChainApi query.
 /// </summary>
-public sealed record GetAuditLogChainApiQuery(int Id, bool FailuresOnly = false)
+public sealed record GetAuditLogChainApiQuery(int Id, bool FailuresOnly = false, bool HideProtectedActorEntries = false)
     : IRequest<ProcessResult<AuditLogChainApiResponse>>;
 
 /// <summary>
@@ -43,7 +44,8 @@ public sealed record GetAuditLogSummaryApiQuery(
     string? Search,
     DateTime? StartDate,
     DateTime? EndDate,
-    bool? IsSuccess) : IRequest<AuditLogSummaryApiResponse>;
+    bool? IsSuccess,
+    bool HideProtectedActorEntries = false) : IRequest<AuditLogSummaryApiResponse>;
 
 /// <summary>
 /// Handles the GetAuditLogListApiQuery query workflow.
@@ -65,7 +67,9 @@ public sealed class GetAuditLogListApiQueryHandler
     public async Task<AuditLogListApiResponse> Handle(GetAuditLogListApiQuery request, CancellationToken cancellationToken)
     {
         var filter = request.ToFilterParameters();
-        var query = AuditLogReadSupport.ApplyFilters(_context.AuditLogs.AsNoTracking(), filter);
+        var query = AuditLogReadSupport.ApplyFilters(
+            AuditLogReadSupport.HideProtectedActorEntries(_context.AuditLogs.AsNoTracking(), _context, request.HideProtectedActorEntries),
+            filter);
         var page = request.Page < 1 ? 1 : request.Page;
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -114,8 +118,10 @@ public sealed class GetAuditLogDetailsApiQueryHandler
     /// </summary>
     public async Task<ProcessResult<AuditLogDetailsApiResponse>> Handle(GetAuditLogDetailsApiQuery request, CancellationToken cancellationToken)
     {
-        var log = await _context.AuditLogs
-            .AsNoTracking()
+        var log = await AuditLogReadSupport.HideProtectedActorEntries(
+                _context.AuditLogs.AsNoTracking(),
+                _context,
+                request.HideProtectedActorEntries)
             .FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
 
         return log == null
@@ -142,8 +148,12 @@ public sealed class GetAuditLogChainApiQueryHandler
     /// </summary>
     public async Task<ProcessResult<AuditLogChainApiResponse>> Handle(GetAuditLogChainApiQuery request, CancellationToken cancellationToken)
     {
-        var anchor = await _context.AuditLogs
-            .AsNoTracking()
+        var baseQuery = AuditLogReadSupport.HideProtectedActorEntries(
+            _context.AuditLogs.AsNoTracking(),
+            _context,
+            request.HideProtectedActorEntries);
+
+        var anchor = await baseQuery
             .FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
 
         if (anchor == null)
@@ -152,12 +162,8 @@ public sealed class GetAuditLogChainApiQueryHandler
         }
 
         var fullChainQuery = anchor.CorrelationId.HasValue
-            ? _context.AuditLogs
-                .AsNoTracking()
-                .Where(a => a.CorrelationId == anchor.CorrelationId)
-            : _context.AuditLogs
-                .AsNoTracking()
-                .Where(a => a.Id == anchor.Id);
+            ? baseQuery.Where(a => a.CorrelationId == anchor.CorrelationId)
+            : baseQuery.Where(a => a.Id == anchor.Id);
 
         var fullCount = await fullChainQuery.CountAsync(cancellationToken);
         var failureCount = await fullChainQuery.CountAsync(a => !a.IsSuccess, cancellationToken);
@@ -202,7 +208,9 @@ public sealed class GetAuditLogSummaryApiQueryHandler
     public async Task<AuditLogSummaryApiResponse> Handle(GetAuditLogSummaryApiQuery request, CancellationToken cancellationToken)
     {
         var filter = request.ToFilterParameters();
-        var query = AuditLogReadSupport.ApplyFilters(_context.AuditLogs.AsNoTracking(), filter);
+        var query = AuditLogReadSupport.ApplyFilters(
+            AuditLogReadSupport.HideProtectedActorEntries(_context.AuditLogs.AsNoTracking(), _context, request.HideProtectedActorEntries),
+            filter);
         var failureQuery = query.Where(a => !a.IsSuccess);
 
         var totalCount = await query.CountAsync(cancellationToken);

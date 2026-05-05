@@ -98,7 +98,7 @@ public class StandardSoftwareFeatureSliceTests
 
         var handler = new AddSoftwareLicenseCommandHandler(
             context,
-            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+            new TestCurrentUserAccessor("super-user", titles: ["SuperAdmin"]));
         var result = await handler.Handle(new AddSoftwareLicenseCommand(10, "Office E3", null, true, false, null, 10, null, null, []), CancellationToken.None);
 
         Assert.Equal(AddSoftwareLicenseStatus.InvalidSubscriptionExpiry, result.Status);
@@ -116,7 +116,7 @@ public class StandardSoftwareFeatureSliceTests
 
         var handler = new AddSoftwareLicenseCommandHandler(
             context,
-            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+            new TestCurrentUserAccessor("super-user", titles: ["SuperAdmin"]));
         var result = await handler.Handle(
             new AddSoftwareLicenseCommand(
                 11,
@@ -141,9 +141,9 @@ public class StandardSoftwareFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Runs the AddSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToCreateGlobalVersion operation.
+    /// Runs the AddSoftwareLicenseHandler_AllowsSuperAdmin_ToCreateGlobalVersion operation.
     /// </summary>
-    public async Task AddSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToCreateGlobalVersion()
+    public async Task AddSoftwareLicenseHandler_AllowsSuperAdmin_ToCreateGlobalVersion()
     {
         using var context = CreateContext();
         context.StandardSoftware.Add(new StandardSoftware { Id = 12, SoftwareName = "Adobe Acrobat" });
@@ -151,7 +151,7 @@ public class StandardSoftwareFeatureSliceTests
 
         var handler = new AddSoftwareLicenseCommandHandler(
             context,
-            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+            new TestCurrentUserAccessor("super-user", titles: ["SuperAdmin"]));
         var result = await handler.Handle(
             new AddSoftwareLicenseCommand(
                 12,
@@ -194,7 +194,7 @@ public class StandardSoftwareFeatureSliceTests
 
         var handler = new EditSoftwareLicenseCommandHandler(
             context,
-            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+            new TestCurrentUserAccessor("super-user", titles: ["SuperAdmin"]));
         var result = await handler.Handle(
             new EditSoftwareLicenseCommand(
                 30,
@@ -215,9 +215,9 @@ public class StandardSoftwareFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Runs the EditSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToEditScopedVersion operation.
+    /// Runs the EditSoftwareLicenseHandler_AllowsSuperAdmin_ToEditScopedVersion operation.
     /// </summary>
-    public async Task EditSoftwareLicenseHandler_AllowsItUserWithoutCompanyAssignment_ToEditScopedVersion()
+    public async Task EditSoftwareLicenseHandler_AllowsSuperAdmin_ToEditScopedVersion()
     {
         using var context = CreateContext();
         context.Companies.Add(new Company { Id = 3, Name = "Alpha", IsActive = true });
@@ -237,7 +237,7 @@ public class StandardSoftwareFeatureSliceTests
 
         var handler = new EditSoftwareLicenseCommandHandler(
             context,
-            new TestCurrentUserAccessor("it-user", titles: ["IT"]));
+            new TestCurrentUserAccessor("super-user", titles: ["SuperAdmin"]));
         var result = await handler.Handle(
             new EditSoftwareLicenseCommand(
                 33,

@@ -18,4 +18,5 @@ public sealed record CreateUserManagementCommand(
     bool IsHR,
     bool IsHOD,
     bool IsActive,
-    List<string>? SelectedCompanies) : IRequest<string>;
+    List<string>? SelectedCompanies,
+    bool IsSuperAdmin = false) : IRequest<string>;

@@ -1,6 +1,7 @@
 // Project comment: AuditLoggingBehavior.cs is part of the IT Form application source code.
 
 using System.Text.Json;
+using FluentValidation;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -123,7 +124,19 @@ namespace IT_Form.Application.Common.Behaviors
                     _logger.LogError(auditEx, "Failed to persist audit log for command {CommandName}", action);
                 }
 
-                _logger.LogError(ex, "Command {CommandName} failed for user {UserId}", action, userId);
+                if (ex is ValidationException validationException)
+                {
+                    _logger.LogInformation(
+                        "Validation failed for command {CommandName} by user {UserId}: {ValidationErrors}",
+                        action,
+                        userId,
+                        string.Join("; ", validationException.Errors.Select(error => $"{error.PropertyName}: {error.ErrorMessage}")));
+                }
+                else
+                {
+                    _logger.LogError(ex, "Command {CommandName} failed for user {UserId}", action, userId);
+                }
+
                 throw;
             }
             finally

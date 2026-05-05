@@ -7,6 +7,7 @@ using IT_Form.Data;
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.ITAsset.EditItAsset;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using System.Linq;
@@ -29,11 +30,13 @@ namespace IT_Form.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ISender _sender;
+        private readonly IQuotaControl _quotaControl;
 
-        public ITAssetController(ApplicationDbContext context, ISender sender)
+        public ITAssetController(ApplicationDbContext context, ISender sender, IQuotaControl quotaControl)
         {
             _context = context;
             _sender = sender;
+            _quotaControl = quotaControl;
         }
 
         // GET: ITAsset
@@ -381,6 +384,8 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            await _quotaControl.EnsureWritableAsync(QuotaControl.Assets, User, CancellationToken.None);
+
             var itAsset = await _context.ITAssets
                 .IgnoreQueryFilters()
                 .AsNoTracking()
@@ -418,6 +423,8 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ToggleNoExtendWarranty(int id)
         {
+            await _quotaControl.EnsureWritableAsync(QuotaControl.Assets, User, CancellationToken.None);
+
             var asset = await _context.ITAssets.FindAsync(id);
             if (asset == null) return NotFound();
             if (!ItAdminCompanyScopeSupport.CanAccessCompany(User, asset.Company)) return Forbid();
@@ -554,6 +561,11 @@ namespace IT_Form.Controllers
                         var worksheet = workbook.Worksheet(1);
                         var rangeUsed = worksheet.RangeUsed();
                         var rows = rangeUsed != null ? rangeUsed.RowsUsed().Skip(1) : Enumerable.Empty<IXLRangeRow>();
+                        var candidateRows = rows
+                            .Where(row => !string.IsNullOrWhiteSpace(row.Cell(1).GetValue<string>()?.Trim()))
+                            .ToList();
+                        await _quotaControl.EnsureAvailableAsync(QuotaControl.Assets, candidateRows.Count, User, CancellationToken.None);
+                        rows = candidateRows;
 
                         int successCount = 0;
                         int errorCount = 0;

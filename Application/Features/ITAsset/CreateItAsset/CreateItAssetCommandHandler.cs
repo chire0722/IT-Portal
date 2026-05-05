@@ -3,6 +3,7 @@
 using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
@@ -17,11 +18,13 @@ namespace IT_Form.Application.Features.ITAsset.CreateItAsset
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IQuotaControl _quotaControl;
 
-        public CreateItAssetCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        public CreateItAssetCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
+            _quotaControl = quotaControl ?? new QuotaControl(context);
         }
 
         /// <summary>
@@ -29,6 +32,8 @@ namespace IT_Form.Application.Features.ITAsset.CreateItAsset
         /// </summary>
         public async Task<CommandResponse> Handle(CreateItAssetCommand request, CancellationToken cancellationToken)
         {
+            await _quotaControl.EnsureAvailableAsync(QuotaControl.Assets, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
+
             if (!ItAdminCompanyScopeSupport.CanAccessCompany(_currentUserAccessor.User, request.Asset.Company))
             {
                 return new CommandResponse

@@ -9,5 +9,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
         bool IsAuthenticated,
         string Message,
         bool MustChangePassword = false,
-        DateTimeOffset? LockoutEndUtc = null);
+        DateTimeOffset? LockoutEndUtc = null,
+        bool RequiresOtp = false,
+        string? OtpEmail = null);
 }

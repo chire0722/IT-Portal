@@ -3,17 +3,21 @@
 using System.Security.Claims;
 using FluentValidation;
 using IT_Form.Application.Common.Exceptions;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Application.Features.UserManagement.Writes.CreateUserManagement;
 using IT_Form.Application.Features.UserManagement.Writes.DeleteUserManagement;
 using IT_Form.Application.Features.UserManagement.Writes.ToggleUserManagementActive;
 using IT_Form.Application.Features.UserManagement.Writes.UpdateUserManagement;
 using IT_Form.Data;
+using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
+using IT_Form.Security;
 using IT_Form.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -74,6 +78,84 @@ public class UserManagementFeatureSliceTests
                 "Missing User",
                 "missing",
                 "missing@test.local",
+                "IT",
+                null,
+                null,
+                true,
+                false,
+                false,
+                true,
+                []), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CreateHandler_DoesNotConsumeUserQuota_WhenCreatingSuperAdmin()
+    {
+        using var context = CreateContext();
+        var userManager = CreateUserManager();
+        userManager
+            .Setup(manager => manager.CreateAsync(It.IsAny<ApplicationUser>(), "Password123!"))
+            .Callback<ApplicationUser, string>((user, _) => context.Users.Add(user))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var quota = new Mock<IQuotaControl>(MockBehavior.Strict);
+        var handler = new CreateUserManagementCommandHandler(
+            userManager.Object,
+            context,
+            new TestCurrentUserAccessor(titles: [PortalTitles.SuperAdmin]),
+            Mock.Of<IEmailBackgroundQueue>(),
+            new ConfigurationBuilder().Build(),
+            Mock.Of<ILogger<CreateUserManagementCommandHandler>>(),
+            quota.Object);
+
+        await handler.Handle(new CreateUserManagementCommand(
+            "Super Admin",
+            "super.admin",
+            null,
+            "IT",
+            "Password123!",
+            "Password123!",
+            false,
+            false,
+            false,
+            true,
+            [],
+            true), CancellationToken.None);
+
+        quota.Verify(manager => manager.EnsureAvailableAsync(
+            QuotaControl.Users,
+            It.IsAny<int>(),
+            It.IsAny<ClaimsPrincipal?>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateHandler_HidesSuperAdminTarget_FromItUsers()
+    {
+        using var context = CreateContext();
+        context.Users.Add(new ApplicationUser
+        {
+            Id = "super",
+            UserName = "super",
+            FullName = "Super Admin",
+            Email = "super@test.local",
+            IsActive = true,
+            UserTitles = [new UserTitle { Title = PortalTitles.SuperAdmin }]
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new UpdateUserManagementCommandHandler(
+            CreateUserManager().Object,
+            context,
+            new TestCurrentUserAccessor(titles: [PortalTitles.IT]),
+            Mock.Of<ILogger<UpdateUserManagementCommandHandler>>());
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            handler.Handle(new UpdateUserManagementCommand(
+                "super",
+                "Super Admin",
+                "super",
+                "super@test.local",
                 "IT",
                 null,
                 null,

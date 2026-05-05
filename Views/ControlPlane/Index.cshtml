@@ -1,0 +1,88 @@
+@* Project comment: Index.cshtml renders restricted runtime quota controls. *@
+
+@model IT_Form.Controllers.ControlPlanePageViewModel
+@{
+    ViewData["Title"] = "Advanced Settings";
+}
+
+<div class="mb-4 mt-3">
+    <h2 class="fw-bolder"><span class="text-gradient">Advanced Settings</span></h2>
+    <p style="color: var(--text-muted);">Adjust system limits and read-only quota controls.</p>
+    <a class="btn btn-outline-primary btn-sm" asp-action="Operations">
+        <i class="bi bi-command me-1" aria-hidden="true"></i>Operations Center
+    </a>
+</div>
+
+<div class="card animate-in">
+    <div class="card-body">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Quota</th>
+                            <th style="width: 140px;">Current Usage</th>
+                            <th style="width: 180px;">Limit</th>
+                            <th style="width: 160px;">Frozen Limit</th>
+                            <th style="width: 160px;">Read Only</th>
+                            <th style="width: 260px;">Reason</th>
+                            <th style="width: 180px;">Last Changed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Items.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@Model.Items[i].Label</strong>
+                                    <input type="hidden" asp-for="Items[i].Key" />
+                                    <input type="hidden" asp-for="Items[i].Label" />
+                                    <input type="hidden" asp-for="Items[i].CurrentUsage" />
+                                    <input type="hidden" asp-for="Items[i].FrozenLimit" />
+                                    <input type="hidden" asp-for="Items[i].ChangedBy" />
+                                    <input type="hidden" asp-for="Items[i].ChangedAtUtc" />
+                                </td>
+                                <td>@Model.Items[i].CurrentUsage</td>
+                                <td>
+                                    <input asp-for="Items[i].Limit" type="number" min="@Model.Items[i].CurrentUsage" class="form-control" />
+                                </td>
+                                <td>@Model.Items[i].FrozenLimit</td>
+                                <td>
+                                    <div class="form-check">
+                                        <input asp-for="Items[i].ReadOnly" class="form-check-input" />
+                                        <label asp-for="Items[i].ReadOnly" class="form-check-label">Freeze for IT</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input asp-for="Items[i].Reason" class="form-control" maxlength="250" placeholder="Reason for freeze or limit change" />
+                                </td>
+                                <td>
+                                    @if (Model.Items[i].ChangedAtUtc.HasValue)
+                                    {
+                                        <span>@Model.Items[i].ChangedAtUtc.GetValueOrDefault().ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                        @if (!string.IsNullOrWhiteSpace(Model.Items[i].ChangedBy))
+                                        {
+                                            <br />
+                                            <small class="text-muted">@Model.Items[i].ChangedBy</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not changed</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-2" aria-hidden="true"></i>Save Settings
+            </button>
+        </form>
+    </div>
+</div>

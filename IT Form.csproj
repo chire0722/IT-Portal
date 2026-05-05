@@ -52,6 +52,10 @@
     <Content Remove="bin\**" />
     <EmbeddedResource Remove="bin\**" />
     <None Remove="bin\**" />
+    <Compile Remove="App_Data\**" />
+    <Content Remove="App_Data\**" />
+    <EmbeddedResource Remove="App_Data\**" />
+    <None Remove="App_Data\**" />
     <Compile Remove="IT_Form.Tests\**" />
     <Content Remove="IT_Form.Tests\**" />
     <EmbeddedResource Remove="IT_Form.Tests\**" />

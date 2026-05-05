@@ -9,7 +9,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
     /// </summary>
     public sealed record LoginAccountCommand(
         string Username,
-        string Password,
+        string? Password,
         bool RememberMe,
         string ClientIp) : IRequest<LoginAccountResult>;
 }

@@ -28,7 +28,7 @@ namespace IT_Form.Tests
             context.ITAssets.Add(new ITAsset { AssetTag = "TAG-001", Company = "HQ", Status = AssetStatus.Available });
             await context.SaveChangesAsync();
 
-            var controller = GetController<ITAssetController>(context, role: "IT");
+            var controller = GetController<ITAssetController>(context, role: "IT", branch: "HQ");
             var result = await controller.Index(string.Empty, null, null);
 
             var viewResult = Assert.IsType<ViewResult>(result);
@@ -76,7 +76,7 @@ namespace IT_Form.Tests
                 new ITAsset { AssetTag = "TAG-102", Company = "Beta", Status = AssetStatus.Available });
             await context.SaveChangesAsync();
 
-            var controller = GetController<ITAssetController>(context, role: "IT");
+            var controller = GetController<ITAssetController>(context, role: "SuperAdmin");
             var result = await controller.Index(string.Empty, null, null, 1);
 
             var viewResult = Assert.IsType<ViewResult>(result);

@@ -1,0 +1,1031 @@
+@* Project comment: Operations.cshtml renders Super Admin Operations Center. *@
+
+@model IT_Form.Controllers.OperationsCenterViewModel
+@{
+    ViewData["Title"] = "Operations Center";
+
+    var databaseStatus = Model.Health.DatabaseAvailable ? "Online" : "Unavailable";
+    var databaseTone = Model.Health.DatabaseAvailable ? "success" : "danger";
+    var maintenanceTone = Model.Maintenance.Enabled ? "warning" : "success";
+    var maintenanceStatus = Model.Maintenance.Enabled ? "Enabled" : "Disabled";
+    var maintenanceReason = string.IsNullOrWhiteSpace(Model.Maintenance.Reason)
+        ? "No maintenance reason set."
+        : Model.Maintenance.Reason;
+}
+
+<style>
+    .ops-center {
+        --ops-border: #d7dee8;
+        --ops-border-soft: #e7ecf2;
+        --ops-page: #f7f9fc;
+        --ops-panel: #ffffff;
+        --ops-panel-subtle: #f8fafc;
+        --ops-text: #172033;
+        --ops-muted: #657287;
+        --ops-blue: #155da8;
+        --ops-blue-soft: #e8f1fb;
+        --ops-teal: #0f8f8d;
+        --ops-teal-soft: #e6f6f5;
+        --ops-green: #16834a;
+        --ops-green-soft: #e9f7ef;
+        --ops-amber: #a96300;
+        --ops-amber-soft: #fff3dc;
+        --ops-red: #c33535;
+        --ops-red-soft: #fae8e8;
+        color: var(--ops-text);
+    }
+
+    .ops-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: flex-start;
+        margin: 1rem 0 1.1rem;
+    }
+
+    .ops-title-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .ops-title {
+        margin: 0;
+        color: var(--ops-text);
+        font-size: clamp(1.45rem, 2.1vw, 2rem);
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1.1;
+    }
+
+    .ops-subtitle {
+        margin: .35rem 0 0;
+        color: var(--ops-muted);
+        font-size: .92rem;
+        max-width: 760px;
+    }
+
+    .ops-action-link,
+    .ops-button,
+    .ops-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        border-radius: 7px;
+        font-size: .82rem;
+        font-weight: 700;
+        line-height: 1.2;
+        text-decoration: none;
+        transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+        white-space: nowrap;
+    }
+
+    .ops-action-link {
+        min-height: 34px;
+        padding: .45rem .7rem;
+        border: 1px solid var(--ops-border);
+        color: var(--ops-blue);
+        background: #fff;
+    }
+
+    .ops-button {
+        min-height: 34px;
+        padding: .48rem .75rem;
+        border: 1px solid transparent;
+    }
+
+    .ops-button-primary {
+        background: var(--ops-blue);
+        color: #fff;
+        box-shadow: 0 6px 14px rgba(21, 93, 168, .18);
+    }
+
+    .ops-button-secondary {
+        background: #fff;
+        border-color: var(--ops-border);
+        color: var(--ops-text);
+    }
+
+    .ops-button-danger {
+        background: var(--ops-red);
+        color: #fff;
+    }
+
+    .ops-action-link:hover,
+    .ops-button:hover,
+    .ops-icon-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .ops-action-link:hover,
+    .ops-button-secondary:hover,
+    .ops-icon-btn:hover {
+        border-color: #b9c5d4;
+        background: var(--ops-panel-subtle);
+        color: var(--ops-blue);
+    }
+
+    .ops-status-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .75rem;
+        margin-bottom: .9rem;
+    }
+
+    .ops-status-card,
+    .ops-panel {
+        background: var(--ops-panel);
+        border: 1px solid var(--ops-border);
+        border-radius: 8px;
+        box-shadow: 0 8px 22px rgba(15, 32, 57, .045);
+    }
+
+    .ops-status-card {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: .85rem;
+        min-height: 112px;
+        padding: .95rem 1rem;
+        align-items: center;
+    }
+
+    .ops-status-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        border: 1px solid currentColor;
+        background: #fff;
+    }
+
+    .ops-tone-success {
+        color: var(--ops-green);
+        background: var(--ops-green-soft);
+    }
+
+    .ops-tone-warning {
+        color: var(--ops-amber);
+        background: var(--ops-amber-soft);
+    }
+
+    .ops-tone-danger {
+        color: var(--ops-red);
+        background: var(--ops-red-soft);
+    }
+
+    .ops-tone-info {
+        color: var(--ops-teal);
+        background: var(--ops-teal-soft);
+    }
+
+    .ops-kpi-label {
+        color: var(--ops-muted);
+        font-size: .74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .ops-kpi-value {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        margin-top: .12rem;
+        color: var(--ops-text);
+        font-size: 1.02rem;
+        font-weight: 800;
+    }
+
+    .ops-kpi-meta {
+        display: grid;
+        gap: .16rem;
+        margin-top: .4rem;
+        color: var(--ops-muted);
+        font-size: .78rem;
+    }
+
+    .ops-kpi-meta span {
+        display: flex;
+        justify-content: space-between;
+        gap: .75rem;
+    }
+
+    .ops-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .85rem;
+        align-items: start;
+    }
+
+    .ops-panel {
+        overflow: hidden;
+    }
+
+    .ops-panel-wide {
+        grid-column: 1 / -1;
+    }
+
+    .ops-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: 48px;
+        padding: .75rem .9rem;
+        border-bottom: 1px solid var(--ops-border-soft);
+        background: linear-gradient(180deg, #fff, #fbfcfe);
+    }
+
+    .ops-panel-title {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin: 0;
+        color: var(--ops-text);
+        font-size: .98rem;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .ops-panel-title i {
+        color: var(--ops-blue);
+    }
+
+    .ops-panel-body {
+        padding: .9rem;
+    }
+
+    .ops-table-wrap {
+        overflow-x: auto;
+    }
+
+    .ops-table-scroll {
+        max-height: 440px;
+        overflow: auto;
+        border: 1px solid var(--ops-border-soft);
+        border-radius: 8px;
+    }
+
+    .ops-table-scroll .ops-table th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #fff;
+    }
+
+    .ops-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+        color: var(--ops-text);
+        font-size: .82rem;
+    }
+
+    .ops-table th {
+        padding: .48rem .55rem;
+        border-bottom: 1px solid var(--ops-border);
+        color: #344155;
+        font-size: .72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        white-space: nowrap;
+    }
+
+    .ops-table td {
+        padding: .5rem .55rem;
+        border-bottom: 1px solid var(--ops-border-soft);
+        vertical-align: middle;
+    }
+
+    .ops-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .ops-name-cell {
+        min-width: 185px;
+        font-weight: 700;
+    }
+
+    .ops-muted {
+        color: var(--ops-muted);
+    }
+
+    .ops-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .28rem;
+        min-height: 22px;
+        padding: .16rem .5rem;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 800;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .ops-chip-success {
+        color: var(--ops-green);
+        background: var(--ops-green-soft);
+    }
+
+    .ops-chip-warning {
+        color: var(--ops-amber);
+        background: var(--ops-amber-soft);
+    }
+
+    .ops-chip-danger {
+        color: var(--ops-red);
+        background: var(--ops-red-soft);
+    }
+
+    .ops-chip-info {
+        color: var(--ops-blue);
+        background: var(--ops-blue-soft);
+    }
+
+    .ops-icon-btn {
+        width: 31px;
+        height: 31px;
+        padding: 0;
+        border: 1px solid var(--ops-border);
+        background: #fff;
+        color: #42526a;
+    }
+
+    .ops-inline-form {
+        display: inline-flex;
+        margin: 0;
+    }
+
+    .ops-empty {
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        min-height: 78px;
+        margin: 0;
+        padding: .85rem;
+        border: 1px dashed var(--ops-border);
+        border-radius: 8px;
+        color: var(--ops-muted);
+        background: var(--ops-panel-subtle);
+        font-size: .85rem;
+    }
+
+    .ops-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .85rem;
+        align-items: end;
+    }
+
+    .ops-form-grid-wide {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .ops-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .ops-field label,
+    .ops-field .form-label {
+        margin-bottom: .35rem;
+        color: #344155;
+        font-size: .74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .ops-center .form-control {
+        min-height: 36px;
+        border-color: var(--ops-border);
+        border-radius: 7px;
+        color: var(--ops-text);
+        font-size: .84rem;
+    }
+
+    .ops-center textarea.form-control {
+        min-height: 86px;
+        resize: vertical;
+    }
+
+    .ops-switch-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: .8rem .85rem;
+        border: 1px solid var(--ops-border-soft);
+        border-radius: 8px;
+        background: var(--ops-panel-subtle);
+    }
+
+    .ops-switch-row .form-check {
+        margin: 0;
+    }
+
+    .ops-switch {
+        width: 2.8rem !important;
+        height: 1.45rem;
+        margin-top: 0;
+    }
+
+    .ops-panel-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .55rem;
+        align-items: center;
+        justify-content: flex-end;
+        margin-top: .85rem;
+    }
+
+    .ops-mini-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .55rem;
+        margin-bottom: .75rem;
+    }
+
+    .ops-mini-metric {
+        padding: .65rem;
+        border: 1px solid var(--ops-border-soft);
+        border-radius: 8px;
+        background: var(--ops-panel-subtle);
+    }
+
+    .ops-mini-value {
+        display: block;
+        color: var(--ops-text);
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .ops-mini-label {
+        color: var(--ops-muted);
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .ops-activity-list {
+        display: grid;
+        gap: .55rem;
+    }
+
+    .ops-activity-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: .75rem;
+        padding: .62rem .7rem;
+        border: 1px solid var(--ops-border-soft);
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .ops-activity-title {
+        margin: 0;
+        color: var(--ops-text);
+        font-size: .83rem;
+        font-weight: 800;
+    }
+
+    .ops-activity-meta {
+        margin-top: .15rem;
+        color: var(--ops-muted);
+        font-size: .75rem;
+    }
+
+    .ops-progress {
+        position: relative;
+        width: 92px;
+        height: 7px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e7edf4;
+    }
+
+    .ops-progress-bar {
+        width: var(--used);
+        height: 100%;
+        border-radius: inherit;
+        background: var(--ops-teal);
+    }
+
+    .ops-cleanup-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .65rem;
+    }
+
+    .ops-cleanup-item {
+        padding: .75rem;
+        border: 1px solid var(--ops-border-soft);
+        border-radius: 8px;
+        background: var(--ops-panel-subtle);
+    }
+
+    .ops-cleanup-value {
+        display: block;
+        color: var(--ops-text);
+        font-size: 1.25rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .ops-cleanup-label {
+        display: block;
+        margin-top: .2rem;
+        color: var(--ops-muted);
+        font-size: .76rem;
+        font-weight: 700;
+    }
+
+    .ops-settings-actions {
+        align-self: end;
+    }
+
+    @@media (max-width: 1199.98px) {
+        .ops-status-grid,
+        .ops-cleanup-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ops-form-grid-wide {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        .ops-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .ops-header,
+        .ops-panel-header {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .ops-status-grid,
+        .ops-mini-metrics,
+        .ops-cleanup-grid,
+        .ops-form-grid,
+        .ops-form-grid-wide {
+            grid-template-columns: 1fr;
+        }
+
+        .ops-panel-actions {
+            justify-content: stretch;
+        }
+
+        .ops-panel-actions .ops-button,
+        .ops-header .ops-action-link {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="ops-center">
+    <div class="ops-header">
+        <div>
+            <div class="ops-title-row">
+                <h1 class="ops-title">Operations Center</h1>
+                <span class="ops-chip ops-chip-info"><i class="bi bi-shield-lock" aria-hidden="true"></i> Super Admin</span>
+            </div>
+            <p class="ops-subtitle">Monitor runtime health, backups, locked accounts, maintenance mode, cleanup risk, quotas, and safe system settings from one control surface.</p>
+        </div>
+        <a class="ops-action-link" asp-action="Index">
+            <i class="bi bi-sliders" aria-hidden="true"></i>
+            Advanced Settings
+        </a>
+    </div>
+
+    <section class="ops-status-grid" aria-label="Operations summary">
+        <article class="ops-status-card">
+            <div class="ops-status-icon ops-tone-@databaseTone">
+                <i class="bi bi-database-check" aria-hidden="true"></i>
+            </div>
+            <div>
+                <div class="ops-kpi-label">Database</div>
+                <div class="ops-kpi-value">
+                    @databaseStatus
+                    <span class="ops-chip ops-chip-@databaseTone">@(Model.Health.DatabaseAvailable ? "Healthy" : "Action needed")</span>
+                </div>
+                <div class="ops-kpi-meta">
+                    <span><span>Size</span><strong>@((Model.Health.DatabaseSizeBytes / 1024d / 1024d).ToString("N1")) MB</strong></span>
+                    <span><span>Audit logs</span><strong>@Model.Health.AuditLogCount</strong></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="ops-status-card">
+            <div class="ops-status-icon @(Model.Health.FailedEmailCount > 0 ? "ops-tone-warning" : "ops-tone-info")">
+                <i class="bi bi-envelope-paper" aria-hidden="true"></i>
+            </div>
+            <div>
+                <div class="ops-kpi-label">Email Outbox</div>
+                <div class="ops-kpi-value">@Model.Health.PendingEmailCount pending</div>
+                <div class="ops-kpi-meta">
+                    <span><span>Failed</span><strong>@Model.Health.FailedEmailCount</strong></span>
+                    <span><span>Status</span><strong>@(Model.Health.FailedEmailCount > 0 ? "Review" : "Normal")</strong></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="ops-status-card">
+            <div class="ops-status-icon @(Model.Health.FailedCommandCount24h > 0 ? "ops-tone-danger" : "ops-tone-success")">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            </div>
+            <div>
+                <div class="ops-kpi-label">Failed Commands</div>
+                <div class="ops-kpi-value">@Model.Health.FailedCommandCount24h</div>
+                <div class="ops-kpi-meta">
+                    <span><span>Window</span><strong>24 hours</strong></span>
+                    <span><span>Severity</span><strong>@(Model.Health.FailedCommandCount24h > 0 ? "Critical" : "Clear")</strong></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="ops-status-card">
+            <div class="ops-status-icon ops-tone-@maintenanceTone">
+                <i class="bi bi-wrench-adjustable" aria-hidden="true"></i>
+            </div>
+            <div>
+                <div class="ops-kpi-label">Maintenance</div>
+                <div class="ops-kpi-value">
+                    @maintenanceStatus
+                    <span class="ops-chip ops-chip-@maintenanceTone">@((Model.Maintenance.Enabled ? "Read-only" : "Writable"))</span>
+                </div>
+                <div class="ops-kpi-meta">
+                    <span><span>Changed by</span><strong>@(Model.Maintenance.ChangedBy ?? "-")</strong></span>
+                    <span><span>Changed</span><strong>@FormatDateTime(Model.Maintenance.ChangedAtUtc)</strong></span>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <div class="ops-grid">
+        <section class="ops-panel">
+            <div class="ops-panel-header">
+                <h2 class="ops-panel-title"><i class="bi bi-database-add" aria-hidden="true"></i> Backup Management</h2>
+                <form asp-action="ManualBackup" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="ops-button ops-button-primary">
+                        <i class="bi bi-play-fill" aria-hidden="true"></i>
+                        Manual Backup
+                    </button>
+                </form>
+            </div>
+            <div class="ops-panel-body">
+                @if (Model.Backups.Count == 0)
+                {
+                    <p class="ops-empty"><i class="bi bi-info-circle" aria-hidden="true"></i> No protected backups have been created yet.</p>
+                }
+                else
+                {
+                    <div class="ops-table-wrap ops-table-scroll">
+                        <table class="ops-table">
+                            <thead>
+                                <tr>
+                                    <th>Backup</th>
+                                    <th>Created</th>
+                                    <th class="text-end">Size</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var backup in Model.Backups)
+                                {
+                                    <tr>
+                                        <td class="ops-name-cell">@backup.Name</td>
+                                        <td>@backup.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="text-end">@((backup.SizeBytes / 1024d / 1024d).ToString("N1")) MB</td>
+                                        <td class="text-end">
+                                            <a class="ops-icon-btn" asp-action="DownloadBackup" asp-route-fileName="@backup.Name" title="Download backup" aria-label="Download backup @backup.Name">
+                                                <i class="bi bi-download" aria-hidden="true"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="ops-panel">
+            <div class="ops-panel-header">
+                <h2 class="ops-panel-title"><i class="bi bi-tools" aria-hidden="true"></i> Maintenance Mode</h2>
+                <span class="ops-chip ops-chip-@maintenanceTone">@maintenanceStatus</span>
+            </div>
+            <div class="ops-panel-body">
+                <form asp-action="SetMaintenance" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="ops-switch-row mb-3">
+                        <div>
+                            <div class="fw-bold">Global read-only for non-Super Admin</div>
+                            <div class="ops-muted small">@maintenanceReason</div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input ops-switch" type="checkbox" name="Enabled" value="true" @(Model.Maintenance.Enabled ? "checked" : "") aria-label="Enable maintenance mode" />
+                            <input type="hidden" name="Enabled" value="false" />
+                        </div>
+                    </div>
+                    <div class="ops-field">
+                        <label class="form-label" for="maintenanceReason">Reason</label>
+                        <textarea id="maintenanceReason" class="form-control" name="Reason" rows="3">@Model.Maintenance.Reason</textarea>
+                    </div>
+                    <div class="ops-panel-actions">
+                        <button type="submit" class="ops-button ops-button-primary">
+                            <i class="bi bi-save" aria-hidden="true"></i>
+                            Save Maintenance State
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="ops-panel">
+            <div class="ops-panel-header">
+                <h2 class="ops-panel-title"><i class="bi bi-person-lock" aria-hidden="true"></i> Security Center</h2>
+                <span class="ops-chip @(Model.Security.LockedUsers.Count > 0 ? "ops-chip-warning" : "ops-chip-success")">@Model.Security.LockedUsers.Count locked</span>
+            </div>
+            <div class="ops-panel-body">
+                <div class="ops-mini-metrics">
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.Security.FailedLoginCount24h</span>
+                        <span class="ops-mini-label">Failed logins</span>
+                    </div>
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.Security.FailedOtpCount24h</span>
+                        <span class="ops-mini-label">Failed OTP</span>
+                    </div>
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.Security.LockedUsers.Count</span>
+                        <span class="ops-mini-label">Locked users</span>
+                    </div>
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.Security.RecentSecurityEvents.Count</span>
+                        <span class="ops-mini-label">Recent events</span>
+                    </div>
+                </div>
+
+                @if (Model.Security.LockedUsers.Count == 0)
+                {
+                    <p class="ops-empty"><i class="bi bi-check-circle" aria-hidden="true"></i> No locked users are currently waiting for action.</p>
+                }
+                else
+                {
+                    <div class="ops-table-wrap">
+                        <table class="ops-table">
+                            <thead>
+                                <tr>
+                                    <th>Locked User</th>
+                                    <th>Until</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.Security.LockedUsers)
+                                {
+                                    <tr>
+                                        <td class="ops-name-cell">
+                                            @user.FullName
+                                            <div class="ops-muted">@user.UserName</div>
+                                        </td>
+                                        <td>@user.LockoutEnd?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="text-end">
+                                            <form asp-action="UnlockUser" method="post" class="ops-inline-form">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@user.Id" />
+                                                <button class="ops-icon-btn" type="submit" title="Unlock user" aria-label="Unlock @user.UserName">
+                                                    <i class="bi bi-unlock" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
+                                            <form asp-action="ForcePasswordReset" method="post" class="ops-inline-form ms-1">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@user.Id" />
+                                                <button class="ops-icon-btn" type="submit" title="Force password reset" aria-label="Force password reset for @user.UserName">
+                                                    <i class="bi bi-key" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="ops-panel">
+            <div class="ops-panel-header">
+                <h2 class="ops-panel-title"><i class="bi bi-activity" aria-hidden="true"></i> Audit Watch</h2>
+                <a class="ops-button ops-button-secondary" asp-action="AdminActivityCsv">
+                    <i class="bi bi-filetype-csv" aria-hidden="true"></i>
+                    Export CSV
+                </a>
+            </div>
+            <div class="ops-panel-body">
+                <div class="ops-mini-metrics">
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.AuditWatch.FailedCommandCount</span>
+                        <span class="ops-mini-label">Failures</span>
+                    </div>
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.AuditWatch.DeleteCount</span>
+                        <span class="ops-mini-label">Deletes</span>
+                    </div>
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.AuditWatch.QuotaChangeCount</span>
+                        <span class="ops-mini-label">Quota</span>
+                    </div>
+                    <div class="ops-mini-metric">
+                        <span class="ops-mini-value">@Model.AuditWatch.SuperAdminLoginCount</span>
+                        <span class="ops-mini-label">Super Admin</span>
+                    </div>
+                </div>
+
+                @if (Model.AuditWatch.HighRiskEvents.Count == 0)
+                {
+                    <p class="ops-empty"><i class="bi bi-check-circle" aria-hidden="true"></i> No high-risk audit events in the current watch window.</p>
+                }
+                else
+                {
+                    <div class="ops-activity-list">
+                        @foreach (var audit in Model.AuditWatch.HighRiskEvents.Take(6))
+                        {
+                            <div class="ops-activity-item">
+                                <div>
+                                    <p class="ops-activity-title">@audit.Action</p>
+                                    <div class="ops-activity-meta">@audit.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") by @audit.PerformedBy</div>
+                                </div>
+                                <span class="ops-chip @AuditActionClass(audit.Action)">@audit.EntityName</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="ops-panel">
+            <div class="ops-panel-header">
+                <h2 class="ops-panel-title"><i class="bi bi-speedometer2" aria-hidden="true"></i> Freeze Dashboard</h2>
+            </div>
+            <div class="ops-panel-body">
+                <div class="ops-table-wrap">
+                    <table class="ops-table">
+                        <thead>
+                            <tr>
+                                <th>Area</th>
+                                <th class="text-end">Usage</th>
+                                <th>Used</th>
+                                <th>Status</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var quota in Model.Quotas)
+                            {
+                                var usedPercent = quota.Limit <= 0 ? 0 : Math.Min(100, (int)Math.Round((double)quota.CurrentUsage / quota.Limit * 100));
+                                var quotaTone = quota.ReadOnly ? "warning" : "success";
+                                <tr>
+                                    <td class="ops-name-cell">@quota.Label</td>
+                                    <td class="text-end">@quota.CurrentUsage / @quota.Limit</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="ops-progress" aria-hidden="true"><div class="ops-progress-bar" style="--used:@(usedPercent)%"></div></div>
+                                            <span class="ops-muted">@usedPercent%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="ops-chip ops-chip-@quotaTone">@(quota.ReadOnly ? "Frozen" : "Writable")</span></td>
+                                    <td class="ops-muted">@(string.IsNullOrWhiteSpace(quota.Reason) ? "-" : quota.Reason)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="ops-panel">
+            <div class="ops-panel-header">
+                <h2 class="ops-panel-title"><i class="bi bi-trash3" aria-hidden="true"></i> Data Cleanup</h2>
+            </div>
+            <div class="ops-panel-body">
+                <div class="ops-cleanup-grid">
+                    <div class="ops-cleanup-item">
+                        <span class="ops-cleanup-value">@Model.Cleanup.ExpiredOtpCount</span>
+                        <span class="ops-cleanup-label">Expired OTP</span>
+                    </div>
+                    <div class="ops-cleanup-item">
+                        <span class="ops-cleanup-value">@Model.Cleanup.ExpiredSigningTokenCount</span>
+                        <span class="ops-cleanup-label">Signing tokens</span>
+                    </div>
+                    <div class="ops-cleanup-item">
+                        <span class="ops-cleanup-value">@Model.Cleanup.ExpiredDeviceTokenCount</span>
+                        <span class="ops-cleanup-label">Device tokens</span>
+                    </div>
+                    <div class="ops-cleanup-item">
+                        <span class="ops-cleanup-value">@Model.Cleanup.RedactableAuditLogCount</span>
+                        <span class="ops-cleanup-label">Audit payloads</span>
+                    </div>
+                </div>
+                <div class="ops-panel-actions">
+                    <form asp-action="ExecuteCleanup" method="post" class="m-0">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="ops-button ops-button-danger">
+                            <i class="bi bi-trash3" aria-hidden="true"></i>
+                            Execute Cleanup
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="ops-panel ops-panel-wide">
+            <div class="ops-panel-header">
+                <h2 class="ops-panel-title"><i class="bi bi-shield-check" aria-hidden="true"></i> Safe System Settings</h2>
+            </div>
+            <div class="ops-panel-body">
+                <form asp-action="SaveSafeSettings" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="ops-form-grid ops-form-grid-wide">
+                        <div class="ops-field">
+                            <label class="form-label" for="SupportEmail">Support Email</label>
+                            <input id="SupportEmail" class="form-control" name="SupportEmail" value="@Model.Settings.SupportEmail" />
+                        </div>
+                        <div class="ops-field">
+                            <label class="form-label" for="AuditNotificationEmail">Audit Notification Email</label>
+                            <input id="AuditNotificationEmail" class="form-control" name="AuditNotificationEmail" value="@Model.Settings.AuditNotificationEmail" />
+                        </div>
+                        <div class="ops-field">
+                            <label class="form-label" for="RecordRetentionDays">Record Days</label>
+                            <input id="RecordRetentionDays" class="form-control" name="RecordRetentionDays" value="@Model.Settings.RecordRetentionDays" type="number" min="1" />
+                        </div>
+                        <div class="ops-field">
+                            <label class="form-label" for="TokenRetentionDays">Token Days</label>
+                            <input id="TokenRetentionDays" class="form-control" name="TokenRetentionDays" value="@Model.Settings.TokenRetentionDays" type="number" min="1" />
+                        </div>
+                        <div class="ops-field">
+                            <label class="form-label" for="AuditRetentionDays">Audit Days</label>
+                            <input id="AuditRetentionDays" class="form-control" name="AuditRetentionDays" value="@Model.Settings.AuditRetentionDays" type="number" min="1" />
+                        </div>
+                        <div class="ops-field">
+                            <label class="form-label" for="OtpExpiryMinutes">OTP Minutes</label>
+                            <input id="OtpExpiryMinutes" class="form-control" name="OtpExpiryMinutes" value="@Model.Settings.OtpExpiryMinutes" type="number" min="1" />
+                        </div>
+                        <div class="ops-field">
+                            <label class="form-label" for="LockoutSchedule">Lockout Schedule</label>
+                            <input id="LockoutSchedule" class="form-control" name="LockoutSchedule" value="@Model.Settings.LockoutSchedule" />
+                        </div>
+                        <div class="ops-panel-actions ops-settings-actions">
+                            <button type="submit" class="ops-button ops-button-primary">
+                                <i class="bi bi-save" aria-hidden="true"></i>
+                                Save System Settings
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+@functions {
+    private static string FormatDateTime(DateTime? value)
+        => value.HasValue ? value.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "-";
+
+    private static string AuditActionClass(string? action)
+    {
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            return "ops-chip-info";
+        }
+
+        if (action.Contains("Delete", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Failed", StringComparison.OrdinalIgnoreCase))
+        {
+            return "ops-chip-danger";
+        }
+
+        if (action.Contains("Quota", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Maintenance", StringComparison.OrdinalIgnoreCase) ||
+            action.Contains("Backup", StringComparison.OrdinalIgnoreCase))
+        {
+            return "ops-chip-warning";
+        }
+
+        return "ops-chip-info";
+    }
+}

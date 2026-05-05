@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using IT_Form.Controllers;
 using IT_Form.Models;
 using IT_Form.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using IT_Form.Tests.Helpers;
@@ -37,19 +38,15 @@ namespace IT_Form.Tests
 
         [Fact]
         /// <summary>
-        /// Runs the Index_Forbidden_ForHR_Adversarial operation.
+        /// Runs the AuditLogController_RequiresITPolicy operation.
         /// </summary>
-        public async Task Index_Forbidden_ForHR_Adversarial()
+        public void AuditLogController_RequiresITPolicy()
         {
-             // Audit logs are IT-only
-             // Verify that HR is redirected or blocked.
-             using var context = CreateContext();
-             var controller = GetController<AuditLogController>(context, role: "HR");
-             
-             // If the controller handles role check manually instead of via [Authorize]
-             var result = await controller.Index(null, null, null, null, null, null, 1);
-             
-             // Check if it returns RedirectToHome or similar if manually guarded
+            var attribute = Assert.Single(
+                typeof(AuditLogController).GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
+                    .Cast<AuthorizeAttribute>());
+
+            Assert.Equal("RequireIT", attribute.Policy);
         }
     }
 }

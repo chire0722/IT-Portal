@@ -5,6 +5,7 @@ using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Security;
 using IT_Form.ViewModels;
 using Mapster;
 using MediatR;
@@ -49,19 +50,24 @@ namespace IT_Form.Application.Features.UserManagement
                 .AsNoTracking()
                 .Include(u => u.UserTitles)
                 .Include(u => u.UserCompanies)
-                .OrderBy(u => u.FullName)
                 .AsQueryable();
+
+            usersQuery = UserManagementVisibility.ApplySuperAdminVisibility(usersQuery, _currentUserAccessor.User)
+                .OrderBy(u => u.FullName);
+
+            var users = await usersQuery
+                .ToListAsync(cancellationToken);
 
             if (scopedCompanies.Count > 0)
             {
-                usersQuery = usersQuery.Where(user => user.UserCompanies.Any(company =>
-                    scopedCompanies.Any(scopedCompany =>
-                        scopedCompany == company.CompanyName ||
-                        scopedCompany.StartsWith(company.CompanyName + " (") ||
-                        company.CompanyName.StartsWith(scopedCompany + " ("))));
+                users = users
+                    .Where(user => CompanyScopeHelper.HasAnyAllowedCompany(
+                        scopedCompanies,
+                        user.UserCompanies.Select(company => company.CompanyName)))
+                    .ToList();
             }
 
-            var users = await usersQuery
+            var items = users
                 .Select(u => new UserManagementIndexListItem
                 {
                     Id = u.Id,
@@ -79,9 +85,9 @@ namespace IT_Form.Application.Features.UserManagement
                         .OrderBy(company => company)
                         .ToList()
                 })
-                .ToListAsync(cancellationToken);
+                .ToList();
 
-            return ProcessResult<List<UserManagementIndexListItem>>.Success(users);
+            return ProcessResult<List<UserManagementIndexListItem>>.Success(items);
         }
     }
 
@@ -134,10 +140,15 @@ namespace IT_Form.Application.Features.UserManagement
         {
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             UserManagementViewModel? model = request.Model;
-            var user = await _context.Users
+            var usersQuery = _context.Users
                 .AsNoTracking()
                 .Include(u => u.UserTitles)
                 .Include(u => u.UserCompanies)
+                .AsQueryable();
+
+            usersQuery = UserManagementVisibility.ApplySuperAdminVisibility(usersQuery, _currentUserAccessor.User);
+
+            var user = await usersQuery
                 .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
 
             if (user == null)
@@ -236,6 +247,7 @@ namespace IT_Form.Application.Features.UserManagement
                 IsIT = model.IsIT,
                 IsHR = model.IsHR,
                 IsHOD = model.IsHOD,
+                IsSuperAdmin = model.IsSuperAdmin,
                 IsActive = model.IsActive,
                 SelectedCompanies = [.. model.SelectedCompanies],
                 Departments = departments,

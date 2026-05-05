@@ -12,6 +12,7 @@ namespace IT_Form.Models
         public int OtpExpiryMinutes { get; set; } = 3;
         public int DeviceVerificationExpiryMinutes { get; set; } = 30;
         public bool AllowLegacyInventoryApiKey { get; set; } = false;
+        public string? CookieSecurePolicy { get; set; }
         public Argon2idSettings Argon2id { get; set; } = new();
         public Argon2idSettings LegacyArgon2id { get; set; } = new()
         {

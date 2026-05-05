@@ -1,6 +1,7 @@
 // Project comment: VerifyOtpCommand.cs is part of the IT Form application source code.
 
 using MediatR;
+using IT_Form.Application.Features.Account;
 
 namespace IT_Form.Application.Features.Account.VerifyOtp
 {
@@ -9,7 +10,8 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
     /// </summary>
     /// <param name="Email">Email address that requested or owns the OTP code.</param>
     /// <param name="Code">One-time password code entered by the user.</param>
-    public sealed record VerifyOtpCommand(
-        string Email,
-        string Code) : IRequest<VerifyOtpResult>;
+public sealed record VerifyOtpCommand(
+    string Email,
+    string Code,
+    string Purpose = OtpPurposes.PasswordReset) : IRequest<VerifyOtpResult>;
 }

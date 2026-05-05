@@ -49,7 +49,9 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
             throw new NotFoundException(nameof(ApplicationUser), request.UserId);
         }
 
-        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        var result = string.IsNullOrWhiteSpace(user.PasswordHash)
+            ? await _userManager.AddPasswordAsync(user, request.NewPassword)
+            : await _userManager.ChangePasswordAsync(user, request.CurrentPassword ?? string.Empty, request.NewPassword);
         result.EnsureSucceeded();
 
         user.MustChangePassword = false;

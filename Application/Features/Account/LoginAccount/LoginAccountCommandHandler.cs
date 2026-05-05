@@ -1,9 +1,11 @@
 // Project comment: LoginAccountCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Features.Account;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
+using IT_Form.Security;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +25,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
         private readonly IPostCommitActionQueue _postCommitActionQueue;
         private readonly IKeyedLockProvider _keyedLockProvider;
         private readonly SecuritySettings _securitySettings;
+        private readonly SecureOtpGenerator _otpGenerator;
         private readonly ILogger<LoginAccountCommandHandler> _logger;
 
         public LoginAccountCommandHandler(
@@ -33,7 +36,8 @@ namespace IT_Form.Application.Features.Account.LoginAccount
             IPostCommitActionQueue postCommitActionQueue,
             IKeyedLockProvider keyedLockProvider,
             IOptions<SecuritySettings> securityOptions,
-            ILogger<LoginAccountCommandHandler> logger)
+            ILogger<LoginAccountCommandHandler> logger,
+            SecureOtpGenerator? otpGenerator = null)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -42,6 +46,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
             _postCommitActionQueue = postCommitActionQueue;
             _keyedLockProvider = keyedLockProvider;
             _securitySettings = securityOptions.Value;
+            _otpGenerator = otpGenerator ?? new SecureOtpGenerator();
             _logger = logger;
         }
 
@@ -115,6 +120,27 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                     "Your email is not verified. Please contact IT.");
             }
 
+            var isSuperAdmin = await _context.UserTitles
+                .AsNoTracking()
+                .AnyAsync(title => title.UserId == user.Id && title.Title == PortalTitles.SuperAdmin, cancellationToken);
+
+            if (isSuperAdmin && string.IsNullOrWhiteSpace(user.Email))
+            {
+                return new LoginAccountResult(false, "Super Admin account requires an email address for OTP login.");
+            }
+
+            if (isSuperAdmin &&
+                string.IsNullOrWhiteSpace(request.Password) &&
+                (string.IsNullOrWhiteSpace(user.PasswordHash) || user.MustChangePassword))
+            {
+                await QueuePrivilegedLoginOtpAsync(user, request.ClientIp, cancellationToken);
+                return new LoginAccountResult(
+                    false,
+                    "OTP sent successfully.",
+                    RequiresOtp: true,
+                    OtpEmail: user.Email);
+            }
+
             if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow)
             {
                 var remaining = user.LockoutEnd.Value - DateTimeOffset.UtcNow;
@@ -125,19 +151,30 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                     LockoutEndUtc: user.LockoutEnd.Value);
             }
 
-            var verifyResult = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash ?? string.Empty, request.Password);
+            var verifyResult = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash ?? string.Empty, request.Password ?? string.Empty);
             if (verifyResult == PasswordVerificationResult.Success ||
                 verifyResult == PasswordVerificationResult.SuccessRehashNeeded)
             {
                 if (verifyResult == PasswordVerificationResult.SuccessRehashNeeded)
                 {
-                    user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password);
+                    user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password ?? string.Empty);
                 }
 
                 user.AccessFailedCount = 0;
                 user.LockoutCount = 0;
                 user.LockoutEnd = null;
                 user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
+
+                if (isSuperAdmin)
+                {
+                    await QueuePrivilegedLoginOtpAsync(user, request.ClientIp, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    return new LoginAccountResult(
+                        false,
+                        "OTP sent successfully.",
+                        RequiresOtp: true,
+                        OtpEmail: user.Email);
+                }
 
                 _postCommitActionQueue.Enqueue(_ => _signInManager.SignInAsync(user, request.RememberMe));
 
@@ -211,6 +248,50 @@ namespace IT_Form.Application.Features.Account.LoginAccount
             return new LoginAccountResult(
                 false,
                 $"Invalid username or password. You have {attemptsLeft} attempt(s) remaining before your account is locked.");
+        }
+
+        private async Task QueuePrivilegedLoginOtpAsync(ApplicationUser user, string clientIp, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                throw new InvalidOperationException("Super Admin email is required for OTP login.");
+            }
+
+            var now = DateTime.UtcNow;
+            var cooldownCutoff = now - AccountOtpSupport.RequestCooldown;
+            var lastRequestedAtUtc = await _context.OtpRecords
+                .AsNoTracking()
+                .Where(otp => otp.Email == user.Email && otp.Purpose == OtpPurposes.PrivilegedLogin)
+                .OrderByDescending(otp => otp.CreatedAt)
+                .Select(otp => (DateTime?)otp.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (lastRequestedAtUtc.HasValue && lastRequestedAtUtc.Value > cooldownCutoff)
+            {
+                throw AccountOtpSupport.CreateValidationException("Please wait 1 minute before requesting another OTP.");
+            }
+
+            await _context.OtpRecords
+                .Where(otp => otp.Email == user.Email && otp.Purpose == OtpPurposes.PrivilegedLogin && !otp.IsUsed && !otp.IsLocked)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(otp => otp.IsUsed, true)
+                    .SetProperty(otp => otp.IsLocked, true), cancellationToken);
+
+            var code = _otpGenerator.GenerateCode(AccountOtpSupport.OtpLength);
+            _context.OtpRecords.Add(new OtpRecord
+            {
+                Email = user.Email,
+                Code = AccountOtpSupport.HashCode(code),
+                Purpose = OtpPurposes.PrivilegedLogin,
+                ExpiresAt = now.Add(AccountOtpSupport.OtpLifetime),
+                IpAddress = clientIp,
+                CreatedAt = now
+            });
+
+            await _emailBackgroundQueue.QueueEmailAsync(new OtpEmailMessage(
+                user.Email,
+                AccountOtpSupport.BuildOtpEmailSubject(),
+                AccountOtpSupport.BuildOtpEmailBody(code)), cancellationToken);
         }
     }
 }

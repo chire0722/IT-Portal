@@ -70,6 +70,61 @@ public class UserManagementPageQueryTests
     }
 
     [Fact]
+    public async Task IndexAndEdit_HideSuperAdminUser_ForItUsers()
+    {
+        await using var context = CreateContext();
+        context.Users.AddRange(
+            new ApplicationUser
+            {
+                Id = "regular",
+                UserName = "regular",
+                FullName = "Regular User",
+                Email = "regular@test.local",
+                IsActive = true,
+                UserTitles = [new UserTitle { Title = "IT" }]
+            },
+            new ApplicationUser
+            {
+                Id = "super",
+                UserName = "super",
+                FullName = "Super Admin",
+                Email = "super@test.local",
+                IsActive = true,
+                UserTitles =
+                [
+                    new UserTitle { Title = "IT" },
+                    new UserTitle { Title = "SuperAdmin" }
+                ]
+            });
+        await context.SaveChangesAsync();
+
+        var itAccessor = new TestCurrentUserAccessor(titles: ["IT"]);
+        var itIndexHandler = new GetUserManagementIndexPageQueryHandler(context, itAccessor);
+        var itEditHandler = new GetUserManagementEditPageQueryHandler(context, itAccessor);
+
+        var itIndexResult = await itIndexHandler.Handle(new GetUserManagementIndexPageQuery(), CancellationToken.None);
+        var itEditResult = await itEditHandler.Handle(new GetUserManagementEditPageQuery("super"), CancellationToken.None);
+
+        Assert.True(itIndexResult.IsSuccess);
+        var visibleToIt = Assert.IsType<List<UserManagementIndexListItem>>(itIndexResult.Data);
+        var visibleItem = Assert.Single(visibleToIt);
+        Assert.Equal("regular", visibleItem.Id);
+        Assert.True(itEditResult.IsNotFound);
+
+        var superAccessor = new TestCurrentUserAccessor(titles: ["SuperAdmin"]);
+        var superIndexHandler = new GetUserManagementIndexPageQueryHandler(context, superAccessor);
+        var superEditHandler = new GetUserManagementEditPageQueryHandler(context, superAccessor);
+
+        var superIndexResult = await superIndexHandler.Handle(new GetUserManagementIndexPageQuery(), CancellationToken.None);
+        var superEditResult = await superEditHandler.Handle(new GetUserManagementEditPageQuery("super"), CancellationToken.None);
+
+        Assert.True(superIndexResult.IsSuccess);
+        Assert.Contains(superIndexResult.Data!, item => item.Id == "super");
+        Assert.True(superEditResult.IsSuccess);
+        Assert.True(superEditResult.Data!.IsSuperAdmin);
+    }
+
+    [Fact]
     /// <summary>
     /// Creates data for the CreatePageQuery_ReturnsEditorPageWithActiveCompaniesAndPreservesModel operation.
     /// </summary>
@@ -225,9 +280,10 @@ public class UserManagementPageQueryTests
         var editResult = await editHandler.Handle(new GetUserManagementEditPageQuery("u-beta"), CancellationToken.None);
 
         Assert.True(indexResult.IsSuccess);
-        Assert.Equal(2, indexResult.Data!.Count);
-        Assert.Contains(indexResult.Data, item => item.Id == "u-alpha");
-        Assert.Contains(indexResult.Data, item => item.Id == "u-beta");
+        var scopedUsers = Assert.IsType<List<UserManagementIndexListItem>>(indexResult.Data);
+        Assert.Equal(2, scopedUsers.Count);
+        Assert.Contains(scopedUsers, item => item.Id == "u-alpha");
+        Assert.Contains(scopedUsers, item => item.Id == "u-beta");
 
         Assert.True(createResult.IsSuccess);
         Assert.Equal(["Alpha Only", "Beta Only", "Global Dept"], createResult.Data!.Departments.Select(department => department.Name).ToList());

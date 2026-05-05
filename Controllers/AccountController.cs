@@ -3,6 +3,7 @@
 using System.Security.Claims;
 using IT_Form.Application.Features.Account.ForgotPassword;
 using IT_Form.Application.Features.Account.LoginAccount;
+using IT_Form.Application.Features.Account;
 using IT_Form.Application.Features.Account.Queries.GetLoginPageBranding;
 using IT_Form.Application.Features.Account.Queries.GetProfilePage;
 using IT_Form.Application.Features.Account.Queries.GetVerifyOtpPage;
@@ -10,6 +11,7 @@ using IT_Form.Application.Features.Account.ResetPassword;
 using IT_Form.Application.Features.Account.VerifyOtp;
 using IT_Form.Application.Features.Account.Writes.ForceChangePassword;
 using IT_Form.Application.Features.Account.Writes.Logout;
+using IT_Form.Application.Features.Account.Writes.ProfilePasswordChange;
 using IT_Form.Application.Features.Account.Writes.ResendOtp;
 using IT_Form.Application.Features.Account.Writes.UpdateProfile;
 using IT_Form.Application.Features.Account.Writes.UpdateSignature;
@@ -86,6 +88,12 @@ namespace IT_Form.Controllers
                         return RedirectToAction("Index", "Home");
                     }
 
+                    if (result.RequiresOtp && !string.IsNullOrWhiteSpace(result.OtpEmail))
+                    {
+                        TempData["SuccessMessage"] = result.Message;
+                        return RedirectToAction(nameof(VerifyOtp), new { email = result.OtpEmail, purpose = OtpPurposes.PrivilegedLogin });
+                    }
+
                     var pageModel = await BuildLoginPageAsync(
                         model,
                         result.LockoutEndUtc?.ToString("o"),
@@ -156,14 +164,14 @@ namespace IT_Form.Controllers
         /// <summary>
         /// Runs the VerifyOtp operation.
         /// </summary>
-        public async Task<IActionResult> VerifyOtp(string email)
+        public async Task<IActionResult> VerifyOtp(string email, string? purpose = null)
         {
             if (string.IsNullOrEmpty(email))
             {
                 return RedirectToAction(nameof(Login));
             }
 
-            return View(await BuildVerifyOtpPageAsync(email));
+            return View(await BuildVerifyOtpPageAsync(email, purpose: purpose));
         }
 
         // POST: /Account/VerifyOtp
@@ -183,9 +191,16 @@ namespace IT_Form.Controllers
             return await ExecuteWithValidationView(
                 async () =>
                 {
-                    var result = await _sender.Send(new VerifyOtpCommand(model.Email, model.Code));
+                    var result = await _sender.Send(new VerifyOtpCommand(model.Email, model.Code, model.Purpose));
                     if (result.IsVerified)
                     {
+                        if (result.IsLoginVerified)
+                        {
+                            return result.RequiresPasswordSetup
+                                ? RedirectToAction(nameof(ForceChangePassword))
+                                : RedirectToAction("Index", "Home");
+                        }
+
                         return RedirectToAction(nameof(ResetPassword), new { email = model.Email, token = result.Token });
                     }
 
@@ -195,9 +210,9 @@ namespace IT_Form.Controllers
                     }
 
                     ModelState.AddModelError(string.Empty, result.Message);
-                    return View(await BuildVerifyOtpPageAsync(model.Email, model.Code));
+                    return View(await BuildVerifyOtpPageAsync(model.Email, model.Code, model.Purpose));
                 },
-                () => BuildVerifyOtpPageAsync(model.Email, model.Code));
+                () => BuildVerifyOtpPageAsync(model.Email, model.Code, model.Purpose));
         }
 
         // GET: /Account/ResetPassword
@@ -273,9 +288,10 @@ namespace IT_Form.Controllers
                 async () =>
                 {
                     var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-                    var result = await _sender.Send(new ResendOtpCommand(email, clientIp));
+                    var purpose = Request.Form["purpose"].FirstOrDefault() ?? OtpPurposes.PasswordReset;
+                    var result = await _sender.Send(new ResendOtpCommand(email, clientIp, purpose));
                     TempData[result.IsQueued ? "SuccessMessage" : "ErrorMessage"] = result.Message;
-                    return RedirectToAction(nameof(VerifyOtp), new { email = result.Email });
+                    return RedirectToAction(nameof(VerifyOtp), new { email = result.Email, purpose });
                 },
                 nameof(VerifyOtp),
                 new { email });
@@ -346,6 +362,66 @@ namespace IT_Form.Controllers
                 nameof(Profile),
                 new { });
 
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BeginProfilePasswordChange(ProfilePasswordChangeInputModel model)
+            => await ExecuteWithValidationRedirect(
+                async () =>
+                {
+                    var userId = GetCurrentUserId();
+                    if (string.IsNullOrWhiteSpace(userId))
+                    {
+                        return RedirectToAction(nameof(Login));
+                    }
+
+                    var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var result = await _sender.Send(new BeginProfilePasswordChangeCommand(
+                        userId,
+                        model.CurrentPassword,
+                        model.NewPassword,
+                        model.ConfirmPassword,
+                        clientIp));
+                    TempData["SuccessMessage"] = "Verification code sent to your email.";
+                    return RedirectToAction(nameof(ConfirmProfilePasswordChange), new { requestId = result.RequestId });
+                },
+                nameof(Profile),
+                new { });
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult ConfirmProfilePasswordChange(string requestId)
+        {
+            if (string.IsNullOrWhiteSpace(requestId))
+            {
+                TempData["ErrorMessage"] = "Password-change request is missing. Please start again.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            return View(new ConfirmProfilePasswordChangeInputModel { RequestId = requestId });
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmProfilePasswordChange(ConfirmProfilePasswordChangeInputModel model)
+        {
+            return await ExecuteWithValidationView(
+                async () =>
+                {
+                    var userId = GetCurrentUserId();
+                    if (string.IsNullOrWhiteSpace(userId))
+                    {
+                        return RedirectToAction(nameof(Login));
+                    }
+
+                    await _sender.Send(new ConfirmProfilePasswordChangeCommand(userId, model.RequestId, model.Code));
+                    TempData["SuccessMessage"] = "Password changed successfully.";
+                    return RedirectToAction(nameof(Profile));
+                },
+                () => Task.FromResult(model));
+        }
+
         // GET: /Account/ForceChangePassword
         [HttpGet]
         [Authorize]
@@ -366,6 +442,8 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ForceChangePassword(ForceChangePasswordPageViewModel model)
         {
+            ModelState.Remove(nameof(model.CurrentPassword));
+
             return await ExecuteWithValidationView(
                 async () =>
                 {
@@ -413,7 +491,7 @@ namespace IT_Form.Controllers
         /// <summary>
         /// Builds the value returned by the BuildVerifyOtpPageAsync operation.
         /// </summary>
-        private Task<VerifyOtpViewModel> BuildVerifyOtpPageAsync(string email, string? code = null)
-            => _sender.Send(new GetVerifyOtpPageQuery(email, code));
+        private Task<VerifyOtpViewModel> BuildVerifyOtpPageAsync(string email, string? code = null, string? purpose = null)
+            => _sender.Send(new GetVerifyOtpPageQuery(email, code, purpose ?? OtpPurposes.PasswordReset));
     }
 }

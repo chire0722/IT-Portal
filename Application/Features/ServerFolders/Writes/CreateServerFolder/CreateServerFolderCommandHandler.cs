@@ -4,6 +4,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using Mapster;
@@ -19,11 +20,13 @@ public sealed class CreateServerFolderCommandHandler : IRequestHandler<CreateSer
 {
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserAccessor _currentUserAccessor;
+    private readonly IQuotaControl _quotaControl;
 
-    public CreateServerFolderCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+    public CreateServerFolderCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
     {
         _context = context;
         _currentUserAccessor = currentUserAccessor;
+        _quotaControl = quotaControl ?? new QuotaControl(context);
     }
 
     /// <summary>
@@ -31,6 +34,7 @@ public sealed class CreateServerFolderCommandHandler : IRequestHandler<CreateSer
     /// </summary>
     public async Task<int> Handle(CreateServerFolderCommand request, CancellationToken cancellationToken)
     {
+        await _quotaControl.EnsureAvailableAsync(QuotaControl.ServerFolders, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanyIds, cancellationToken);
 
         var entity = request.Adapt<ServerFolderEntity>();

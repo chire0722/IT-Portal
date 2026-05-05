@@ -1,8 +1,11 @@
 // Project comment: AuditLoggingBehaviorTests.cs is part of the IT Form application source code.
 
+using FluentValidation;
+using FluentValidation.Results;
 using IT_Form.Application.Common.Behaviors;
 using IT_Form.Data;
 using IT_Form.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -17,11 +20,11 @@ public class AuditLoggingBehaviorTests
     /// <summary>
     /// Carries data needed to execute the SampleSuccess command.
     /// </summary>
-    private sealed record SampleSuccessCommand(string Name);
+    public sealed record SampleSuccessCommand(string Name);
     /// <summary>
     /// Carries data needed to execute the SampleFailure command.
     /// </summary>
-    private sealed record SampleFailureCommand(string Name);
+    public sealed record SampleFailureCommand(string Name);
 
     [Fact]
     /// <summary>
@@ -115,5 +118,54 @@ public class AuditLoggingBehaviorTests
         Assert.False(log.IsSuccess);
         Assert.Equal("boom", log.ErrorMessage);
         Assert.True(log.CorrelationId.HasValue);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the Handle_ValidationFailure_WritesFailedCommandAudit_WithoutErrorLog operation.
+    /// </summary>
+    public async Task Handle_ValidationFailure_WritesFailedCommandAudit_WithoutErrorLog()
+    {
+        var (context, httpContext) = TestContextFactory.Create();
+        var logger = new Mock<ILogger<AuditLoggingBehavior<SampleFailureCommand, string>>>();
+        var behavior = new AuditLoggingBehavior<SampleFailureCommand, string>(
+            context,
+            new Microsoft.AspNetCore.Http.HttpContextAccessor { HttpContext = httpContext },
+            null,
+            logger.Object);
+        var validationException = new ValidationException([
+            new ValidationFailure("CurrentPassword", "Incorrect password.")
+        ]);
+
+        var exception = await Assert.ThrowsAsync<ValidationException>(() =>
+            behavior.Handle(
+                new SampleFailureCommand("invalid"),
+                () => throw validationException,
+                CancellationToken.None));
+
+        Assert.Same(validationException, exception);
+
+        var log = Assert.Single(context.AuditLogs);
+        Assert.Equal("Command", log.EntityName);
+        Assert.False(log.IsSuccess);
+        Assert.Contains("Incorrect password.", log.ErrorMessage, StringComparison.Ordinal);
+
+        logger.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Never);
+        logger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((value, _) =>
+                    value.ToString()!.StartsWith("Validation failed for command SampleFailureCommand", StringComparison.Ordinal)),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }

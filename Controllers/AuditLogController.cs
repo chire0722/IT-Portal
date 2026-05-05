@@ -5,13 +5,14 @@ using IT_Form.Application.Features.AuditLogs.Shared;
 using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.ViewModels;
+using IT_Form.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Controllers
 {
-    [Authorize(Policy = "RequireHROrIT")]
+    [Authorize(Policy = "RequireIT")]
     /// <summary>
     /// Handles web requests for the AuditLog area.
     /// </summary>
@@ -146,12 +147,18 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> Details(int id, bool failuresOnly = false)
         {
-            var log = await _context.AuditLogs.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
+            var query = AuditLogReadSupport.HideProtectedActorEntries(
+                _context.AuditLogs.AsNoTracking(),
+                _context,
+                !PortalTitles.IsSuperAdmin(User));
+            var log = await query.FirstOrDefaultAsync(a => a.Id == id);
             if (log == null) return NotFound();
 
             var fullChain = log.CorrelationId.HasValue
-                ? await _context.AuditLogs
-                    .AsNoTracking()
+                ? await AuditLogReadSupport.HideProtectedActorEntries(
+                        _context.AuditLogs.AsNoTracking(),
+                        _context,
+                        !PortalTitles.IsSuperAdmin(User))
                     .Where(a => a.CorrelationId == log.CorrelationId)
                     .OrderBy(a => a.CreatedAt)
                     .ThenBy(a => a.Timestamp)
@@ -231,9 +238,16 @@ namespace IT_Form.Controllers
             DateTime? startDate,
             DateTime? endDate,
             bool? isSuccess)
-            => AuditLogReadSupport.ApplyFilters(
+        {
+            var query = AuditLogReadSupport.HideProtectedActorEntries(
                 _context.AuditLogs.AsNoTracking(),
+                _context,
+                !PortalTitles.IsSuperAdmin(User));
+
+            return AuditLogReadSupport.ApplyFilters(
+                query,
                 new AuditLogFilterParameters(entity, auditAction, search, startDate, endDate, isSuccess));
+        }
 
         /// <summary>
         /// Runs the CsvCell operation.

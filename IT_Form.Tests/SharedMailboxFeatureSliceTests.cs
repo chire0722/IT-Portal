@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation;
 using IT_Form.Application.Common.Exceptions;
+using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.SharedMailbox.AddCurrentEmployeeToSharedMailbox;
 using IT_Form.Application.Features.SharedMailbox.ImportSharedMailboxes;
 using IT_Form.Application.Features.SharedMailboxes.Writes.CreateSharedMailbox;
@@ -28,6 +29,11 @@ namespace IT_Form.Tests;
 /// </summary>
 public class SharedMailboxFeatureSliceTests
 {
+    public SharedMailboxFeatureSliceTests()
+    {
+        MapsterConfig.RegisterMappings();
+    }
+
     [Fact]
     /// <summary>
     /// Creates data for the CreateSharedMailboxValidator_Fails_WhenEmailInvalid operation.
@@ -40,6 +46,30 @@ public class SharedMailboxFeatureSliceTests
         var result = await validator.ValidateAsync(new CreateSharedMailboxCommand("Sales", "invalid-email", true, Array.Empty<int>()));
 
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Creates data for the CreateSharedMailboxHandler_AllowsGlobalAccessUserToCreateGlobalSharedMailbox operation.
+    /// </summary>
+    public async Task CreateSharedMailboxHandler_AllowsGlobalAccessUserToCreateGlobalSharedMailbox()
+    {
+        using var context = CreateContext();
+
+        var handler = new CreateSharedMailboxCommandHandler(
+            context,
+            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+
+        var id = await handler.Handle(
+            new CreateSharedMailboxCommand("Global Mailbox", "global.mailbox@test.local", true, []),
+            CancellationToken.None);
+
+        var entity = await context.SharedMailboxes
+            .Include(mailbox => mailbox.SharedMailboxCompanies)
+            .SingleAsync(mailbox => mailbox.Id == id);
+
+        Assert.Equal("Global Mailbox", entity.MailboxName);
+        Assert.Empty(entity.SharedMailboxCompanies);
     }
 
     [Fact]

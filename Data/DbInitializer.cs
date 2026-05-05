@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
+using IT_Form.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,9 +18,9 @@ namespace IT_Form.Data
     /// </summary>
     public static class DbInitializer
     {
-        private const string HardcodedBootstrapPassword = "Abc123!xyz";
+        private const string DefaultBootstrapPassword = "Abc123!xyz";
 
-        private static readonly string[] SeedAdminTitles = ["IT", "HR"];
+        private static readonly string[] SeedAdminTitles = [PortalTitles.IT, PortalTitles.HR, PortalTitles.SuperAdmin];
 
         private static readonly SeedUserDefinition[] SeedUsers =
         [
@@ -34,6 +35,52 @@ namespace IT_Form.Data
             ("Onboarding", 3, 3, 7),
             ("Offboarding", 3, 3, 7)
         };
+
+        /// <summary>
+        /// Runs the EnsureOtpPurposeColumnAsync operation.
+        /// </summary>
+        public static async Task EnsureOtpPurposeColumnAsync(ApplicationDbContext context)
+        {
+            var connection = context.Database.GetDbConnection();
+            var shouldClose = connection.State != System.Data.ConnectionState.Open;
+            if (shouldClose)
+            {
+                await connection.OpenAsync();
+            }
+
+            try
+            {
+                await using var checkCommand = connection.CreateCommand();
+                checkCommand.CommandText = "PRAGMA table_info(\"OtpRecords\");";
+                var hasPurposeColumn = false;
+                await using (var reader = await checkCommand.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var columnName = reader["name"]?.ToString();
+                        if (string.Equals(columnName, "Purpose", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasPurposeColumn = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasPurposeColumn)
+                {
+                    await using var alterCommand = connection.CreateCommand();
+                    alterCommand.CommandText = "ALTER TABLE \"OtpRecords\" ADD COLUMN \"Purpose\" TEXT NOT NULL DEFAULT 'PasswordReset';";
+                    await alterCommand.ExecuteNonQueryAsync();
+                }
+            }
+            finally
+            {
+                if (shouldClose)
+                {
+                    await connection.CloseAsync();
+                }
+            }
+        }
 
         /// <summary>
         /// Runs the EnsureDefaultSlaSettingsAsync operation.
@@ -325,7 +372,7 @@ namespace IT_Form.Data
         public static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration)
         {
             var seedPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"])
-                ?? HardcodedBootstrapPassword;
+                ?? DefaultBootstrapPassword;
             if (string.IsNullOrWhiteSpace(seedPassword))
             {
                 return;
@@ -355,66 +402,269 @@ namespace IT_Form.Data
                         seedUser.Title,
                         seedPassword);
                 }
+            }
+            else
+            {
+                var knownSeedEmails = SeedUsers
+                    .SelectMany(seedUser => seedUser.AllEmails)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var knownSeedUserNames = SeedUsers
+                    .Select(seedUser => seedUser.UserName)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                return;
+                var hasNonSeedAdminUsers = await context.Users
+                    .AsNoTracking()
+                    .Where(user => user.IsActive)
+                    .Where(user =>
+                        !knownSeedUserNames.Contains(user.UserName ?? string.Empty) &&
+                        !knownSeedEmails.Contains(user.Email ?? string.Empty))
+                    .Join(
+                        context.UserTitles.AsNoTracking(),
+                        user => user.Id,
+                        title => title.UserId,
+                        (user, title) => title.Title)
+                    .AnyAsync(title => SeedAdminTitles.Contains(title));
+
+                if (!hasNonSeedAdminUsers)
+                {
+                    foreach (var seedUser in SeedUsers)
+                    {
+                        await SeedUserAsync(
+                            userManager,
+                            context,
+                            seedUser.UserName,
+                            seedUser.Email,
+                            seedUser.FullName,
+                            seedUser.Department,
+                            seedUser.Title,
+                            seedPassword);
+                    }
+
+                    await SeedConfiguredSuperAdminAsync(userManager, context, configuration, seedPassword);
+                    await EnsureSuperAdminsDoNotRequireForcedPasswordChangeAsync(context);
+                    return;
+                }
             }
 
-            var knownSeedEmails = SeedUsers
-                .SelectMany(seedUser => seedUser.AllEmails)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var knownSeedUserNames = SeedUsers
-                .Select(seedUser => seedUser.UserName)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            await SeedConfiguredSuperAdminAsync(userManager, context, configuration, seedPassword);
+            await EnsureSuperAdminsDoNotRequireForcedPasswordChangeAsync(context);
 
-            var hasNonSeedAdminUsers = await context.Users
-                .AsNoTracking()
-                .Where(user => user.IsActive)
-                .Where(user =>
-                    !knownSeedUserNames.Contains(user.UserName ?? string.Empty) &&
-                    !knownSeedEmails.Contains(user.Email ?? string.Empty))
-                .Join(
-                    context.UserTitles.AsNoTracking(),
-                    user => user.Id,
-                    title => title.UserId,
-                    (user, title) => title.Title)
-                .AnyAsync(title => SeedAdminTitles.Contains(title));
-
-            if (!hasNonSeedAdminUsers)
+            if (users.Count > 0)
             {
                 foreach (var seedUser in SeedUsers)
                 {
-                    await SeedUserAsync(
-                        userManager,
-                        context,
-                        seedUser.UserName,
-                        seedUser.Email,
-                        seedUser.FullName,
-                        seedUser.Department,
-                        seedUser.Title,
-                        seedPassword);
-                }
+                    foreach (var email in seedUser.AllEmails)
+                    {
+                        var existingSeedUser = await userManager.FindByEmailAsync(email);
+                        if (existingSeedUser == null)
+                        {
+                            continue;
+                        }
 
+                        var isSuperAdminSeed = await context.UserTitles
+                            .AsNoTracking()
+                            .AnyAsync(title => title.UserId == existingSeedUser.Id && title.Title == PortalTitles.SuperAdmin);
+                        if (isSuperAdminSeed)
+                        {
+                            continue;
+                        }
+
+                        var deleteResult = await userManager.DeleteAsync(existingSeedUser);
+                        if (!deleteResult.Succeeded)
+                        {
+                            var errors = string.Join("; ", deleteResult.Errors.Select(error => error.Description));
+                            throw new InvalidOperationException($"Failed to remove seed user '{email}': {errors}");
+                        }
+                    }
+                }
+            }
+        }
+
+        private static async Task SeedConfiguredSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration, string seedPassword)
+        {
+            var configuredEmail = NormalizeEmail(configuration["SeedSuperAdmin:Email"]);
+            if (!string.IsNullOrWhiteSpace(configuredEmail))
+            {
+                await EnsureConfiguredSuperAdminAsync(userManager, context, configuration, configuredEmail, seedPassword);
                 return;
             }
 
-            foreach (var seedUser in SeedUsers)
+            var alreadyExists = await context.UserTitles
+                .AnyAsync(title => title.Title == PortalTitles.SuperAdmin);
+            if (alreadyExists)
             {
-                foreach (var email in seedUser.AllEmails)
-                {
-                    var existingSeedUser = await userManager.FindByEmailAsync(email);
-                    if (existingSeedUser == null)
-                    {
-                        continue;
-                    }
+                return;
+            }
 
-                    var deleteResult = await userManager.DeleteAsync(existingSeedUser);
-                    if (!deleteResult.Succeeded)
-                    {
-                        var errors = string.Join("; ", deleteResult.Errors.Select(error => error.Description));
-                        throw new InvalidOperationException($"Failed to remove seed user '{email}': {errors}");
-                    }
+            ApplicationUser? user = null;
+            foreach (var email in SeedUsers
+                .SelectMany(seedUser => seedUser.AllEmails)
+                .Select(NormalizeEmail)
+                .Where(email => !string.IsNullOrWhiteSpace(email))
+                .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                user = await FindUserByEmailAsync(context, email!);
+                if (user != null)
+                {
+                    break;
                 }
             }
+
+            if (user == null)
+            {
+                return;
+            }
+
+            await PromoteUserToSuperAdminAsync(userManager, context, user, seedPassword, resetExistingPassword: true);
+        }
+
+        private static async Task EnsureConfiguredSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration, string configuredEmail, string seedPassword)
+        {
+            var user = await FindUserByEmailAsync(context, configuredEmail);
+            var userCreated = false;
+
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = configuredEmail,
+                    Email = configuredEmail,
+                    FullName = NormalizeDisplayName(configuration["SeedSuperAdmin:FullName"]) ?? "Super Admin",
+                    Department = NormalizeDisplayName(configuration["SeedSuperAdmin:Department"]) ?? "IT",
+                    JobTitle = NormalizeDisplayName(configuration["SeedSuperAdmin:JobTitle"]) ?? "Super Admin",
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    MustChangePassword = false
+                };
+
+                var createResult = await userManager.CreateAsync(user, seedPassword);
+                if (!createResult.Succeeded)
+                {
+                    ThrowIdentityFailure($"Failed to create configured Super Admin '{configuredEmail}'", createResult);
+                }
+
+                userCreated = true;
+            }
+
+            var wasConfiguredSuperAdmin = !userCreated && await context.UserTitles
+                .AnyAsync(title => title.UserId == user.Id && title.Title == PortalTitles.SuperAdmin);
+
+            user.EmailConfirmed = true;
+            user.IsActive = true;
+            user.MustChangePassword = false;
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                user.Email = configuredEmail;
+            }
+
+            if (string.IsNullOrWhiteSpace(user.UserName))
+            {
+                user.UserName = configuredEmail;
+            }
+
+            if (!userCreated)
+            {
+                await EnsureExistingConfiguredSuperAdminCanBootstrapAsync(
+                    userManager,
+                    user,
+                    seedPassword,
+                    resetExistingPassword: !wasConfiguredSuperAdmin);
+            }
+
+            await EnsureUserTitleAsync(context, user.Id, PortalTitles.SuperAdmin);
+            await EnsureUserTitleAsync(context, user.Id, PortalTitles.IT);
+            await RemoveOtherSuperAdminTitlesAsync(context, user.Id);
+
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task PromoteUserToSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, ApplicationUser user, string seedPassword, bool resetExistingPassword)
+        {
+            await EnsureUserTitleAsync(context, user.Id, PortalTitles.SuperAdmin);
+            await EnsureUserTitleAsync(context, user.Id, PortalTitles.IT);
+
+            user.EmailConfirmed = true;
+            user.IsActive = true;
+            user.MustChangePassword = false;
+            await EnsureExistingConfiguredSuperAdminCanBootstrapAsync(userManager, user, seedPassword, resetExistingPassword);
+
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task EnsureExistingConfiguredSuperAdminCanBootstrapAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, string seedPassword, bool resetExistingPassword)
+        {
+            IdentityResult? passwordResult = null;
+            if (string.IsNullOrWhiteSpace(user.PasswordHash))
+            {
+                passwordResult = await userManager.AddPasswordAsync(user, seedPassword);
+            }
+            else if (resetExistingPassword)
+            {
+                var token = await userManager.GeneratePasswordResetTokenAsync(user);
+                passwordResult = await userManager.ResetPasswordAsync(user, token, seedPassword);
+            }
+
+            if (passwordResult != null && !passwordResult.Succeeded)
+            {
+                ThrowIdentityFailure("Failed to set Super Admin bootstrap password", passwordResult);
+            }
+
+            if (passwordResult == null)
+            {
+                var updateResult = await userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    ThrowIdentityFailure("Failed to update configured Super Admin", updateResult);
+                }
+            }
+        }
+
+        private static async Task EnsureUserTitleAsync(ApplicationDbContext context, string userId, string title)
+        {
+            if (!await context.UserTitles.AnyAsync(item => item.UserId == userId && item.Title == title))
+            {
+                context.UserTitles.Add(new UserTitle { UserId = userId, Title = title });
+            }
+        }
+
+        private static async Task RemoveOtherSuperAdminTitlesAsync(ApplicationDbContext context, string configuredUserId)
+        {
+            var otherSuperAdminTitles = await context.UserTitles
+                .Where(title => title.Title == PortalTitles.SuperAdmin && title.UserId != configuredUserId)
+                .ToListAsync();
+
+            if (otherSuperAdminTitles.Count > 0)
+            {
+                context.UserTitles.RemoveRange(otherSuperAdminTitles);
+            }
+        }
+
+        private static Task<ApplicationUser?> FindUserByEmailAsync(ApplicationDbContext context, string email)
+        {
+            var normalizedEmail = email.Trim().ToUpperInvariant();
+            return context.Users
+                .FirstOrDefaultAsync(user =>
+                    user.NormalizedEmail == normalizedEmail ||
+                    (user.Email != null && user.Email.ToUpper() == normalizedEmail));
+        }
+
+        private static async Task EnsureSuperAdminsDoNotRequireForcedPasswordChangeAsync(ApplicationDbContext context)
+        {
+            var superAdminUserIds = await context.UserTitles
+                .AsNoTracking()
+                .Where(title => title.Title == PortalTitles.SuperAdmin)
+                .Select(title => title.UserId)
+                .ToListAsync();
+
+            if (superAdminUserIds.Count == 0)
+            {
+                return;
+            }
+
+            await context.Users
+                .Where(user => superAdminUserIds.Contains(user.Id) && user.MustChangePassword)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(user => user.MustChangePassword, false));
         }
 
         /// <summary>
@@ -487,6 +737,35 @@ namespace IT_Form.Data
             }
 
             return trimmed;
+        }
+
+        /// <summary>
+        /// Runs the NormalizeEmail operation.
+        /// </summary>
+        private static string? NormalizeEmail(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            return value.Trim();
+        }
+
+        private static string? NormalizeDisplayName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            return value.Trim();
+        }
+
+        private static void ThrowIdentityFailure(string message, IdentityResult result)
+        {
+            var errors = string.Join("; ", result.Errors.Select(error => error.Description));
+            throw new InvalidOperationException($"{message}: {errors}");
         }
 
         /// <summary>

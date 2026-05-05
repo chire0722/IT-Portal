@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation;
 using IT_Form.Application.Common.Exceptions;
+using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.EmailGroup.AddCurrentEmployeeToEmailGroup;
 using IT_Form.Application.Features.EmailGroup.ImportEmailGroups;
 using IT_Form.Application.Features.EmailGroups.Writes.CreateEmailGroup;
@@ -28,6 +29,11 @@ namespace IT_Form.Tests;
 /// </summary>
 public class EmailGroupFeatureSliceTests
 {
+    public EmailGroupFeatureSliceTests()
+    {
+        MapsterConfig.RegisterMappings();
+    }
+
     [Fact]
     /// <summary>
     /// Creates data for the CreateEmailGroupValidator_Fails_WhenEmailInvalid operation.
@@ -40,6 +46,30 @@ public class EmailGroupFeatureSliceTests
         var result = await validator.ValidateAsync(new CreateEmailGroupCommand("All Staff", "not-email", true, Array.Empty<int>()));
 
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Creates data for the CreateEmailGroupHandler_AllowsGlobalAccessUserToCreateGlobalEmailGroup operation.
+    /// </summary>
+    public async Task CreateEmailGroupHandler_AllowsGlobalAccessUserToCreateGlobalEmailGroup()
+    {
+        using var context = CreateContext();
+
+        var handler = new CreateEmailGroupCommandHandler(
+            context,
+            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+
+        var id = await handler.Handle(
+            new CreateEmailGroupCommand("All Staff", "all.staff@test.local", true, []),
+            CancellationToken.None);
+
+        var entity = await context.EmailGroups
+            .Include(group => group.EmailGroupCompanies)
+            .SingleAsync(group => group.Id == id);
+
+        Assert.Equal("All Staff", entity.GroupName);
+        Assert.Empty(entity.EmailGroupCompanies);
     }
 
     [Fact]

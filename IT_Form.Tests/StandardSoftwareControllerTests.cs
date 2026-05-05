@@ -32,7 +32,7 @@ namespace IT_Form.Tests
             context.StandardSoftware.Add(new StandardSoftware { SoftwareName = "Office 365", IsActive = true });
             await context.SaveChangesAsync();
 
-            var controller = GetController<StandardSoftwareController>(context, role: "IT");
+            var controller = GetController<StandardSoftwareController>(context, role: "SuperAdmin");
             var result = await controller.Index(null, null, null);
 
             var viewResult = Assert.IsType<ViewResult>(result);

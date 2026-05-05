@@ -11,7 +11,7 @@ public sealed class ForceChangePasswordPageViewModel
 {
     [Display(Name = "Current Password")]
     [DataType(DataType.Password)]
-    public string CurrentPassword { get; set; } = string.Empty;
+    public string? CurrentPassword { get; set; }
 
     [Display(Name = "New Password")]
     [DataType(DataType.Password)]

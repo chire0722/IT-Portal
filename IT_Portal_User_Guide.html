@@ -291,8 +291,9 @@
       <li><span class="toc-num">9</span><span class="toc-label">Digital Signatures & PDF Export</span></li>
       <li><span class="toc-num">10</span><span class="toc-label">Email Notifications</span></li>
       <li><span class="toc-num">11</span><span class="toc-label">User Roles & Permissions</span></li>
-      <li><span class="toc-num">12</span><span class="toc-label">Configuration (IT Admin Only)</span></li>
-      <li><span class="toc-num">13</span><span class="toc-label">Frequently Asked Questions (FAQ)</span></li>
+      <li><span class="toc-num">12</span><span class="toc-label">Reserved Technical Administration Control</span></li>
+      <li><span class="toc-num">13</span><span class="toc-label">Configuration (IT Admin Only)</span></li>
+      <li><span class="toc-num">14</span><span class="toc-label">Frequently Asked Questions (FAQ)</span></li>
     </ul>
   </div>
 
@@ -336,6 +337,7 @@
       <a href="#signatures">Signatures & PDF</a>
       <a href="#email">Email Notifications</a>
       <a href="#roles">Roles & Permissions</a>
+      <a href="#reserved-admin">Reserved Technical Control</a>
       <a href="#config">Configuration</a>
       <a href="#faq">FAQ</a>
     </nav>
@@ -424,6 +426,12 @@
 
         <h3>Your Profile</h3>
         <p>Click your <strong>name</strong> at the bottom-left of the sidebar to access your <strong>Profile</strong> page, where you can:</p>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/user_profile.png" alt="User Profile Settings">
+          <div class="screenshot-caption">Figure 1.1 — User Profile Settings</div>
+        </div>
+
         <ul>
           <li>Update your <strong>display name</strong> and <strong>job title</strong></li>
           <li>Upload an <strong>email signature image</strong> (logo block or QR code)</li>
@@ -438,10 +446,7 @@
         <h2>Dashboard Overview</h2>
         <p>After logging in, you are taken to the <strong>Dashboard</strong> — your personalised starting page showing key metrics and action items.</p>
 
-        <div class="screenshot">
-          <img src="docs/screenshots/dashboard.png" alt="IT Admin Dashboard">
-          <div class="screenshot-caption">Figure 2 — IT Admin Dashboard</div>
-        </div>
+
 
         <table>
           <thead><tr><th>Section</th><th>What It Shows</th></tr></thead>
@@ -490,6 +495,12 @@
           <span class="label accent">HR Only</span><br>
           Only users with the <strong>HR</strong> role can create new onboarding requests.
         </div>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/onboarding_hr_step1.png" alt="Onboarding HR Form - Step 1">
+          <div class="screenshot-caption">Figure 3.1 — HR Form: Employee Details</div>
+        </div>
+
         <ol>
           <li>From the sidebar, click <strong>Onboarding</strong>, then <strong>+ New Onboarding</strong>.</li>
           <li>Fill in the new employee's information:</li>
@@ -512,6 +523,12 @@
         <p>Agree to the <strong>PDPA Consent</strong> checkbox, then click <strong>Next</strong>.</p>
 
         <h3>Step 2 — Software, Email Groups & Shared Folders (HR)</h3>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/onboarding_hr_step2.png" alt="Onboarding HR Form - Step 2">
+          <div class="screenshot-caption">Figure 3.2 — HR Form: Software & Access Checklist</div>
+        </div>
+
         <ol>
           <li><strong>Software Checklist</strong> — Tick the required software (Microsoft Office, Adobe, VPN, etc.). Use "Other Software" for unlisted items.</li>
           <li><strong>Email Groups</strong> — Select distribution groups the employee should join.</li>
@@ -533,6 +550,11 @@
           Only users with the <strong>IT</strong> role can perform IT setup steps.
         </div>
         <p>Once HR signs off, the request moves to <span class="badge badge-pending">Pending IT Approval</span>. IT staff can click <strong>Start IT Setup</strong> to begin a 3-step wizard:</p>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/onboarding_it_setup.png" alt="Onboarding IT Setup Wizard">
+          <div class="screenshot-caption">Figure 3.3 — IT Setup Wizard: Asset Assignment</div>
+        </div>
 
         <div class="steps">
           <div class="step">
@@ -584,6 +606,12 @@
 
         <h3>Employee Acknowledgement</h3>
         <p>After IT completes setup, the status becomes <span class="badge badge-pending">Pending Employee Sign</span>:</p>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/onboarding_employee_sign.png" alt="Employee Acknowledgement Signature">
+          <div class="screenshot-caption">Figure 3.4 — Employee Digital Signature Pad</div>
+        </div>
+
         <ol>
           <li>The employee receives an email with a <strong>unique acknowledgement link</strong>.</li>
           <li>They review the full onboarding summary and can <strong>download the PDF</strong>.</li>
@@ -640,6 +668,12 @@
         </div>
 
         <h3>Creating an Offboarding Request (HR)</h3>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/offboarding_create.png" alt="Creating an Offboarding Request">
+          <div class="screenshot-caption">Figure 4.1 — HR Form: Employee Exit Details</div>
+        </div>
+
         <ol>
           <li>From the sidebar, click <strong>Offboarding</strong>, then <strong>+ New Offboarding</strong>.</li>
           <li>Fill in the departing employee's details: <strong>Full Name</strong>, <strong>Employee ID</strong>, <strong>Department</strong>, <strong>Company/Branch</strong>, <strong>Last Day of Work</strong>, <strong>Email</strong>, <strong>HOD Email</strong>.</li>
@@ -656,16 +690,20 @@
         <table>
           <thead><tr><th>Step</th><th>Who Signs</th><th>Status After</th></tr></thead>
           <tbody>
-            <tr><td>1</td><td>HR Staff (Requester)</td><td><span class="badge badge-pending">Pending Approval</span></td></tr>
-            <tr><td>2</td><td>Second HR User (Checker)</td><td><span class="badge badge-pending">Pending HOD Approval</span></td></tr>
-            <tr><td>3</td><td>Head of Department</td><td><span class="badge badge-blue">Pending IT Approval</span></td></tr>
-            <tr><td>4</td><td>IT Staff</td><td><span class="badge badge-pending">Pending Employee Sign</span></td></tr>
-            <tr><td>5</td><td>Employee</td><td><span class="badge badge-green">Completed</span></td></tr>
+            <tr><td>1</td><td>HR Staff</td><td><span class="badge badge-pending">Pending HOD Approval</span></td></tr>
+            <tr><td>2</td><td>Head of Department</td><td><span class="badge badge-blue">Pending IT Approval</span></td></tr>
+            <tr><td>3</td><td>IT Staff</td><td><span class="badge badge-pending">Pending Employee Sign</span></td></tr>
+            <tr><td>4</td><td>Employee</td><td><span class="badge badge-green">Completed</span></td></tr>
           </tbody>
         </table>
 
         <h3>IT Deprovisioning (IT Staff)</h3>
         <p>Once the HOD has signed, IT can proceed by clicking <strong>Start IT Setup</strong>:</p>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/offboarding_it_setup.png" alt="Offboarding IT Deprovisioning">
+          <div class="screenshot-caption">Figure 4.2 — IT Deprovisioning Checklist</div>
+        </div>
 
         <div class="steps">
           <div class="step">
@@ -726,6 +764,12 @@
         </table>
 
         <h3>Adding a New Asset</h3>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/asset_add.png" alt="Adding a New Asset Form">
+          <div class="screenshot-caption">Figure 5.1 — Adding a New IT Asset</div>
+        </div>
+
         <ol>
           <li>Click <strong>+ Add New Asset</strong>.</li>
           <li>Fill in: <strong>Asset Tag</strong> (required, unique), <strong>Asset Type</strong>, <strong>Serial Number</strong>, <strong>Model</strong>, <strong>Company</strong>, <strong>Purchase Date</strong>, <strong>Warranty Expiry</strong>, <strong>RAM</strong>, <strong>DDR Type</strong>, <strong>Storage</strong>, <strong>Windows Version</strong>.</li>
@@ -769,6 +813,12 @@
         <p>The Software Inventory page shows summary cards (Total Software, License Cap, Utilisation %, Expiring Soon, Expired), plus a searchable list of all software titles with badges (<span class="badge badge-blue">Mandatory</span>, <span class="badge badge-red">Free</span>, <span class="badge badge-green">Active</span>).</p>
 
         <h3>Adding Software & Licences</h3>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/software_add.png" alt="Managing Software Licenses">
+          <div class="screenshot-caption">Figure 6.1 — Adding Versions and Managing Keys</div>
+        </div>
+
         <div class="steps">
           <div class="step">
             <div class="step-num">1</div>
@@ -810,7 +860,6 @@
           <thead><tr><th>Status</th><th style="width:140px">Badge</th><th>What It Means</th></tr></thead>
           <tbody>
             <tr><td><strong>Draft</strong></td><td><span class="badge badge-draft">Draft</span></td><td>The form has been started but not yet submitted. Only the creator can see and edit it.</td></tr>
-            <tr><td><strong>Pending Approval</strong></td><td><span class="badge badge-pending">Pending Approval</span></td><td>(Offboarding) HR has signed; a second HR user (checker) must approve.</td></tr>
             <tr><td><strong>Pending HOD Approval</strong></td><td><span class="badge badge-pending">Pending HOD</span></td><td>(Offboarding) Waiting for the Head of Department to review and sign.</td></tr>
             <tr><td><strong>Pending IT Approval</strong></td><td><span class="badge badge-blue">Pending IT</span></td><td>Approved and waiting for IT to provision or deprovision resources.</td></tr>
             <tr><td><strong>Pending Employee Sign</strong></td><td><span class="badge badge-pending">Pending Emp. Sign</span></td><td>IT completed their work; employee must sign the acknowledgement.</td></tr>
@@ -831,6 +880,11 @@
       <section class="panel" id="signatures">
         <h2>Digital Signatures & PDF Export</h2>
 
+        <div class="screenshot">
+          <img src="docs/screenshots/signature_pdf_export.png" alt="PDF Export and Digital Signatures">
+          <div class="screenshot-caption">Figure 7 — PDF Document with Captured Signatures</div>
+        </div>
+
         <div class="grid two-col">
           <div class="card card-accent">
             <strong>✍️ Digital Signatures</strong>
@@ -847,7 +901,7 @@
           <thead><tr><th>Form Type</th><th>Signature Chain</th></tr></thead>
           <tbody>
             <tr><td><strong>Onboarding</strong></td><td>HR (Requester) → IT Admin → Employee</td></tr>
-            <tr><td><strong>Offboarding</strong></td><td>HR → HOD (Manager) → IT Admin → Employee</td></tr>
+            <tr><td><strong>Offboarding</strong></td><td>HR → HOD → IT Admin → Employee</td></tr>
           </tbody>
         </table>
       </section>
@@ -864,7 +918,7 @@
           <tbody>
             <tr><td>HR submits onboarding</td><td>IT Department</td><td>Notify IT to begin provisioning</td></tr>
             <tr><td>IT completes onboarding</td><td>Employee</td><td>Send acknowledgement link</td></tr>
-            <tr><td>HR submits offboarding</td><td>HOD</td><td>Request manager sign-off</td></tr>
+            <tr><td>HR submits offboarding</td><td>HOD</td><td>Request HOD sign-off</td></tr>
             <tr><td>HOD signs offboarding</td><td>IT Department</td><td>Notify IT to begin deprovisioning</td></tr>
             <tr><td>IT completes offboarding</td><td>Employee</td><td>Send acknowledgement link</td></tr>
             <tr><td>Request rejected</td><td>Original submitter</td><td>Inform with rejection reason</td></tr>
@@ -912,7 +966,7 @@
             <tr><td>IT Assets</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>Software List</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>System Users</td><td>—</td><td>✅</td><td>—</td></tr>
-            <tr><td>Audit Logs</td><td>✅</td><td>✅</td><td>—</td></tr>
+            <tr><td>Audit Logs</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>Due Date Setup</td><td>—</td><td>✅</td><td>—</td></tr>
             <tr><td>Configuration (Companies, Depts, etc.)</td><td>—</td><td>✅</td><td>—</td></tr>
           </tbody>
@@ -920,10 +974,27 @@
       </section>
 
       <!-- ══════════════════════════════════════════════════════════════ -->
-      <!-- SECTION 12: CONFIGURATION                                      -->
+      <!-- SECTION 12: RESERVED TECHNICAL ADMINISTRATION CONTROL           -->
       <!-- ══════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="reserved-admin">
+        <h2>Reserved Technical Administration Control</h2>
+        <p>The System contains normal Company user roles such as IT, HR, and HOD. In addition, the System may contain a reserved technical administration control used only for limited technical purposes authorised under the applicable agreement.</p>
+        <p>This reserved technical administration control is not a normal Company user role and is not intended for daily operational use by Company staff. Its purpose may include backup-related controls, quota or usage-limit controls, service-plan controls, authorised troubleshooting, and protection of system stability.</p>
+        <p>The user guide does not disclose passwords, secret keys, private tokens, privileged routes, credential recovery methods, or internal implementation details for security and confidentiality reasons.</p>
+        <div class="note info">
+          <span class="label info">PDPA</span><br>
+          Technical administration activity is purpose-limited. Any support activity involving personal data should be handled only where authorised and necessary for the agreed technical purpose, and should follow applicable Personal Data Protection Act 2010 (PDPA), confidentiality, and security requirements.
+        </div>
+      </section>
+
+      <!-- SECTION 13: CONFIGURATION                                      -->
       <section class="panel" id="config">
         <h2>Configuration (IT Admin Only)</h2>
+
+        <div class="screenshot">
+          <img src="docs/screenshots/configuration_dashboard.png" alt="Configuration Settings">
+          <div class="screenshot-caption">Figure 8 — System Configuration Module</div>
+        </div>
 
         <div class="grid two-col">
           <div class="card">
@@ -994,7 +1065,6 @@
           <thead><tr><th style="width:40%">Question</th><th>Answer</th></tr></thead>
           <tbody>
             <tr><td>Can I link to a previous onboarding?</td><td>Yes. Select the employee from the link dropdown to auto-fill details.</td></tr>
-            <tr><td>What is "Checker Approval"?</td><td>A second HR user (different from the creator) must approve for dual-approval safeguard.</td></tr>
             <tr><td>Can I upload a resignation letter?</td><td>Yes. Use the file upload field when creating the offboarding request.</td></tr>
             <tr><td>Can I reject a request?</td><td>Yes, any approver can reject before the Pending Employee Sign stage. A reason is required.</td></tr>
           </tbody>

@@ -2,6 +2,10 @@
 
 namespace IT_Form.Application.Features.AuditLogs.Shared;
 
+using IT_Form.Data;
+using IT_Form.Security;
+using Microsoft.EntityFrameworkCore;
+
 /// <summary>
 /// Defines the AuditLogFilterParameters record used by the IT Form application.
 /// </summary>
@@ -18,6 +22,24 @@ public sealed record AuditLogFilterParameters(
 /// </summary>
 public static class AuditLogReadSupport
 {
+    public static IQueryable<IT_Form.Models.AuditLog> HideProtectedActorEntries(
+        IQueryable<IT_Form.Models.AuditLog> query,
+        ApplicationDbContext context,
+        bool hideProtected)
+    {
+        if (!hideProtected)
+        {
+            return query;
+        }
+
+        var protectedUserIds = context.UserTitles
+            .AsNoTracking()
+            .Where(title => title.Title == PortalTitles.SuperAdmin)
+            .Select(title => title.UserId);
+
+        return query.Where(log => log.UserId == null || !protectedUserIds.Contains(log.UserId));
+    }
+
     /// <summary>
     /// Applies changes for the ApplyFilters operation.
     /// </summary>

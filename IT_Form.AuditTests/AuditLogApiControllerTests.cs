@@ -6,6 +6,7 @@ using IT_Form.Application.Features.AuditLogs.Flows;
 using IT_Form.Controllers;
 using IT_Form.Models;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -19,6 +20,19 @@ public class AuditLogApiControllerTests
     public AuditLogApiControllerTests()
     {
         MapsterConfig.RegisterMappings();
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the AuditLogApiController_RequiresITPolicy operation.
+    /// </summary>
+    public void AuditLogApiController_RequiresITPolicy()
+    {
+        var attribute = Assert.Single(
+            typeof(AuditLogApiController).GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
+                .Cast<AuthorizeAttribute>());
+
+        Assert.Equal("RequireIT", attribute.Policy);
     }
 
     [Fact]

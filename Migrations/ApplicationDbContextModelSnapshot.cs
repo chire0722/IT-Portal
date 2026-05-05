@@ -1382,6 +1382,11 @@ namespace IT_Form.Data.Migrations
                     b.Property<bool>("IsUsed")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email", "Code");

@@ -5,6 +5,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Models;
 using MediatR;
@@ -18,11 +19,13 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IQuotaControl _quotaControl;
 
-        public AddSoftwareLicenseCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        public AddSoftwareLicenseCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
+            _quotaControl = quotaControl ?? new QuotaControl(context);
         }
 
         /// <summary>
@@ -30,6 +33,8 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
         /// </summary>
         public async Task<AddSoftwareLicenseResult> Handle(AddSoftwareLicenseCommand request, CancellationToken cancellationToken)
         {
+            await _quotaControl.EnsureAvailableAsync(QuotaControl.SoftwareVersions, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
+
             if (request.IsSubscription && !request.IsFree && !request.ExpiryDate.HasValue)
             {
                 return new AddSoftwareLicenseResult(AddSoftwareLicenseStatus.InvalidSubscriptionExpiry, "Expiry Date is required for subscription version.");

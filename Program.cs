@@ -18,6 +18,8 @@ using IT_Form.Models.Enums;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using IT_Form.Security;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Operations;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Helpers;
 using IT_Form.Filters;
 using IT_Form.Application.Common.Abstractions;
@@ -31,6 +33,7 @@ using MapsterMapper;
 using System.Net.NetworkInformation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Data.Sqlite;
 using FluentValidation;
 using MediatR;
 using Microsoft.OpenApi;
@@ -40,6 +43,7 @@ using System.Net;
 
 
 QuestPDF.Settings.License = LicenseType.Community;
+const string AppListenUrl = "http://0.0.0.0:5063";
 
 // Diagnostic Check
 if (args.Contains("--seed-check"))
@@ -87,7 +91,7 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
-if (StartupUrlGuard.TryGetConflictingUrls(Environment.GetEnvironmentVariable("ASPNETCORE_URLS"), out var conflictingUrls))
+if (StartupUrlGuard.TryGetConflictingUrls(AppListenUrl, out var conflictingUrls))
 {
     Log.Error(
         "Startup aborted because the configured URL(s) are already in use: {Urls}. Stop the existing app instance or change the configured port.",
@@ -98,21 +102,17 @@ if (StartupUrlGuard.TryGetConflictingUrls(Environment.GetEnvironmentVariable("AS
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables(prefix: "IT_FORM__");
-
-if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
-{
-    // Prefer a loopback default. Published/LAN deployments should set ASPNETCORE_URLS explicitly.
-    builder.WebHost.UseUrls("http://127.0.0.1:5063");
-}
+builder.WebHost.UseUrls(AppListenUrl);
 
 MapsterConfig.RegisterMappings();
+
+var cookieSecurePolicy = ResolveCookieSecurePolicy(builder.Environment, builder.Configuration);
 
 // --- Kestrel: Fingerprint Masking ---
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.AddServerHeader = false;
-    // Bindings are managed via launchSettings.json, appsettings.json, or environment variables
-    // to avoid "Overriding address(es)" warnings.
+    // The LAN deployment must listen on all interfaces, so the binding is set explicitly above.
 });
 
 // Use Serilog as the logging provider
@@ -142,14 +142,13 @@ var dataProtectionBuilder = builder.Services
 
 
 // --- Database ---
+var resolvedDefaultConnectionString = ResolveSqliteConnectionString(
+    builder.Configuration.GetConnectionString("DefaultConnection"),
+    builder.Environment.ContentRootPath,
+    dataDirectory);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    var connectionString = ResolveSqliteConnectionString(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        builder.Environment.ContentRootPath,
-        dataDirectory);
-
-    options.UseSqlite(connectionString,
+    options.UseSqlite(resolvedDefaultConnectionString,
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
 
     // SQLite table rebuild migrations emit a one-time non-transactional warning
@@ -198,9 +197,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;           // SECURITY: Prevent CSRF via top-level navigation
     options.Cookie.Name = "YTC.IT.Auth.v2";                  // Rotate cookie name to avoid reading stale auth cookies
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = cookieSecurePolicy;
 });
 
 // Hardened: Global Forced Logout - check security stamp on EVERY request
@@ -218,6 +215,7 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Strict;           // SECURITY: Prevent session CSRF
     options.Cookie.Name = "YTC.IT.Session.v2";               // Rotate cookie name to avoid reading stale session cookies
+    options.Cookie.SecurePolicy = cookieSecurePolicy;
 });
 
 // --- Services ---
@@ -233,6 +231,14 @@ builder.Services.AddScoped<IOnboardingHodService, OnboardingHodService>();
 builder.Services.AddScoped<LegacySensitiveUploadMigrationService>();
 builder.Services.AddScoped<AuditLogRepairService>();
 builder.Services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
+builder.Services.AddScoped<IQuotaControl, QuotaControl>();
+builder.Services.AddScoped<ISystemHealthService, SystemHealthService>();
+builder.Services.AddScoped<IBackupManagementService, BackupManagementService>();
+builder.Services.AddScoped<IMaintenanceModeService, MaintenanceModeService>();
+builder.Services.AddScoped<ISecurityCenterService, SecurityCenterService>();
+builder.Services.AddScoped<IDataCleanupPreviewService, DataCleanupPreviewService>();
+builder.Services.AddScoped<ISafeSystemSettingsService, SafeSystemSettingsService>();
+builder.Services.AddSingleton<ProtectedDatabaseRestoreService>();
 builder.Services.AddSingleton<IKeyedLockProvider, KeyedLockProvider>();
 builder.Services.AddScoped<IPostCommitActionQueue, PostCommitActionQueue>();
 /* builder.Services
@@ -304,6 +310,7 @@ builder.Services.AddMediatR(cfg =>
     cfg.AddOpenBehavior(typeof(RequestLoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
     cfg.AddOpenBehavior(typeof(AuditLoggingBehavior<,>));
+    cfg.AddOpenBehavior(typeof(QuotaReadOnlyBehavior<,>));
     cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
     cfg.AddOpenBehavior(typeof(PerformanceBehavior<,>));
 });
@@ -318,9 +325,7 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-XSRF-TOKEN"; // Support for AJAX/Fetch
     options.Cookie.Name = ".ITPortal.XSRF.v2";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = cookieSecurePolicy;
 });
 
 // Configure SmtpSettings
@@ -348,6 +353,7 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
     options.Filters.Add<ValidationExceptionFilter>();
     options.Filters.Add<NotFoundExceptionFilter>();
+    options.Filters.Add<QuotaReadOnlyFilter>();
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi(options =>
@@ -429,12 +435,14 @@ builder.Services.AddHealthChecks()
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireIT", policy =>
-        policy.RequireAssertion(ctx => ctx.User.HasClaim("UserTitle", "IT")));
+        policy.RequireAssertion(ctx => PortalTitles.IsPrivilegedIt(ctx.User)));
+    options.AddPolicy("RequireSuperAdmin", policy =>
+        policy.RequireAssertion(ctx => PortalTitles.IsSuperAdmin(ctx.User)));
     options.AddPolicy("RequireHR", policy =>
         policy.RequireAssertion(ctx => ctx.User.HasClaim("UserTitle", "HR")));
     options.AddPolicy("RequireHROrIT", policy =>
         policy.RequireAssertion(ctx =>
-            ctx.User.HasClaim("UserTitle", "IT") || ctx.User.HasClaim("UserTitle", "HR")));
+            PortalTitles.IsPrivilegedIt(ctx.User) || ctx.User.HasClaim("UserTitle", PortalTitles.HR)));
     options.AddPolicy("RequireManager", policy =>
         policy.RequireAssertion(ctx => ctx.User.HasClaim("UserTitle", "Manager")));
 });
@@ -522,6 +530,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // Bindings are managed via launchSettings.json or environment variables
 
 var app = builder.Build();
+
+app.Services
+    .GetRequiredService<ProtectedDatabaseRestoreService>()
+    .TryRestoreIfNeeded(GetSqliteDataSourcePath(resolvedDefaultConnectionString), dataDirectory);
 
 // --- Middleware Pipeline ---
 app.UseForwardedHeaders();
@@ -614,7 +626,9 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
+        await DbInitializer.EnsureOtpPurposeColumnAsync(context);
         await DbInitializer.EnsureDefaultSlaSettingsAsync(context);
+        await services.GetRequiredService<IQuotaControl>().EnsureDefaultsAsync();
         if (app.Environment.IsDevelopment())
         {
             DbInitializer.Seed(context);
@@ -641,6 +655,37 @@ using (var scope = app.Services.CreateScope())
 app.MapInventoryEndpoints();
 
 app.Run();
+
+static CookieSecurePolicy ResolveCookieSecurePolicy(IHostEnvironment environment, IConfiguration configuration)
+{
+    var configuredPolicy = configuration["SecuritySettings:CookieSecurePolicy"];
+    if (!string.IsNullOrWhiteSpace(configuredPolicy))
+    {
+        if (string.Equals(configuredPolicy, "Never", StringComparison.OrdinalIgnoreCase))
+        {
+            return CookieSecurePolicy.None;
+        }
+
+        if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var parsedPolicy))
+        {
+            return parsedPolicy;
+        }
+
+        throw new InvalidOperationException(
+            "SecuritySettings:CookieSecurePolicy must be one of SameAsRequest, Always, or None.");
+    }
+
+    if (environment.IsDevelopment())
+    {
+        return CookieSecurePolicy.SameAsRequest;
+    }
+
+    var appDomain = configuration["AppDomain"];
+    return Uri.TryCreate(appDomain, UriKind.Absolute, out var appUri) &&
+        string.Equals(appUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+}
 
 static string ResolveSqliteConnectionString(string? connectionString, string contentRootPath, string dataDirectory)
 {
@@ -675,6 +720,17 @@ static string ResolveSqliteConnectionString(string? connectionString, string con
     }
 
     return connectionString[..dataSourceStart] + dbPath + connectionString[dataSourceEnd..];
+}
+
+static string GetSqliteDataSourcePath(string connectionString)
+{
+    var builder = new SqliteConnectionStringBuilder(connectionString);
+    if (string.IsNullOrWhiteSpace(builder.DataSource))
+    {
+        throw new InvalidOperationException("SQLite connection string does not include a Data Source.");
+    }
+
+    return builder.DataSource;
 }
 
 /// <summary>

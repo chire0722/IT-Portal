@@ -118,6 +118,7 @@ pre{background:#1e1e2e;color:#cdd6f4;padding:12px 16px;border-radius:6px;overflo
 <li><a href="#sec2-2">2.2 Role-Based Access Control (RBAC)</a></li>
 <li><a href="#sec2-3">2.3 Cryptographic Implementations</a></li>
 <li><a href="#sec2-4">2.4 Security Headers &amp; Middleware</a></li>
+<li><a href="#sec2-5">2.5 Reserved Technical Administration Control</a></li>
 <li><a href="#sec3">3. Technical Documentation</a></li>
 <li><a href="#sec3-1">3.1 Environment Setup &amp; Deployment</a></li>
 <li><a href="#sec3-2">3.2 Database Schema &amp; Data Dictionary</a></li>
@@ -529,7 +530,7 @@ _machine.Configure(RequestStatus.Draft)
 
 <p><strong>Why This Matters:</strong></p>
 <ul>
-<li><strong>Business rules as code:</strong> The state machine IS the specification. Product managers can read <code>.Permit()</code> calls and understand the workflow without reading controller logic.</li>
+<li><strong>Business rules as code:</strong> The state machine IS the specification. Product owners can read <code>.Permit()</code> calls and understand the workflow without reading controller logic.</li>
 <li><strong>Guarded transitions:</strong> Command handlers that use the state-machine methods cannot skip configured workflow steps; the machine validates the trigger before allowing it.</li>
 <li><strong>Guard helper methods:</strong> Methods such as <code>CanBeRejected()</code>, <code>CanBeItSigned()</code>, and <code>CanRegenerateToken()</code> expose state checks used by handlers and UI flows before actions are allowed.</li>
 <li><strong>Self-documenting:</strong> The <code>ConfigureStateMachine()</code> method is a single source of truth for the entire workflow, replacing documentation that can go stale.</li>
@@ -743,15 +744,13 @@ private static byte[] ComputeHash(string password,
 <tr><th>Policy Name</th><th>Required Claim</th><th>Grants Access To</th></tr>
 <tr><td><code>RequireIT</code></td><td><code>UserTitle = "IT"</code></td><td>IT Asset management, IT Setup wizards, Software License management, System Users, SLA Settings, Configuration, Department API writes</td></tr>
 <tr><td><code>RequireHR</code></td><td><code>UserTitle = "HR"</code></td><td>Onboarding creation, Offboarding creation, Employee import, Draft management</td></tr>
-<tr><td><code>RequireHROrIT</code></td><td><code>UserTitle = "HR"</code> OR <code>"IT"</code></td><td>Employee directory, Audit Log controller/API; the Analytics handler mirrors this HR/IT title check internally</td></tr>
-<tr><td><code>RequireManager</code></td><td><code>UserTitle = "Manager"</code></td><td>Configured policy, but not currently used by controller attributes</td></tr>
-<tr><td>Handler-level Manager check</td><td><code>UserTitle = "Manager"</code></td><td>Rejection handlers for onboarding/offboarding also allow Manager users alongside IT</td></tr>
-<tr><td>Handler-level HOD check</td><td><code>UserTitle = "HOD"</code></td><td>Offboarding HOD/manager signature, with company scope plus assignment/email checks inside <code>ProcessOffboardingManagerSignatureCommandHandler</code></td></tr>
+<tr><td><code>RequireHROrIT</code></td><td><code>UserTitle = "HR"</code> OR <code>"IT"</code></td><td>Employee directory; the Analytics handler mirrors this HR/IT title check internally</td></tr>
+<tr><td>Handler-level HOD check</td><td><code>UserTitle = "HOD"</code></td><td>Offboarding HOD signature and approval workflow, with company scope plus assignment/email checks inside the offboarding HOD signature handler</td></tr>
 </table>
 
 <div class="note"><strong>Multi-Title Support:</strong> A single user can hold multiple titles simultaneously (e.g., IT + HR). The <code>UserTitle</code> table has a unique composite index on <code>(UserId, Title)</code>.</div>
 
-<div class="warn"><strong>UI-Level Restriction:</strong> Although the <code>RequireHROrIT</code> policy is applied on the Audit Log controller, the sidebar navigation only renders the Audit Log link for users with the <code>IT</code> title. HR users are effectively restricted from accessing Audit Logs through the UI. HOD offboarding signing is enforced inside the command handler rather than by a named authorization policy.</div>
+<div class="warn"><strong>Audit Log Restriction:</strong> Audit Log pages and Audit Log API endpoints require the <code>RequireIT</code> policy. HR users must not be granted Audit Log access through direct URLs, API calls, or sidebar navigation. HOD offboarding signing is enforced inside the command handler rather than by a named authorization policy.</div>
 
 <h3 id="sec2-3">2.3 Cryptographic Implementations</h3>
 
@@ -978,6 +977,13 @@ public sealed class AuditLoggingBehavior&lt;TRequest, TResponse&gt;
 </ul>
 </div>
 
+<h3 id="sec2-5">2.5 Reserved Technical Administration Control</h3>
+<p>The System includes standard Company-facing roles such as IT, HR, and HOD. In addition, the System may include a reserved technical administration control used only for limited technical purposes authorised under the applicable agreement.</p>
+<p>This reserved technical administration control is not a normal Company user role and is not intended for daily operational use by Company staff. Its purpose is limited to technical administration, backup-related controls, quota or usage-limit controls, service-plan controls, maintenance-plan controls, troubleshooting where authorised, and protection of system stability.</p>
+<p>Access to this reserved technical administration control is governed by the System Maintenance and Support Agreement. The documentation does not disclose passwords, secret keys, private tokens, privileged routes, credential recovery methods, or internal implementation details for security, confidentiality, and personal-data protection reasons.</p>
+<p>Where audit logging is technically available, administrative activity should be recorded through available audit logs, command logs, system logs, or application logs.</p>
+<p>Where the RM0 No Maintenance Plan applies, the existence of this reserved technical administration control does not create any obligation for the Consultant to provide maintenance, monitoring, troubleshooting, backup verification, restoration, updates, upgrades, training, support, documentation explanation, or operational assistance unless separately agreed in writing.</p>
+
 <!-- ============================================================ -->
 <!-- SECTION 3: TECHNICAL DOCUMENTATION                           -->
 <!-- ============================================================ -->
@@ -1019,6 +1025,24 @@ Health Check: http://localhost:5063/health</pre>
     <p class="warn"><strong>Audit note:</strong> If the intended business rule is IT-only seed removal, update <code>SeedAdminTitles</code> in <code>Data/DbInitializer.cs</code>. The statement above reflects the current implementation.</p>
     <p>Development sample data is seeded only in Development when no companies exist. Production startup seeds only required SLA settings and the bootstrap user safety net.</p>
   </div>
+</div>
+
+<div class="card">
+  <h4>Reserved Technical Account Deployment Note</h4>
+  <p>The bootstrap admin user described above is a temporary safety account for initial deployment and lockout prevention. It is separate from any reserved technical administration control that may be enabled under the applicable agreement.</p>
+  <p>The reserved technical administration control, if enabled in the deployed System, is not a default Company operating account and is not intended for daily HR, IT, asset, onboarding, offboarding, or employee-management activities.</p>
+  <p>Production deployment should observe these controls:</p>
+  <ul>
+    <li>the existence and purpose should be disclosed at a high level in the technical documentation and contractual documents;</li>
+    <li>passwords, recovery methods, secret keys, privileged routes, private tokens, and internal implementation details should not be disclosed in user-facing documentation;</li>
+    <li>credentials must not be committed into source control;</li>
+    <li>credentials must not be stored in plain text inside the documentation;</li>
+    <li>access should follow the authorisation terms stated in the applicable agreement;</li>
+    <li>administrative actions should be logged where technically available;</li>
+    <li>support, backup verification, restoration, maintenance, and service-plan activities should follow the selected maintenance plan and any written agreement between the parties.</li>
+  </ul>
+  <p>Where the RM0 No Maintenance Plan applies, the existence of this reserved technical administration control does not create any obligation for the Consultant to provide maintenance, monitoring, troubleshooting, backup verification, restoration, updates, upgrades, training, support, documentation explanation, or operational assistance unless separately agreed in writing.</p>
+  <p><strong>PDPA deployment note:</strong> Reserved technical access should be confidential, purpose-limited, and handled consistently with Malaysia's Personal Data Protection Act 2010 (PDPA), the security principle, confidentiality obligations, and any applicable data-processing terms in the agreement.</p>
 </div>
 
 <div class="grid2">
@@ -1068,7 +1092,7 @@ Health Check: http://localhost:5063/health</pre>
 <table>
 <tr><th>Entity</th><th>PK</th><th>Key Fields</th><th>Description</th></tr>
 <tr><td>ApplicationUser</td><td>Id (string)</td><td>FullName, Department, IsActive, MustChangePassword, LockoutCount</td><td>Extends IdentityUser with org-specific fields</td></tr>
-<tr><td>UserTitle</td><td>Id (int)</td><td>UserId (FK), Title</td><td>Role assignment — "IT", "HR", "Manager", "HOD"</td></tr>
+<tr><td>UserTitle</td><td>Id (int)</td><td>UserId (FK), Title</td><td>Role assignment — "IT", "HR", "HOD"</td></tr>
 <tr><td>UserCompany</td><td>Id (int)</td><td>UserId (FK), CompanyName</td><td>Multi-company access mapping</td></tr>
 </table>
 
@@ -1243,7 +1267,7 @@ erDiagram
 <tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/onboarding-requests</code></td><td>Authenticated</td><td>List requests (filterable by status, search, paged)</td></tr>
 <tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/onboarding-requests/{id}</code></td><td>Authenticated</td><td>Get full request details</td></tr>
 <tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/onboarding-requests/{id}/sign</code></td><td>Authenticated; handler requires IT</td><td>Submit IT Admin digital signature (<code>SignatureType = "ITAdmin"</code>)</td></tr>
-<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/onboarding-requests/{id}/reject</code></td><td>Authenticated; handler requires Manager or IT</td><td>Reject request with reason</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/onboarding-requests/{id}/reject</code></td><td>Authenticated; current assignable-role path is IT-only</td><td>Reject request with reason</td></tr>
 <tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/onboarding-requests/{id}/regenerate-token</code></td><td>Authenticated; handler checks company scope and rejects IT users</td><td>Regenerate employee signing access token</td></tr>
 <tr><td><span class="badge-sm badge-red">DELETE</span></td><td><code>/api/onboarding-requests/{id}</code></td><td>Authenticated</td><td>Delete draft/rejected request</td></tr>
 </table>
@@ -1257,7 +1281,7 @@ erDiagram
 <tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/sign/manager</code></td><td>Authenticated; handler requires HOD</td><td>HOD digital signature with assignment/email/company-scope checks</td></tr>
 <tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/sign/it</code></td><td>Authenticated; handler requires IT</td><td>IT Admin digital signature</td></tr>
 <tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/sign/employee</code></td><td>Authenticated; handler requires HR</td><td>Manual employee acknowledgment signature recorded by HR</td></tr>
-<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/reject</code></td><td>Authenticated; handler requires Manager or IT</td><td>Reject request</td></tr>
+<tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/reject</code></td><td>Authenticated; current assignable-role path is IT-only</td><td>Reject request</td></tr>
 <tr><td><span class="badge-sm badge-blue">POST</span></td><td><code>/api/offboarding-requests/{id}/regenerate-token</code></td><td>Authenticated; handler requires HR</td><td>Regenerate employee signing access token</td></tr>
 <tr><td><span class="badge-sm badge-red">DELETE</span></td><td><code>/api/offboarding-requests/{id}</code></td><td>Authenticated</td><td>Delete draft/rejected request</td></tr>
 </table>
@@ -1274,12 +1298,12 @@ erDiagram
 <h4>Audit Log API — <code>/api/audit-logs</code></h4>
 <table>
 <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
-<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs</code></td><td>RequireHROrIT <sup>*</sup></td><td>Search/filter audit entries (entity, action, date range)</td></tr>
-<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/{id}</code></td><td>RequireHROrIT <sup>*</sup></td><td>Single audit log details</td></tr>
-<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/{id}/chain</code></td><td>RequireHROrIT <sup>*</sup></td><td>Correlated audit chain by CorrelationId</td></tr>
-<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/summary</code></td><td>RequireHROrIT <sup>*</sup></td><td>Aggregate summary statistics</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs</code></td><td>RequireIT</td><td>Search/filter audit entries (entity, action, date range)</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/{id}</code></td><td>RequireIT</td><td>Single audit log details</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/{id}/chain</code></td><td>RequireIT</td><td>Correlated audit chain by CorrelationId</td></tr>
+<tr><td><span class="badge-sm badge-green">GET</span></td><td><code>/api/audit-logs/summary</code></td><td>RequireIT</td><td>Aggregate summary statistics</td></tr>
 </table>
-<p style="font-size:.82rem;color:var(--muted);"><sup>*</sup> Controller policy is <code>RequireHROrIT</code>, but UI navigation restricts access to IT-only users. HR users cannot reach audit log pages through the application interface.</p>
+<p style="font-size:.82rem;color:var(--muted);">Audit Log endpoints are IT-only. HR users are not permitted to view Audit Logs.</p>
 
 <h4>Department API — <code>/api/departments</code></h4>
 <table>
@@ -1384,14 +1408,11 @@ flowchart TD
 <div class="mermaid">
 stateDiagram-v2
     [*] --> Draft : HR creates request
-    Draft --> PendingApproval : HR signs (no checker assigned)
-    Draft --> PendingHODApproval : HR signs (checker approved)
-    PendingApproval --> PendingHODApproval : Checker approves
+    Draft --> PendingHODApproval : HR signs
     PendingHODApproval --> PendingITApproval : HOD signs
     PendingITApproval --> PendingEmployeeSign : IT Admin signs (all 3 signed)
     PendingEmployeeSign --> Completed : Employee signs
     Draft --> Rejected : Reject
-    PendingApproval --> Rejected : Reject
     PendingHODApproval --> Rejected : Reject
     PendingITApproval --> Rejected : Reject
     Rejected --> [*]
@@ -1404,10 +1425,8 @@ stateDiagram-v2
 flowchart TD
     A["HR Creates Offboarding Request"] --> B["Fill employee details +\nLast Day of Work"]
     B --> C["Link to original\nOnboarding Request (optional)"]
-    C --> D["HR Signs → PendingApproval"]
-    D --> E["IT Checker Reviews\n(must be different from creator)"]
-    E --> F["Checker Approves →\nPendingHODApproval"]
-    F --> G["HOD Signs\n→ PendingITApproval"]
+    C --> D["HR Signs → PendingHODApproval"]
+    D --> G["HOD Signs\n→ PendingITApproval"]
     G --> H["IT Completes Checklist:\nAD Disable, Email Forward,\nM365 License Revoke,\nHardware Return"]
     H --> I["IT Signs →\nPendingEmployeeSign"]
     I --> J["Employee Signs\nAcknowledgment"]
@@ -1482,7 +1501,7 @@ flowchart TD
 <tr><td>AssetLicenseExpiryService</td><td>BackgroundService</td><td>Every 24 hours</td><td>Checks ITAsset warranty dates and SoftwareLicense expiry dates. Sends daily notifications directly via SMTP.</td></tr>
 <tr><td>DatabaseBackupService</td><td>BackgroundService</td><td>Startup + daily at 2:00 AM</td><td>Creates timestamped backup copies of the SQLite database file and keeps the latest 10.</td></tr>
 <tr><td>DataRetentionService</td><td>BackgroundService</td><td>Every 24 hours after startup</td><td>Anonymizes completed/rejected onboarding and offboarding records older than the retention window, then purges stale OTP, signing, and device verification tokens older than 30 days.</td></tr>
-<tr><td>OffboardingAutoSignService</td><td>BackgroundService</td><td>Every 6 hours</td><td>Auto-signs the HOD/manager step after qualifying requests remain in <code>PendingHODApproval</code> for more than 3 days.</td></tr>
+<tr><td>OffboardingAutoSignService</td><td>BackgroundService</td><td>Every 6 hours</td><td>Auto-signs the HOD approval step after qualifying requests remain in <code>PendingHODApproval</code> for more than 3 days.</td></tr>
 </table>
 
 <div class="mermaid">

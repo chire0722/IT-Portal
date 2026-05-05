@@ -2,6 +2,8 @@
 
 using MediatR;
 
+using IT_Form.Application.Features.Account;
+
 namespace IT_Form.Application.Features.Account.Writes.ResendOtp;
 
 /// <summary>
@@ -9,7 +11,8 @@ namespace IT_Form.Application.Features.Account.Writes.ResendOtp;
 /// </summary>
 public sealed record ResendOtpCommand(
     string Email,
-    string ClientIp) : IRequest<ResendOtpResult>;
+    string ClientIp,
+    string Purpose = OtpPurposes.PasswordReset) : IRequest<ResendOtpResult>;
 
 /// <summary>
 /// Represents the result returned by the ResendOtp workflow.

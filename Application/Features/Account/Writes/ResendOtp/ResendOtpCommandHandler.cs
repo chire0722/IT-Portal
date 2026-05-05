@@ -59,9 +59,9 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
             {
                 var now = DateTime.UtcNow;
                 var cooldownCutoff = now - AccountOtpSupport.RequestCooldown;
-                var lastRequestedAtUtc = await _context.OtpRecords
-                    .AsNoTracking()
-                    .Where(otp => otp.Email == user.Email)
+                    var lastRequestedAtUtc = await _context.OtpRecords
+                        .AsNoTracking()
+                        .Where(otp => otp.Email == user.Email && otp.Purpose == request.Purpose)
                     .OrderByDescending(otp => otp.CreatedAt)
                     .Select(otp => (DateTime?)otp.CreatedAt)
                     .FirstOrDefaultAsync(ct);
@@ -75,18 +75,19 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
                     throw AccountOtpSupport.CreateValidationException("\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf7 1 \u5206\u949f\u540e\u518d\u8bd5");
                 }
 
-                await _context.OtpRecords
-                    .Where(otp => otp.Email == user.Email && !otp.IsUsed && !otp.IsLocked)
+                    await _context.OtpRecords
+                        .Where(otp => otp.Email == user.Email && otp.Purpose == request.Purpose && !otp.IsUsed && !otp.IsLocked)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(otp => otp.IsUsed, true)
                         .SetProperty(otp => otp.IsLocked, true), ct);
 
                 var code = _otpGenerator.GenerateCode(AccountOtpSupport.OtpLength);
-                _context.OtpRecords.Add(new Models.OtpRecord
-                {
-                    Email = user.Email,
-                    Code = AccountOtpSupport.HashCode(code),
-                    ExpiresAt = now.Add(AccountOtpSupport.OtpLifetime),
+                    _context.OtpRecords.Add(new Models.OtpRecord
+                    {
+                        Email = user.Email,
+                        Code = AccountOtpSupport.HashCode(code),
+                        Purpose = request.Purpose,
+                        ExpiresAt = now.Add(AccountOtpSupport.OtpLifetime),
                     IpAddress = request.ClientIp,
                     CreatedAt = now
                 });

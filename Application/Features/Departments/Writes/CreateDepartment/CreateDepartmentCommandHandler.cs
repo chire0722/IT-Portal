@@ -4,6 +4,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -20,11 +21,13 @@ public sealed class CreateDepartmentCommandHandler : IRequestHandler<CreateDepar
 {
     private readonly ApplicationDbContext _context;
     private readonly ICurrentUserAccessor _currentUserAccessor;
+    private readonly IQuotaControl _quotaControl;
 
-    public CreateDepartmentCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+    public CreateDepartmentCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
     {
         _context = context;
         _currentUserAccessor = currentUserAccessor;
+        _quotaControl = quotaControl ?? new QuotaControl(context);
     }
 
     /// <summary>
@@ -32,6 +35,7 @@ public sealed class CreateDepartmentCommandHandler : IRequestHandler<CreateDepar
     /// </summary>
     public async Task<int> Handle(CreateDepartmentCommand request, CancellationToken cancellationToken)
     {
+        await _quotaControl.EnsureAvailableAsync(QuotaControl.Departments, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanyIds, cancellationToken);
 
         var entity = request.Adapt<DepartmentEntity>();

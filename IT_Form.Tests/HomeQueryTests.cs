@@ -44,6 +44,76 @@ public class HomeQueryTests
     }
 
     [Fact]
+    public async Task AnalyticsQuery_PopulatesSuperAdminOnlyAnalytics_ForSuperAdmin()
+    {
+        await using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = false });
+        context.Users.AddRange(
+            new ApplicationUser { Id = "active", UserName = "active", FullName = "Active User", IsActive = true },
+            new ApplicationUser { Id = "locked", UserName = "locked", FullName = "Locked User", IsActive = true, LockoutEnd = DateTimeOffset.UtcNow.AddMinutes(30) },
+            new ApplicationUser { Id = "inactive", UserName = "inactive", FullName = "Inactive User", IsActive = false });
+        context.OtpRecords.Add(new OtpRecord
+        {
+            Email = "super@example.com",
+            Code = "123456",
+            CreatedAt = DateTime.UtcNow.AddMinutes(-10),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+            FailedAttempts = 2
+        });
+        context.AuditLogs.AddRange(
+            new AuditLog
+            {
+                UserId = "super",
+                PerformedBy = "super@example.com",
+                EntityName = "ControlPlane",
+                EntityId = "MaintenanceMode",
+                Action = "EnableMaintenanceMode",
+                CreatedAt = DateTime.UtcNow.AddMinutes(-5),
+                Timestamp = DateTime.UtcNow.AddMinutes(-5),
+                IsSuccess = true
+            },
+            new AuditLog
+            {
+                UserId = "unknown",
+                PerformedBy = "unknown",
+                EntityName = "Account",
+                EntityId = "Login",
+                Action = "Login",
+                CreatedAt = DateTime.UtcNow.AddMinutes(-5),
+                Timestamp = DateTime.UtcNow.AddMinutes(-5),
+                IsSuccess = false
+            });
+        context.SystemSettings.AddRange(
+            new SystemSetting { Key = "ControlPlane.Maintenance.Enabled", Value = bool.TrueString },
+            new SystemSetting { Key = "ControlPlane.Maintenance.Reason", Value = "Planned work" },
+            new SystemSetting { Key = "ControlPlane.Quota.companies.Limit", Value = "1" },
+            new SystemSetting { Key = "ControlPlane.Quota.companies.ReadOnly", Value = bool.TrueString });
+        await context.SaveChangesAsync();
+
+        var handler = new GetHomeAnalyticsQueryHandler(
+            context,
+            new TestCurrentUserAccessor("super@example.com", "super", "SuperAdmin"));
+
+        var result = await handler.Handle(new GetHomeAnalyticsQuery(2026, null), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var model = result.Data!.ViewModel;
+        Assert.Equal(1, model.SuperAdminActiveCompanyCount);
+        Assert.Equal(1, model.SuperAdminInactiveCompanyCount);
+        Assert.Equal(2, model.SuperAdminActiveUserCount);
+        Assert.Equal(1, model.SuperAdminInactiveUserCount);
+        Assert.Equal(1, model.SuperAdminLockedUserCount);
+        Assert.Equal(1, model.SuperAdminFailedLoginCount24h);
+        Assert.Equal(1, model.SuperAdminFailedOtpCount24h);
+        Assert.True(model.SuperAdminMaintenanceModeEnabled);
+        Assert.Equal("Planned work", model.SuperAdminMaintenanceModeReason);
+        Assert.Contains("Companies", model.SuperAdminQuotaUsage.Keys);
+        Assert.Contains(model.SuperAdminRecentControlEvents, item => item.Action == "EnableMaintenanceMode");
+    }
+
+    [Fact]
     /// <summary>
     /// Runs the AnalyticsQuery_BuildsMonthlyTrendFromGroupedQueries operation.
     /// </summary>

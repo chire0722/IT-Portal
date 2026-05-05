@@ -139,6 +139,25 @@ namespace IT_Form.Models
         public double OffboardingYoYChange => PrevYearOffboardingCount == 0 ? 0 : Math.Round(((double)(MonthlyOffboardingCount - PrevYearOffboardingCount) / PrevYearOffboardingCount) * 100, 1);
         public int AssetYoYDiff => TotalAssets - PrevYearTotalAssets;
         public double SlaYoYDiff => Math.Round(AvgOnboardingDays - PrevYearAvgOnboardingDays, 1);
+
+        // Super Admin-only analytics
+        public int SuperAdminActiveCompanyCount { get; set; }
+        public int SuperAdminInactiveCompanyCount { get; set; }
+        public int SuperAdminActiveUserCount { get; set; }
+        public int SuperAdminInactiveUserCount { get; set; }
+        public int SuperAdminLockedUserCount { get; set; }
+        public int SuperAdminFailedLoginCount24h { get; set; }
+        public int SuperAdminFailedOtpCount24h { get; set; }
+        public int SuperAdminAuditFailureCount7d { get; set; }
+        public int SuperAdminHighRiskAuditCount7d { get; set; }
+        public int SuperAdminQuotaFrozenCount { get; set; }
+        public int SuperAdminQuotaPressureCount { get; set; }
+        public bool SuperAdminMaintenanceModeEnabled { get; set; }
+        public string? SuperAdminMaintenanceModeReason { get; set; }
+        public Dictionary<string, int> SuperAdminQuotaUsage { get; set; } = new Dictionary<string, int>();
+        public Dictionary<string, int> SuperAdminQuotaLimits { get; set; } = new Dictionary<string, int>();
+        public Dictionary<string, int> SuperAdminControlPlaneActions { get; set; } = new Dictionary<string, int>();
+        public IEnumerable<DashboardAuditLogItem> SuperAdminRecentControlEvents { get; set; } = new List<DashboardAuditLogItem>();
     }
 
     /// <summary>

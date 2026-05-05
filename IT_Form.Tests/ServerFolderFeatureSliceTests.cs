@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using IT_Form.Application.Common.Exceptions;
+using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.ServerFolder.AddCurrentEmployeeToServerFolder;
 using IT_Form.Application.Features.ServerFolder.BulkImportServerFolders;
 using IT_Form.Application.Features.ServerFolders.Writes.CreateServerFolder;
@@ -26,6 +27,11 @@ namespace IT_Form.Tests;
 /// </summary>
 public class ServerFolderFeatureSliceTests
 {
+    public ServerFolderFeatureSliceTests()
+    {
+        MapsterConfig.RegisterMappings();
+    }
+
     [Fact]
     /// <summary>
     /// Creates data for the CreateServerFolderValidator_Fails_WhenNameMissing operation.
@@ -38,6 +44,30 @@ public class ServerFolderFeatureSliceTests
         var result = await validator.ValidateAsync(new CreateServerFolderCommand(string.Empty, true, Array.Empty<int>()));
 
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Creates data for the CreateServerFolderHandler_AllowsGlobalAccessUserToCreateGlobalServerFolder operation.
+    /// </summary>
+    public async Task CreateServerFolderHandler_AllowsGlobalAccessUserToCreateGlobalServerFolder()
+    {
+        using var context = CreateContext();
+
+        var handler = new CreateServerFolderCommandHandler(
+            context,
+            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+
+        var id = await handler.Handle(
+            new CreateServerFolderCommand("Global_Share", true, []),
+            CancellationToken.None);
+
+        var entity = await context.ServerFolders
+            .Include(folder => folder.ServerFolderCompanies)
+            .SingleAsync(folder => folder.Id == id);
+
+        Assert.Equal("Global_Share", entity.FolderName);
+        Assert.Empty(entity.ServerFolderCompanies);
     }
 
     [Fact]

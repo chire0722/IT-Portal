@@ -4,6 +4,7 @@ using IT_Form.Application.Common.Abstractions;
 using System.Security.Cryptography;
 using IT_Form.Application.Features.Account;
 using IT_Form.Data;
+using IT_Form.Security;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,9 +17,27 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
     public sealed class VerifyOtpCommandHandler : IRequestHandler<VerifyOtpCommand, VerifyOtpResult>
     {
         private readonly UserManager<IT_Form.Models.ApplicationUser> _userManager;
+        private readonly SignInManager<IT_Form.Models.ApplicationUser>? _signInManager;
         private readonly ApplicationDbContext _context;
         private readonly IKeyedLockProvider _keyedLockProvider;
+        private readonly IPostCommitActionQueue? _postCommitActionQueue;
         private readonly ILogger<VerifyOtpCommandHandler> _logger;
+
+        public VerifyOtpCommandHandler(
+            UserManager<IT_Form.Models.ApplicationUser> userManager,
+            SignInManager<IT_Form.Models.ApplicationUser> signInManager,
+            ApplicationDbContext context,
+            IKeyedLockProvider keyedLockProvider,
+            IPostCommitActionQueue postCommitActionQueue,
+            ILogger<VerifyOtpCommandHandler> logger)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _context = context;
+            _keyedLockProvider = keyedLockProvider;
+            _postCommitActionQueue = postCommitActionQueue;
+            _logger = logger;
+        }
 
         public VerifyOtpCommandHandler(
             UserManager<IT_Form.Models.ApplicationUser> userManager,
@@ -53,7 +72,7 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                     var now = DateTime.UtcNow;
                     var otpRecord = await _context.OtpRecords
                         .AsNoTracking()
-                        .Where(otp => otp.Email == request.Email && !otp.IsUsed && !otp.IsLocked)
+                        .Where(otp => otp.Email == request.Email && otp.Purpose == request.Purpose && !otp.IsUsed && !otp.IsLocked)
                         .OrderByDescending(otp => otp.CreatedAt)
                         .FirstOrDefaultAsync(ct);
 
@@ -106,6 +125,7 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                     var consumedRows = await _context.OtpRecords
                         .Where(otp =>
                             otp.Id == otpRecord.Id &&
+                            otp.Purpose == request.Purpose &&
                             !otp.IsUsed &&
                             !otp.IsLocked &&
                             otp.ExpiresAt >= now)
@@ -115,6 +135,50 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                     if (consumedRows == 0)
                     {
                         throw AccountOtpSupport.CreateValidationException("\u9a8c\u8bc1\u7801\u5df2\u8fc7\u671f\u6216\u4e0d\u5b58\u5728");
+                    }
+
+                    if (request.Purpose == OtpPurposes.PrivilegedLogin)
+                    {
+                        var isSuperAdmin = await _context.UserTitles
+                            .AsNoTracking()
+                            .AnyAsync(title => title.UserId == user.Id && title.Title == PortalTitles.SuperAdmin, ct);
+                        if (!isSuperAdmin)
+                        {
+                            return new VerifyOtpResult(false, true, "Invalid OTP purpose.");
+                        }
+
+                        user.AccessFailedCount = 0;
+                        user.LockoutEnd = null;
+                        user.MustChangePassword = false;
+                        user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
+                        await _userManager.UpdateAsync(user);
+                        if (_signInManager == null || _postCommitActionQueue == null)
+                        {
+                            throw new InvalidOperationException("Super Admin OTP login requires sign-in services.");
+                        }
+
+                        _postCommitActionQueue.Enqueue(_ => _signInManager.SignInAsync(user, isPersistent: false));
+
+                        _context.AuditLogs.Add(new IT_Form.Models.AuditLog
+                        {
+                            UserId = user.Id,
+                            CreatedAt = DateTime.UtcNow,
+                            Timestamp = DateTime.UtcNow,
+                            Action = "Login",
+                            PerformedBy = user.FullName ?? user.UserName ?? "Unknown",
+                            EntityName = "User Account",
+                            EntityId = user.Id,
+                            Details = "Super Admin authenticated successfully with OTP.",
+                            IsSuccess = true
+                        });
+                        await _context.SaveChangesAsync(ct);
+
+                        return new VerifyOtpResult(
+                            true,
+                            false,
+                            "OTP verified.",
+                            IsLoginVerified: true,
+                            RequiresPasswordSetup: false);
                     }
 
                     var token = await _userManager.GeneratePasswordResetTokenAsync(user);

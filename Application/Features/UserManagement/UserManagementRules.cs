@@ -2,6 +2,7 @@
 
 using IT_Form.Data;
 using IT_Form.Models;
+using IT_Form.Security;
 
 namespace IT_Form.Application.Features.UserManagement
 {
@@ -13,14 +14,16 @@ namespace IT_Form.Application.Features.UserManagement
         /// <summary>
         /// Runs the AssignTitlesAsync operation.
         /// </summary>
-        public static async Task AssignTitlesAsync(ApplicationDbContext context, string userId, bool isIt, bool isHr, bool isHod)
+        public static async Task AssignTitlesAsync(ApplicationDbContext context, string userId, bool isIt, bool isHr, bool isHod, bool isSuperAdmin = false)
         {
-            if (isIt)
-                context.UserTitles.Add(new UserTitle { UserId = userId, Title = "IT" });
+            if (isIt || isSuperAdmin)
+                context.UserTitles.Add(new UserTitle { UserId = userId, Title = PortalTitles.IT });
             if (isHr)
-                context.UserTitles.Add(new UserTitle { UserId = userId, Title = "HR" });
+                context.UserTitles.Add(new UserTitle { UserId = userId, Title = PortalTitles.HR });
             if (isHod)
-                context.UserTitles.Add(new UserTitle { UserId = userId, Title = "HOD" });
+                context.UserTitles.Add(new UserTitle { UserId = userId, Title = PortalTitles.HOD });
+            if (isSuperAdmin)
+                context.UserTitles.Add(new UserTitle { UserId = userId, Title = PortalTitles.SuperAdmin });
 
             await Task.CompletedTask;
         }

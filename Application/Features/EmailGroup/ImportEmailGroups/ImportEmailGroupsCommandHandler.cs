@@ -3,6 +3,7 @@
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -18,11 +19,13 @@ namespace IT_Form.Application.Features.EmailGroup.ImportEmailGroups
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IQuotaControl _quotaControl;
 
-        public ImportEmailGroupsCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        public ImportEmailGroupsCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
+            _quotaControl = quotaControl ?? new QuotaControl(context);
         }
 
         /// <summary>
@@ -50,6 +53,24 @@ namespace IT_Form.Application.Features.EmailGroup.ImportEmailGroups
             }
 
             var rows = usedRange.RowsUsed().Skip(1);
+            var rowList = rows.ToList();
+            var candidateEmails = rowList
+                .Where(row => !string.IsNullOrWhiteSpace(row.Cell(1).GetString().Trim()))
+                .Select(row => row.Cell(2).GetString().Trim())
+                .Where(email => !string.IsNullOrWhiteSpace(email))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var existingEmails = await _context.EmailGroups
+                .Where(group => candidateEmails.Contains(group.GroupEmail))
+                .Select(group => group.GroupEmail)
+                .ToListAsync(cancellationToken);
+            var newCount = candidateEmails.Count(email => !existingEmails.Contains(email, StringComparer.OrdinalIgnoreCase));
+            if (newCount > 0)
+            {
+                await _quotaControl.EnsureAvailableAsync(QuotaControl.EmailGroups, newCount, _currentUserAccessor.User, cancellationToken);
+            }
+
+            rows = rowList;
             var allCompanies = await _context.Companies.ToListAsync(cancellationToken);
             var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var accessibleCompanyIds = scopedCompanies.Count > 0

@@ -19,4 +19,5 @@ public sealed record UpdateUserManagementCommand(
     bool IsHR,
     bool IsHOD,
     bool IsActive,
-    List<string>? SelectedCompanies) : IRequest<Unit>;
+    List<string>? SelectedCompanies,
+    bool IsSuperAdmin = false) : IRequest<Unit>;

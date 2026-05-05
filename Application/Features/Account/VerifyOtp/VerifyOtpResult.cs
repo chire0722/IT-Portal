@@ -9,5 +9,7 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
         bool IsVerified,
         bool ShouldRedirectToLogin,
         string Message,
-        string? Token = null);
+        string? Token = null,
+        bool IsLoginVerified = false,
+        bool RequiresPasswordSetup = false);
 }

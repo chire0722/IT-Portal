@@ -3,6 +3,7 @@
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -18,11 +19,13 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
     {
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IQuotaControl _quotaControl;
 
-        public BulkImportServerFoldersCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        public BulkImportServerFoldersCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
+            _quotaControl = quotaControl ?? new QuotaControl(context);
         }
 
         /// <summary>
@@ -45,6 +48,23 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
                 var worksheet = workbook.Worksheet(1);
                 var rangeUsed = worksheet.RangeUsed();
                 var rows = rangeUsed != null ? rangeUsed.RowsUsed().Skip(1) : Enumerable.Empty<IXLRangeRow>();
+                var rowList = rows.ToList();
+                var candidateFolderNames = rowList
+                    .Select(row => row.Cell(1).GetValue<string>()?.Trim())
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var existingFolderNames = await _context.ServerFolders
+                    .Where(folder => candidateFolderNames.Contains(folder.FolderName))
+                    .Select(folder => folder.FolderName)
+                    .ToListAsync(cancellationToken);
+                var newCount = candidateFolderNames.Count(name => !existingFolderNames.Contains(name!, StringComparer.OrdinalIgnoreCase));
+                if (newCount > 0)
+                {
+                    await _quotaControl.EnsureAvailableAsync(QuotaControl.ServerFolders, newCount, _currentUserAccessor.User, cancellationToken);
+                }
+
+                rows = rowList;
 
                 int successCount = 0;
                 int skipCount = 0;

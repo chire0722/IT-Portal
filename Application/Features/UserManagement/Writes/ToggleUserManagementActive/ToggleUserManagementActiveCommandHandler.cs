@@ -5,9 +5,11 @@ using FluentValidation.Results;
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
+using IT_Form.Application.Features.UserManagement;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Security;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -41,12 +43,23 @@ public sealed class ToggleUserManagementActiveCommandHandler : IRequestHandler<T
         CancellationToken cancellationToken)
     {
         var user = await _context.Users
+            .Include(u => u.UserTitles)
             .Include(u => u.UserCompanies)
             .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
 
         if (user == null)
         {
             throw new NotFoundException(nameof(ApplicationUser), request.Id);
+        }
+
+        if (UserManagementVisibility.IsSuperAdminUser(user))
+        {
+            if (!UserManagementVisibility.CanSeeSuperAdminUsers(_currentUserAccessor.User))
+            {
+                throw new NotFoundException(nameof(ApplicationUser), request.Id);
+            }
+
+            throw new ValidationException([new ValidationFailure(string.Empty, "The Super Admin account cannot be deactivated.")]);
         }
 
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);

@@ -96,6 +96,7 @@ public static class MapsterConfig
             .Map(destination => destination.IsIT, source => source.UserTitles.Any(title => title.Title == "IT"))
             .Map(destination => destination.IsHR, source => source.UserTitles.Any(title => title.Title == "HR"))
             .Map(destination => destination.IsHOD, source => source.UserTitles.Any(title => title.Title == "HOD"))
+            .Map(destination => destination.IsSuperAdmin, source => source.UserTitles.Any(title => title.Title == "SuperAdmin"))
             .Map(destination => destination.SelectedCompanies, source => source.UserCompanies.Select(company => company.CompanyName).ToList());
 
         config.NewConfig<ApplicationUser, AccountProfilePageViewModel>()

@@ -19,6 +19,10 @@ namespace IT_Form.Models
         [StringLength(128)]
         public string Code { get; set; } = string.Empty;
 
+        [Required]
+        [StringLength(50)]
+        public string Purpose { get; set; } = IT_Form.Application.Features.Account.OtpPurposes.PasswordReset;
+
         public DateTime ExpiresAt { get; set; }
 
         public bool IsUsed { get; set; } = false;

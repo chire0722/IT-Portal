@@ -67,6 +67,9 @@
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+                    var isSuperAdmin = User.HasClaim("UserTitle", "SuperAdmin");
+                    var isPrivilegedIt = isSuperAdmin || User.HasClaim("UserTitle", "IT");
+                    var isHr = User.HasClaim("UserTitle", "HR");
 
                     <div class="nav-item-header">MAIN</div>
                     <a class="sidebar-link @(currentController == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="Home"
@@ -74,7 +77,7 @@
                         <i class="bi bi-house-door" aria-hidden="true"></i> Dashboard
                     </a>
                     
-                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
+                    @if (isPrivilegedIt || isHr)
                     {
                         <a class="sidebar-link @(currentController == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "active" : "")" asp-controller="Home"
                             asp-action="Analytics">
@@ -82,7 +85,7 @@
                         </a>
                     }
 
-                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
+                    @if (isPrivilegedIt || isHr)
                     {
                         <div class="nav-item-header">REQUESTS</div>
                         <a class="sidebar-link @(currentController == "Onboarding" ? "active" : "")" asp-controller="Onboarding"
@@ -104,7 +107,7 @@
                     }
 
                     <div class="nav-item-header">DIRECTORY</div>
-                    @if (User.HasClaim("UserTitle", "IT") || User.HasClaim("UserTitle", "HR"))
+                    @if (isPrivilegedIt || isHr)
                     {
                         <a class="sidebar-link @(currentController == "Employee" ? "active" : "")" asp-controller="Employee"
                             asp-action="Index">
@@ -116,7 +119,7 @@
                         <i class="bi bi-person-rolodex" aria-hidden="true"></i> Email Directory
                     </a>
 
-                    @if (User.HasClaim("UserTitle", "IT"))
+                    @if (isPrivilegedIt)
                     {
                         <div class="nav-item-header">ASSETS & SYSTEM</div>
                         <a class="sidebar-link @(currentController == "ITAsset" ? "active" : "")" asp-controller="ITAsset"
@@ -160,6 +163,18 @@
                             asp-action="Index">
                             <i class="bi bi-folder" aria-hidden="true"></i> Server Folders
                         </a>
+                        @if (isSuperAdmin)
+                        {
+                            <div class="nav-item-header">ADVANCED</div>
+                            <a class="sidebar-link @(currentController == "ControlPlane" && ViewContext.RouteData.Values["action"]?.ToString() != "Operations" ? "active" : "")" asp-controller="ControlPlane"
+                                asp-action="Index">
+                                <i class="bi bi-sliders" aria-hidden="true"></i> Advanced Settings
+                            </a>
+                            <a class="sidebar-link @(currentController == "ControlPlane" && ViewContext.RouteData.Values["action"]?.ToString() == "Operations" ? "active" : "")" asp-controller="ControlPlane"
+                                asp-action="Operations">
+                                <i class="bi bi-command" aria-hidden="true"></i> Operations Center
+                            </a>
+                        }
                     }
                 }
                 else

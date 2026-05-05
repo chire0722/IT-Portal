@@ -9,6 +9,7 @@ using IT_Form.Application.Common.Validation;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Security;
 using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -54,6 +55,18 @@ public sealed class UpdateUserManagementCommandHandler : IRequestHandler<UpdateU
             throw new NotFoundException(nameof(ApplicationUser), request.Id);
         }
 
+        var targetIsSuperAdmin = user.UserTitles.Any(title => title.Title == PortalTitles.SuperAdmin);
+        var actorCanManageSuperAdmin = PortalTitles.CanManageSuperAdmin(_currentUserAccessor.User);
+        if (targetIsSuperAdmin && !actorCanManageSuperAdmin)
+        {
+            throw new NotFoundException(nameof(ApplicationUser), request.Id);
+        }
+
+        if (request.IsSuperAdmin && !actorCanManageSuperAdmin)
+        {
+            throw new ValidationException([new ValidationFailure(string.Empty, "Only Super Admin can assign Super Admin access.")]);
+        }
+
         var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
         if (!CompanyScopeHelper.AreAllCompaniesAllowed(scopedCompanies, user.UserCompanies.Select(company => company.CompanyName)))
         {
@@ -61,6 +74,8 @@ public sealed class UpdateUserManagementCommandHandler : IRequestHandler<UpdateU
         }
 
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanies, cancellationToken);
+
+        await EnsureSingleSuperAdminAsync(user.Id, request.IsSuperAdmin, targetIsSuperAdmin, cancellationToken);
 
         request.Adapt(user);
 
@@ -73,18 +88,38 @@ public sealed class UpdateUserManagementCommandHandler : IRequestHandler<UpdateU
             var passwordResetResult = await _userManager.ResetPasswordAsync(user, token, request.Password);
             passwordResetResult.EnsureSucceeded();
 
-            user.MustChangePassword = true;
+            user.MustChangePassword = !targetIsSuperAdmin;
             (await _userManager.UpdateAsync(user)).EnsureSucceeded();
         }
 
         _context.UserTitles.RemoveRange(user.UserTitles);
         _context.UserCompanies.RemoveRange(user.UserCompanies);
-        await UserManagementRules.AssignTitlesAsync(_context, user.Id, request.IsIT, request.IsHR, request.IsHOD);
+        await UserManagementRules.AssignTitlesAsync(_context, user.Id, request.IsIT, request.IsHR, request.IsHOD, request.IsSuperAdmin);
         UserManagementRules.AssignCompanies(_context, user.Id, request.SelectedCompanies);
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("IT admin updated user {Username}.", user.UserName);
         return Unit.Value;
+    }
+
+    private async Task EnsureSingleSuperAdminAsync(string userId, bool requestedSuperAdmin, bool targetIsSuperAdmin, CancellationToken cancellationToken)
+    {
+        if (targetIsSuperAdmin && !requestedSuperAdmin)
+        {
+            throw new ValidationException([new ValidationFailure(string.Empty, "Removing the only Super Admin is not allowed.")]);
+        }
+
+        if (!requestedSuperAdmin)
+        {
+            return;
+        }
+
+        var otherSuperAdminExists = await _context.UserTitles
+            .AnyAsync(title => title.Title == PortalTitles.SuperAdmin && title.UserId != userId, cancellationToken);
+        if (otherSuperAdminExists)
+        {
+            throw new ValidationException([new ValidationFailure(string.Empty, "Only one Super Admin account is allowed.")]);
+        }
     }
 
     /// <summary>

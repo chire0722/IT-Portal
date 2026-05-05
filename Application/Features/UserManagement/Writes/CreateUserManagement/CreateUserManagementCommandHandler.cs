@@ -9,9 +9,12 @@ using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
+using IT_Form.Security;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Net;
@@ -29,6 +32,7 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
     private readonly IEmailBackgroundQueue _emailBackgroundQueue;
     private readonly IConfiguration _configuration;
     private readonly ILogger<CreateUserManagementCommandHandler> _logger;
+    private readonly IQuotaControl _quotaControl;
 
     public CreateUserManagementCommandHandler(
         UserManager<ApplicationUser> userManager,
@@ -36,7 +40,8 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
         ICurrentUserAccessor currentUserAccessor,
         IEmailBackgroundQueue emailBackgroundQueue,
         IConfiguration configuration,
-        ILogger<CreateUserManagementCommandHandler> logger)
+        ILogger<CreateUserManagementCommandHandler> logger,
+        IQuotaControl quotaControl)
     {
         _userManager = userManager;
         _context = context;
@@ -44,6 +49,7 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
         _emailBackgroundQueue = emailBackgroundQueue;
         _configuration = configuration;
         _logger = logger;
+        _quotaControl = quotaControl;
     }
 
     /// <summary>
@@ -51,21 +57,47 @@ public sealed class CreateUserManagementCommandHandler : IRequestHandler<CreateU
     /// </summary>
     public async Task<string> Handle(CreateUserManagementCommand request, CancellationToken cancellationToken)
     {
+        await EnsureSuperAdminAssignmentAllowedAsync(request.IsSuperAdmin, cancellationToken);
+        if (!request.IsSuperAdmin)
+        {
+            await _quotaControl.EnsureAvailableAsync(QuotaControl.Users, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
+        }
+
         await EnsureRequestedCompaniesAreInScopeAsync(request.SelectedCompanies, cancellationToken);
 
         var user = request.Adapt<ApplicationUser>();
-        user.MustChangePassword = true;
+        user.MustChangePassword = !request.IsSuperAdmin;
 
         var result = await _userManager.CreateAsync(user, request.Password!);
         result.EnsureSucceeded();
 
-        await UserManagementRules.AssignTitlesAsync(_context, user.Id, request.IsIT, request.IsHR, request.IsHOD);
+        await UserManagementRules.AssignTitlesAsync(_context, user.Id, request.IsIT, request.IsHR, request.IsHOD, request.IsSuperAdmin);
         UserManagementRules.AssignCompanies(_context, user.Id, request.SelectedCompanies);
         await QueueWelcomeEmailAsync(user, request.Password!, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("IT admin created user {Username} with titles.", request.Username);
         return user.Id;
+    }
+
+    private async Task EnsureSuperAdminAssignmentAllowedAsync(bool isSuperAdmin, CancellationToken cancellationToken)
+    {
+        if (!isSuperAdmin)
+        {
+            return;
+        }
+
+        if (!PortalTitles.CanManageSuperAdmin(_currentUserAccessor.User))
+        {
+            throw new ValidationException([new ValidationFailure(string.Empty, "Only Super Admin can assign Super Admin access.")]);
+        }
+
+        var existingSuperAdmin = await _context.UserTitles
+            .AnyAsync(title => title.Title == PortalTitles.SuperAdmin, cancellationToken);
+        if (existingSuperAdmin)
+        {
+            throw new ValidationException([new ValidationFailure(string.Empty, "Only one Super Admin account is allowed.")]);
+        }
     }
 
     /// <summary>

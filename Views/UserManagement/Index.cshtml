@@ -57,9 +57,16 @@
                                                 "HR" => "badge-pending",
                                                 "HOD" => "badge-hod",
                                                 "Manager" => "badge-hod",
+                                                "SuperAdmin" => "badge-danger",
                                                 _ => "badge-draft"
                                             };
-                                            <span class="@badgeClass">@(t == "Manager" ? "HOD" : t)</span>
+                                            var titleLabel = t switch
+                                            {
+                                                "Manager" => "HOD",
+                                                "SuperAdmin" => "Super Admin",
+                                                _ => t
+                                            };
+                                            <span class="@badgeClass">@titleLabel</span>
                                         }
                                     }
                                     else

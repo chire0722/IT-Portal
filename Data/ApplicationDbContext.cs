@@ -16,6 +16,7 @@ using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support;
 using IT_Form.Helpers;
 using IT_Form.Infrastructure.Notifications;
+using IT_Form.Security;
 
 namespace IT_Form.Data
 {
@@ -30,6 +31,8 @@ namespace IT_Form.Data
         private readonly ILicenseEncryptionService _encryptionService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IPostCommitActionQueue _postCommitActionQueue;
+
+        public bool SuppressAuditLogging { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options,
                                     IHttpContextAccessor httpContextAccessor,
@@ -578,6 +581,11 @@ namespace IT_Form.Data
         /// </summary>
         public async Task LogActionAsync(string entityName, string entityId, string action, string details, string? changes = null)
         {
+            if (ShouldSuppressAuditForCurrentUser())
+            {
+                return;
+            }
+
             var currentUser = _httpContextAccessor?.HttpContext?.User?.Identity?.Name ?? "System";
             var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
@@ -609,6 +617,11 @@ namespace IT_Form.Data
         public async Task PersistStandaloneAuditLogAsync(AuditLog log, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(log);
+
+            if (ShouldSuppressAuditForCurrentUser())
+            {
+                return;
+            }
 
             if (!Database.IsRelational())
             {
@@ -655,11 +668,17 @@ namespace IT_Form.Data
 
             ChangeTracker.DetectChanges();
 
+            var suppressAudit = ShouldSuppressAuditForCurrentUser();
+            if (suppressAudit)
+            {
+                DetachPendingAuditLogs();
+            }
+
             var currentUser = _httpContextAccessor?.HttpContext?.User?.Identity?.Name ?? "System";
             var currentUserId = _httpContextAccessor?.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var request = _httpContextAccessor?.HttpContext?.Request;
             string? currentBaseUrl = request != null ? $"{request.Scheme}://{request.Host}{request.PathBase}" : null;
-            var auditEntries = BuildAuditEntries(currentUser);
+            var auditEntries = suppressAudit ? [] : BuildAuditEntries(currentUser);
 
             // Process Soft Deletes
             foreach (var entry in ChangeTracker.Entries<ISoftDeletable>())
@@ -723,6 +742,19 @@ namespace IT_Form.Data
             }
 
             return result;
+        }
+
+        private bool ShouldSuppressAuditForCurrentUser()
+            => SuppressAuditLogging || PortalTitles.IsSuperAdmin(_httpContextAccessor?.HttpContext?.User);
+
+        private void DetachPendingAuditLogs()
+        {
+            foreach (var entry in ChangeTracker.Entries<AuditLog>()
+                         .Where(entry => entry.State == EntityState.Added)
+                         .ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
         }
 
         /// <summary>

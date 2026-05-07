@@ -373,31 +373,52 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
             viewModel.RecentCompletedOnboarding = await _context.OnboardingRequests
                 .AsNoTracking()
                 .Where(onboarding => onboarding.Status == RequestStatus.Completed)
-                .OrderByDescending(onboarding => onboarding.EmployeeSignedAt)
+                .OrderByDescending(onboarding => onboarding.EmployeeSignedAt ?? onboarding.CompletedAt ?? onboarding.UpdatedAt ?? onboarding.RequestDate)
                 .Take(5)
-                .ProjectToType<DashboardRequestSummaryItem>()
+                .Select(onboarding => new DashboardRequestSummaryItem
+                {
+                    Id = onboarding.Id,
+                    CreatedByUserId = onboarding.CreatedByUserId,
+                    FullName = onboarding.FullName,
+                    Department = onboarding.Department,
+                    SubmittedByName = onboarding.RequesterSignerName,
+                    CompletedAt = onboarding.CompletedAt,
+                    EmployeeSignedAt = onboarding.EmployeeSignedAt
+                })
                 .ToListAsync(cancellationToken);
             viewModel.RecentCompletedOffboarding = await _context.OffboardingRequests
                 .AsNoTracking()
                 .Where(offboarding => offboarding.Status == RequestStatus.Completed)
-                .OrderByDescending(offboarding => offboarding.EmployeeSignedAt)
+                .OrderByDescending(offboarding => offboarding.EmployeeSignedAt ?? offboarding.CompletedAt ?? offboarding.UpdatedAt ?? offboarding.RequestDate)
                 .Take(5)
-                .ProjectToType<DashboardRequestSummaryItem>()
+                .Select(offboarding => new DashboardRequestSummaryItem
+                {
+                    Id = offboarding.Id,
+                    CreatedByUserId = offboarding.CreatedByUserId,
+                    FullName = offboarding.FullName,
+                    Department = offboarding.Department,
+                    SubmittedByName = offboarding.HRSignerName,
+                    CompletedAt = offboarding.CompletedAt,
+                    EmployeeSignedAt = offboarding.EmployeeSignedAt
+                })
                 .ToListAsync(cancellationToken);
+            await PopulateSubmitterNamesAsync(
+                viewModel.RecentCompletedOnboarding.Concat(viewModel.RecentCompletedOffboarding),
+                cancellationToken);
             viewModel.CompletedThisMonthCount =
                 await _context.OnboardingRequests
                     .AsNoTracking()
                     .CountAsync(onboarding =>
                         onboarding.Status == RequestStatus.Completed &&
-                        onboarding.EmployeeSignedAt >= period.StatsStartDate &&
-                        onboarding.EmployeeSignedAt <= period.StatsEndDate,
+                        (onboarding.EmployeeSignedAt ?? onboarding.CompletedAt) >= period.StatsStartDate &&
+                        (onboarding.EmployeeSignedAt ?? onboarding.CompletedAt) <= period.StatsEndDate,
                         cancellationToken)
                 + await _context.OffboardingRequests
                     .AsNoTracking()
                     .CountAsync(offboarding =>
                         offboarding.Status == RequestStatus.Completed &&
-                        offboarding.EmployeeSignedAt >= period.StatsStartDate &&
-                        offboarding.EmployeeSignedAt <= period.StatsEndDate,
+                        (offboarding.EmployeeSignedAt ?? offboarding.CompletedAt) >= period.StatsStartDate &&
+                        (offboarding.EmployeeSignedAt ?? offboarding.CompletedAt) <= period.StatsEndDate,
                         cancellationToken);
             viewModel.DepartmentOnboardingBreakdown = await _context.OnboardingRequests
                 .AsNoTracking()
@@ -465,6 +486,84 @@ public sealed class GetHomeDashboardQueryHandler : IRequestHandler<GetHomeDashbo
         => string.Create(
             System.Globalization.CultureInfo.InvariantCulture,
             $"home-dashboard:{currentUserId ?? currentUserName}:{year?.ToString() ?? "current"}:{isIt}:{isManager}:{isHr}");
+
+    private async Task PopulateSubmitterNamesAsync(
+        IEnumerable<DashboardRequestSummaryItem> items,
+        CancellationToken cancellationToken)
+    {
+        var summaries = items
+            .Where(item => !string.IsNullOrWhiteSpace(item.CreatedByUserId))
+            .ToList();
+        if (summaries.Count == 0)
+        {
+            return;
+        }
+
+        var creatorKeys = summaries
+            .SelectMany(item => new[] { item.CreatedByUserId, item.SubmittedByName })
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .Select(key => key!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var users = await _context.Users
+            .AsNoTracking()
+            .Where(user =>
+                creatorKeys.Contains(user.Id) ||
+                (user.UserName != null && creatorKeys.Contains(user.UserName)) ||
+                (user.Email != null && creatorKeys.Contains(user.Email)))
+            .Select(user => new
+            {
+                user.Id,
+                user.UserName,
+                user.Email,
+                user.FullName
+            })
+            .ToListAsync(cancellationToken);
+
+        var namesByKey = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var user in users)
+        {
+            var displayName = !string.IsNullOrWhiteSpace(user.FullName)
+                ? user.FullName
+                : user.UserName ?? user.Email ?? user.Id;
+
+            AddSubmitterLookup(namesByKey, user.Id, displayName);
+            AddSubmitterLookup(namesByKey, user.UserName, displayName);
+            AddSubmitterLookup(namesByKey, user.Email, displayName);
+        }
+
+        foreach (var item in summaries)
+        {
+            var hasCreatorDisplayName = namesByKey.TryGetValue(item.CreatedByUserId!, out var creatorDisplayName);
+
+            if (!string.IsNullOrWhiteSpace(item.SubmittedByName) &&
+                namesByKey.TryGetValue(item.SubmittedByName, out var signerDisplayName))
+            {
+                item.SubmittedByName = signerDisplayName;
+                continue;
+            }
+
+            if (!hasCreatorDisplayName)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(item.SubmittedByName) ||
+                string.Equals(item.SubmittedByName, item.CreatedByUserId, StringComparison.OrdinalIgnoreCase))
+            {
+                item.SubmittedByName = creatorDisplayName;
+            }
+        }
+    }
+
+    private static void AddSubmitterLookup(Dictionary<string, string> lookup, string? key, string displayName)
+    {
+        if (!string.IsNullOrWhiteSpace(key))
+        {
+            lookup[key] = displayName;
+        }
+    }
 }
 
 /// <summary>

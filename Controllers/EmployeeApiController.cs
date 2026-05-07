@@ -11,6 +11,7 @@ using IT_Form.Models.Enums;
 using ClosedXML.Excel;
 using System.Globalization;
 using IT_Form.Helpers;
+using IT_Form.Services;
 
 namespace IT_Form.Controllers
 {
@@ -25,11 +26,16 @@ namespace IT_Form.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ISignatureIntegrityService _integrityService;
 
-        public EmployeeApiController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public EmployeeApiController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            ISignatureIntegrityService integrityService)
         {
             _context = context;
             _userManager = userManager;
+            _integrityService = integrityService;
         }
 
         [Authorize(Policy = "RequireHR")]
@@ -148,8 +154,16 @@ namespace IT_Form.Controllers
                 return BadRequest(errorMessage);
 
             var currentUser = await _userManager.GetUserAsync(User);
-            string? signature = currentUser?.Signature ?? currentUser?.EmailSignatureImage;
-            bool hasSignature = !string.IsNullOrEmpty(signature);
+            var currentUserName = currentUser?.UserName ?? currentUser?.Email ?? HttpContext?.User?.Identity?.Name ?? "System Migration";
+            var signature = currentUser?.Signature;
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return BadRequest("No HR signature found. Please set up your profile signature before importing employees.");
+            }
+
+            var signerName = !string.IsNullOrWhiteSpace(currentUser?.FullName)
+                ? currentUser.FullName
+                : currentUserName;
 
             int totalProcessed = 0;
             int successfullyInserted = 0;
@@ -242,6 +256,7 @@ namespace IT_Form.Controllers
                             continue;
                         }
 
+                        var importedAt = DateTime.UtcNow;
                         var request = new OnboardingRequest
                         {
                             EmployeeID = empNum,
@@ -255,13 +270,13 @@ namespace IT_Form.Controllers
                             HODEmail = managerEmail,
                             Branch = company,
                             Status = RequestStatus.Completed,
-                            RequestDate = DateTime.UtcNow,
-                            CreatedAt = DateTime.UtcNow,
-                            CompletedAt = DateTime.UtcNow,
-                            CreatedByUserId = currentUser?.Id ?? "System Migration",
+                            RequestDate = importedAt,
+                            CreatedAt = importedAt,
+                            CompletedAt = importedAt,
+                            CreatedByUserId = currentUserName,
                             RequesterSignature = signature,
-                            RequesterSignedAt = hasSignature ? DateTime.UtcNow : null,
-                            RequesterSignatureHmac = hasSignature ? $"SYSTEM-IMPORT-{currentUser?.Id}" : null
+                            RequesterSignerName = signerName,
+                            RequesterSignedAt = importedAt
                         };
 
                         newEmployees.Add(request);
@@ -277,6 +292,18 @@ namespace IT_Form.Controllers
             if (newEmployees.Any())
             {
                 _context.OnboardingRequests.AddRange(newEmployees);
+                await _context.SaveChangesAsync();
+
+                foreach (var employee in newEmployees)
+                {
+                    employee.RequesterSignatureHmac = _integrityService.ComputeHmac(
+                        "OnboardingRequest",
+                        employee.Id.ToString(CultureInfo.InvariantCulture),
+                        employee.RequesterSignerName ?? signerName,
+                        employee.RequesterSignedAt!.Value,
+                        employee.RequesterSignature!);
+                }
+
                 await _context.SaveChangesAsync();
             }
 

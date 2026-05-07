@@ -222,10 +222,10 @@
                 <div class="card-body p-0">
                     @{
                         var recentAll = Model.RecentCompletedOnboarding
-                            .Select(r => new { FullName = (string?)r.FullName, Department = (string?)r.Department, Type = "Onboarding", SignedAt = r.EmployeeSignedAt })
+                            .Select(r => new { FullName = (string?)r.FullName, Department = (string?)r.Department, Submitter = (string?)r.SubmittedByName, Type = "Onboarding", CompletedOn = r.EmployeeSignedAt ?? r.CompletedAt })
                             .Concat(Model.RecentCompletedOffboarding
-                            .Select(r => new { FullName = (string?)r.FullName, Department = (string?)r.Department, Type = "Offboarding", SignedAt = r.EmployeeSignedAt }))
-                            .OrderByDescending(r => r.SignedAt)
+                            .Select(r => new { FullName = (string?)r.FullName, Department = (string?)r.Department, Submitter = (string?)r.SubmittedByName, Type = "Offboarding", CompletedOn = r.EmployeeSignedAt ?? r.CompletedAt }))
+                            .OrderByDescending(r => r.CompletedOn)
                             .Take(8)
                             .ToList();
                     }
@@ -240,11 +240,16 @@
                                             <strong>@item.FullName</strong>
                                             <br />
                                             <small style="color: var(--text-muted);">@item.Department</small>
+                                            @if (!string.IsNullOrWhiteSpace(item.Submitter))
+                                            {
+                                                <br />
+                                                <small style="color: var(--text-muted);">Submitted by @item.Submitter</small>
+                                            }
                                         </div>
                                         <div class="text-end">
                                             <span class="@(item.Type == "Onboarding" ? "badge-completed" : "badge-rejected")">@item.Type</span>
                                             <br />
-                                            <small style="color: var(--text-muted);">@(item.SignedAt?.ToString("dd/MM/yyyy") ?? "â€”")</small>
+                                            <small style="color: var(--text-muted);">@(item.CompletedOn?.ToString("dd/MM/yyyy") ?? "-")</small>
                                         </div>
                                     </div>
                                 </div>

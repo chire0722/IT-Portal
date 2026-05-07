@@ -40,8 +40,10 @@ namespace IT_Form.Models
     public sealed class DashboardRequestSummaryItem
     {
         public int Id { get; set; }
+        public string? CreatedByUserId { get; set; }
         public string? FullName { get; set; }
         public string? Department { get; set; }
+        public string? SubmittedByName { get; set; }
         public DateTime? CompletedAt { get; set; }
         public DateTime? EmployeeSignedAt { get; set; }
     }

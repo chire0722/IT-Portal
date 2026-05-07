@@ -17,18 +17,28 @@ namespace IT_Form.AuditTests;
 /// </summary>
 internal static class TestContextFactory
 {
-    public static (ApplicationDbContext Context, DefaultHttpContext HttpContext) Create(string? userName = "auditor@ytc.com")
+    public static (ApplicationDbContext Context, DefaultHttpContext HttpContext) Create(
+        string? userName = "auditor@ytc.com",
+        IEnumerable<System.Security.Claims.Claim>? additionalClaims = null)
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
         httpContext.RequestServices = new ServiceCollection().BuildServiceProvider();
 
+        var claims = new List<System.Security.Claims.Claim>();
         if (!string.IsNullOrWhiteSpace(userName))
         {
-            var identity = new System.Security.Claims.ClaimsIdentity(
-            [
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, userName)
-            ], "Test");
+            claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, userName));
+        }
+
+        if (additionalClaims != null)
+        {
+            claims.AddRange(additionalClaims);
+        }
+
+        if (claims.Count > 0)
+        {
+            var identity = new System.Security.Claims.ClaimsIdentity(claims, "Test");
             httpContext.User = new System.Security.Claims.ClaimsPrincipal(identity);
         }
 

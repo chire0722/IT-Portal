@@ -64,6 +64,13 @@ namespace IT_Form.Application.Features.Account.LoginAccount
 
             if (string.IsNullOrWhiteSpace(userId))
             {
+                AddFailedLoginAudit(
+                    null,
+                    request.Username,
+                    request.ClientIp,
+                    "Invalid username/email or password.");
+                await _context.SaveChangesAsync(cancellationToken);
+
                 return new LoginAccountResult(
                     false,
                     "Invalid username/email or password.");
@@ -106,8 +113,22 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                 : [5, 15, 30, 120];
             var user = await _context.Users.SingleAsync(u => u.Id == userId, cancellationToken);
 
+            var isSuperAdmin = await _context.UserTitles
+                .AsNoTracking()
+                .AnyAsync(title => title.UserId == user.Id && title.Title == PortalTitles.SuperAdmin, cancellationToken);
+
             if (!user.IsActive)
             {
+                if (!isSuperAdmin)
+                {
+                    AddFailedLoginAudit(
+                        user,
+                        request.Username,
+                        request.ClientIp,
+                        "Account is deactivated.");
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
                 return new LoginAccountResult(
                     false,
                     "Your account has been deactivated. Please contact IT.");
@@ -115,14 +136,20 @@ namespace IT_Form.Application.Features.Account.LoginAccount
 
             if (!user.EmailConfirmed)
             {
+                if (!isSuperAdmin)
+                {
+                    AddFailedLoginAudit(
+                        user,
+                        request.Username,
+                        request.ClientIp,
+                        "Email is not verified.");
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
                 return new LoginAccountResult(
                     false,
                     "Your email is not verified. Please contact IT.");
             }
-
-            var isSuperAdmin = await _context.UserTitles
-                .AsNoTracking()
-                .AnyAsync(title => title.UserId == user.Id && title.Title == PortalTitles.SuperAdmin, cancellationToken);
 
             if (isSuperAdmin && string.IsNullOrWhiteSpace(user.Email))
             {
@@ -134,6 +161,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                 (string.IsNullOrWhiteSpace(user.PasswordHash) || user.MustChangePassword))
             {
                 await QueuePrivilegedLoginOtpAsync(user, request.ClientIp, cancellationToken);
+                await SaveChangesWithAuditSuppressionAsync(suppressAudit: true, cancellationToken);
                 return new LoginAccountResult(
                     false,
                     "OTP sent successfully.",
@@ -143,6 +171,16 @@ namespace IT_Form.Application.Features.Account.LoginAccount
 
             if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow)
             {
+                if (!isSuperAdmin)
+                {
+                    AddFailedLoginAudit(
+                        user,
+                        request.Username,
+                        request.ClientIp,
+                        "Account is temporarily locked.");
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
                 var remaining = user.LockoutEnd.Value - DateTimeOffset.UtcNow;
                 var mins = Math.Ceiling(remaining.TotalMinutes);
                 return new LoginAccountResult(
@@ -168,7 +206,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                 if (isSuperAdmin)
                 {
                     await QueuePrivilegedLoginOtpAsync(user, request.ClientIp, cancellationToken);
-                    await _context.SaveChangesAsync(cancellationToken);
+                    await SaveChangesWithAuditSuppressionAsync(suppressAudit: true, cancellationToken);
                     return new LoginAccountResult(
                         false,
                         "OTP sent successfully.",
@@ -224,7 +262,16 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                         lockoutTimestamp), cancellationToken);
                 }
                 user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
-                await _context.SaveChangesAsync(cancellationToken);
+                if (!isSuperAdmin)
+                {
+                    AddFailedLoginAudit(
+                        user,
+                        request.Username,
+                        request.ClientIp,
+                        $"Account locked after {maxAttempts} failed login attempts.");
+                }
+
+                await SaveChangesWithAuditSuppressionAsync(isSuperAdmin, cancellationToken);
 
                 if (!shouldQueueLockoutAlert)
                 {
@@ -243,7 +290,16 @@ namespace IT_Form.Application.Features.Account.LoginAccount
             }
 
             user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
-            await _context.SaveChangesAsync(cancellationToken);
+            if (!isSuperAdmin)
+            {
+                AddFailedLoginAudit(
+                    user,
+                    request.Username,
+                    request.ClientIp,
+                    "Invalid username or password.");
+            }
+
+            await SaveChangesWithAuditSuppressionAsync(isSuperAdmin, cancellationToken);
 
             return new LoginAccountResult(
                 false,
@@ -292,6 +348,53 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                 user.Email,
                 AccountOtpSupport.BuildOtpEmailSubject(),
                 AccountOtpSupport.BuildOtpEmailBody(code)), cancellationToken);
+        }
+
+        private void AddFailedLoginAudit(
+            ApplicationUser? user,
+            string attemptedUsername,
+            string clientIp,
+            string failureReason)
+        {
+            var auditTime = DateTime.UtcNow;
+            var actor = string.IsNullOrWhiteSpace(attemptedUsername)
+                ? "Unknown"
+                : attemptedUsername.Trim();
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = user?.Id ?? actor,
+                CreatedAt = auditTime,
+                Timestamp = auditTime,
+                Action = "Login",
+                PerformedBy = user?.FullName ?? user?.UserName ?? actor,
+                EntityName = "User Account",
+                EntityId = user?.Id ?? actor,
+                Details = $"Failed login attempt for {actor}.",
+                ErrorMessage = failureReason,
+                IsSuccess = false,
+                IpAddress = clientIp
+            });
+        }
+
+        private async Task SaveChangesWithAuditSuppressionAsync(bool suppressAudit, CancellationToken cancellationToken)
+        {
+            if (!suppressAudit)
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                return;
+            }
+
+            var previousSuppressAudit = _context.SuppressAuditLogging;
+            _context.SuppressAuditLogging = true;
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            finally
+            {
+                _context.SuppressAuditLogging = previousSuppressAudit;
+            }
         }
     }
 }

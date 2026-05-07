@@ -151,27 +151,24 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                         user.LockoutEnd = null;
                         user.MustChangePassword = false;
                         user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
-                        await _userManager.UpdateAsync(user);
+
+                        var previousSuppressAudit = _context.SuppressAuditLogging;
+                        _context.SuppressAuditLogging = true;
+                        try
+                        {
+                            await _userManager.UpdateAsync(user);
+                        }
+                        finally
+                        {
+                            _context.SuppressAuditLogging = previousSuppressAudit;
+                        }
+
                         if (_signInManager == null || _postCommitActionQueue == null)
                         {
                             throw new InvalidOperationException("Super Admin OTP login requires sign-in services.");
                         }
 
                         _postCommitActionQueue.Enqueue(_ => _signInManager.SignInAsync(user, isPersistent: false));
-
-                        _context.AuditLogs.Add(new IT_Form.Models.AuditLog
-                        {
-                            UserId = user.Id,
-                            CreatedAt = DateTime.UtcNow,
-                            Timestamp = DateTime.UtcNow,
-                            Action = "Login",
-                            PerformedBy = user.FullName ?? user.UserName ?? "Unknown",
-                            EntityName = "User Account",
-                            EntityId = user.Id,
-                            Details = "Super Admin authenticated successfully with OTP.",
-                            IsSuccess = true
-                        });
-                        await _context.SaveChangesAsync(ct);
 
                         return new VerifyOtpResult(
                             true,

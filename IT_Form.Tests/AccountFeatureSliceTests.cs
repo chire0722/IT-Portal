@@ -166,6 +166,106 @@ public class AccountFeatureSliceTests
     }
 
     [Fact]
+    public async Task LoginHandler_WritesFailedAudit_WhenPasswordInvalid()
+    {
+        using var context = CreateContext();
+
+        var userManager = CreateUserManager();
+        userManager.Object.PasswordHasher = new PasswordHasher<ApplicationUser>();
+        var signInManager = CreateSignInManager(userManager.Object);
+        var queue = new Mock<IEmailBackgroundQueue>();
+        var logger = Mock.Of<ILogger<LoginAccountCommandHandler>>();
+        var postCommitQueue = CreatePostCommitActionQueue();
+        var securityOptions = Options.Create(new SecuritySettings { MaxOtpAttempts = 3 });
+
+        var user = new ApplicationUser
+        {
+            Id = "identity-id",
+            UserName = "employee001",
+            NormalizedUserName = "EMPLOYEE001",
+            Email = "employee@example.com",
+            NormalizedEmail = "EMPLOYEE@EXAMPLE.COM",
+            EmailConfirmed = true,
+            IsActive = true
+        };
+        user.PasswordHash = userManager.Object.PasswordHasher.HashPassword(user, "CorrectPassword123!");
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        context.AuditLogs.RemoveRange(context.AuditLogs);
+        await context.SaveChangesAsync();
+
+        var handler = new LoginAccountCommandHandler(
+            userManager.Object,
+            signInManager.Object,
+            context,
+            queue.Object,
+            postCommitQueue,
+            new KeyedLockProvider(),
+            securityOptions,
+            logger);
+
+        var result = await handler.Handle(
+            new LoginAccountCommand("employee001", "WrongPassword!", false, "127.0.0.1"),
+            CancellationToken.None);
+
+        Assert.False(result.IsAuthenticated);
+        var auditLog = context.AuditLogs.Single(log => log.Action == "Login" && !log.IsSuccess);
+        Assert.Equal("User Account", auditLog.EntityName);
+        Assert.Equal("identity-id", auditLog.UserId);
+        Assert.Equal("identity-id", auditLog.EntityId);
+        Assert.Equal("Invalid username or password.", auditLog.ErrorMessage);
+        Assert.Equal("127.0.0.1", auditLog.IpAddress);
+    }
+
+    [Fact]
+    public async Task LoginHandler_DoesNotWriteAudit_WhenSuperAdminPasswordInvalid()
+    {
+        using var context = CreateContext();
+
+        var userManager = CreateUserManager();
+        userManager.Object.PasswordHasher = new PasswordHasher<ApplicationUser>();
+        var signInManager = CreateSignInManager(userManager.Object);
+        var queue = new Mock<IEmailBackgroundQueue>();
+        var logger = Mock.Of<ILogger<LoginAccountCommandHandler>>();
+        var postCommitQueue = CreatePostCommitActionQueue();
+        var securityOptions = Options.Create(new SecuritySettings { MaxOtpAttempts = 3 });
+
+        var user = new ApplicationUser
+        {
+            Id = "super-admin-id",
+            UserName = "superadmin",
+            NormalizedUserName = "SUPERADMIN",
+            Email = "super.admin@example.com",
+            NormalizedEmail = "SUPER.ADMIN@EXAMPLE.COM",
+            EmailConfirmed = true,
+            IsActive = true
+        };
+        user.PasswordHash = userManager.Object.PasswordHasher.HashPassword(user, "CorrectPassword123!");
+        context.Users.Add(user);
+        context.UserTitles.Add(new UserTitle { UserId = user.Id, Title = PortalTitles.SuperAdmin });
+        await context.SaveChangesAsync();
+        context.AuditLogs.RemoveRange(context.AuditLogs);
+        await context.SaveChangesAsync();
+
+        var handler = new LoginAccountCommandHandler(
+            userManager.Object,
+            signInManager.Object,
+            context,
+            queue.Object,
+            postCommitQueue,
+            new KeyedLockProvider(),
+            securityOptions,
+            logger);
+
+        var result = await handler.Handle(
+            new LoginAccountCommand("superadmin", "WrongPassword!", false, "127.0.0.1"),
+            CancellationToken.None);
+
+        Assert.False(result.IsAuthenticated);
+        Assert.Empty(context.AuditLogs);
+    }
+
+    [Fact]
     /// <summary>
     /// Runs the Argon2idPasswordHasher_ReturnsSuccessRehashNeeded_ForLegacyCustomHash operation.
     /// </summary>
@@ -731,6 +831,29 @@ public class AccountFeatureSliceTests
         Assert.Equal("Logout", auditLog.Action);
         Assert.Equal("logout.user", auditLog.PerformedBy);
         Assert.Equal("u-logout", auditLog.EntityId);
+    }
+
+    [Fact]
+    public async Task LogoutCommandHandler_DoesNotWriteAuditLog_ForSuperAdmin()
+    {
+        using var context = CreateContext();
+        var userManager = CreateUserManager();
+        var signInManager = CreateSignInManager(userManager.Object);
+        var currentUser = new Mock<ICurrentUserAccessor>();
+        currentUser.SetupGet(x => x.User).Returns(new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, "u-super-admin"),
+            new Claim(ClaimTypes.Name, "super.admin"),
+            new Claim("UserTitle", PortalTitles.SuperAdmin)
+        ], "TestAuth")));
+
+        var logger = Mock.Of<ILogger<LogoutCommandHandler>>();
+        var handler = new LogoutCommandHandler(signInManager.Object, currentUser.Object, context, logger);
+
+        await handler.Handle(new LogoutCommand(), CancellationToken.None);
+
+        signInManager.Verify(x => x.SignOutAsync(), Times.Once);
+        Assert.Empty(context.AuditLogs);
     }
 
     [Fact]

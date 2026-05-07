@@ -178,7 +178,7 @@ else
                                                 <td class="py-3"><strong>@req.FullName</strong></td>
                                                 <td class="py-3 text-muted">@req.Department</td>
                                                 <td class="py-3"><span class="badge-completed">Onboarding</span></td>
-                                                <td class="py-3">@(req.CompletedAt?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                                <td class="py-3">@(req.CompletedAt?.ToString("dd/MM/yyyy") ?? "-")</td>
                                                 <td class="py-3">
                                                     <a asp-controller="Onboarding" asp-action="Details" asp-route-id="@req.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                                                         <i class="bi bi-eye me-1" aria-hidden="true"></i>View
@@ -198,7 +198,7 @@ else
                                                 <td class="py-3"><strong>@req.FullName</strong></td>
                                                 <td class="py-3 text-muted">@req.Department</td>
                                                 <td class="py-3"><span class="badge-rejected">Offboarding</span></td>
-                                                <td class="py-3">@(req.CompletedAt?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                                <td class="py-3">@(req.CompletedAt?.ToString("dd/MM/yyyy") ?? "-")</td>
                                                 <td class="py-3">
                                                     <a asp-controller="Offboarding" asp-action="Details" asp-route-id="@req.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                                                         <i class="bi bi-eye me-1" aria-hidden="true"></i>View

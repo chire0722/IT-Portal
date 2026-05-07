@@ -2,9 +2,11 @@
 
 using System.Text.Json;
 using FluentValidation;
+using IT_Form.Application.Features.Account;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Security;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,15 +48,15 @@ namespace IT_Form.Application.Common.Behaviors
             RequestHandlerDelegate<TResponse> next,
             CancellationToken cancellationToken)
         {
-            if (!ShouldAudit(request))
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (!ShouldAudit(request, httpContext))
             {
                 return await next();
             }
 
             var action = request.GetType().Name;
-            var userId = _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "System";
+            var userId = httpContext?.User?.Identity?.Name ?? "System";
             var payload = SerializePayload(request);
-            var httpContext = _httpContextAccessor.HttpContext;
             var hadExistingCorrelation = httpContext?.Items.ContainsKey(CorrelationIdItemKey) == true;
             var previousCorrelationValue = hadExistingCorrelation ? httpContext!.Items[CorrelationIdItemKey] : null;
             var correlationId = previousCorrelationValue is Guid existingCorrelation
@@ -184,8 +186,39 @@ namespace IT_Form.Application.Common.Behaviors
         /// <summary>
         /// Runs the ShouldAudit operation.
         /// </summary>
-        private static bool ShouldAudit(TRequest request)
-            => request.GetType().Name.EndsWith("Command", StringComparison.Ordinal);
+        private static bool ShouldAudit(TRequest request, HttpContext? httpContext)
+        {
+            if (!request.GetType().Name.EndsWith("Command", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (PortalTitles.IsSuperAdmin(httpContext?.User))
+            {
+                return false;
+            }
+
+            var requestName = request.GetType().Name;
+            if (string.Equals(requestName, "LoginAccountCommand", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return !IsPrivilegedLoginOtpRequest(request, requestName);
+        }
+
+        private static bool IsPrivilegedLoginOtpRequest(TRequest request, string requestName)
+        {
+            if (!string.Equals(requestName, "VerifyOtpCommand", StringComparison.Ordinal) &&
+                !string.Equals(requestName, "ResendOtpCommand", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var purposeProperty = request.GetType().GetProperty("Purpose");
+            var purpose = purposeProperty?.GetValue(request)?.ToString();
+            return string.Equals(purpose, OtpPurposes.PrivilegedLogin, StringComparison.Ordinal);
+        }
 
         /// <summary>
         /// Runs the SerializePayload operation.

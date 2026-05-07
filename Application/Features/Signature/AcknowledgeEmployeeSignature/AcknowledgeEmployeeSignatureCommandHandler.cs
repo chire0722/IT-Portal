@@ -232,7 +232,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                     return;
                 }
 
-                var creator = await _userManager.FindByNameAsync(creatorUserId);
+                var creator = await _userManager.FindByNameAsync(creatorUserId)
+                    ?? await _userManager.FindByIdAsync(creatorUserId)
+                    ?? await _userManager.FindByEmailAsync(creatorUserId);
                 if (creator == null)
                 {
                     _logger.LogWarning(

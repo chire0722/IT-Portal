@@ -67,7 +67,7 @@ namespace IT_Form.Tests
             stream.Position = 0;
             IFormFile file = new FormFile(stream, 0, stream.Length, "file", "staff-import.xlsx");
 
-            var controller = GetController<EmployeeApiController>(context, role: "HR");
+            var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "YTC PRECAST SDN BHD");
 
             var result = await controller.Import(file);
 
@@ -79,6 +79,11 @@ namespace IT_Form.Tests
             Assert.Equal("D-17", savedEmployee.DeskNumber);
             Assert.Equal(new System.DateTime(2026, 4, 3), savedEmployee.JoinDate);
             Assert.Equal("YTC PRECAST SDN BHD (LOT897)", savedEmployee.Branch);
+            Assert.Equal("testuser", savedEmployee.CreatedByUserId);
+            Assert.Equal("test-signature", savedEmployee.RequesterSignature);
+            Assert.Equal("testuser", savedEmployee.RequesterSignerName);
+            Assert.NotNull(savedEmployee.RequesterSignedAt);
+            Assert.Equal("HMAC", savedEmployee.RequesterSignatureHmac);
         }
 
         [Fact]
@@ -137,7 +142,7 @@ namespace IT_Form.Tests
             stream.Position = 0;
             IFormFile file = new FormFile(stream, 0, stream.Length, "file", "staff-import.xlsx");
 
-            var controller = GetController<EmployeeApiController>(context, role: "HR");
+            var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "YTC Precast");
 
             var result = await controller.Import(file);
 
@@ -170,7 +175,7 @@ namespace IT_Form.Tests
             );
             await context.SaveChangesAsync();
 
-            var controller = GetController<EmployeeApiController>(context, role: "HR");
+            var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "YTC PRECAST SDN BHD");
             var result = await controller.GetHodsByCompany("Alpha (Lot 1)");
 
             var ok = Assert.IsType<OkObjectResult>(result);
@@ -194,7 +199,7 @@ namespace IT_Form.Tests
                 new Company { Id = 2, Name = "Inactive Company", IsActive = false });
             await context.SaveChangesAsync();
 
-            var controller = GetController<EmployeeApiController>(context, role: "HR");
+            var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "YTC PRECAST SDN BHD");
 
             var result = await controller.DownloadTemplate();
 

@@ -76,6 +76,14 @@ namespace IT_Form.Tests.Helpers
             // Default encryption passthrough
             MockEncryptionService.Setup(s => s.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
             MockEncryptionService.Setup(s => s.DecryptKey(It.IsAny<string>())).Returns((string s) => s);
+            MockIntegrityService
+                .Setup(s => s.ComputeHmac(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<string>()))
+                .Returns("HMAC");
         }
 
         /// <summary>
@@ -105,9 +113,13 @@ namespace IT_Form.Tests.Helpers
 
             var controller = (T)Activator.CreateInstance(typeof(T), GetConstructorArgs(typeof(T), context))!;
 
+            if (controller is ControllerBase controllerBase)
+            {
+                controllerBase.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            }
+
             if (controller is Controller mvcController)
             {
-                mvcController.ControllerContext = new ControllerContext { HttpContext = httpContext };
                 mvcController.TempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
                 
                 // Mock UrlHelper
@@ -415,7 +427,34 @@ namespace IT_Form.Tests.Helpers
         protected Mock<UserManager<ApplicationUser>> GetMockUserManager()
         {
             var store = new Mock<IUserStore<ApplicationUser>>();
-            return new Mock<UserManager<ApplicationUser>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+            var userManager = new Mock<UserManager<ApplicationUser>>(
+                store.Object,
+                null!,
+                null!,
+                null!,
+                null!,
+                null!,
+                null!,
+                null!,
+                null!);
+
+            userManager
+                .Setup(manager => manager.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+                .ReturnsAsync((ClaimsPrincipal principal) =>
+                {
+                    var userName = principal.Identity?.Name ?? "testuser";
+                    return new ApplicationUser
+                    {
+                        Id = userName,
+                        UserName = userName,
+                        Email = $"{userName}@example.com",
+                        FullName = userName,
+                        Signature = "test-signature",
+                        IsActive = true
+                    };
+                });
+
+            return userManager;
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Models;
+using IT_Form.Security;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -43,19 +44,22 @@ public sealed class LogoutCommandHandler : IRequestHandler<LogoutCommand, Unit>
 
         var auditTime = DateTime.UtcNow;
 
-        _context.AuditLogs.Add(new AuditLog
+        if (!PortalTitles.IsSuperAdmin(user))
         {
-            UserId = userId,
-            CreatedAt = auditTime,
-            Timestamp = auditTime,
-            Action = "Logout",
-            PerformedBy = username,
-            EntityName = "User Account",
-            EntityId = userId,
-            Details = "User logged out.",
-            IsSuccess = true
-        });
-        await _context.SaveChangesAsync(cancellationToken);
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = userId,
+                CreatedAt = auditTime,
+                Timestamp = auditTime,
+                Action = "Logout",
+                PerformedBy = username,
+                EntityName = "User Account",
+                EntityId = userId,
+                Details = "User logged out.",
+                IsSuccess = true
+            });
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         // TODO: 可在此处添加登出审计日志或清理缓存
         await _signInManager.SignOutAsync();

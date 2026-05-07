@@ -3,8 +3,12 @@
 using FluentValidation;
 using FluentValidation.Results;
 using IT_Form.Application.Common.Behaviors;
+using IT_Form.Application.Features.Account;
+using IT_Form.Application.Features.Account.LoginAccount;
+using IT_Form.Application.Features.Account.VerifyOtp;
 using IT_Form.Data;
 using IT_Form.Models;
+using IT_Form.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -90,6 +94,82 @@ public class AuditLoggingBehaviorTests
         Assert.Equal("ok", result);
         Assert.Equal(2, context.AuditLogs.Count());
         scopeFactory.Verify(factory => factory.CreateScope(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_SuperAdmin_DoesNotWriteCommandAudit()
+    {
+        var (context, httpContext) = TestContextFactory.Create(
+            additionalClaims:
+            [
+                new System.Security.Claims.Claim("UserTitle", PortalTitles.SuperAdmin)
+            ]);
+        var behavior = new AuditLoggingBehavior<SampleSuccessCommand, string>(
+            context,
+            new Microsoft.AspNetCore.Http.HttpContextAccessor { HttpContext = httpContext },
+            null,
+            NullLogger<AuditLoggingBehavior<SampleSuccessCommand, string>>.Instance);
+
+        var result = await behavior.Handle(
+            new SampleSuccessCommand("Ops"),
+            () => Task.FromResult("ok"),
+            CancellationToken.None);
+
+        Assert.Equal("ok", result);
+        Assert.Empty(context.AuditLogs);
+    }
+
+    [Fact]
+    public async Task SaveChangesAsync_SuperAdmin_DoesNotWriteEntityAudit()
+    {
+        var (context, _) = TestContextFactory.Create(
+            additionalClaims:
+            [
+                new System.Security.Claims.Claim("UserTitle", PortalTitles.SuperAdmin)
+            ]);
+
+        context.Departments.Add(new Department { Name = "Restricted Ops" });
+        await context.SaveChangesAsync();
+
+        Assert.Empty(context.AuditLogs);
+    }
+
+    [Fact]
+    public async Task Handle_LoginAccountCommand_DoesNotWriteCommandAudit()
+    {
+        var (context, httpContext) = TestContextFactory.Create(userName: null);
+        var behavior = new AuditLoggingBehavior<LoginAccountCommand, LoginAccountResult>(
+            context,
+            new Microsoft.AspNetCore.Http.HttpContextAccessor { HttpContext = httpContext },
+            null,
+            NullLogger<AuditLoggingBehavior<LoginAccountCommand, LoginAccountResult>>.Instance);
+
+        var result = await behavior.Handle(
+            new LoginAccountCommand("employee001", "WrongPassword123!", false, "127.0.0.1"),
+            () => Task.FromResult(new LoginAccountResult(false, "Invalid username/email or password.")),
+            CancellationToken.None);
+
+        Assert.False(result.IsAuthenticated);
+        Assert.Empty(context.AuditLogs);
+    }
+
+    [Fact]
+    public async Task Handle_PrivilegedLoginOtpCommand_DoesNotWriteCommandAudit()
+    {
+        var (context, httpContext) = TestContextFactory.Create(userName: null);
+        var behavior = new AuditLoggingBehavior<VerifyOtpCommand, VerifyOtpResult>(
+            context,
+            new Microsoft.AspNetCore.Http.HttpContextAccessor { HttpContext = httpContext },
+            null,
+            NullLogger<AuditLoggingBehavior<VerifyOtpCommand, VerifyOtpResult>>.Instance);
+
+        var result = await behavior.Handle(
+            new VerifyOtpCommand("super.admin@example.com", "ABC234", OtpPurposes.PrivilegedLogin),
+            () => Task.FromResult(new VerifyOtpResult(true, false, "OTP verified.")),
+            CancellationToken.None);
+
+        Assert.True(result.IsVerified);
+        Assert.Empty(context.AuditLogs);
     }
 
     [Fact]

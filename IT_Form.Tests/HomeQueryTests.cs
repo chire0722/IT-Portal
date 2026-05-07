@@ -6,6 +6,7 @@ using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.Home;
 using IT_Form.Data;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -573,6 +574,57 @@ public class HomeQueryTests
         Assert.Equal(["Alpha Exit"], result.ViewModel.PendingOffboarding.Select(item => item.FullName).ToArray());
         Assert.Equal(["Alpha Awaiting Sign"], result.ViewModel.PendingEmployeeSignOnboarding.Select(item => item.FullName!).ToArray());
         Assert.Equal(["Alpha Exit Awaiting Sign"], result.ViewModel.PendingEmployeeSignOffboarding.Select(item => item.FullName!).ToArray());
+    }
+
+    [Fact]
+    public async Task DashboardQuery_UsesCompletedAtAndHrSubmitter_ForImportedCompletedEmployees()
+    {
+        await using var context = CreateContext();
+        context.Users.Add(new ApplicationUser
+        {
+            Id = "hr-id",
+            UserName = "hr.user",
+            Email = "hr.user@example.com",
+            FullName = "HR Importer",
+            IsActive = true
+        });
+        context.OnboardingRequests.AddRange(
+            new OnboardingRequest
+            {
+                Id = 20,
+                CreatedByUserId = "hr-id",
+                FullName = "Imported Employee",
+                Department = "Finance",
+                Status = RequestStatus.Completed,
+                RequestDate = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc),
+                CompletedAt = new DateTime(2026, 5, 3, 8, 0, 0, DateTimeKind.Utc)
+            },
+            new OnboardingRequest
+            {
+                Id = 21,
+                CreatedByUserId = "hr.user",
+                FullName = "Signed Employee",
+                Department = "IT",
+                Status = RequestStatus.Completed,
+                RequestDate = new DateTime(2026, 5, 1, 8, 0, 0, DateTimeKind.Utc),
+                EmployeeSignedAt = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc),
+                CompletedAt = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc)
+            });
+        await context.SaveChangesAsync();
+
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var handler = new GetHomeDashboardQueryHandler(
+            context,
+            new TestCurrentUserAccessor("hr.user", "hr-id", "HR"),
+            cache);
+
+        var result = await handler.Handle(new GetHomeDashboardQuery(2026), CancellationToken.None);
+
+        var recent = result.ViewModel.RecentCompletedOnboarding.ToList();
+        Assert.Equal("Imported Employee", recent[0].FullName);
+        Assert.Equal(new DateTime(2026, 5, 3, 8, 0, 0, DateTimeKind.Utc), recent[0].CompletedAt);
+        Assert.Equal("HR Importer", recent[0].SubmittedByName);
+        Assert.Equal(2, result.ViewModel.CompletedThisMonthCount);
     }
 
     /// <summary>

@@ -18,7 +18,7 @@ namespace IT_Form.Helpers
         /// </summary>
         public static void MapInventoryEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapPost("/api/inventory/sync", async (HardwareReport report, HttpContext httpContext, ApplicationDbContext dbContext, IConfiguration config) =>
+            app.MapPost("/api/inventory/sync", async (HardwareReport report, HttpContext httpContext, ApplicationDbContext dbContext, IConfiguration config, ILogger<InventoryEndpoints> logger) =>
             {
                 bool isAuthenticatedByKey = false;
                 var expectedKey = ConfigurationValueNormalizer.NormalizeSecret(config["InventorySync:ApiKey"]);
@@ -157,11 +157,15 @@ namespace IT_Form.Helpers
                 {
                     await dbContext.SaveChangesAsync();
                 }
-                catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+                catch (DbUpdateException ex)
                 {
-                    var inner = ex.InnerException?.Message ?? ex.Message;
-                return Results.Problem($"Conflict: {inner}", statusCode: 409);
-            }
+                    logger.LogError(ex,
+                        "Inventory sync could not persist telemetry for serial number {SerialNumber}.",
+                        report.SN);
+                    return Results.Problem(
+                        "Inventory sync could not be completed. Please retry or contact IT support.",
+                        statusCode: StatusCodes.Status409Conflict);
+                }
 
             return Results.Ok(new
             {

@@ -5,6 +5,7 @@ using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -47,12 +48,21 @@ namespace IT_Form.Application.Features.Onboarding.DeleteOnboardingRequest
 
             var user = _currentUserAccessor.User;
             var currentUsername = _currentUserAccessor.UserName;
+            var isHr = user.HasClaim("UserTitle", PortalTitles.HR);
+            var isIt = PortalTitles.IsPrivilegedIt(user);
+
+            // Enforce the HR/IT role boundary in the handler as well as the API endpoint.
+            // This protects other callers that dispatch the command directly through MediatR.
+            if (!isHr && !isIt)
+            {
+                return ProcessResult<object>.Forbidden();
+            }
+
             if (!CompanyScopeHelper.CanAccessCompany(user, onboardingRequest.Branch))
             {
                 return ProcessResult<object>.Forbidden();
             }
 
-            var isHr = user.HasClaim("UserTitle", "HR");
             if (!onboardingRequest.CanBeDeletedBy(isHr))
             {
                 return ProcessResult<object>.Failure(

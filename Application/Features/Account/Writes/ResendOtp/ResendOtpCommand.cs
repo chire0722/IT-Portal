@@ -20,4 +20,8 @@ public sealed record ResendOtpCommand(
 public sealed record ResendOtpResult(
     string Email,
     bool IsQueued,
-    string Message);
+    string Message)
+{
+    public const string GenericResponseMessage =
+        "If an eligible account exists, a verification code will be sent to its registered email address.";
+}

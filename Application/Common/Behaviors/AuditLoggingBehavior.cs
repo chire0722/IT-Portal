@@ -2,7 +2,6 @@
 
 using System.Text.Json;
 using FluentValidation;
-using IT_Form.Application.Features.Account;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -193,29 +192,12 @@ namespace IT_Form.Application.Common.Behaviors
                 return false;
             }
 
-            // SuperAdmin commands must remain auditable; privileged login OTP is
-            // excluded explicitly below because it is a high-volume authentication event.
-
-            var requestName = request.GetType().Name;
-            if (string.Equals(requestName, "LoginAccountCommand", StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            return !IsPrivilegedLoginOtpRequest(request, requestName);
-        }
-
-        private static bool IsPrivilegedLoginOtpRequest(TRequest request, string requestName)
-        {
-            if (!string.Equals(requestName, "VerifyOtpCommand", StringComparison.Ordinal) &&
-                !string.Equals(requestName, "ResendOtpCommand", StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            var purposeProperty = request.GetType().GetProperty("Purpose");
-            var purpose = purposeProperty?.GetValue(request)?.ToString();
-            return string.Equals(purpose, OtpPurposes.PrivilegedLogin, StringComparison.Ordinal);
+            // Authentication OTP commands are audited as security events too.
+            // AuditPayloadSanitizer removes OTP values and account identifiers from payloads.
+            return !string.Equals(
+                request.GetType().Name,
+                "LoginAccountCommand",
+                StringComparison.Ordinal);
         }
 
         /// <summary>

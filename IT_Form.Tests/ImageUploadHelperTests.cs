@@ -35,7 +35,7 @@ public sealed class ImageUploadHelperTests
     [Fact]
     public void IsValidCompanyLogo_RejectsOversizedImage()
     {
-        using var stream = new MemoryStream(new byte[ImageUploadHelper.MaxCompanyLogoBytes + 1]);
+        using var stream = new MemoryStream(new byte[(int)ImageUploadHelper.MaxCompanyLogoBytes + 1]);
         var file = new FormFile(stream, 0, stream.Length, "logo", "company.png") { ContentType = "image/png" };
 
         Assert.False(ImageUploadHelper.IsValidCompanyLogo(file, out _));

@@ -284,8 +284,7 @@ namespace IT_Form.Helpers
         /// Runs the HasExpiredVerificationToken operation.
         /// </summary>
         private static bool HasExpiredVerificationToken(DeviceVerificationToken token, int tokenLifetimeMinutes)
-            => !string.IsNullOrWhiteSpace(token.EmployeeId) &&
-               token.CreatedAt.AddMinutes(tokenLifetimeMinutes) <= DateTime.UtcNow;
+            => token.CreatedAt.AddMinutes(tokenLifetimeMinutes) <= DateTime.UtcNow;
 
         /// <summary>
         /// Applies changes for the ApplyHardwareFingerprintTelemetry operation.

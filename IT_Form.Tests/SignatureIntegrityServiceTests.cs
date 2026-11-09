@@ -11,25 +11,10 @@ namespace IT_Form.Tests;
 public sealed class SignatureIntegrityServiceTests
 {
     [Fact]
-    public void Verify_AcceptsHistoricalSignatureWithConfiguredLegacyKey()
+    public void ComputeHmac_UsesActiveKeyAndVersionedFormat()
     {
-        var legacyKey = RandomNumberGenerator.GetBytes(32);
         var activeKey = RandomNumberGenerator.GetBytes(32);
-        var service = CreateService(activeKey, legacyKey);
-        var signedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
-        var signature = Convert.ToBase64String(Encoding.UTF8.GetBytes("signature"));
-
-        var historicalHmac = ComputeHmac(legacyKey, "OffboardingRequest", "42", "user-1", signedAt, signature);
-
-        Assert.True(service.Verify("OffboardingRequest", "42", "user-1", signedAt, signature, historicalHmac));
-    }
-
-    [Fact]
-    public void ComputeHmac_UsesActiveKeyForNewSignatures()
-    {
-        var legacyKey = RandomNumberGenerator.GetBytes(32);
-        var activeKey = RandomNumberGenerator.GetBytes(32);
-        var service = CreateService(activeKey, legacyKey);
+        var service = CreateService(activeKey);
         var signedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         var signature = Convert.ToBase64String(Encoding.UTF8.GetBytes("signature"));
 
@@ -41,25 +26,34 @@ public sealed class SignatureIntegrityServiceTests
     }
 
     [Fact]
-    public void Verify_DoesNotAcceptLegacyKeyForVersionedNewSignature()
+    public void Verify_RejectsUnversionedHistoricalHmacAfterKeyExposure()
     {
-        var legacyKey = RandomNumberGenerator.GetBytes(32);
         var activeKey = RandomNumberGenerator.GetBytes(32);
-        var service = CreateService(activeKey, legacyKey);
+        var exposedKey = RandomNumberGenerator.GetBytes(32);
+        var service = CreateService(activeKey);
         var signedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         var signature = Convert.ToBase64String(Encoding.UTF8.GetBytes("signature"));
-        var forgedWithLegacyKey = "v2:" + ComputeHmac(legacyKey, "OnboardingRequest", "7", "user-2", signedAt, signature);
+        var historicalHmac = ComputeHmac(exposedKey, "OffboardingRequest", "42", "user-1", signedAt, signature);
 
-        Assert.False(service.Verify("OnboardingRequest", "7", "user-2", signedAt, signature, forgedWithLegacyKey));
+        Assert.False(service.Verify("OffboardingRequest", "42", "user-1", signedAt, signature, historicalHmac));
     }
 
     [Fact]
-    public void Verify_RejectsSignatureThatMatchesNeitherKey()
+    public void Verify_RejectsLegacyImportPrefixWithoutCryptographicProof()
     {
-        var service = CreateService(RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(32));
+        var service = CreateService(RandomNumberGenerator.GetBytes(32));
         var signedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
 
-        Assert.False(service.Verify("OnboardingRequest", "7", "user-2", signedAt, "c2ln", new string('A', 64)));
+        Assert.False(service.Verify("OnboardingRequest", "7", "user-2", signedAt, "c2ln", "SYSTEM-IMPORT-trusted"));
+    }
+
+    [Fact]
+    public void Verify_RejectsSignatureThatDoesNotMatchActiveKey()
+    {
+        var service = CreateService(RandomNumberGenerator.GetBytes(32));
+        var signedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+
+        Assert.False(service.Verify("OnboardingRequest", "7", "user-2", signedAt, "c2ln", "v2:" + new string('A', 64)));
     }
 
     [Fact]
@@ -72,12 +66,11 @@ public sealed class SignatureIntegrityServiceTests
         Assert.Throws<InvalidOperationException>(() => new SignatureIntegrityService(configuration, environment.Object));
     }
 
-    private static SignatureIntegrityService CreateService(byte[] activeKey, byte[] legacyKey)
+    private static SignatureIntegrityService CreateService(byte[] activeKey)
     {
         var values = new Dictionary<string, string?>
         {
-            ["SignatureHmac:Key"] = Convert.ToBase64String(activeKey),
-            ["SignatureHmac:LegacyKey"] = Convert.ToBase64String(legacyKey)
+            ["SignatureHmac:Key"] = Convert.ToBase64String(activeKey)
         };
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         var environment = new Mock<IWebHostEnvironment>();

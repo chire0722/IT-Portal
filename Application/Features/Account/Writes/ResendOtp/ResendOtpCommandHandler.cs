@@ -50,7 +50,7 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
             return new ResendOtpResult(
                 request.Email,
                 false,
-                "Unable to resend a verification code for this account.");
+                ResendOtpResult.GenericResponseMessage);
         }
 
         return await _keyedLockProvider.ExecuteAsync(
@@ -72,7 +72,7 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
                         "OTP resend throttled for user {UserId} from IP {ClientIp}.",
                         user.Id,
                         request.ClientIp);
-                    throw AccountOtpSupport.CreateValidationException("\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf7 1 \u5206\u949f\u540e\u518d\u8bd5");
+                    return new ResendOtpResult(request.Email, false, ResendOtpResult.GenericResponseMessage);
                 }
 
                     await _context.OtpRecords
@@ -103,7 +103,7 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
                 return new ResendOtpResult(
                     user.Email,
                     true,
-                    "A new verification code has been sent to your email.");
+                    ResendOtpResult.GenericResponseMessage);
             },
             cancellationToken);
     }

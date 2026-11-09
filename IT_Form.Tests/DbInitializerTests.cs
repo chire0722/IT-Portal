@@ -40,7 +40,7 @@ public sealed class DbInitializerTests
         Assert.Contains(PortalTitles.IT, titles);
         Assert.True(superAdmin.EmailConfirmed);
         Assert.True(superAdmin.IsActive);
-        Assert.False(superAdmin.MustChangePassword);
+        Assert.True(superAdmin.MustChangePassword);
         Assert.True(await userManager.CheckPasswordAsync(superAdmin, "Configured123!"));
         Assert.Empty(await context.UserTitles
             .Where(title => title.Title == PortalTitles.SuperAdmin && title.UserId != superAdmin.Id)

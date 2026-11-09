@@ -118,7 +118,7 @@ namespace IT_Form.Services
                     }
                 }
 
-                message.Subject = subject;
+                message.Subject = (subject ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
                 if (attachment != null && !string.IsNullOrEmpty(attachmentName))
                 {
                     message.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(attachment), attachmentName));

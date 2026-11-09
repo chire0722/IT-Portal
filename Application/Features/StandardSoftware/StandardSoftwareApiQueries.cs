@@ -1,6 +1,8 @@
 // Project comment: StandardSoftwareApiQueries.cs is part of the IT Form application source code.
 
 using IT_Form.Application.Common.Models;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Helpers;
 using IT_Form.Data;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
@@ -79,17 +81,26 @@ namespace IT_Form.Application.Features.StandardSoftware
         : IRequestHandler<GetStandardSoftwareEmployeesQuery, ProcessResult<List<StandardSoftwareEmployeeOptionDto>>>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public GetStandardSoftwareEmployeesQueryHandler(ApplicationDbContext context) => _context = context;
+        public GetStandardSoftwareEmployeesQueryHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
+        {
+            _context = context;
+            _currentUserAccessor = currentUserAccessor;
+        }
 
         /// <summary>
         /// Executes the request and returns the workflow result.
         /// </summary>
         public async Task<ProcessResult<List<StandardSoftwareEmployeeOptionDto>>> Handle(GetStandardSoftwareEmployeesQuery request, CancellationToken cancellationToken)
         {
-            var employees = await _context.OnboardingRequests
+            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var employeeQuery = _context.OnboardingRequests
                 .AsNoTracking()
-                .Where(o => o.Status == RequestStatus.Approved || o.Status == RequestStatus.Completed)
+                .Where(o => o.Status == RequestStatus.Approved || o.Status == RequestStatus.Completed);
+            employeeQuery = CompanyScopeHelper.ApplyCompanyScope(employeeQuery, scopedCompanies, employee => employee.Branch);
+
+            var employees = await employeeQuery
                 .OrderBy(o => o.FullName)
                 .ProjectToType<StandardSoftwareEmployeeOptionDto>()
                 .ToListAsync(cancellationToken);

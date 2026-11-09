@@ -12,13 +12,12 @@ namespace IT_Form.Services
     }
 
     /// <summary>
-    /// Signs new records with the active key and verifies records with either the active
-    /// key or the explicitly configured legacy key during a controlled key rotation.
+    /// Signs and verifies signatures using only the active key. Legacy signatures created
+    /// with a publicly exposed key are rejected because their integrity can no longer be trusted.
     /// </summary>
     public sealed class SignatureIntegrityService : ISignatureIntegrityService
     {
         private readonly byte[] _activeKeyBytes;
-        private readonly byte[]? _legacyKeyBytes;
 
         public SignatureIntegrityService(IConfiguration configuration, IWebHostEnvironment environment)
         {
@@ -38,16 +37,6 @@ namespace IT_Form.Services
                 _activeKeyBytes = DecodeKey(activeKey!, "SignatureHmac:Key");
             }
 
-            var legacyKey = configuration["SignatureHmac:LegacyKey"];
-            if (!IsPlaceholder(legacyKey))
-            {
-                _legacyKeyBytes = DecodeKey(legacyKey!, "SignatureHmac:LegacyKey");
-                if (CryptographicOperations.FixedTimeEquals(_activeKeyBytes, _legacyKeyBytes))
-                {
-                    throw new InvalidOperationException(
-                        "SignatureHmac:Key and SignatureHmac:LegacyKey must be different during rotation.");
-                }
-            }
         }
 
         public string ComputeHmac(string entityType, string entityId, string signerUserId, DateTime signedAtUtc, string signatureBase64)
@@ -62,41 +51,25 @@ namespace IT_Form.Services
                 return false;
             }
 
-            // Retained for compatibility with trusted legacy API-import records.
-            if (storedHmac.StartsWith("SYSTEM-IMPORT-", StringComparison.Ordinal))
+            // Import markers are not cryptographic signatures. Never treat a string prefix
+            // as proof of integrity; only a valid HMAC under the active secret is accepted.
+            if (!storedHmac.StartsWith("v2:", StringComparison.Ordinal))
             {
-                return true;
+                return false;
             }
 
-            // Versioned signatures are always checked with the active key only.
-            // Unversioned values are legacy signatures and are accepted only during the
-            // explicitly configured migration window.
-            var isActiveVersion = storedHmac.StartsWith("v2:", StringComparison.Ordinal);
-            var encodedHmac = isActiveVersion ? storedHmac[3..] : storedHmac;
             byte[] supplied;
             try
             {
-                supplied = Convert.FromHexString(encodedHmac);
+                supplied = Convert.FromHexString(storedHmac[3..]);
             }
             catch (FormatException)
             {
                 return false;
             }
 
-            if (isActiveVersion)
-            {
-                return CryptographicOperations.FixedTimeEquals(
-                    ComputeHash(_activeKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64),
-                    supplied);
-            }
-
-            if (_legacyKeyBytes == null)
-            {
-                return false;
-            }
-
             return CryptographicOperations.FixedTimeEquals(
-                ComputeHash(_legacyKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64),
+                ComputeHash(_activeKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64),
                 supplied);
         }
 

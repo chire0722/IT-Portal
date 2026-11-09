@@ -290,7 +290,9 @@ namespace IT_Form.Controllers
                     var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     var purpose = Request.Form["purpose"].FirstOrDefault() ?? OtpPurposes.PasswordReset;
                     var result = await _sender.Send(new ResendOtpCommand(email, clientIp, purpose));
-                    TempData[result.IsQueued ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+                    // Keep the browser response identical whether an account exists,
+                    // is inactive, or is still inside the resend cooldown.
+                    TempData["SuccessMessage"] = result.Message;
                     return RedirectToAction(nameof(VerifyOtp), new { email = result.Email, purpose });
                 },
                 nameof(VerifyOtp),

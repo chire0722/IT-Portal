@@ -705,32 +705,30 @@ app.Run();
 static CookieSecurePolicy ResolveCookieSecurePolicy(IHostEnvironment environment, IConfiguration configuration)
 {
     var configuredPolicy = configuration["SecuritySettings:CookieSecurePolicy"];
-    if (!string.IsNullOrWhiteSpace(configuredPolicy))
+
+    if (environment.IsDevelopment())
     {
-        if (string.Equals(configuredPolicy, "Never", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(configuredPolicy, "Never", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(configuredPolicy, "None", StringComparison.OrdinalIgnoreCase))
         {
             return CookieSecurePolicy.None;
         }
 
-        if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var parsedPolicy))
+        if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var developmentPolicy))
         {
-            return parsedPolicy;
+            return developmentPolicy;
         }
 
-        throw new InvalidOperationException(
-            "SecuritySettings:CookieSecurePolicy must be one of SameAsRequest, Always, or None.");
-    }
-
-    if (environment.IsDevelopment())
-    {
         return CookieSecurePolicy.SameAsRequest;
     }
 
-    var appDomain = configuration["AppDomain"];
-    return Uri.TryCreate(appDomain, UriKind.Absolute, out var appUri) &&
-        string.Equals(appUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+    if (!string.Equals(configuredPolicy, "Always", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException(
+            "Production requires SecuritySettings:CookieSecurePolicy=Always and HTTPS termination at the trusted edge proxy.");
+    }
+
+    return CookieSecurePolicy.Always;
 }
 
 static string ResolveSqliteConnectionString(string? connectionString, string contentRootPath, string dataDirectory)

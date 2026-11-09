@@ -195,7 +195,11 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
         var queue = new Mock<IEmailBackgroundQueue>();
 
-        var handler = new AssignSoftwareKeyCommandHandler(context, encryption.Object, queue.Object);
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "it.user",
+            titles: ["IT"],
+            companies: ["HQ"]);
+        var handler = new AssignSoftwareKeyCommandHandler(context, encryption.Object, queue.Object, currentUser);
         var result = await handler.Handle(new AssignSoftwareKeyCommand(21, 12345), CancellationToken.None);
 
         Assert.Equal(AssignSoftwareKeyStatus.EmployeeNotFound, result.Status);

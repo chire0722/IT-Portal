@@ -526,14 +526,10 @@ builder.Services.AddRateLimiter(options =>
         }
         else
         {
-            context.HttpContext.Response.ContentType = "text/html";
+            context.HttpContext.Response.ContentType = "text/plain; charset=utf-8";
             await context.HttpContext.Response.WriteAsync(
-                "<!DOCTYPE html><html><head><title>Too Many Requests</title>" +
-                "<link href=\"http://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\" rel=\"stylesheet\">" +
-                "</head><body class=\"bg-light d-flex align-items-center justify-content-center\" style=\"height: 100vh;\">" +
-                "<div class=\"text-center\"><h1 class=\"display-1 fw-bold text-danger\">429</h1><h2 class=\"mb-4\">Too Many Requests</h2>" +
-                "<p class=\"lead\">You have exceeded the allowed number of requests. Please wait a moment and try again.</p>" +
-                "<a href=\"/\" class=\"btn btn-primary mt-3\">Return to Home</a></div></body></html>", cancellationToken: token);
+                "Too many requests. Please wait a moment and try again.",
+                cancellationToken: token);
         }
     };
 });

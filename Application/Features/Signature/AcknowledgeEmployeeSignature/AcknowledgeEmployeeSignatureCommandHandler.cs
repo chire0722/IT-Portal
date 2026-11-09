@@ -54,6 +54,13 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             AcknowledgeEmployeeSignatureCommand request,
             CancellationToken cancellationToken)
         {
+            // Enforce consent at the handler boundary as well as in FluentValidation,
+            // so direct MediatR handler invocation cannot record consent that was not given.
+            if (!request.PdpaConsent)
+            {
+                return ProcessResult<object>.Failure("Please confirm the PDPA privacy notice before submitting.");
+            }
+
             if (string.Equals(request.Type, "Onboarding", StringComparison.OrdinalIgnoreCase))
             {
                 return await HandleOnboardingAsync(request, cancellationToken);

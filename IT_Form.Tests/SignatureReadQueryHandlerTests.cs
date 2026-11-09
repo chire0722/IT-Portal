@@ -224,7 +224,7 @@ public class SignatureReadQueryHandlerTests
         var result = await handler.Handle(new GetSignatureAcknowledgePageQuery(token, "Onboarding"), CancellationToken.None);
 
         Assert.Equal(GetSignatureAcknowledgePageStatus.IntegrityFailed, result.Status);
-        Assert.Equal("Digital signature integrity check failed. The document may have been tampered with.", result.Message);
+        Assert.Equal("A previous signature is missing integrity metadata or cannot be trusted. Contact HR to review the record.", result.Message);
     }
 
     [Fact]

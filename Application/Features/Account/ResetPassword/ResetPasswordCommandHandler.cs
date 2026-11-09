@@ -41,7 +41,7 @@ namespace IT_Form.Application.Features.Account.ResetPassword
         public async Task<ResetPasswordResult> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null)
+            if (user == null || !user.IsActive)
             {
                 return new ResetPasswordResult(
                     false,

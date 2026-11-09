@@ -291,8 +291,8 @@ namespace IT_Form.Controllers
                     var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     var purpose = Request.Form["purpose"].FirstOrDefault() ?? OtpPurposes.PasswordReset;
                     var result = await _sender.Send(new ResendOtpCommand(email, clientIp, purpose));
-                    TempData[result.IsQueued ? "SuccessMessage" : "ErrorMessage"] = result.Message;
-                    return RedirectToAction(nameof(VerifyOtp), new { email = result.Email, purpose });
+                    TempData["SuccessMessage"] = result.Message;
+                    return RedirectToAction(nameof(VerifyOtp), new { email, purpose });
                 },
                 nameof(VerifyOtp),
                 new { email });

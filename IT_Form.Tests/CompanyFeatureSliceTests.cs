@@ -118,10 +118,13 @@ public class CompanyFeatureSliceTests
     public void CreateCompanyValidator_Accepts_FullTzdbTimeZoneId()
     {
         var validator = new CreateCompanyCommandValidator();
-        var logo = new Mock<IFormFile>();
-        logo.SetupGet(file => file.Length).Returns(1);
-        logo.SetupGet(file => file.FileName).Returns("logo.png");
-        logo.SetupGet(file => file.ContentType).Returns("image/png");
+        var pngBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+        using var logoStream = new MemoryStream(pngBytes);
+        IFormFile logo = new FormFile(logoStream, 0, logoStream.Length, "logo", "logo.png")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "image/png"
+        };
 
         var result = validator.Validate(new CreateCompanyCommand(
             "Test",
@@ -138,7 +141,7 @@ public class CompanyFeatureSliceTests
             true,
             true,
             false,
-            logo.Object));
+            logo));
 
         Assert.True(result.IsValid);
     }

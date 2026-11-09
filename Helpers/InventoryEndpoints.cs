@@ -18,8 +18,9 @@ namespace IT_Form.Helpers
         /// </summary>
         public static void MapInventoryEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapPost("/api/inventory/sync", async (HardwareReport report, HttpContext httpContext, ApplicationDbContext dbContext, IConfiguration config, ILogger<InventoryEndpoints> logger) =>
+            app.MapPost("/api/inventory/sync", async (HardwareReport report, HttpContext httpContext, ApplicationDbContext dbContext, IConfiguration config, ILoggerFactory loggerFactory) =>
             {
+                var logger = loggerFactory.CreateLogger("IT_Form.InventorySync");
                 bool isAuthenticatedByKey = false;
                 var expectedKey = ConfigurationValueNormalizer.NormalizeSecret(config["InventorySync:ApiKey"]);
                 var allowLegacyInventoryApiKey = bool.TryParse(config["SecuritySettings:AllowLegacyInventoryApiKey"], out var enabled) && enabled;

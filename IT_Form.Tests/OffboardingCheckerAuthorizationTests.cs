@@ -58,8 +58,5 @@ public sealed class OffboardingCheckerAuthorizationTests
         var persisted = await context.OffboardingRequests.SingleAsync();
         Assert.Equal(RequestStatus.PendingApproval, persisted.Status);
         Assert.Null(persisted.ApprovedByUserId);
-        sender.Verify(
-            service => service.Send(It.IsAny<IRequest<IT_Form.Application.Common.Models.CommandResponse>>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 }

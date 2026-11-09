@@ -154,7 +154,7 @@ public class AuditLoggingBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_PrivilegedLoginOtpCommand_DoesNotWriteCommandAudit()
+    public async Task Handle_PrivilegedLoginOtpCommand_WritesRedactedCommandAudit()
     {
         var (context, httpContext) = TestContextFactory.Create(userName: null);
         var behavior = new AuditLoggingBehavior<VerifyOtpCommand, VerifyOtpResult>(
@@ -169,7 +169,12 @@ public class AuditLoggingBehaviorTests
             CancellationToken.None);
 
         Assert.True(result.IsVerified);
-        Assert.Empty(context.AuditLogs);
+        var log = Assert.Single(context.AuditLogs);
+        Assert.Equal("VerifyOtpCommand", log.Action);
+        Assert.True(log.IsSuccess);
+        Assert.DoesNotContain("super.admin@example.com", log.Changes);
+        Assert.DoesNotContain("ABC234", log.Changes);
+        Assert.Contains("***REDACTED***", log.Changes);
     }
 
     [Fact]
@@ -196,7 +201,8 @@ public class AuditLoggingBehaviorTests
         var log = Assert.Single(context.AuditLogs);
         Assert.Equal("Command", log.EntityName);
         Assert.False(log.IsSuccess);
-        Assert.Equal("boom", log.ErrorMessage);
+        Assert.Equal("Command failed; detailed exception is recorded in application logs.", log.ErrorMessage);
+        Assert.DoesNotContain("boom", log.ErrorMessage);
         Assert.True(log.CorrelationId.HasValue);
     }
 
@@ -228,7 +234,8 @@ public class AuditLoggingBehaviorTests
         var log = Assert.Single(context.AuditLogs);
         Assert.Equal("Command", log.EntityName);
         Assert.False(log.IsSuccess);
-        Assert.Contains("Incorrect password.", log.ErrorMessage, StringComparison.Ordinal);
+        Assert.Equal("Command failed; detailed exception is recorded in application logs.", log.ErrorMessage);
+        Assert.DoesNotContain("Incorrect password.", log.ErrorMessage, StringComparison.Ordinal);
 
         logger.Verify(
             x => x.Log(

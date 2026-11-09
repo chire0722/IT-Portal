@@ -265,7 +265,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 var detailsUrl = $"{appDomain}/{type}/Details/{requestId}";
 
                 var subject = $"COMPLETED: {type} Sign-Off - {employeeName}";
-                var greeting = $"Dear {creator.FullName ?? creator.UserName},";
+                var safeCreatorName = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(creator.FullName ?? creator.UserName ?? "User");
+                var safeEmployeeName = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(employeeName);
+                var greeting = $"Dear {safeCreatorName},";
                 var paramsRows = $@"
                     <tr>
                         <td style='padding: 14px 15px; font-size: 14px; color: #1E293B; border-bottom: 1px solid #F1F5F9; font-weight: 600;'>Employee Name</td>
@@ -285,7 +287,7 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 var senderSignature = creator.EmailSignatureImage;
                 var htmlBody = Helpers.EmailTemplateHelper.GetProfessionalHtmlTemplate(
                     $"{type} Process Completed",
-                    $"{greeting}<br/><br/>The digital sign-off for <strong>{employeeName}</strong> has been successfully completed by the employee. The request is now archived as Completed.",
+                    $"{greeting}<br/><br/>The digital sign-off for <strong>{safeEmployeeName}</strong> has been successfully completed by the employee. The request is now archived as Completed.",
                     paramsRows,
                     detailsUrl,
                     "View Completed Request",

@@ -103,6 +103,18 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 return ProcessResult<object>.Failure("This request is not currently awaiting employee signature.");
             }
 
+            // Do not rely on the public GET page for integrity enforcement. A caller can
+            // POST directly, so validate every upstream signature again at the write boundary.
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingRequest.Id.ToString(),
+                    onboardingRequest.RequesterSignerName, onboardingRequest.RequesterSignedAt,
+                    onboardingRequest.RequesterSignature, onboardingRequest.RequesterSignatureHmac, isRequired: true) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingRequest.Id.ToString(),
+                    onboardingRequest.ITAdminSignerName, onboardingRequest.ITAdminSignedAt,
+                    onboardingRequest.ITAdminSignature, onboardingRequest.ITAdminSignatureHmac, isRequired: true))
+            {
+                return ProcessResult<object>.Failure("Previous onboarding signatures failed integrity validation. Contact HR.");
+            }
+
             if (!string.IsNullOrEmpty(onboardingRequest.EmployeeSignature))
             {
                 return ProcessResult<object>.Failure("This document has already been signed.");
@@ -162,6 +174,21 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             if (offboardingRequest.Status != RequestStatus.PendingEmployeeSign)
             {
                 return ProcessResult<object>.Failure("This request is not currently awaiting employee signature.");
+            }
+
+            // Revalidate upstream signatures in the command handler so direct POSTs
+            // cannot bypass the integrity checks performed by the acknowledgement page.
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(),
+                    offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt,
+                    offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac, isRequired: true) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(),
+                    offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt,
+                    offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac, isRequired: true) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(),
+                    offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt,
+                    offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac, isRequired: true))
+            {
+                return ProcessResult<object>.Failure("Previous offboarding signatures failed integrity validation. Contact HR.");
             }
 
             if (!string.IsNullOrEmpty(offboardingRequest.EmployeeSignature))

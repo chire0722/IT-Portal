@@ -52,6 +52,15 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
                 return new CommandResponse { IsNotFound = true };
             }
 
+            // Enforce company scope and request assignment before persisting checker approval.
+            // The later manager-signature handler also checks scope, but that is too late:
+            // this handler must not save any mutation before authorization succeeds.
+            if (!await OffboardingActionWriteHelpers.IsUserAuthorizedForRequest(
+                    _context, user, _userManager, offboardingRequest, _currentUserAccessor.UserName))
+            {
+                return new CommandResponse { IsForbidden = true, RequestId = request.Id };
+            }
+
             var username = _currentUserAccessor.UserName ?? string.Empty;
             if (!offboardingRequest.CanBeCheckerApprovedBy(username))
             {

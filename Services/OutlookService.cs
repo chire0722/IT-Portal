@@ -1,6 +1,7 @@
 // Project comment: OutlookService.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -124,42 +125,30 @@ namespace IT_Form.Services
                     message.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(attachment), attachmentName));
                 }
 
-                // Handle Signature CID Embedding
-                if (!string.IsNullOrWhiteSpace(signatureBase64) && signatureBase64.Contains("base64,"))
+                // Only embed validated passive raster signature images.
+                if (ImageUploadHelper.TryDecodeRasterImageDataUrl(signatureBase64, out var contentType, out var imageBytes))
                 {
-                    try
+                    string plainText = "Please view this email in an HTML-enabled client.";
+                    var plainView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainText, null, "text/plain");
+                    message.AlternateViews.Add(plainView);
+
+                    var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(htmlBody, null, "text/html");
+                    var imageStream = new MemoryStream(imageBytes);
+                    var signatureResource = new System.Net.Mail.LinkedResource(imageStream, contentType)
                     {
-                        var parts = signatureBase64.Split(',');
-                        var header = parts[0];
-                        var base64Data = parts[1];
-                        var contentType = header.Split(':')[1].Split(';')[0];
-                        var imageBytes = System.Convert.FromBase64String(base64Data);
-
-                        // Plain text fallback (extract from HTML or use generic)
-                        string plainText = "Please view this email in an HTML-enabled client.";
-                        var plainView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainText, null, "text/plain");
-                        message.AlternateViews.Add(plainView);
-
-                        // HTML view with linked resource
-                        var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(htmlBody, null, "text/html");
-
-                        var imageStream = new MemoryStream(imageBytes);
-                        var signatureResource = new System.Net.Mail.LinkedResource(imageStream, contentType);
-                        signatureResource.ContentId = "signature";
-                        signatureResource.TransferEncoding = System.Net.Mime.TransferEncoding.Base64;
-
-                        htmlView.LinkedResources.Add(signatureResource);
-                        message.AlternateViews.Add(htmlView);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to embed signature CID. Falling back to simple HTML body.");
-                        message.Body = htmlBody;
-                        message.IsBodyHtml = true;
-                    }
+                        ContentId = "signature",
+                        TransferEncoding = System.Net.Mime.TransferEncoding.Base64
+                    };
+                    htmlView.LinkedResources.Add(signatureResource);
+                    message.AlternateViews.Add(htmlView);
                 }
                 else
                 {
+                    if (!string.IsNullOrWhiteSpace(signatureBase64))
+                    {
+                        _logger.LogWarning("An invalid or unsupported email signature image was omitted.");
+                    }
+
                     message.Body = htmlBody;
                     message.IsBodyHtml = true;
                 }

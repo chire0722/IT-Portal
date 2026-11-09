@@ -156,7 +156,6 @@ namespace IT_Form.Application.Features.Offboarding.Step1
 
             var extension = Path.GetExtension(hardwareDamageImage.FileName).ToLowerInvariant();
             var fileName = $"Offboarding_Damage_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareDamageImagePath);
             existing.HardwareDamageImagePath = await SensitiveFileStorage.SaveAsync(
                 hardwareDamageImage,
                 env,
@@ -189,7 +188,6 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
 
             var fileName = $"Offboarding_Return_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareReturnImagePath);
             existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveAsync(
                 hardwareReturnImage,
                 env,

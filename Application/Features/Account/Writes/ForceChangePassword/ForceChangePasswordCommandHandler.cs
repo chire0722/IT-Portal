@@ -25,6 +25,7 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
     private readonly IEmailBackgroundQueue _emailBackgroundQueue;
     private readonly IMemoryCache _cache;
     private readonly ILogger<ForceChangePasswordCommandHandler> _logger;
+    private readonly ICurrentUserAccessor _currentUserAccessor;
 
     public ForceChangePasswordCommandHandler(
         UserManager<ApplicationUser> userManager,

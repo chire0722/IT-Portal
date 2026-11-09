@@ -53,21 +53,17 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
             if (!await OffboardingReadAccessSupport.IsUserAuthorizedForRequest(_context, _currentUserAccessor.User, _userManager, offboardingRequest, _currentUserAccessor.UserName))
                 return ProcessResult<BinaryFilePayload>.Forbidden();
 
-            if (offboardingRequest.HRSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.HRSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.HRSignerName ?? "Unknown", offboardingRequest.HRSignedAt.Value, offboardingRequest.HRSignature ?? "", offboardingRequest.HRSignatureHmac))
-                return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (HR). The document may have been tampered with.", "Details", request.Id);
-
-            if (offboardingRequest.HODSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.HODSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.HODSignerName ?? "Unknown", offboardingRequest.HODSignedAt.Value, offboardingRequest.HODSignature ?? "", offboardingRequest.HODSignatureHmac))
-                return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (HOD). The document may have been tampered with.", "Details", request.Id);
-
-            if (offboardingRequest.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.ITAdminSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.ITAdminSignerName ?? "Unknown", offboardingRequest.ITAdminSignedAt.Value, offboardingRequest.ITAdminSignature ?? "", offboardingRequest.ITAdminSignatureHmac))
-                return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (IT Admin). The document may have been tampered with.", "Details", request.Id);
-
-            if (offboardingRequest.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.EmployeeSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.EmployeeSignerName ?? "Employee", offboardingRequest.EmployeeSignedAt.Value, offboardingRequest.EmployeeSignature ?? "", offboardingRequest.EmployeeSignatureHmac))
-                return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Employee). The document may have been tampered with.", "Details", request.Id);
+            var entityId = offboardingRequest.Id.ToString();
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt, offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt, offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt, offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.EmployeeSignerName, offboardingRequest.EmployeeSignedAt, offboardingRequest.EmployeeSignature, offboardingRequest.EmployeeSignatureHmac, "Employee"))
+            {
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    "Digital signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.",
+                    "Details",
+                    request.Id);
+            }
 
             try
             {

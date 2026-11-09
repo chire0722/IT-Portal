@@ -21,50 +21,21 @@ public sealed record GetVerifyOtpPageQuery(
 /// </summary>
 public sealed class GetVerifyOtpPageQueryHandler : IRequestHandler<GetVerifyOtpPageQuery, VerifyOtpViewModel>
 {
-    private readonly ApplicationDbContext _context;
-
     public GetVerifyOtpPageQueryHandler(ApplicationDbContext context)
     {
-        _context = context;
+        // The page deliberately does not query account state or cooldowns. This keeps
+        // the response identical for existing and non-existing email/username values.
+        _ = context;
     }
 
     /// <summary>
     /// Executes the request and returns the workflow result.
     /// </summary>
-    public async Task<VerifyOtpViewModel> Handle(GetVerifyOtpPageQuery request, CancellationToken cancellationToken)
-    {
-        var userEmail = await _context.Users
-            .AsNoTracking()
-            .Where(user => user.Email == request.Email)
-            .Select(user => user.Email)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var remainingSeconds = 0;
-        if (!string.IsNullOrWhiteSpace(userEmail))
-        {
-            var lastRequestedAtUtc = await _context.OtpRecords
-                .AsNoTracking()
-                .Where(otp => otp.Email == userEmail && otp.Purpose == request.Purpose)
-                .OrderByDescending(otp => otp.CreatedAt)
-                .Select(otp => (DateTime?)otp.CreatedAt)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (lastRequestedAtUtc.HasValue)
-            {
-                var resendAvailableAtUtc = lastRequestedAtUtc.Value.Add(AccountOtpSupport.RequestCooldown);
-                if (resendAvailableAtUtc > DateTime.UtcNow)
-                {
-                    remainingSeconds = (int)Math.Ceiling((resendAvailableAtUtc - DateTime.UtcNow).TotalSeconds);
-                }
-            }
-        }
-
-        return new VerifyOtpViewModel
+    public Task<VerifyOtpViewModel> Handle(GetVerifyOtpPageQuery request, CancellationToken cancellationToken)
+        => Task.FromResult(new VerifyOtpViewModel
         {
             Email = request.Email,
             Code = request.Code ?? string.Empty,
             Purpose = request.Purpose,
-            RemainingCooldownSeconds = remainingSeconds
-        };
-    }
-}
+            RemainingCooldownSeconds = 0
+        });}

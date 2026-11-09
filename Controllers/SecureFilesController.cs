@@ -69,7 +69,13 @@ namespace IT_Form.Controllers
                 contentType = "application/octet-stream";
             }
 
-            return PhysicalFile(physicalPath, contentType);
+            if (string.Equals(contentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                // Sensitive PDFs are downloaded as attachments instead of being rendered inline.
+                return PhysicalFile(physicalPath, contentType, Path.GetFileName(fileName), enableRangeProcessing: true);
+            }
+
+            return PhysicalFile(physicalPath, contentType, enableRangeProcessing: true);
         }
 
         /// <summary>

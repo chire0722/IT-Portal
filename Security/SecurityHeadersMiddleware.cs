@@ -24,6 +24,9 @@ namespace IT_Form.Security
                 "style-src 'self' 'unsafe-inline' http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
                 "font-src 'self' data: http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdnjs.cloudflare.com https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
                 "img-src 'self' data: blob: http://172.16.3.142:5063 http://172.16.1.137:5063; " +
+                "object-src 'none'; " +
+                "base-uri 'self'; " +
+                "form-action 'self'; " +
                 "frame-ancestors 'none';");
 
             // 2. Anti-Clickjacking: X-Frame-Options

@@ -227,12 +227,12 @@ namespace IT_Form.Application.Common.Behaviors
             {
                 return AuditPayloadSanitizer.SerializeSanitized(request, SerializerOptions);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return JsonSerializer.Serialize(new
                 {
                     Error = "Payload serialization failed.",
-                    Exception = "Payload serialization failed; detailed exception is recorded in application logs.",
+                    Exception = "Payload serialization failed; sensitive exception details are intentionally omitted.",
                     RequestType = request.GetType().FullName
                 }, SerializerOptions);
             }

@@ -476,7 +476,7 @@ public class AccountFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Runs the VerifyOtpHandler_InvalidatesOtpAfterThreeFailures operation.
+    /// Runs the VerifyOtpHandler_InvalidatesOtpAfterMaximumFailedAttempts operation.
     /// </summary>
     public async Task VerifyOtpHandler_InvalidatesOtpAfterThreeFailures()
     {

@@ -61,8 +61,8 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
             {
                 return new VerifyOtpResult(
                     false,
-                    true,
-                    "User not found.");
+                    false,
+                    "验证码已过期或不存在");
             }
 
             return await _keyedLockProvider.ExecuteAsync(

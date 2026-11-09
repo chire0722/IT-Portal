@@ -41,9 +41,13 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
     /// </summary>
     public async Task<ResendOtpResult> Handle(ResendOtpCommand request, CancellationToken cancellationToken)
     {
+        var normalizedIdentifier = request.Email.Trim().ToUpperInvariant();
         var user = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+            .FirstOrDefaultAsync(u =>
+                u.NormalizedEmail == normalizedIdentifier ||
+                u.NormalizedUserName == normalizedIdentifier,
+                cancellationToken);
 
         if (user == null || !user.IsActive || string.IsNullOrWhiteSpace(user.Email))
         {
@@ -98,10 +102,10 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
                     AccountOtpSupport.BuildOtpEmailBody(code)), ct);
                 await _context.SaveChangesAsync(ct);
 
-                _logger.LogInformation("Queued OTP resend email for {Email}.", user.Email);
+                _logger.LogInformation("Queued OTP resend email for user {UserId}.", user.Id);
 
                 return new ResendOtpResult(
-                    user.Email,
+                    request.Email,
                     true,
                     ResendOtpResult.GenericResponseMessage);
             },

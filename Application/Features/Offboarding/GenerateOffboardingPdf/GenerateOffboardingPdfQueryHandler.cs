@@ -73,10 +73,12 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
             try
             {
                 var pdfBytes = _pdfService.GenerateOffboardingPdf(offboardingRequest);
+                var safeName = System.Text.RegularExpressions.Regex.Replace(offboardingRequest.FullName ?? "Unknown", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                 return ProcessResult<BinaryFilePayload>.Success(new BinaryFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Offboarding_{offboardingRequest.FullName.Replace(" ", "_")}_{offboardingRequest.RequestDate:yyyyMMdd}.pdf"));
+                    $"Offboarding_{safeName}_{offboardingRequest.RequestDate:yyyyMMdd}.pdf"));
             }
             catch (Exception ex)
             {

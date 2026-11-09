@@ -106,6 +106,26 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                     item.FullName,
                     item.Department,
                     Company = item.Branch,
+                    item.RequesterSignature,
+                    item.RequesterSignedAt,
+                    item.RequesterSignatureHmac,
+                    item.RequesterSignerName,
+                    item.ITAdminSignature,
+                    item.ITAdminSignedAt,
+                    item.ITAdminSignatureHmac,
+                    item.ITAdminSignerName,
+                    item.HRSignature,
+                    item.HRSignedAt,
+                    item.HRSignatureHmac,
+                    item.HRSignerName,
+                    item.HODSignature,
+                    item.HODSignedAt,
+                    item.HODSignatureHmac,
+                    item.HODSignerName,
+                    item.ITAdminSignature,
+                    item.ITAdminSignedAt,
+                    item.ITAdminSignatureHmac,
+                    item.ITAdminSignerName,
                     item.EmployeeSignature,
                     item.EmployeeSignedAt,
                     item.EmployeeSignatureHmac,
@@ -121,18 +141,14 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 return new(GetSignatureAcknowledgePageStatus.NotFound, Message: "Request not found or token invalid.");
             }
 
-            if (record.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(record.EmployeeSignatureHmac) &&
-                !_integrityService.Verify(
-                    "OnboardingRequest",
-                    record.Id.ToString(),
-                    record.EmployeeSignerName ?? "Employee",
-                    record.EmployeeSignedAt.Value,
-                    record.EmployeeSignature ?? string.Empty,
-                    record.EmployeeSignatureHmac))
+            var onboardingId = record.Id.ToString();
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.RequesterSignerName, record.RequesterSignedAt, record.RequesterSignature, record.RequesterSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.ITAdminSignerName, record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.EmployeeSignerName, record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac, "Employee"))
             {
                 return new(
                     GetSignatureAcknowledgePageStatus.IntegrityFailed,
-                    Message: "Digital signature integrity check failed. The document may have been tampered with.");
+                    Message: "A previous signature is missing integrity metadata or cannot be trusted. Contact HR to review the record.");
             }
 
             var model = new SignatureAcknowledgePageViewModel
@@ -181,18 +197,15 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 return new(GetSignatureAcknowledgePageStatus.NotFound, Message: "Request not found or token invalid.");
             }
 
-            if (record.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(record.EmployeeSignatureHmac) &&
-                !_integrityService.Verify(
-                    "OffboardingRequest",
-                    record.Id.ToString(),
-                    record.EmployeeSignerName ?? "Employee",
-                    record.EmployeeSignedAt.Value,
-                    record.EmployeeSignature ?? string.Empty,
-                    record.EmployeeSignatureHmac))
+            var offboardingId = record.Id.ToString();
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.HRSignerName, record.HRSignedAt, record.HRSignature, record.HRSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.HODSignerName, record.HODSignedAt, record.HODSignature, record.HODSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.ITAdminSignerName, record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.EmployeeSignerName, record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac, "Employee"))
             {
                 return new(
                     GetSignatureAcknowledgePageStatus.IntegrityFailed,
-                    Message: "Digital signature integrity check failed. The document may have been tampered with.");
+                    Message: "A previous signature is missing integrity metadata or cannot be trusted. Contact HR to review the record.");
             }
 
             var model = new SignatureAcknowledgePageViewModel
@@ -273,16 +286,12 @@ public sealed class GetSignaturePdfQueryHandler
                     Message: "This access link has expired (30 day limit). Please contact HR for a new one.");
             }
 
-            if (onboardingRequest.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(onboardingRequest.EmployeeSignatureHmac) &&
-                !_integrityService.Verify("OnboardingRequest", onboardingRequest.Id.ToString(), onboardingRequest.EmployeeSignerName ?? "Employee", onboardingRequest.EmployeeSignedAt.Value, onboardingRequest.EmployeeSignature ?? string.Empty, onboardingRequest.EmployeeSignatureHmac))
+            var onboardingId = onboardingRequest.Id.ToString();
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.RequesterSignerName, onboardingRequest.RequesterSignedAt, onboardingRequest.RequesterSignature, onboardingRequest.RequesterSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.ITAdminSignerName, onboardingRequest.ITAdminSignedAt, onboardingRequest.ITAdminSignature, onboardingRequest.ITAdminSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.EmployeeSignerName, onboardingRequest.EmployeeSignedAt, onboardingRequest.EmployeeSignature, onboardingRequest.EmployeeSignatureHmac, "Employee"))
             {
-                return new(GetSignaturePdfStatus.IntegrityFailed, Message: "Signature Integrity Violation (Employee)");
-            }
-
-            if (onboardingRequest.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(onboardingRequest.ITAdminSignatureHmac) &&
-                !_integrityService.Verify("OnboardingRequest", onboardingRequest.Id.ToString(), onboardingRequest.ITAdminSignerName ?? "Unknown", onboardingRequest.ITAdminSignedAt.Value, onboardingRequest.ITAdminSignature ?? string.Empty, onboardingRequest.ITAdminSignatureHmac))
-            {
-                return new(GetSignaturePdfStatus.IntegrityFailed, Message: "Signature Integrity Violation (IT Admin)");
+                return new(GetSignaturePdfStatus.IntegrityFailed, Message: "Signature integrity metadata is missing, compromised, or invalid.");
             }
 
             var pdfBytes = _pdfService.GeneratePdf(onboardingRequest);
@@ -317,10 +326,13 @@ public sealed class GetSignaturePdfQueryHandler
                 return new(GetSignaturePdfStatus.Expired, Message: "This access link has expired (30 day limit).");
             }
 
-            if (offboardingRequest.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.EmployeeSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.EmployeeSignerName ?? "Employee", offboardingRequest.EmployeeSignedAt.Value, offboardingRequest.EmployeeSignature ?? string.Empty, offboardingRequest.EmployeeSignatureHmac))
+            var offboardingId = offboardingRequest.Id.ToString();
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt, offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt, offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt, offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.EmployeeSignerName, offboardingRequest.EmployeeSignedAt, offboardingRequest.EmployeeSignature, offboardingRequest.EmployeeSignatureHmac, "Employee"))
             {
-                return new(GetSignaturePdfStatus.IntegrityFailed, Message: "Signature Integrity Violation (Employee)");
+                return new(GetSignaturePdfStatus.IntegrityFailed, Message: "Signature integrity metadata is missing, compromised, or invalid.");
             }
 
             var pdfBytes = _pdfService.GenerateOffboardingPdf(offboardingRequest);

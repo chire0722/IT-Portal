@@ -256,4 +256,52 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
+
+    [Fact]
+    public async Task AssignSoftwareKeyHandler_RejectsEmployeeOutsideCurrentCompanyScope()
+    {
+        using var context = CreateContext();
+        var license = new SoftwareLicense
+        {
+            Id = 70,
+            StandardSoftwareId = 1,
+            SoftwareName = "Office E3",
+            IsSubscription = false
+        };
+        context.SoftwareLicenses.Add(license);
+        var key = new SoftwareKey
+        {
+            Id = 71,
+            SoftwareLicenseId = 70,
+            SoftwareLicense = license,
+            IsAssigned = false,
+            KeyValue = "encrypted-key"
+        };
+        context.SoftwareKeys.Add(key);
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 72,
+            FullName = "Company B Employee",
+            Branch = "Company B",
+            Status = RequestStatus.Completed
+        });
+        await context.SaveChangesAsync();
+
+        var encryption = new Mock<ILicenseEncryptionService>();
+        encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string value) => value);
+        var queue = new Mock<IEmailBackgroundQueue>();
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "it.user",
+            titles: ["IT"],
+            companies: ["Company A"]);
+        var handler = new AssignSoftwareKeyCommandHandler(context, encryption.Object, queue.Object, currentUser);
+
+        var result = await handler.Handle(new AssignSoftwareKeyCommand(71, 72), CancellationToken.None);
+
+        Assert.Equal(AssignSoftwareKeyStatus.EmployeeNotFound, result.Status);
+        var persistedKey = await context.SoftwareKeys.SingleAsync(item => item.Id == 71);
+        Assert.False(persistedKey.IsAssigned);
+        Assert.Null(persistedKey.OnboardingRequestId);
+    }
+
 }

@@ -474,6 +474,7 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("workflow-email")]
         /// <summary>
         /// Runs the SendConfirmedEmail operation.
         /// </summary>

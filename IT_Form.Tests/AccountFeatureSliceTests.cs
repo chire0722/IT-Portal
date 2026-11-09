@@ -372,8 +372,11 @@ public class AccountFeatureSliceTests
 
         var result = await handler.Handle(new ForgotPasswordCommand("missing", "127.0.0.1"), CancellationToken.None);
 
-        Assert.False(result.OtpSent);
-        Assert.Equal("Invalid username or email address.", result.Message);
+        Assert.True(result.OtpSent);
+        Assert.Equal(ForgotPasswordResult.GenericResponseMessage, result.Message);
+        queue.Verify(
+            service => service.QueueEmailAsync(It.IsAny<IEmailBackgroundMessage>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -468,7 +471,7 @@ public class AccountFeatureSliceTests
         var exception = await Assert.ThrowsAsync<ValidationException>(() =>
             handler.Handle(new VerifyOtpCommand("user@example.com", "ABC234"), CancellationToken.None));
 
-        Assert.Contains("\u9a8c\u8bc1\u7801\u5df2\u8fc7\u671f\u6216\u4e0d\u5b58\u5728", exception.Errors.Select(error => error.ErrorMessage));
+        Assert.Contains(VerifyOtpResult.GenericFailureMessage, exception.Errors.Select(error => error.ErrorMessage));
     }
 
     [Fact]
@@ -495,7 +498,7 @@ public class AccountFeatureSliceTests
             Email = "user@example.com",
             Code = AccountOtpSupport.HashCode("ABC234"),
             ExpiresAt = DateTime.UtcNow.AddMinutes(5),
-            FailedAttempts = 2,
+            FailedAttempts = 4,
             CreatedAt = DateTime.UtcNow
         });
         await context.SaveChangesAsync();
@@ -509,7 +512,7 @@ public class AccountFeatureSliceTests
         var exception = await Assert.ThrowsAsync<ValidationException>(() =>
             handler.Handle(new VerifyOtpCommand("user@example.com", "ZZZ999"), CancellationToken.None));
 
-        Assert.Contains("\u8fde\u7eed\u8f93\u9519 3 \u6b21\uff0c\u9a8c\u8bc1\u7801\u5df2\u4f5c\u5e9f\uff0c\u8bf7\u91cd\u65b0\u83b7\u53d6", exception.Errors.Select(error => error.ErrorMessage));
+        Assert.Contains(VerifyOtpResult.GenericFailureMessage, exception.Errors.Select(error => error.ErrorMessage));
         context.ChangeTracker.Clear();
         var storedOtp = await context.OtpRecords.SingleAsync();
         Assert.True(storedOtp.IsLocked);
@@ -744,7 +747,7 @@ public class AccountFeatureSliceTests
 
         Assert.Equal("user@example.com", result.Email);
         Assert.Equal("ABC234", result.Code);
-        Assert.InRange(result.RemainingCooldownSeconds, 45, 55);
+        Assert.Equal(0, result.RemainingCooldownSeconds);
     }
 
     [Fact]
@@ -762,7 +765,9 @@ public class AccountFeatureSliceTests
         {
             Id = "u-otp",
             Email = "user@example.com",
+            NormalizedEmail = "USER@EXAMPLE.COM",
             UserName = "user@example.com",
+            NormalizedUserName = "USER@EXAMPLE.COM",
             IsActive = true
         });
         await context.SaveChangesAsync();

@@ -278,10 +278,10 @@ namespace IT_Form.Controllers
         /// </summary>
         private void SetPrivateNoStoreHeaders()
         {
-            Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
-            Response.Headers.Pragma = "no-cache";
-            Response.Headers.Expires = "0";
-            Response.Headers.ReferrerPolicy = "no-referrer";
+            Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
         }
 
         private bool IsExpired(DeviceVerificationToken token)

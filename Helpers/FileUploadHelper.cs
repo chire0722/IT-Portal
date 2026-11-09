@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Linq;
+using System.IO.Compression;
 
 namespace IT_Form.Helpers
 {
@@ -11,10 +12,9 @@ namespace IT_Form.Helpers
     /// </summary>
     public static class FileUploadHelper
     {
-        private static readonly string[] AllowedExtensions = { ".xlsx", ".xls" };
-        private static readonly string[] AllowedMimeTypes = { 
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-            "application/vnd.ms-excel" 
+        private static readonly string[] AllowedExtensions = { ".xlsx" };
+        private static readonly string[] AllowedMimeTypes = {
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         };
         private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
 
@@ -53,25 +53,97 @@ namespace IT_Form.Helpers
                 return false;
             }
 
-            // Check the file signature instead of trusting the user-supplied extension/MIME type.
-            // XLSX is a ZIP-based Open XML package; legacy XLS uses the OLE Compound File signature.
-            Span<byte> header = stackalloc byte[8];
+            // ClosedXML supports Open XML workbooks (.xlsx), not legacy binary .xls files.
+            // Verify both the ZIP signature and the actual workbook package structure.
+            Span<byte> header = stackalloc byte[4];
             using (var stream = file.OpenReadStream())
             {
                 var bytesRead = stream.Read(header);
-                var isXlsx = extension == ".xlsx" &&
-                    bytesRead >= 4 &&
-                    header[0] == 0x50 && header[1] == 0x4B &&
-                    header[2] == 0x03 && header[3] == 0x04;
-                var isXls = extension == ".xls" &&
-                    bytesRead == 8 &&
-                    header.SequenceEqual(new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 });
-
-                if (!isXlsx && !isXls)
+                if (bytesRead < 4 ||
+                    header[0] != 0x50 || header[1] != 0x4B ||
+                    header[2] != 0x03 || header[3] != 0x04)
                 {
-                    errorMessage = "The file content does not match a supported Excel file format.";
+                    errorMessage = "The file content does not match a supported .xlsx workbook.";
                     return false;
                 }
+            }
+
+            try
+            {
+                using var packageStream = new MemoryStream();
+                using (var source = file.OpenReadStream())
+                {
+                    source.CopyTo(packageStream);
+                }
+
+                packageStream.Position = 0;
+                using var archive = new ZipArchive(packageStream, ZipArchiveMode.Read, leaveOpen: false);
+                if (archive.Entries.Count == 0 || archive.Entries.Count > 1000)
+                {
+                    errorMessage = "The workbook contains an invalid number of package entries.";
+                    return false;
+                }
+
+                var names = archive.Entries
+                    .Select(entry => entry.FullName.Replace('\\', '/'))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                if (!names.Contains("[Content_Types].xml") || !names.Contains("xl/workbook.xml"))
+                {
+                    errorMessage = "The uploaded ZIP file is not a valid Excel workbook.";
+                    return false;
+                }
+
+                long totalUncompressedBytes = 0;
+                foreach (var entry in archive.Entries)
+                {
+                    var normalizedName = entry.FullName.Replace('\\', '/');
+                    if (normalizedName.StartsWith("/", StringComparison.Ordinal) ||
+                        normalizedName.Split('/').Any(segment => segment == ".."))
+                    {
+                        errorMessage = "The workbook contains an unsafe package path.";
+                        return false;
+                    }
+
+                    if (entry.Length > 25L * 1024 * 1024)
+                    {
+                        errorMessage = "A workbook component exceeds the allowed expanded size.";
+                        return false;
+                    }
+
+                    totalUncompressedBytes += entry.Length;
+                    if (totalUncompressedBytes > 100L * 1024 * 1024)
+                    {
+                        errorMessage = "The workbook expands beyond the allowed processing size.";
+                        return false;
+                    }
+
+                    if (entry.Length > 1024 * 1024 &&
+                        (entry.CompressedLength == 0 || entry.Length / Math.Max(1, entry.CompressedLength) > 100))
+                    {
+                        errorMessage = "The workbook has an unsafe compression ratio.";
+                        return false;
+                    }
+
+                    if (normalizedName.Equals("xl/vbaProject.bin", StringComparison.OrdinalIgnoreCase) ||
+                        normalizedName.StartsWith("xl/activeX/", StringComparison.OrdinalIgnoreCase) ||
+                        normalizedName.StartsWith("xl/embeddings/", StringComparison.OrdinalIgnoreCase) ||
+                        normalizedName.StartsWith("xl/externalLinks/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        errorMessage = "Macro-enabled or externally linked workbooks are not supported.";
+                        return false;
+                    }
+                }
+            }
+            catch (InvalidDataException)
+            {
+                errorMessage = "The uploaded file is not a valid Excel workbook.";
+                return false;
+            }
+            catch (IOException)
+            {
+                errorMessage = "The uploaded workbook could not be read.";
+                return false;
             }
 
             return true;

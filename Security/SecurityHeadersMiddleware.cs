@@ -17,7 +17,7 @@ namespace IT_Form.Security
         public async Task InvokeAsync(HttpContext context)
         {
             // 1. Content Security Policy (CSP)
-            // Relaxed for local network IP access
+            // First-party resources plus explicitly required CDNs. Inline/eval allowances remain until a nonce/hash migration is completed.
             context.Response.Headers.Append("Content-Security-Policy",
                 "default-src 'self'; " +
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
@@ -38,13 +38,9 @@ namespace IT_Form.Security
             // 4. Referrer Policy
             context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
 
-            // 5. Strict-Transport-Security (HSTS) - Disabled for local IP access to prevent lockout on HTTP
-            // context.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+            // HSTS is applied by app.UseHsts() in production after HTTPS termination.
 
-            // 6. X-XSS-Protection (Legacy protection for older browsers)
-            context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
-
-            // 7. Permissions Policy (Optional, but good practice)
+            // 6. Permissions Policy
             context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
             await _next(context);

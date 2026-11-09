@@ -159,7 +159,7 @@ namespace IT_Form.Application.Common.Behaviors
 
         private static bool IsSuccessfulResponse(TResponse response)
         {
-            if (response == null)
+            if (response is null)
             {
                 return true;
             }

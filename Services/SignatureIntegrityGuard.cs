@@ -17,7 +17,8 @@ public static class SignatureIntegrityGuard
         DateTime? signedAtUtc,
         string? signature,
         string? storedHmac,
-        string defaultSignerName = "Unknown")
+        string defaultSignerName = "Unknown",
+        bool isRequired = false)
     {
         ArgumentNullException.ThrowIfNull(integrityService);
 
@@ -28,7 +29,7 @@ public static class SignatureIntegrityGuard
 
         if (!hasAnySignatureData)
         {
-            return true;
+            return !isRequired;
         }
 
         if (!signedAtUtc.HasValue ||

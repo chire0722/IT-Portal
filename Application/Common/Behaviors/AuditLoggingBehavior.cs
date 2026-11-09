@@ -110,7 +110,7 @@ namespace IT_Form.Application.Common.Behaviors
                         Payload = payload,
                         CreatedAt = DateTime.UtcNow,
                         IsSuccess = false,
-                        ErrorMessage = ex.Message,
+                        ErrorMessage = "Command failed; detailed exception is recorded in application logs.",
                         Timestamp = DateTime.UtcNow,
                         EntityName = "Command",
                         EntityId = "-",
@@ -232,7 +232,7 @@ namespace IT_Form.Application.Common.Behaviors
                 return JsonSerializer.Serialize(new
                 {
                     Error = "Payload serialization failed.",
-                    Exception = ex.Message,
+                    Exception = "Payload serialization failed; detailed exception is recorded in application logs.",
                     RequestType = request.GetType().FullName
                 }, SerializerOptions);
             }

@@ -9,6 +9,7 @@ using IT_Form.Models;
 using IT_Form.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
+using Moq;
 using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
@@ -114,7 +115,15 @@ namespace IT_Form.Tests
                 FullName = "Test Employee",
                 Department = "IT",
                 Branch = "HQ",
-                Status = RequestStatus.PendingEmployeeSign
+                Status = RequestStatus.PendingEmployeeSign,
+                RequesterSignerName = "HR User",
+                RequesterSignedAt = DateTime.UtcNow.AddHours(-2),
+                RequesterSignature = "data:image/png;base64,REQ",
+                RequesterSignatureHmac = "HMAC",
+                ITAdminSignerName = "IT User",
+                ITAdminSignedAt = DateTime.UtcNow.AddHours(-1),
+                ITAdminSignature = "data:image/png;base64,IT",
+                ITAdminSignatureHmac = "HMAC"
             };
             context.OnboardingRequests.Add(req);
             await context.SaveChangesAsync();

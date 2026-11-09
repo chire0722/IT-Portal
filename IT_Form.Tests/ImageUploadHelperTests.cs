@@ -40,4 +40,25 @@ public sealed class ImageUploadHelperTests
 
         Assert.False(ImageUploadHelper.IsValidCompanyLogo(file, out _));
     }
+
+    [Fact]
+    public void TryDecodeRasterImageDataUrl_AcceptsPngAndRejectsSvg()
+    {
+        var pngBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+        var pngDataUrl = "data:image/png;base64," + Convert.ToBase64String(pngBytes);
+        Assert.True(ImageUploadHelper.TryDecodeRasterImageDataUrl(pngDataUrl, out var contentType, out var decoded));
+        Assert.Equal("image/png", contentType);
+        Assert.Equal(pngBytes, decoded);
+
+        var svgDataUrl = "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<svg></svg>"));
+        Assert.False(ImageUploadHelper.TryDecodeRasterImageDataUrl(svgDataUrl, out _, out _));
+    }
+
+    [Fact]
+    public void TryDecodeRasterImageDataUrl_RejectsOversizedPayload()
+    {
+        var oversized = new byte[ImageUploadHelper.MaxCompanyLogoBytes + 1];
+        var dataUrl = "data:image/png;base64," + Convert.ToBase64String(oversized);
+        Assert.False(ImageUploadHelper.TryDecodeRasterImageDataUrl(dataUrl, out _, out _));
+    }
 }

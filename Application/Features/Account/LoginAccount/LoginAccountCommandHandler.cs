@@ -18,6 +18,9 @@ namespace IT_Form.Application.Features.Account.LoginAccount
     /// </summary>
     public sealed class LoginAccountCommandHandler : IRequestHandler<LoginAccountCommand, LoginAccountResult>
     {
+        private const string GenericLoginFailureMessage =
+            "Invalid username/email or password. If you believe your account is inactive or locked, contact IT.";
+
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ApplicationDbContext _context;
@@ -68,7 +71,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                     null,
                     request.Username,
                     request.ClientIp,
-                    "Invalid username/email or password.");
+                    GenericLoginFailureMessage);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return new LoginAccountResult(
@@ -131,7 +134,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
 
                 return new LoginAccountResult(
                     false,
-                    "Your account has been deactivated. Please contact IT.");
+                    GenericLoginFailureMessage);
             }
 
             if (!user.EmailConfirmed)
@@ -148,12 +151,12 @@ namespace IT_Form.Application.Features.Account.LoginAccount
 
                 return new LoginAccountResult(
                     false,
-                    "Your email is not verified. Please contact IT.");
+                    GenericLoginFailureMessage);
             }
 
             if (isSuperAdmin && string.IsNullOrWhiteSpace(user.Email))
             {
-                return new LoginAccountResult(false, "Super Admin account requires an email address for OTP login.");
+                return new LoginAccountResult(false, GenericLoginFailureMessage);
             }
 
             if (isSuperAdmin &&
@@ -181,12 +184,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                     await _context.SaveChangesAsync(cancellationToken);
                 }
 
-                var remaining = user.LockoutEnd.Value - DateTimeOffset.UtcNow;
-                var mins = Math.Ceiling(remaining.TotalMinutes);
-                return new LoginAccountResult(
-                    false,
-                    $"Your account is temporarily locked. Please try again in {mins} minute(s) or contact IT to reset your password.",
-                    LockoutEndUtc: user.LockoutEnd.Value);
+                return new LoginAccountResult(false, GenericLoginFailureMessage);
             }
 
             var verifyResult = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash ?? string.Empty, request.Password ?? string.Empty);
@@ -283,10 +281,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
                 _logger.LogWarning("User {Username} locked out for {Min} min (lockout #{Count}).",
                     request.Username, penaltyMinutes, user.LockoutCount);
 
-                return new LoginAccountResult(
-                    false,
-                    $"Your account has been locked due to {maxAttempts} failed login attempts. Please try again in {penaltyMinutes} minute(s) or contact IT to reset your password.",
-                    LockoutEndUtc: user.LockoutEnd.Value);
+                return new LoginAccountResult(false, GenericLoginFailureMessage);
             }
 
             user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
@@ -303,7 +298,7 @@ namespace IT_Form.Application.Features.Account.LoginAccount
 
             return new LoginAccountResult(
                 false,
-                $"Invalid username or password. You have {attemptsLeft} attempt(s) remaining before your account is locked.");
+                GenericLoginFailureMessage);
         }
 
         private async Task QueuePrivilegedLoginOtpAsync(ApplicationUser user, string clientIp, CancellationToken cancellationToken)

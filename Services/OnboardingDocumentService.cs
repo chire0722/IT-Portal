@@ -148,16 +148,20 @@ namespace IT_Form.Services
         private string? VerifyIntegrity(IT_Form.Models.OnboardingRequest request)
         {
             var entityId = request.Id.ToString();
+            var requiresRequester = request.Status != RequestStatus.Draft && request.Status != RequestStatus.Rejected;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
+
             if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
-                    request.RequesterSignerName, request.RequesterSignedAt, request.RequesterSignature, request.RequesterSignatureHmac))
+                    request.RequesterSignerName, request.RequesterSignedAt, request.RequesterSignature, request.RequesterSignatureHmac, isRequired: requiresRequester))
                 return "Requester (HR) signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.";
 
             if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
-                    request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac))
+                    request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac, isRequired: requiresIt))
                 return "IT Admin signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.";
 
             if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
-                    request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac, "Employee"))
+                    request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
                 return "Employee signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.";
 
             return null;

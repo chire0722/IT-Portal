@@ -20,6 +20,7 @@ using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace IT_Form.Controllers
 {
@@ -53,6 +54,7 @@ namespace IT_Form.Controllers
         // POST: /Account/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-login")]
         /// <summary>
         /// Runs the Login operation.
         /// </summary>
@@ -132,6 +134,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         /// <summary>
         /// Runs the ForgotPassword operation.
         /// </summary>
@@ -178,6 +181,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-otp")]
         /// <summary>
         /// Runs the VerifyOtp operation.
         /// </summary>
@@ -235,6 +239,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         /// <summary>
         /// Runs the ResetPassword operation.
         /// </summary>
@@ -274,6 +279,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         /// <summary>
         /// Runs the ResendOtp operation.
         /// </summary>
@@ -365,6 +371,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         public async Task<IActionResult> BeginProfilePasswordChange(ProfilePasswordChangeInputModel model)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -404,6 +411,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-otp")]
         public async Task<IActionResult> ConfirmProfilePasswordChange(ConfirmProfilePasswordChangeInputModel model)
         {
             return await ExecuteWithValidationView(

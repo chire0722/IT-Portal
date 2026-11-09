@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - security/remediation
+      - security/audit-hardening
   pull_request:
     branches:
       - main

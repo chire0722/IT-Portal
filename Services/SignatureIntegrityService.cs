@@ -52,7 +52,7 @@ namespace IT_Form.Services
 
         public string ComputeHmac(string entityType, string entityId, string signerUserId, DateTime signedAtUtc, string signatureBase64)
         {
-            return Convert.ToHexString(ComputeHash(_activeKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64));
+            return "v2:" + Convert.ToHexString(ComputeHash(_activeKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64));
         }
 
         public bool Verify(string entityType, string entityId, string signerUserId, DateTime signedAtUtc, string signatureBase64, string storedHmac)
@@ -68,30 +68,36 @@ namespace IT_Form.Services
                 return true;
             }
 
+            // Versioned signatures are always checked with the active key only.
+            // Unversioned values are legacy signatures and are accepted only during the
+            // explicitly configured migration window.
+            var isActiveVersion = storedHmac.StartsWith("v2:", StringComparison.Ordinal);
+            var encodedHmac = isActiveVersion ? storedHmac[3..] : storedHmac;
             byte[] supplied;
             try
             {
-                supplied = Convert.FromHexString(storedHmac);
+                supplied = Convert.FromHexString(encodedHmac);
             }
             catch (FormatException)
             {
                 return false;
             }
 
-            var activeMatch = CryptographicOperations.FixedTimeEquals(
-                ComputeHash(_activeKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64),
-                supplied);
+            if (isActiveVersion)
+            {
+                return CryptographicOperations.FixedTimeEquals(
+                    ComputeHash(_activeKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64),
+                    supplied);
+            }
 
             if (_legacyKeyBytes == null)
             {
-                return activeMatch;
+                return false;
             }
 
-            var legacyMatch = CryptographicOperations.FixedTimeEquals(
+            return CryptographicOperations.FixedTimeEquals(
                 ComputeHash(_legacyKeyBytes, entityType, entityId, signerUserId, signedAtUtc, signatureBase64),
                 supplied);
-
-            return activeMatch | legacyMatch;
         }
 
         private static byte[] ComputeHash(byte[] key, string entityType, string entityId, string signerUserId, DateTime signedAtUtc, string signatureBase64)

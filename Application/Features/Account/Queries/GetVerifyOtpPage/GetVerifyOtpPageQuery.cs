@@ -4,7 +4,6 @@ using IT_Form.Application.Features.Account;
 using IT_Form.Data;
 using IT_Form.ViewModels;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.Account.Queries.GetVerifyOtpPage;
 
@@ -38,4 +37,5 @@ public sealed class GetVerifyOtpPageQueryHandler : IRequestHandler<GetVerifyOtpP
             Code = request.Code ?? string.Empty,
             Purpose = request.Purpose,
             RemainingCooldownSeconds = 0
-        });}
+        });
+}

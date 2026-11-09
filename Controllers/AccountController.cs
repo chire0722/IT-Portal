@@ -150,13 +150,8 @@ namespace IT_Form.Controllers
                 {
                     var requestIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     var result = await _sender.Send(new ForgotPasswordCommand(model.Username, requestIp));
-                    if (result.OtpSent)
-                    {
-                        return RedirectToAction(nameof(VerifyOtp), new { email = result.Email });
-                    }
-
-                    ModelState.AddModelError(string.Empty, result.Message);
-                    return View(model);
+                    TempData["SuccessMessage"] = result.Message;
+                    return RedirectToAction(nameof(Login));
                 },
                 () => Task.FromResult(model));
         }

@@ -70,6 +70,7 @@ namespace IT_Form.Application.Common.Behaviors
             try
             {
                 var response = await next();
+                var commandSucceeded = IsSuccessfulResponse(response);
 
                 try
                 {
@@ -79,8 +80,8 @@ namespace IT_Form.Application.Common.Behaviors
                         Action = action,
                         Payload = payload,
                         CreatedAt = DateTime.UtcNow,
-                        IsSuccess = true,
-                        ErrorMessage = null,
+                        IsSuccess = commandSucceeded,
+                        ErrorMessage = commandSucceeded ? null : "Command returned an unsuccessful result.",
                         Timestamp = DateTime.UtcNow,
                         EntityName = "Command",
                         EntityId = "-",
@@ -154,6 +155,26 @@ namespace IT_Form.Application.Common.Behaviors
                     }
                 }
             }
+        }
+
+        private static bool IsSuccessfulResponse(TResponse response)
+        {
+            if (response == null)
+            {
+                return true;
+            }
+
+            var responseType = response.GetType();
+            foreach (var propertyName in new[] { "IsSuccess", "IsAuthenticated", "IsVerified" })
+            {
+                var property = responseType.GetProperty(propertyName);
+                if (property?.PropertyType == typeof(bool) && property.GetValue(response) is bool value)
+                {
+                    return value;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

@@ -586,20 +586,32 @@ namespace IT_Form.Services
             {
                 c.Item().Height(40).Background(Colors.White).Container().AlignCenter().AlignMiddle().Element(container =>
                 {
-                    if (!string.IsNullOrEmpty(signatureBase64))
-                    {
-                        // VERIFY INTEGRITY
-                        bool isValid = false;
-                        if (signedAt.HasValue && !string.IsNullOrEmpty(hmac))
-                        {
-                            isValid = _integrityService.Verify(entityType, entityId, signer, signedAt.Value, signatureBase64, hmac);
-                        }
+                    var hasSignatureData =
+                        signedAt.HasValue ||
+                        !string.IsNullOrWhiteSpace(signatureBase64) ||
+                        !string.IsNullOrWhiteSpace(hmac);
 
-                        if (!isValid && !string.IsNullOrEmpty(hmac))
+                    if (hasSignatureData)
+                    {
+                        var isValid = SignatureIntegrityGuard.IsValid(
+                            _integrityService,
+                            entityType,
+                            entityId,
+                            signer,
+                            signedAt,
+                            signatureBase64,
+                            hmac);
+
+                        if (!isValid)
                         {
-                            container.AlignCenter().Text("INVALID SIGNATURE").FontSize(8).Bold().FontColor(Colors.Red.Medium);
+                            container.AlignCenter()
+                                .Text("UNVERIFIED / INVALID SIGNATURE")
+                                .FontSize(7)
+                                .Bold()
+                                .FontColor(Colors.Red.Medium);
                         }
-                        else if (signatureBase64.Contains("base64,"))
+                        else if (!string.IsNullOrWhiteSpace(signatureBase64) &&
+                                 signatureBase64.Contains("base64,", StringComparison.Ordinal))
                         {
                             try
                             {
@@ -607,14 +619,22 @@ namespace IT_Form.Services
                                 var imageBytes = Convert.FromBase64String(base64Data);
                                 container.Image(imageBytes).FitArea();
                             }
-                            catch
+                            catch (FormatException)
                             {
-                                // Empty box on error
+                                container.AlignCenter()
+                                    .Text("INVALID SIGNATURE IMAGE")
+                                    .FontSize(7)
+                                    .Bold()
+                                    .FontColor(Colors.Red.Medium);
                             }
                         }
                         else
                         {
-                            container.Text(signatureBase64).FontSize(8).Italic().FontColor(Colors.Grey.Medium);
+                            container.AlignCenter()
+                                .Text(signatureBase64 ?? "Verified signature")
+                                .FontSize(8)
+                                .Italic()
+                                .FontColor(Colors.Grey.Medium);
                         }
                     }
                 });

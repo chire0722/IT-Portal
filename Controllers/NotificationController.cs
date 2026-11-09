@@ -483,6 +483,13 @@ namespace IT_Form.Controllers
                 return BadRequest("Unsupported email type.");
             }
 
+            var isSignatureAcknowledgement = emailType.StartsWith("SignatureAcknowledgement_", StringComparison.Ordinal);
+            if (isSignatureAcknowledgement &&
+                (!User.HasClaim("UserTitle", "HR") || User.HasClaim("UserTitle", "IT")))
+            {
+                return Forbid();
+            }
+
             byte[]? pdfBytes = null;
             string? attachmentName = null;
 

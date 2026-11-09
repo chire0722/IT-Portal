@@ -5,6 +5,7 @@ using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -41,13 +42,20 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
             if (request.Ids == null || request.Ids.Length == 0)
                 return ProcessResult<BinaryFilePayload>.Failure("No requests selected.", "Index");
 
+            var user = _currentUserAccessor.User;
+            if (!user.HasClaim("UserTitle", "HR"))
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+
+            var requestedIds = request.Ids.Distinct().ToArray();
+            if (requestedIds.Length > 100)
+                return ProcessResult<BinaryFilePayload>.Failure("Select no more than 100 requests per export.", "Index");
+
             var query = _context.OffboardingRequests
                 .AsNoTracking()
                 .AsSplitQuery()
                 .IncludeOffboardingPdfData()
-                .Where(r => request.Ids.Contains(r.Id));
+                .Where(r => requestedIds.Contains(r.Id));
 
-            var user = _currentUserAccessor.User;
             var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
             if (scopedCompanies.Count > 0)
             {
@@ -55,15 +63,19 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
             }
 
             var requests = await query.ToListAsync(cancellationToken);
-            if (!requests.Any())
-                return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
+            if (requests.Count != requestedIds.Length)
+                return ProcessResult<BinaryFilePayload>.Forbidden();
 
             foreach (var item in requests)
             {
-                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.HRSignerName, item.HRSignedAt, item.HRSignature, item.HRSignatureHmac) ||
-                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.HODSignerName, item.HODSignedAt, item.HODSignature, item.HODSignatureHmac) ||
-                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.ITAdminSignerName, item.ITAdminSignedAt, item.ITAdminSignature, item.ITAdminSignatureHmac) ||
-                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.EmployeeSignerName, item.EmployeeSignedAt, item.EmployeeSignature, item.EmployeeSignatureHmac, "Employee"))
+                var requiresHr = item.Status is RequestStatus.PendingApproval or RequestStatus.PendingHODApproval or RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+                var requiresHod = item.Status is RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+                var requiresIt = item.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+                var requiresEmployee = item.Status is RequestStatus.Completed or RequestStatus.Approved;
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.HRSignerName, item.HRSignedAt, item.HRSignature, item.HRSignatureHmac, isRequired: requiresHr) ||
+                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.HODSignerName, item.HODSignedAt, item.HODSignature, item.HODSignatureHmac, isRequired: requiresHod) ||
+                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.ITAdminSignerName, item.ITAdminSignedAt, item.ITAdminSignature, item.ITAdminSignatureHmac, isRequired: requiresIt) ||
+                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.EmployeeSignerName, item.EmployeeSignedAt, item.EmployeeSignature, item.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
                 {
                     return ProcessResult<BinaryFilePayload>.Failure(
                         $"Digital signature integrity validation failed for offboarding request #{item.Id}. The document cannot be exported as trusted.",

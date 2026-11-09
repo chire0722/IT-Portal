@@ -171,20 +171,25 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
         private string? VerifyIntegrity(OffboardingRequest request)
         {
             var entityId = request.Id.ToString();
+            var requiresHr = request.Status is RequestStatus.PendingApproval or RequestStatus.PendingHODApproval or RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresHod = request.Status is RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
+
             if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
-                    request.HRSignerName, request.HRSignedAt, request.HRSignature, request.HRSignatureHmac))
+                    request.HRSignerName, request.HRSignedAt, request.HRSignature, request.HRSignatureHmac, isRequired: requiresHr))
                 return "HR Signature Integrity Violation Detected or legacy signature cannot be trusted.";
 
             if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
-                    request.HODSignerName, request.HODSignedAt, request.HODSignature, request.HODSignatureHmac))
+                    request.HODSignerName, request.HODSignedAt, request.HODSignature, request.HODSignatureHmac, isRequired: requiresHod))
                 return "HOD Signature Integrity Violation Detected or legacy signature cannot be trusted.";
 
             if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
-                    request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac))
+                    request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac, isRequired: requiresIt))
                 return "IT Admin Signature Integrity Violation Detected or legacy signature cannot be trusted.";
 
             if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
-                    request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac, "Employee"))
+                    request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
                 return "Employee Signature Integrity Violation Detected or legacy signature cannot be trusted.";
 
             return null;

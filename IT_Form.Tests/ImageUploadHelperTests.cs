@@ -9,7 +9,7 @@ public sealed class ImageUploadHelperTests
     public void IsValidCompanyLogo_AcceptsPngWithMatchingSignature()
     {
         using var stream = new MemoryStream(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
-        var file = new FormFile(stream, 0, stream.Length, "logo", "company.png") { ContentType = "image/png" };
+        var file = new FormFile(stream, 0, stream.Length, "logo", "company.png") { Headers = new HeaderDictionary(), ContentType = "image/png" };
 
         Assert.True(ImageUploadHelper.IsValidCompanyLogo(file, out _));
     }
@@ -18,7 +18,7 @@ public sealed class ImageUploadHelperTests
     public void IsValidCompanyLogo_RejectsHtmlRenamedAsPng()
     {
         using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("<script>alert(1)</script>"));
-        var file = new FormFile(stream, 0, stream.Length, "logo", "company.png") { ContentType = "image/png" };
+        var file = new FormFile(stream, 0, stream.Length, "logo", "company.png") { Headers = new HeaderDictionary(), ContentType = "image/png" };
 
         Assert.False(ImageUploadHelper.IsValidCompanyLogo(file, out _));
     }
@@ -36,7 +36,7 @@ public sealed class ImageUploadHelperTests
     public void IsValidCompanyLogo_RejectsOversizedImage()
     {
         using var stream = new MemoryStream(new byte[(int)ImageUploadHelper.MaxCompanyLogoBytes + 1]);
-        var file = new FormFile(stream, 0, stream.Length, "logo", "company.png") { ContentType = "image/png" };
+        var file = new FormFile(stream, 0, stream.Length, "logo", "company.png") { Headers = new HeaderDictionary(), ContentType = "image/png" };
 
         Assert.False(ImageUploadHelper.IsValidCompanyLogo(file, out _));
     }

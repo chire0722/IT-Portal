@@ -448,6 +448,11 @@ builder.Services.AddAuthorization(options =>
 });
 
 // --- Rate Limiting (Availability) ---
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 443;
+});
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -466,6 +471,52 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit = 0;
     });
 
+    // Apply endpoint-specific, per-client-IP limits to authentication and recovery flows.
+    options.AddPolicy("auth-login", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.AddPolicy("auth-otp", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 15,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.AddPolicy("auth-recovery", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    // Public bearer-token signature links also need a modest per-IP request ceiling.
+    options.AddPolicy("public-signature", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
@@ -475,14 +526,10 @@ builder.Services.AddRateLimiter(options =>
         }
         else
         {
-            context.HttpContext.Response.ContentType = "text/html";
+            context.HttpContext.Response.ContentType = "text/plain; charset=utf-8";
             await context.HttpContext.Response.WriteAsync(
-                "<!DOCTYPE html><html><head><title>Too Many Requests</title>" +
-                "<link href=\"http://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\" rel=\"stylesheet\">" +
-                "</head><body class=\"bg-light d-flex align-items-center justify-content-center\" style=\"height: 100vh;\">" +
-                "<div class=\"text-center\"><h1 class=\"display-1 fw-bold text-danger\">429</h1><h2 class=\"mb-4\">Too Many Requests</h2>" +
-                "<p class=\"lead\">You have exceeded the allowed number of requests. Please wait a moment and try again.</p>" +
-                "<a href=\"/\" class=\"btn btn-primary mt-3\">Return to Home</a></div></body></html>", cancellationToken: token);
+                "Too many requests. Please wait a moment and try again.",
+                cancellationToken: token);
         }
     };
 });
@@ -542,6 +589,7 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 else
 {
@@ -647,7 +695,8 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating/seeding the database.");
+        logger.LogCritical(ex, "Application startup aborted because database migration or required initialization failed.");
+        throw;
     }
 }
 
@@ -659,32 +708,30 @@ app.Run();
 static CookieSecurePolicy ResolveCookieSecurePolicy(IHostEnvironment environment, IConfiguration configuration)
 {
     var configuredPolicy = configuration["SecuritySettings:CookieSecurePolicy"];
-    if (!string.IsNullOrWhiteSpace(configuredPolicy))
+
+    if (environment.IsDevelopment())
     {
-        if (string.Equals(configuredPolicy, "Never", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(configuredPolicy, "Never", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(configuredPolicy, "None", StringComparison.OrdinalIgnoreCase))
         {
             return CookieSecurePolicy.None;
         }
 
-        if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var parsedPolicy))
+        if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var developmentPolicy))
         {
-            return parsedPolicy;
+            return developmentPolicy;
         }
 
-        throw new InvalidOperationException(
-            "SecuritySettings:CookieSecurePolicy must be one of SameAsRequest, Always, or None.");
-    }
-
-    if (environment.IsDevelopment())
-    {
         return CookieSecurePolicy.SameAsRequest;
     }
 
-    var appDomain = configuration["AppDomain"];
-    return Uri.TryCreate(appDomain, UriKind.Absolute, out var appUri) &&
-        string.Equals(appUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+    if (!string.Equals(configuredPolicy, "Always", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException(
+            "Production requires SecuritySettings:CookieSecurePolicy=Always and HTTPS termination at the trusted edge proxy.");
+    }
+
+    return CookieSecurePolicy.Always;
 }
 
 static string ResolveSqliteConnectionString(string? connectionString, string contentRootPath, string dataDirectory)

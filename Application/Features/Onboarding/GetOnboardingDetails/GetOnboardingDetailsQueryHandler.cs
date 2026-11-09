@@ -5,6 +5,7 @@ using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using IT_Form.ViewModels;
 using Mapster;
@@ -111,30 +112,22 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
         /// </summary>
         private string? VerifyIntegrity(OnboardingRequest request)
         {
-            try
-            {
-                if (request.RequesterSignedAt.HasValue && !string.IsNullOrEmpty(request.RequesterSignatureHmac) &&
-                    !_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.RequesterSignerName ?? "Unknown", request.RequesterSignedAt.Value, request.RequesterSignature ?? string.Empty, request.RequesterSignatureHmac))
-                {
-                    return "Requester (HR) Signature Integrity Violation Detected.";
-                }
+            var entityId = request.Id.ToString();
+            var requiresRequester = request.Status != RequestStatus.Draft && request.Status != RequestStatus.Rejected;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
 
-                if (request.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(request.ITAdminSignatureHmac) &&
-                    !_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt.Value, request.ITAdminSignature ?? string.Empty, request.ITAdminSignatureHmac))
-                {
-                    return "IT Admin Signature Integrity Violation Detected.";
-                }
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                    request.RequesterSignerName, request.RequesterSignedAt, request.RequesterSignature, request.RequesterSignatureHmac, isRequired: requiresRequester))
+                return "Requester (HR) Signature Integrity Violation Detected or legacy signature cannot be trusted.";
 
-                if (request.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(request.EmployeeSignatureHmac) &&
-                    !_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt.Value, request.EmployeeSignature ?? string.Empty, request.EmployeeSignatureHmac))
-                {
-                    return "Employee Signature Integrity Violation Detected.";
-                }
-            }
-            catch
-            {
-                return "Error during signature integrity verification.";
-            }
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                    request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac, isRequired: requiresIt))
+                return "IT Admin Signature Integrity Violation Detected or legacy signature cannot be trusted.";
+
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                    request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
+                return "Employee Signature Integrity Violation Detected or legacy signature cannot be trusted.";
 
             return null;
         }

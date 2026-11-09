@@ -1,6 +1,8 @@
 // Project comment: ForceChangePasswordCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Application.Common.Exceptions;
+using IT_Form.Application.Common.Abstractions;
+using FluentValidation;
 using IT_Form.Application.Common.Validation;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
@@ -29,13 +31,15 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
         ApplicationDbContext context,
         IEmailBackgroundQueue emailBackgroundQueue,
         IMemoryCache cache,
-        ILogger<ForceChangePasswordCommandHandler> logger)
+        ILogger<ForceChangePasswordCommandHandler> logger,
+        ICurrentUserAccessor currentUserAccessor)
     {
         _userManager = userManager;
         _context = context;
         _emailBackgroundQueue = emailBackgroundQueue;
         _cache = cache;
         _logger = logger;
+        _currentUserAccessor = currentUserAccessor;
     }
 
     /// <summary>
@@ -43,15 +47,35 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
     /// </summary>
     public async Task<Unit> Handle(ForceChangePasswordCommand request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId);
+        var currentUserId = _userManager.GetUserId(_currentUserAccessor.User);
+        if (string.IsNullOrWhiteSpace(currentUserId) ||
+            !string.Equals(currentUserId, request.UserId, StringComparison.Ordinal))
+        {
+            throw new UnauthorizedAccessException("You can only change your own password.");
+        }
+
+        var user = await _userManager.FindByIdAsync(currentUserId);
         if (user == null)
         {
-            throw new NotFoundException(nameof(ApplicationUser), request.UserId);
+            throw new NotFoundException(nameof(ApplicationUser), currentUserId);
+        }
+
+        if (!user.IsActive)
+        {
+            throw new UnauthorizedAccessException("Inactive accounts cannot change passwords.");
+        }
+
+        if (!user.MustChangePassword && !string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            throw new ValidationException("This forced password-change flow is not available for this account. Use the profile password-change process.");
         }
 
         var result = string.IsNullOrWhiteSpace(user.PasswordHash)
             ? await _userManager.AddPasswordAsync(user, request.NewPassword)
-            : await _userManager.ChangePasswordAsync(user, request.CurrentPassword ?? string.Empty, request.NewPassword);
+            : await _userManager.ResetPasswordAsync(
+                user,
+                await _userManager.GeneratePasswordResetTokenAsync(user),
+                request.NewPassword);
         result.EnsureSucceeded();
 
         user.MustChangePassword = false;

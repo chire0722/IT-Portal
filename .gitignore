@@ -4,6 +4,10 @@
 .dotnet/
 .dotnet_home/
 
+# Local build and agent verification output
+.codexbuild/
+.build-verify/
+
 .build-obj/
 .build-out/
 .test-out/

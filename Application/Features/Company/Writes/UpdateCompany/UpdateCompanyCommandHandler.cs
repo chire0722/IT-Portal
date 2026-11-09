@@ -2,6 +2,8 @@
 
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Data;
+using IT_Form.Helpers;
+using FluentValidation;
 using IT_Form.Services;
 using Mapster;
 using MediatR;
@@ -34,6 +36,12 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
     /// </summary>
     public async Task<int> Handle(UpdateCompanyCommand request, CancellationToken cancellationToken)
     {
+        if (request.Logo != null && request.Logo.Length > 0 &&
+            !ImageUploadHelper.IsValidCompanyLogo(request.Logo, out var logoError))
+        {
+            throw new ValidationException(logoError);
+        }
+
         var entity = await _context.Companies
             .FirstOrDefaultAsync(company => company.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(CompanyEntity), request.Id);
@@ -59,6 +67,7 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
         };
 
         request.Adapt(entity);
+        string? previousLogoPath = null;
 
         if (request.Logo != null && request.Logo.Length > 0)
         {
@@ -71,17 +80,10 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
                 Directory.CreateDirectory(directoryPath);
             }
 
-            if (!string.IsNullOrEmpty(originalCompany.LogoPath))
-            {
-                var oldPath = Path.Combine(_hostEnvironment.WebRootPath, originalCompany.LogoPath.TrimStart('/'));
-                if (File.Exists(oldPath))
-                {
-                    File.Delete(oldPath);
-                }
-            }
+            previousLogoPath = originalCompany.LogoPath;
 
             var fullPath = Path.Combine(directoryPath, fileName);
-            await using var fileStream = new FileStream(fullPath, FileMode.Create);
+            await using var fileStream = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             await request.Logo.CopyToAsync(fileStream, cancellationToken);
 
             entity.LogoPath = Path.Combine("uploads", "companies", "logos", fileName).Replace("\\", "/");
@@ -101,6 +103,21 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
 
         var syncedCount = await _companyReferenceSyncService.ApplyUpdatedCompanySyncAsync(originalCompany, entity);
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(previousLogoPath))
+        {
+            var previousFileName = Path.GetFileName(previousLogoPath);
+            var previousPhysicalPath = Path.Combine(
+                _hostEnvironment.WebRootPath,
+                "uploads",
+                "companies",
+                "logos",
+                previousFileName);
+            if (File.Exists(previousPhysicalPath))
+            {
+                File.Delete(previousPhysicalPath);
+            }
+        }
 
         return syncedCount;
     }

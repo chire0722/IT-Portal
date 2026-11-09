@@ -21,13 +21,15 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
         private readonly IPdfService _pdfService;
+        private readonly ISignatureIntegrityService _integrityService;
         private readonly ILogger<ExportBulkOffboardingPdfCommandHandler> _logger;
 
-        public ExportBulkOffboardingPdfCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IPdfService pdfService, ILogger<ExportBulkOffboardingPdfCommandHandler> logger)
+        public ExportBulkOffboardingPdfCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IPdfService pdfService, ISignatureIntegrityService integrityService, ILogger<ExportBulkOffboardingPdfCommandHandler> logger)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
             _pdfService = pdfService;
+            _integrityService = integrityService;
             _logger = logger;
         }
 
@@ -55,6 +57,20 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
             var requests = await query.ToListAsync(cancellationToken);
             if (!requests.Any())
                 return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
+
+            foreach (var item in requests)
+            {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.HRSignerName, item.HRSignedAt, item.HRSignature, item.HRSignatureHmac) ||
+                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.HODSignerName, item.HODSignedAt, item.HODSignature, item.HODSignatureHmac) ||
+                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.ITAdminSignerName, item.ITAdminSignedAt, item.ITAdminSignature, item.ITAdminSignatureHmac) ||
+                    !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", item.Id.ToString(), item.EmployeeSignerName, item.EmployeeSignedAt, item.EmployeeSignature, item.EmployeeSignatureHmac, "Employee"))
+                {
+                    return ProcessResult<BinaryFilePayload>.Failure(
+                        $"Digital signature integrity validation failed for offboarding request #{item.Id}. The document cannot be exported as trusted.",
+                        "Details",
+                        item.Id);
+                }
+            }
 
             using var memoryStream = new MemoryStream();
             using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))

@@ -41,16 +41,20 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
     /// </summary>
     public async Task<ResendOtpResult> Handle(ResendOtpCommand request, CancellationToken cancellationToken)
     {
+        var normalizedIdentifier = request.Email.Trim().ToUpperInvariant();
         var user = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+            .FirstOrDefaultAsync(u =>
+                u.NormalizedEmail == normalizedIdentifier ||
+                u.NormalizedUserName == normalizedIdentifier,
+                cancellationToken);
 
         if (user == null || !user.IsActive || string.IsNullOrWhiteSpace(user.Email))
         {
             return new ResendOtpResult(
                 request.Email,
                 false,
-                "Unable to resend a verification code for this account.");
+                ResendOtpResult.GenericResponseMessage);
         }
 
         return await _keyedLockProvider.ExecuteAsync(
@@ -72,7 +76,7 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
                         "OTP resend throttled for user {UserId} from IP {ClientIp}.",
                         user.Id,
                         request.ClientIp);
-                    throw AccountOtpSupport.CreateValidationException("\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf7 1 \u5206\u949f\u540e\u518d\u8bd5");
+                    return new ResendOtpResult(request.Email, false, ResendOtpResult.GenericResponseMessage);
                 }
 
                     await _context.OtpRecords
@@ -98,12 +102,12 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
                     AccountOtpSupport.BuildOtpEmailBody(code)), ct);
                 await _context.SaveChangesAsync(ct);
 
-                _logger.LogInformation("Queued OTP resend email for {Email}.", user.Email);
+                _logger.LogInformation("Queued OTP resend email for user {UserId}.", user.Id);
 
                 return new ResendOtpResult(
-                    user.Email,
+                    request.Email,
                     true,
-                    "A new verification code has been sent to your email.");
+                    ResendOtpResult.GenericResponseMessage);
             },
             cancellationToken);
     }

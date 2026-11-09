@@ -11,5 +11,9 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
         string Message,
         string? Token = null,
         bool IsLoginVerified = false,
-        bool RequiresPasswordSetup = false);
+        bool RequiresPasswordSetup = false,
+        string? Email = null)
+    {
+        public const string GenericFailureMessage = "The verification code is invalid or expired. Request a new code and try again.";
+    }
 }

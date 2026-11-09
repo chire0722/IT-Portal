@@ -58,6 +58,15 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
             }
 
+            var invalidRequest = requests.FirstOrDefault(request => VerifyIntegrity(request) != null);
+            if (invalidRequest != null)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    $"Digital signature integrity validation failed for onboarding request #{invalidRequest.Id}. The document cannot be exported as trusted.",
+                    "Details",
+                    invalidRequest.Id);
+            }
+
             using var memoryStream = new MemoryStream();
             using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
             {
@@ -115,28 +124,10 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Forbidden();
             }
 
-            if (request.RequesterSignedAt.HasValue && !string.IsNullOrEmpty(request.RequesterSignatureHmac))
+            var integrityError = VerifyIntegrity(request);
+            if (integrityError != null)
             {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.RequesterSignerName ?? "Unknown", request.RequesterSignedAt.Value, request.RequesterSignature ?? "", request.RequesterSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Requester). The document may have been tampered with.", "Details", id);
-                }
-            }
-
-            if (request.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(request.ITAdminSignatureHmac))
-            {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt.Value, request.ITAdminSignature ?? "", request.ITAdminSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (IT Admin). The document may have been tampered with.", "Details", id);
-                }
-            }
-
-            if (request.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(request.EmployeeSignatureHmac))
-            {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt.Value, request.EmployeeSignature ?? "", request.EmployeeSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Employee). The document may have been tampered with.", "Details", id);
-                }
+                return ProcessResult<BinaryFilePayload>.Failure(integrityError, "Details", id);
             }
 
             try
@@ -152,6 +143,28 @@ namespace IT_Form.Services
                 _logger.LogError(ex, "Failed to generate PDF for request #{Id}", id);
                 return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", id);
             }
+        }
+
+        private string? VerifyIntegrity(IT_Form.Models.OnboardingRequest request)
+        {
+            var entityId = request.Id.ToString();
+            var requiresRequester = request.Status != RequestStatus.Draft && request.Status != RequestStatus.Rejected;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
+
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                    request.RequesterSignerName, request.RequesterSignedAt, request.RequesterSignature, request.RequesterSignatureHmac, isRequired: requiresRequester))
+                return "Requester (HR) signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.";
+
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                    request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac, isRequired: requiresIt))
+                return "IT Admin signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.";
+
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                    request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
+                return "Employee signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.";
+
+            return null;
         }
     }
 }

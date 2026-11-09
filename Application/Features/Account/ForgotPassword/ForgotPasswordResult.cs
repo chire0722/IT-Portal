@@ -8,5 +8,9 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
     public sealed record ForgotPasswordResult(
         bool OtpSent,
         string Message,
-        string? Email = null);
+        string? Email = null)
+    {
+        public const string GenericResponseMessage =
+            "If an eligible account exists, a verification code will be sent to the registered email address.";
+    }
 }

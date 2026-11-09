@@ -20,6 +20,7 @@ using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace IT_Form.Controllers
 {
@@ -53,6 +54,7 @@ namespace IT_Form.Controllers
         // POST: /Account/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-login")]
         /// <summary>
         /// Runs the Login operation.
         /// </summary>
@@ -132,6 +134,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         /// <summary>
         /// Runs the ForgotPassword operation.
         /// </summary>
@@ -178,6 +181,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-otp")]
         /// <summary>
         /// Runs the VerifyOtp operation.
         /// </summary>
@@ -201,7 +205,7 @@ namespace IT_Form.Controllers
                                 : RedirectToAction("Index", "Home");
                         }
 
-                        return RedirectToAction(nameof(ResetPassword), new { email = model.Email, token = result.Token });
+                        return RedirectToAction(nameof(ResetPassword), new { email = result.Email ?? model.Email, token = result.Token });
                     }
 
                     if (result.ShouldRedirectToLogin)
@@ -235,6 +239,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         /// <summary>
         /// Runs the ResetPassword operation.
         /// </summary>
@@ -274,6 +279,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         /// <summary>
         /// Runs the ResendOtp operation.
         /// </summary>
@@ -290,7 +296,9 @@ namespace IT_Form.Controllers
                     var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     var purpose = Request.Form["purpose"].FirstOrDefault() ?? OtpPurposes.PasswordReset;
                     var result = await _sender.Send(new ResendOtpCommand(email, clientIp, purpose));
-                    TempData[result.IsQueued ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+                    // Keep the browser response identical whether an account exists,
+                    // is inactive, or is still inside the resend cooldown.
+                    TempData["SuccessMessage"] = result.Message;
                     return RedirectToAction(nameof(VerifyOtp), new { email = result.Email, purpose });
                 },
                 nameof(VerifyOtp),
@@ -365,6 +373,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-recovery")]
         public async Task<IActionResult> BeginProfilePasswordChange(ProfilePasswordChangeInputModel model)
             => await ExecuteWithValidationRedirect(
                 async () =>
@@ -404,6 +413,7 @@ namespace IT_Form.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth-otp")]
         public async Task<IActionResult> ConfirmProfilePasswordChange(ConfirmProfilePasswordChangeInputModel model)
         {
             return await ExecuteWithValidationView(

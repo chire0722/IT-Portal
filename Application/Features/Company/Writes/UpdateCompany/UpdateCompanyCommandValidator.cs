@@ -13,10 +13,6 @@ namespace IT_Form.Application.Features.Company.Writes.UpdateCompany;
 /// </summary>
 public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateCompanyCommand>
 {
-    private static readonly string[] AllowedLogoExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
-    private static readonly string[] AllowedLogoContentTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
-    private const long MaxLogoBytes = 1 * 1024 * 1024;
-
     private readonly ApplicationDbContext _context;
 
     public UpdateCompanyCommandValidator(ApplicationDbContext context)
@@ -50,12 +46,8 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
             .CustomAsync(ValidateLoginPageLogoAsync);
 
         RuleFor(x => x.Logo)
-            .Must(file => file == null || file.Length <= MaxLogoBytes)
-            .WithMessage("Logo must be under 1 MB.");
-
-        RuleFor(x => x.Logo)
-            .Must(BeAllowedLogoFile)
-            .WithMessage("Only PNG, JPG, GIF, and WebP logo images are allowed.");
+            .Must(file => file == null || file.Length == 0 || ImageUploadHelper.IsValidCompanyLogo(file, out _))
+            .WithMessage("Logo must be a valid PNG, JPG, GIF, or WebP image under 1 MB.");
     }
 
     /// <summary>
@@ -108,19 +100,4 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
            command.WorksOnSaturday ||
            command.WorksOnSunday;
 
-    /// <summary>
-    /// Runs the BeAllowedLogoFile operation.
-    /// </summary>
-    private static bool BeAllowedLogoFile(IFormFile? file)
-    {
-        if (file == null || file.Length == 0)
-        {
-            return true;
-        }
-
-        var extension = (Path.GetExtension(file.FileName ?? string.Empty) ?? string.Empty).ToLowerInvariant();
-        var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
-        return AllowedLogoExtensions.Contains(extension) &&
-               AllowedLogoContentTypes.Contains(contentType);
-    }
 }

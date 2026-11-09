@@ -45,12 +45,6 @@ namespace IT_Form.Controllers
             }
 
             var storedPath = SensitiveFileStorage.BuildStoredPath(category, fileName);
-            var physicalPath = SensitiveFileStorage.ResolvePhysicalPath(_environment, storedPath);
-
-            if (string.IsNullOrWhiteSpace(physicalPath) || !System.IO.File.Exists(physicalPath))
-            {
-                return NotFound();
-            }
 
             var canAccess = category switch
             {
@@ -64,12 +58,27 @@ namespace IT_Form.Controllers
                 return Forbid();
             }
 
+            var physicalPath = SensitiveFileStorage.ResolvePhysicalPath(_environment, storedPath);
+            if (string.IsNullOrWhiteSpace(physicalPath) || !System.IO.File.Exists(physicalPath))
+            {
+                return NotFound();
+            }
+
+            Response.Headers["Cache-Control"] = "private, no-store, no-cache, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+
             if (!ContentTypeProvider.TryGetContentType(fileName, out var contentType))
             {
                 contentType = "application/octet-stream";
             }
 
-            return PhysicalFile(physicalPath, contentType);
+            if (string.Equals(contentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                // Sensitive PDFs are downloaded as attachments instead of being rendered inline.
+                return PhysicalFile(physicalPath, contentType, Path.GetFileName(fileName), enableRangeProcessing: true);
+            }
+
+            return PhysicalFile(physicalPath, contentType, enableRangeProcessing: true);
         }
 
         /// <summary>

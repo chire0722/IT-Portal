@@ -75,17 +75,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (string.IsNullOrEmpty(extension) || !DamageExtensions.Contains(extension))
+            if (!DamageExtensions.Contains(extension) || !HasValidFileSignature(file, extension))
             {
-                return "Invalid file type. Allowed: PDF, images (.jpg, .jpeg, .png), and videos (.mp4, .mov, .webm).";
-            }
-
-            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
-            if (!contentType.StartsWith("image/") &&
-                !contentType.StartsWith("video/") &&
-                contentType != "application/pdf")
-            {
-                return "Invalid file content. Only image, video, or PDF files are allowed for hardware proof.";
+                return "Hardware proof content does not match a supported PDF, image, or video format.";
             }
 
             return null;
@@ -107,14 +99,44 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
-            if (!ReturnExtensions.Contains(extension) ||
-                (!contentType.StartsWith("image/") && contentType != "application/pdf"))
+            if (!ReturnExtensions.Contains(extension) || !HasValidFileSignature(file, extension))
             {
-                return "Invalid return file type. Only PDF and images (.jpg, .jpeg, .png) are allowed.";
+                return "Hardware return content does not match a supported PDF or image format.";
             }
 
             return null;
+        }
+
+        private static bool HasValidFileSignature(IFormFile file, string extension)
+        {
+            var contentType = file.ContentType?.Trim().ToLowerInvariant() ?? string.Empty;
+            Span<byte> header = stackalloc byte[12];
+            using var stream = file.OpenReadStream();
+            var bytesRead = stream.Read(header);
+
+            return extension switch
+            {
+                ".pdf" => contentType == "application/pdf" &&
+                          bytesRead >= 5 &&
+                          header[..5].SequenceEqual("%PDF-"u8),
+                ".jpg" or ".jpeg" => contentType == "image/jpeg" &&
+                                     bytesRead >= 3 &&
+                                     header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF,
+                ".png" => contentType == "image/png" &&
+                          bytesRead >= 8 &&
+                          header[..8].SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
+                ".mp4" => contentType == "video/mp4" &&
+                          bytesRead >= 12 &&
+                          header[4..8].SequenceEqual("ftyp"u8),
+                ".mov" => contentType == "video/quicktime" &&
+                          bytesRead >= 12 &&
+                          header[4..8].SequenceEqual("ftyp"u8) &&
+                          header[8..12].SequenceEqual("qt  "u8),
+                ".webm" => contentType == "video/webm" &&
+                           bytesRead >= 4 &&
+                           header[..4].SequenceEqual(new byte[] { 0x1A, 0x45, 0xDF, 0xA3 }),
+                _ => false
+            };
         }
 
         /// <summary>
@@ -134,7 +156,6 @@ namespace IT_Form.Application.Features.Offboarding.Step1
 
             var extension = Path.GetExtension(hardwareDamageImage.FileName).ToLowerInvariant();
             var fileName = $"Offboarding_Damage_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareDamageImagePath);
             existing.HardwareDamageImagePath = await SensitiveFileStorage.SaveAsync(
                 hardwareDamageImage,
                 env,
@@ -167,7 +188,6 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
 
             var fileName = $"Offboarding_Return_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareReturnImagePath);
             existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveAsync(
                 hardwareReturnImage,
                 env,

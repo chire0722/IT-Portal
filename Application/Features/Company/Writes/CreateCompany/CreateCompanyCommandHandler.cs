@@ -1,6 +1,8 @@
 // Project comment: CreateCompanyCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Helpers;
+using FluentValidation;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Services;
@@ -39,6 +41,12 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
     /// </summary>
     public async Task<int> Handle(CreateCompanyCommand request, CancellationToken cancellationToken)
     {
+        if (request.Logo != null && request.Logo.Length > 0 &&
+            !ImageUploadHelper.IsValidCompanyLogo(request.Logo, out var logoError))
+        {
+            throw new ValidationException(logoError);
+        }
+
         await _quotaControl.EnsureAvailableAsync(QuotaControl.Companies, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
 
         if (request.IsLoginPageLogo)
@@ -71,7 +79,7 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
             }
 
             var fullPath = Path.Combine(directoryPath, fileName);
-            await using var fileStream = new FileStream(fullPath, FileMode.Create);
+            await using var fileStream = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             await request.Logo.CopyToAsync(fileStream, cancellationToken);
 
             entity.LogoPath = relativePath;

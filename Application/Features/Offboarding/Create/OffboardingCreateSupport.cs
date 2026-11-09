@@ -85,6 +85,29 @@ namespace IT_Form.Application.Features.Offboarding.Create
                 return "Invalid file content. Real image or PDF files only.";
             }
 
+            Span<byte> header = stackalloc byte[8];
+            using (var stream = resignationLetter.OpenReadStream())
+            {
+                var bytesRead = stream.Read(header);
+                var isPdf = extension == ".pdf" &&
+                    contentType == "application/pdf" &&
+                    bytesRead >= 5 &&
+                    header[..5].SequenceEqual("%PDF-"u8);
+                var isJpeg = (extension == ".jpg" || extension == ".jpeg") &&
+                    contentType == "image/jpeg" &&
+                    bytesRead >= 3 &&
+                    header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
+                var isPng = extension == ".png" &&
+                    contentType == "image/png" &&
+                    bytesRead >= 8 &&
+                    header.SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
+
+                if (!isPdf && !isJpeg && !isPng)
+                {
+                    return "Uploaded file content does not match a supported PDF or image format.";
+                }
+            }
+
             return null;
         }
 

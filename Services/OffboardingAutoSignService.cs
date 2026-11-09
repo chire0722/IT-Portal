@@ -20,12 +20,14 @@ namespace IT_Form.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<OffboardingAutoSignService> _logger;
+        private readonly ISignatureIntegrityService _integrityService;
         private readonly TimeSpan _checkInterval = TimeSpan.FromHours(6); // Check every 6 hours
 
-        public OffboardingAutoSignService(IServiceScopeFactory scopeFactory, ILogger<OffboardingAutoSignService> logger)
+        public OffboardingAutoSignService(IServiceScopeFactory scopeFactory, ILogger<OffboardingAutoSignService> logger, ISignatureIntegrityService integrityService)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
+            _integrityService = integrityService;
         }
 
         /// <summary>
@@ -88,8 +90,18 @@ namespace IT_Form.Services
 
                     foreach (var request in pendingRequests)
                     {
-                        request.HODSignature = "Auto-Signed by System";
-                        request.HODSignedAt = DateTime.UtcNow;
+                        var autoSignature = "Auto-Signed by System";
+                        var autoSignedAt = DateTime.UtcNow;
+                        const string autoSignerName = "System (Auto-sign)";
+                        request.HODSignature = autoSignature;
+                        request.HODSignerName = autoSignerName;
+                        request.HODSignedAt = autoSignedAt;
+                        request.HODSignatureHmac = _integrityService.ComputeHmac(
+                            "OffboardingRequest",
+                            request.Id.ToString(),
+                            autoSignerName,
+                            autoSignedAt,
+                            autoSignature);
 
                         // Check if IT has already signed (unlikely but possible)
                         if (!string.IsNullOrEmpty(request.ITAdminSignature) && !string.IsNullOrEmpty(request.HRSignature))

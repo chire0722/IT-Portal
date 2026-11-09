@@ -699,7 +699,8 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating/seeding the database.");
+        logger.LogCritical(ex, "Application startup aborted because database migration or required initialization failed.");
+        throw;
     }
 }
 

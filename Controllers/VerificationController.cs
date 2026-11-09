@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using System.IO;
 using System.IO.Compression;
 using IT_Form.Helpers;
@@ -27,12 +28,14 @@ namespace IT_Form.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("public-verification")]
         [HttpGet("/verify/{token}")]
         /// <summary>
         /// Runs the Index operation.
         /// </summary>
         public async Task<IActionResult> Index(string token)
         {
+            SetPrivateNoStoreHeaders();
             if (string.IsNullOrWhiteSpace(token))
             {
                 return BadRequest("Invalid token.");
@@ -117,12 +120,15 @@ namespace IT_Form.Controllers
             });
         }
 
+        [AllowAnonymous]
+        [EnableRateLimiting("public-verification")]
         [HttpGet("/api/inventory/status/{token}")]
         /// <summary>
         /// Gets the data required by the GetStatus operation.
         /// </summary>
         public async Task<IActionResult> GetStatus(string token)
         {
+            SetPrivateNoStoreHeaders();
             var dbToken = await _context.DeviceVerificationTokens.FirstOrDefaultAsync(t => t.Token == token);
             if (dbToken == null)
             {
@@ -153,12 +159,14 @@ namespace IT_Form.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("public-verification")]
         [HttpGet("/api/inventory/download/{token}")]
         /// <summary>
         /// Runs the DownloadTool operation.
         /// </summary>
         public async Task<IActionResult> DownloadTool(string token)
         {
+            SetPrivateNoStoreHeaders();
             var dbToken = await _context.DeviceVerificationTokens.FirstOrDefaultAsync(t => t.Token == token);
             if (dbToken == null || dbToken.IsVerified)
             {
@@ -268,6 +276,14 @@ namespace IT_Form.Controllers
         /// <summary>
         /// Runs the IsExpired operation.
         /// </summary>
+        private void SetPrivateNoStoreHeaders()
+        {
+            Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            Response.Headers.Pragma = "no-cache";
+            Response.Headers.Expires = "0";
+            Response.Headers.ReferrerPolicy = "no-referrer";
+        }
+
         private bool IsExpired(DeviceVerificationToken token)
             => HasExpiringEmployeeContext(token) &&
                token.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()) <= DateTime.UtcNow;

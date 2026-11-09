@@ -86,6 +86,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 return await OffboardingStep1Support.FailureAsync(_context, returnValidation, command.Request, cancellationToken);
             }
 
+            var previousDamagePath = existing.HardwareDamageImagePath;
+            var previousReturnPath = existing.HardwareReturnImagePath;
+
             await OffboardingStep1Support.SaveDamageFileAsync(_env, existing, command.Id, command.HardwareDamageImage, cancellationToken);
             await OffboardingStep1Support.SaveReturnFileAsync(_env, existing, command.Id, command.HardwareReturnImage, cancellationToken);
 
@@ -94,6 +97,16 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             await OffboardingStep1Support.MarkReturnedAssetsAsync(_context, command.ReturnedAssetIds, cancellationToken);
 
             await _context.SaveChangesAsync(cancellationToken);
+
+            if (!string.Equals(previousDamagePath, existing.HardwareDamageImagePath, StringComparison.Ordinal))
+            {
+                SensitiveFileStorage.DeleteStoredFile(_env, previousDamagePath);
+            }
+
+            if (!string.Equals(previousReturnPath, existing.HardwareReturnImagePath, StringComparison.Ordinal))
+            {
+                SensitiveFileStorage.DeleteStoredFile(_env, previousReturnPath);
+            }
 
             if (string.Equals(command.SaveAction, "draft", StringComparison.OrdinalIgnoreCase))
             {

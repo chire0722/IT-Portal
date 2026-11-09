@@ -44,21 +44,34 @@ namespace IT_Form.Helpers
                 return false;
             }
 
-            string contentType;
-            try
+            var contentType = file.ContentType ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(contentType) &&
+                !AllowedMimeTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase) &&
+                !string.Equals(contentType, "application/octet-stream", StringComparison.OrdinalIgnoreCase))
             {
-                contentType = file.ContentType ?? string.Empty;
-            }
-            catch (NullReferenceException)
-            {
-                contentType = string.Empty;
+                errorMessage = "The uploaded file content type is not supported.";
+                return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(contentType) && !AllowedMimeTypes.Contains(contentType))
+            // Check the file signature instead of trusting the user-supplied extension/MIME type.
+            // XLSX is a ZIP-based Open XML package; legacy XLS uses the OLE Compound File signature.
+            Span<byte> header = stackalloc byte[8];
+            using (var stream = file.OpenReadStream())
             {
-                // Some browsers might send different MIME types for Excel files, 
-                // so we prioritize the extension but keep a basic check.
-                return true;
+                var bytesRead = stream.Read(header);
+                var isXlsx = extension == ".xlsx" &&
+                    bytesRead >= 4 &&
+                    header[0] == 0x50 && header[1] == 0x4B &&
+                    header[2] == 0x03 && header[3] == 0x04;
+                var isXls = extension == ".xls" &&
+                    bytesRead == 8 &&
+                    header.SequenceEqual(new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 });
+
+                if (!isXlsx && !isXls)
+                {
+                    errorMessage = "The file content does not match a supported Excel file format.";
+                    return false;
+                }
             }
 
             return true;

@@ -47,21 +47,21 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
             {
                 return new ForgotPasswordResult(
                     false,
-                    ForgotPasswordResult.GenericResponseMessage);
+                    "Invalid username or email address.");
             }
 
             if (!user.IsActive)
             {
                 return new ForgotPasswordResult(
                     false,
-                    ForgotPasswordResult.GenericResponseMessage);
+                    "Your account is inactive. Please contact IT.");
             }
 
             if (string.IsNullOrWhiteSpace(user.Email))
             {
                 return new ForgotPasswordResult(
                     false,
-                    ForgotPasswordResult.GenericResponseMessage);
+                    "This account does not have a registered email address. Please contact IT.");
             }
 
             return await _keyedLockProvider.ExecuteAsync(
@@ -83,7 +83,7 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
                             "OTP request throttled for user {UserId} from IP {ClientIp}.",
                             user.Id,
                             request.ClientIp);
-                        return new ForgotPasswordResult(false, ForgotPasswordResult.GenericResponseMessage);
+                        throw AccountOtpSupport.CreateValidationException("\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf7 1 \u5206\u949f\u540e\u518d\u8bd5");
                     }
 
                     await _context.OtpRecords
@@ -113,7 +113,8 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
 
                     return new ForgotPasswordResult(
                         true,
-                        ForgotPasswordResult.GenericResponseMessage);
+                        "OTP sent successfully.",
+                        user.Email);
                 },
                 cancellationToken);
         }

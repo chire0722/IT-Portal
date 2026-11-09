@@ -40,28 +40,35 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
         /// </summary>
         public async Task<ForgotPasswordResult> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
         {
+            var normalizedIdentifier = request.Username.Trim().ToUpperInvariant();
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.UserName == request.Username || u.Email == request.Username, cancellationToken);
+                .FirstOrDefaultAsync(u =>
+                    u.NormalizedUserName == normalizedIdentifier ||
+                    u.NormalizedEmail == normalizedIdentifier,
+                    cancellationToken);
 
             if (user == null)
             {
                 return new ForgotPasswordResult(
-                    false,
-                    "Invalid username or email address.");
+                    true,
+                    ForgotPasswordResult.GenericResponseMessage,
+                    request.Username);
             }
 
             if (!user.IsActive)
             {
                 return new ForgotPasswordResult(
-                    false,
-                    "Your account is inactive. Please contact IT.");
+                    true,
+                    ForgotPasswordResult.GenericResponseMessage,
+                    request.Username);
             }
 
             if (string.IsNullOrWhiteSpace(user.Email))
             {
                 return new ForgotPasswordResult(
-                    false,
-                    "This account does not have a registered email address. Please contact IT.");
+                    true,
+                    ForgotPasswordResult.GenericResponseMessage,
+                    request.Username);
             }
 
             return await _keyedLockProvider.ExecuteAsync(
@@ -83,7 +90,10 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
                             "OTP request throttled for user {UserId} from IP {ClientIp}.",
                             user.Id,
                             request.ClientIp);
-                        throw AccountOtpSupport.CreateValidationException("\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf7 1 \u5206\u949f\u540e\u518d\u8bd5");
+                        return new ForgotPasswordResult(
+                            true,
+                            ForgotPasswordResult.GenericResponseMessage,
+                            request.Username);
                     }
 
                     await _context.OtpRecords
@@ -113,8 +123,8 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
 
                     return new ForgotPasswordResult(
                         true,
-                        "OTP sent successfully.",
-                        user.Email);
+                        ForgotPasswordResult.GenericResponseMessage,
+                        request.Username);
                 },
                 cancellationToken);
         }

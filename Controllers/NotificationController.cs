@@ -457,7 +457,7 @@ namespace IT_Form.Controllers
                 if (model.HasAttachment && emailType == "SignatureAcknowledgement_Onboarding")
                 {
                     pdfBytes = _pdfService.GeneratePdf(request);
-                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\\p{L}\\p{N}._-]+", "_").Trim('.', '_', '-');
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
                     if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                     attachmentName = $"Onboarding_Acknowledgement_{safeName}.pdf";
                 }
@@ -478,7 +478,7 @@ namespace IT_Form.Controllers
                 if (model.HasAttachment && emailType == "SignatureAcknowledgement_Offboarding")
                 {
                     pdfBytes = _pdfService.GenerateOffboardingPdf(request);
-                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\\p{L}\\p{N}._-]+", "_").Trim('.', '_', '-');
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
                     if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                     attachmentName = $"Offboarding_Acknowledgement_{safeName}.pdf";
                 }

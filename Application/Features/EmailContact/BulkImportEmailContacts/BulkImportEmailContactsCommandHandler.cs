@@ -2,6 +2,7 @@
 
 using ClosedXML.Excel;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,10 +14,14 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
     public sealed class BulkImportEmailContactsCommandHandler : IRequestHandler<BulkImportEmailContactsCommand, BulkImportEmailContactsResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<BulkImportEmailContactsCommandHandler>? _logger;
 
-        public BulkImportEmailContactsCommandHandler(ApplicationDbContext context)
+        public BulkImportEmailContactsCommandHandler(
+            ApplicationDbContext context,
+            ILogger<BulkImportEmailContactsCommandHandler>? logger = null)
         {
             _context = context;
+            _logger = logger;
         }
 
         /// <summary>
@@ -24,9 +29,9 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
         /// </summary>
         public async Task<BulkImportEmailContactsResult> Handle(BulkImportEmailContactsCommand request, CancellationToken cancellationToken)
         {
-            if (request.File == null || request.File.Length == 0)
+            if (!FileUploadHelper.IsValidExcelFile(request.File, out var validationError))
             {
-                return new BulkImportEmailContactsResult(false, null, null, "Please select a valid Excel file.");
+                return new BulkImportEmailContactsResult(false, null, null, validationError);
             }
 
             try
@@ -91,7 +96,8 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
             }
             catch (Exception ex)
             {
-                return new BulkImportEmailContactsResult(false, null, null, "Error processing file: " + ex.Message);
+                _logger?.LogError(ex, "Failed to import email contacts from uploaded workbook.");
+                return new BulkImportEmailContactsResult(false, null, null, "The uploaded workbook could not be processed.");
             }
         }
     }

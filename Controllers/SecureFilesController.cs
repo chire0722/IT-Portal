@@ -45,12 +45,6 @@ namespace IT_Form.Controllers
             }
 
             var storedPath = SensitiveFileStorage.BuildStoredPath(category, fileName);
-            var physicalPath = SensitiveFileStorage.ResolvePhysicalPath(_environment, storedPath);
-
-            if (string.IsNullOrWhiteSpace(physicalPath) || !System.IO.File.Exists(physicalPath))
-            {
-                return NotFound();
-            }
 
             var canAccess = category switch
             {
@@ -63,6 +57,15 @@ namespace IT_Form.Controllers
             {
                 return Forbid();
             }
+
+            var physicalPath = SensitiveFileStorage.ResolvePhysicalPath(_environment, storedPath);
+            if (string.IsNullOrWhiteSpace(physicalPath) || !System.IO.File.Exists(physicalPath))
+            {
+                return NotFound();
+            }
+
+            Response.Headers.CacheControl = "private, no-store, no-cache, must-revalidate";
+            Response.Headers.Pragma = "no-cache";
 
             if (!ContentTypeProvider.TryGetContentType(fileName, out var contentType))
             {

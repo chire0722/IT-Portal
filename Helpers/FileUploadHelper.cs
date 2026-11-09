@@ -40,7 +40,7 @@ namespace IT_Form.Helpers
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!AllowedExtensions.Contains(extension))
             {
-                errorMessage = "Invalid file extension. Only .xlsx and .xls files are allowed.";
+                errorMessage = "Invalid file extension. Only .xlsx files are allowed.";
                 return false;
             }
 

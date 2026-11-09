@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IT_Form.Data;
+using IT_Form.Application.Common.Support;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Helpers;
@@ -29,10 +30,14 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> Index(string searchString, string department, string branch, int page = 1)
         {
-            // Only pull Onboarding requests that are Fully Completed (Approved)
-            var employees = _context.OnboardingRequests
-                .Where(o => o.Status == RequestStatus.Completed || o.Status == RequestStatus.Approved)
-                .AsQueryable();
+            // Only show completed employees within the current user's company scope.
+            // HR retains global read access through the shared HR-record scope policy.
+            var completedRequests = _context.OnboardingRequests
+                .AsNoTracking()
+                .Where(o => o.Status == RequestStatus.Completed || o.Status == RequestStatus.Approved);
+            var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(User);
+            var scopedRequests = CompanyScopeHelper.ApplyCompanyScope(completedRequests, scopedCompanies, request => request.Branch);
+            var employees = scopedRequests;
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -56,14 +61,13 @@ namespace IT_Form.Controllers
             ViewData["BranchFilter"] = branch;
 
             // Optional: get distinct departments and branches for dropdown filters
-            ViewData["Departments"] = await _context.OnboardingRequests
-                .Where(o => o.Status == RequestStatus.Completed || o.Status == RequestStatus.Approved)
+            ViewData["Departments"] = await scopedRequests
                 .Select(o => o.Department)
                 .Distinct()
                 .ToListAsync();
 
-            ViewData["Branches"] = await _context.OnboardingRequests
-                .Where(o => (o.Status == RequestStatus.Completed || o.Status == RequestStatus.Approved) && o.Branch != null)
+            ViewData["Branches"] = await scopedRequests
+                .Where(o => o.Branch != null)
                 .Select(o => o.Branch)
                 .Distinct()
                 .ToListAsync();

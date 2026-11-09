@@ -4,6 +4,7 @@ using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
@@ -59,6 +60,11 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             if (!request.PdpaConsent)
             {
                 return ProcessResult<object>.Failure("Please confirm the PDPA privacy notice before submitting.");
+            }
+
+            if (!ImageUploadHelper.TryDecodeRasterImageDataUrl(request.SignatureData, out _, out _))
+            {
+                return ProcessResult<object>.Failure("Signature must be a valid PNG, JPG, GIF, or WebP image.");
             }
 
             if (string.Equals(request.Type, "Onboarding", StringComparison.OrdinalIgnoreCase))

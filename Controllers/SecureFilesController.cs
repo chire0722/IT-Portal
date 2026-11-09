@@ -64,8 +64,8 @@ namespace IT_Form.Controllers
                 return NotFound();
             }
 
-            Response.Headers.CacheControl = "private, no-store, no-cache, must-revalidate";
-            Response.Headers.Pragma = "no-cache";
+            Response.Headers["Cache-Control"] = "private, no-store, no-cache, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
 
             if (!ContentTypeProvider.TryGetContentType(fileName, out var contentType))
             {

@@ -493,8 +493,9 @@ namespace IT_Form.Controllers
                     .IncludeOnboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == model.RequestId.Value);
                 if (request == null) return NotFound();
-                if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) &&
-                    !await IsAuthorizedAsHOD(request.Branch, request.HODEmail))
+                var canSendAsManager = User.HasClaim("UserTitle", "Manager") &&
+                                       IsAuthorizedForBranch(request.Branch, request.CreatedByUserId);
+                if (!await IsAuthorizedAsHOD(request.Branch, request.HODEmail) && !canSendAsManager)
                 {
                     return Forbid();
                 }
@@ -515,8 +516,9 @@ namespace IT_Form.Controllers
                     .IncludeOffboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == model.RequestId.Value);
                 if (request == null) return NotFound();
-                if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) &&
-                    !await IsAuthorizedAsHOD(request.Branch, request.HODEmail, request.AssignedHodId))
+                var canSendAsManager = User.HasClaim("UserTitle", "Manager") &&
+                                       IsAuthorizedForBranch(request.Branch, request.CreatedByUserId);
+                if (!await IsAuthorizedAsHOD(request.Branch, request.HODEmail, request.AssignedHodId) && !canSendAsManager)
                 {
                     return Forbid();
                 }

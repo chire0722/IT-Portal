@@ -80,5 +80,5 @@ public sealed class FileUploadHelperTests
     }
 
     private static FormFile CreateFormFile(Stream stream, string fileName, string contentType)
-        => new(stream, 0, stream.Length, "file", fileName) { ContentType = contentType };
+        => new(stream, 0, stream.Length, "file", fileName) { Headers = new HeaderDictionary(), ContentType = contentType };
 }

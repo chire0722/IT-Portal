@@ -84,6 +84,15 @@ namespace IT_Form.Tests.Helpers
                     It.IsAny<DateTime>(),
                     It.IsAny<string>()))
                 .Returns("HMAC");
+            MockIntegrityService
+                .Setup(s => s.Verify(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .Returns(true);
         }
 
         /// <summary>

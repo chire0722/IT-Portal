@@ -27,7 +27,7 @@ public sealed class ImageUploadHelperTests
     public void IsValidCompanyLogo_RejectsSvgActiveContent()
     {
         using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>"));
-        var file = new FormFile(stream, 0, stream.Length, "logo", "company.svg") { ContentType = "image/svg+xml" };
+        var file = new FormFile(stream, 0, stream.Length, "logo", "company.svg") { Headers = new HeaderDictionary(), ContentType = "image/svg+xml" };
 
         Assert.False(ImageUploadHelper.IsValidCompanyLogo(file, out _));
     }

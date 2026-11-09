@@ -24,6 +24,7 @@ namespace IT_Form.Controllers
         private readonly IOutlookService _outlookService;
         private readonly ILogger<NotificationController> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ISignatureIntegrityService _integrityService;
 
         public NotificationController(
             ApplicationDbContext context,
@@ -31,13 +32,15 @@ namespace IT_Form.Controllers
             IOutlookService outlookService,
             ILogger<NotificationController> logger,
             IConfiguration configuration,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ISignatureIntegrityService integrityService)
         {
             _context = context;
             _pdfService = pdfService;
             _outlookService = outlookService;
             _logger = logger;
             _userManager = userManager;
+            _integrityService = integrityService;
         }
 
         private async Task<(string? Name, string? Title, string? Image)> GetSenderInfoAsync()
@@ -52,6 +55,46 @@ namespace IT_Form.Controllers
         private string GetAppDomain()
         {
             return $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+        }
+
+        private bool HasValidOnboardingSignatureIntegrity(OnboardingRequest request)
+        {
+            var entityId = request.Id.ToString();
+            var requiresRequester = request.Status != RequestStatus.Draft && request.Status != RequestStatus.Rejected;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
+
+            return SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                       request.RequesterSignerName, request.RequesterSignedAt, request.RequesterSignature,
+                       request.RequesterSignatureHmac, isRequired: requiresRequester) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                       request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature,
+                       request.ITAdminSignatureHmac, isRequired: requiresIt) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                       request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature,
+                       request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee);
+        }
+
+        private bool HasValidOffboardingSignatureIntegrity(OffboardingRequest request)
+        {
+            var entityId = request.Id.ToString();
+            var requiresHr = request.Status is RequestStatus.PendingApproval or RequestStatus.PendingHODApproval or RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresHod = request.Status is RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
+
+            return SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.HRSignerName, request.HRSignedAt, request.HRSignature,
+                       request.HRSignatureHmac, isRequired: requiresHr) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.HODSignerName, request.HODSignedAt, request.HODSignature,
+                       request.HODSignatureHmac, isRequired: requiresHod) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature,
+                       request.ITAdminSignatureHmac, isRequired: requiresIt) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature,
+                       request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee);
         }
 
         /// <summary>
@@ -356,6 +399,7 @@ namespace IT_Form.Controllers
                 fullName = req.FullName ?? "";
                 toEmail = req.EmailAddress ?? "";
                 token = req.AccessToken;
+                if (!HasValidOnboardingSignatureIntegrity(req)) return BadRequest("Signature integrity validation failed.");
                 pdfBytes = _pdfService.GeneratePdf(req);
             }
             else
@@ -369,6 +413,7 @@ namespace IT_Form.Controllers
                 fullName = req.FullName ?? "";
                 toEmail = req.EmailAddress ?? "";
                 token = req.AccessToken;
+                if (!HasValidOffboardingSignatureIntegrity(req)) return BadRequest("Signature integrity validation failed.");
                 pdfBytes = _pdfService.GenerateOffboardingPdf(req);
             }
 
@@ -456,6 +501,7 @@ namespace IT_Form.Controllers
 
                 if (model.HasAttachment && emailType == "SignatureAcknowledgement_Onboarding")
                 {
+                    if (!HasValidOnboardingSignatureIntegrity(request)) return BadRequest("Signature integrity validation failed.");
                     pdfBytes = _pdfService.GeneratePdf(request);
                     var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
                     if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
@@ -477,6 +523,7 @@ namespace IT_Form.Controllers
 
                 if (model.HasAttachment && emailType == "SignatureAcknowledgement_Offboarding")
                 {
+                    if (!HasValidOffboardingSignatureIntegrity(request)) return BadRequest("Signature integrity validation failed.");
                     pdfBytes = _pdfService.GenerateOffboardingPdf(request);
                     var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
                     if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
@@ -517,7 +564,7 @@ namespace IT_Form.Controllers
                     .AsSplitQuery()
                     .IncludeOnboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
-                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail))) pdfBytes = _pdfService.GeneratePdf(req);
+                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail)) && HasValidOnboardingSignatureIntegrity(req)) pdfBytes = _pdfService.GeneratePdf(req);
             }
             else if (type.StartsWith("SignatureAcknowledgement_Offboarding"))
             {
@@ -525,7 +572,7 @@ namespace IT_Form.Controllers
                     .AsSplitQuery()
                     .IncludeOffboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
-                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId))) pdfBytes = _pdfService.GenerateOffboardingPdf(req);
+                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)) && HasValidOffboardingSignatureIntegrity(req)) pdfBytes = _pdfService.GenerateOffboardingPdf(req);
             }
 
             if (pdfBytes != null)

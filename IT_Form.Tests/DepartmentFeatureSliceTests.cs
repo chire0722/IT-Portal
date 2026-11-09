@@ -222,7 +222,7 @@ public class DepartmentFeatureSliceTests
         workbook.SaveAs(stream);
         stream.Position = 0;
 
-        IFormFile file = new FormFile(stream, 0, stream.Length, "file", "departments.xlsx");
+        IFormFile file = new FormFile(stream, 0, stream.Length, "file", "departments.xlsx") { Headers = new HeaderDictionary(), ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
         var handler = new ImportDepartmentsCommandHandler(context, new TestCurrentUserAccessor());
 
         var result = await handler.Handle(new ImportDepartmentsCommand(file), CancellationToken.None);

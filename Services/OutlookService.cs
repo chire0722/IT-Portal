@@ -26,6 +26,11 @@ namespace IT_Form.Services
             _scopeFactory = scopeFactory;
         }
 
+        private static int CountRecipients(string? recipients)
+            => string.IsNullOrWhiteSpace(recipients)
+                ? 0
+                : recipients.Split(new[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
+
         /// <summary>
         /// Runs the DisplayEmail operation.
         /// </summary>
@@ -33,7 +38,7 @@ namespace IT_Form.Services
         {
             try
             {
-                _logger.LogInformation("Attempting to send email. Original To: {To}, CC: {Cc}, BypassActiveCheck: {Bypass}", to, cc, bypassActiveCheck);
+                _logger.LogInformation("Attempting to send email. ToRecipientCount={ToCount}, CcRecipientCount={CcCount}, BypassActiveCheck={Bypass}", CountRecipients(to), CountRecipients(cc), bypassActiveCheck);
 
                 if (string.IsNullOrWhiteSpace(_smtpSettings.Username) || 
                     string.IsNullOrWhiteSpace(_smtpSettings.Password) || 
@@ -76,7 +81,7 @@ namespace IT_Form.Services
                         {
                             if (!bypassActiveCheck && deactivatedEmails.Contains(addr.ToLower()))
                             {
-                                _logger.LogInformation("Dropped deactivated user from TO list: {Email}", addr);
+                                _logger.LogInformation("Dropped deactivated user from TO list.");
                             }
                             else
                             {
@@ -103,7 +108,7 @@ namespace IT_Form.Services
                         {
                             if (!bypassActiveCheck && deactivatedEmails.Contains(addr.ToLower()))
                             {
-                                _logger.LogInformation("Dropped deactivated user from CC list: {Email}", addr);
+                                _logger.LogInformation("Dropped deactivated user from CC list.");
                             }
                             else
                             {
@@ -167,7 +172,7 @@ namespace IT_Form.Services
 
                 // Send email synchronously to replace the previous Display() COM behavior
                 client.Send(message);
-                _logger.LogInformation("Email sent successfully to {To}", to);
+                _logger.LogInformation("Email sent successfully. ToRecipientCount={ToCount}, CcRecipientCount={CcCount}", message.To.Count, message.CC.Count);
             }
             catch (System.Exception ex)
             {

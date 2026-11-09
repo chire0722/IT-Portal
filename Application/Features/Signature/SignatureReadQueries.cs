@@ -171,6 +171,7 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 .Select(item => new
                 {
                     item.Id,
+                    item.Status,
                     item.AccessToken,
                     item.FullName,
                     item.Department,

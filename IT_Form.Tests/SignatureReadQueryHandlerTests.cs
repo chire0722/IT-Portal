@@ -47,11 +47,19 @@ public class SignatureReadQueryHandlerTests
             Department = "Finance",
             Branch = "Alpha HQ",
             Status = RequestStatus.PendingEmployeeSign,
+            RequesterSignerName = "HR User",
+            RequesterSignedAt = DateTime.UtcNow.AddDays(-2),
+            RequesterSignature = "data:image/png;base64,REQ",
+            RequesterSignatureHmac = "HMAC",
+            ITAdminSignerName = "IT User",
+            ITAdminSignedAt = DateTime.UtcNow.AddDays(-1),
+            ITAdminSignature = "data:image/png;base64,IT",
+            ITAdminSignatureHmac = "HMAC",
             CreatedAt = DateTime.UtcNow.AddDays(-1)
         });
         await context.SaveChangesAsync();
 
-        var integrity = new Mock<ISignatureIntegrityService>();
+        var integrity = CreateValidIntegrityMock();
         var handler = new GetSignatureAcknowledgePageQueryHandler(context, integrity.Object);
 
         var result = await handler.Handle(new GetSignatureAcknowledgePageQuery(token, "Onboarding"), CancellationToken.None);
@@ -85,13 +93,21 @@ public class SignatureReadQueryHandlerTests
             Department = "IT",
             Branch = "HQ",
             Status = RequestStatus.PendingEmployeeSign,
+            RequesterSignerName = "HR User",
+            RequesterSignedAt = DateTime.UtcNow.AddDays(-2),
+            RequesterSignature = "data:image/png;base64,REQ",
+            RequesterSignatureHmac = "HMAC",
+            ITAdminSignerName = "IT User",
+            ITAdminSignedAt = DateTime.UtcNow.AddDays(-1),
+            ITAdminSignature = "data:image/png;base64,IT",
+            ITAdminSignatureHmac = "HMAC",
             CreatedAt = now.AddDays(-20),
             CompletedAt = now.AddDays(-10),
             UpdatedAt = now.AddMinutes(-5)
         });
         await context.SaveChangesAsync();
 
-        var integrity = new Mock<ISignatureIntegrityService>();
+        var integrity = CreateValidIntegrityMock();
         var handler = new GetSignatureAcknowledgePageQueryHandler(context, integrity.Object);
 
         var result = await handler.Handle(new GetSignatureAcknowledgePageQuery(token, "Onboarding"), CancellationToken.None);
@@ -110,7 +126,7 @@ public class SignatureReadQueryHandlerTests
         await using var context = CreateContext();
         var token = Guid.NewGuid();
         var now = DateTime.UtcNow;
-        const string signatureData = "data:image/png;base64,VALID";
+        const string signatureData = "data:image/png;base64,iVBORw0KGgo=";
 
         context.OnboardingRequests.Add(new OnboardingRequest
         {
@@ -120,13 +136,21 @@ public class SignatureReadQueryHandlerTests
             Department = "IT",
             Branch = "HQ",
             Status = RequestStatus.PendingEmployeeSign,
+            RequesterSignerName = "HR User",
+            RequesterSignedAt = DateTime.UtcNow.AddDays(-2),
+            RequesterSignature = "data:image/png;base64,REQ",
+            RequesterSignatureHmac = "HMAC",
+            ITAdminSignerName = "IT User",
+            ITAdminSignedAt = DateTime.UtcNow.AddDays(-1),
+            ITAdminSignature = "data:image/png;base64,IT",
+            ITAdminSignatureHmac = "HMAC",
             CreatedAt = now.AddDays(-20),
             CompletedAt = now.AddDays(-10),
             UpdatedAt = now.AddMinutes(-5)
         });
         await context.SaveChangesAsync();
 
-        var integrity = new Mock<ISignatureIntegrityService>();
+        var integrity = CreateValidIntegrityMock();
         integrity
             .Setup(service => service.ComputeHmac(
                 "OnboardingRequest",
@@ -168,6 +192,15 @@ public class SignatureReadQueryHandlerTests
             FullName = "Tina Lee",
             Department = "IT",
             Branch = "HQ",
+            Status = RequestStatus.Completed,
+            RequesterSignerName = "HR User",
+            RequesterSignedAt = DateTime.UtcNow.AddDays(-2),
+            RequesterSignature = "data:image/png;base64,REQ",
+            RequesterSignatureHmac = "HMAC",
+            ITAdminSignerName = "IT User",
+            ITAdminSignedAt = DateTime.UtcNow.AddDays(-1),
+            ITAdminSignature = "data:image/png;base64,IT",
+            ITAdminSignatureHmac = "HMAC",
             EmployeeSignedAt = DateTime.UtcNow.AddHours(-1),
             EmployeeSignerName = "Tina Lee",
             EmployeeSignature = "data:image/png;base64,SIG",
@@ -175,7 +208,7 @@ public class SignatureReadQueryHandlerTests
         });
         await context.SaveChangesAsync();
 
-        var integrity = new Mock<ISignatureIntegrityService>();
+        var integrity = CreateValidIntegrityMock();
         integrity
             .Setup(service => service.Verify(
                 "OnboardingRequest",
@@ -213,7 +246,7 @@ public class SignatureReadQueryHandlerTests
         await context.SaveChangesAsync();
 
         var pdfService = new Mock<IPdfService>();
-        var integrity = new Mock<ISignatureIntegrityService>();
+        var integrity = CreateValidIntegrityMock();
         var handler = new GetSignaturePdfQueryHandler(context, pdfService.Object, integrity.Object);
 
         var result = await handler.Handle(new GetSignaturePdfQuery(token, "Onboarding"), CancellationToken.None);
@@ -238,6 +271,15 @@ public class SignatureReadQueryHandlerTests
             Id = 8,
             AccessToken = token,
             FullName = "Regenerated Pdf User",
+            Status = RequestStatus.PendingEmployeeSign,
+            RequesterSignerName = "HR User",
+            RequesterSignedAt = DateTime.UtcNow.AddDays(-2),
+            RequesterSignature = "data:image/png;base64,REQ",
+            RequesterSignatureHmac = "HMAC",
+            ITAdminSignerName = "IT User",
+            ITAdminSignedAt = DateTime.UtcNow.AddDays(-1),
+            ITAdminSignature = "data:image/png;base64,IT",
+            ITAdminSignatureHmac = "HMAC",
             CreatedAt = now.AddDays(-60),
             CompletedAt = now.AddDays(-40),
             UpdatedAt = now.AddMinutes(-5)
@@ -248,7 +290,7 @@ public class SignatureReadQueryHandlerTests
         pdfService
             .Setup(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()))
             .Returns(new byte[] { 1, 2, 3 });
-        var integrity = new Mock<ISignatureIntegrityService>();
+        var integrity = CreateValidIntegrityMock();
         var handler = new GetSignaturePdfQueryHandler(context, pdfService.Object, integrity.Object);
 
         var result = await handler.Handle(new GetSignaturePdfQuery(token, "Onboarding"), CancellationToken.None);
@@ -256,6 +298,21 @@ public class SignatureReadQueryHandlerTests
         Assert.Equal(GetSignaturePdfStatus.Ready, result.Status);
         Assert.NotNull(result.File);
         pdfService.Verify(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()), Times.Once);
+    }
+
+    private static Mock<ISignatureIntegrityService> CreateValidIntegrityMock()
+    {
+        var integrity = new Mock<ISignatureIntegrityService>();
+        integrity
+            .Setup(service => service.Verify(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .Returns(true);
+        return integrity;
     }
 
     /// <summary>

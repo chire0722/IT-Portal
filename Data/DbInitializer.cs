@@ -534,7 +534,34 @@ namespace IT_Form.Data
 
             await EnsureUserTitleAsync(context, user.Id, PortalTitles.SuperAdmin);
             await EnsureUserTitleAsync(context, user.Id, PortalTitles.IT);
+            await RemoveSupersededSeedSuperAdminTitlesAsync(context, user.Id);
             await context.SaveChangesAsync();
+        }
+
+        private static async Task RemoveSupersededSeedSuperAdminTitlesAsync(ApplicationDbContext context, string configuredSuperAdminUserId)
+        {
+            // When an operator explicitly changes the configured bootstrap identity,
+            // remove the bootstrap SuperAdmin role from the previous seed account only.
+            // Never demote unrelated, manually managed SuperAdmin accounts at startup.
+            foreach (var seedUser in SeedUsers)
+            {
+                foreach (var email in seedUser.AllEmails)
+                {
+                    var previousSeedAdmin = await FindUserByEmailAsync(context, email);
+                    if (previousSeedAdmin == null ||
+                        string.Equals(previousSeedAdmin.Id, configuredSuperAdminUserId, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var previousRole = await context.UserTitles.FirstOrDefaultAsync(title =>
+                        title.UserId == previousSeedAdmin.Id && title.Title == PortalTitles.SuperAdmin);
+                    if (previousRole != null)
+                    {
+                        context.UserTitles.Remove(previousRole);
+                    }
+                }
+            }
         }
 
         private static async Task PromoteUserToSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, ApplicationUser user, string seedPassword)

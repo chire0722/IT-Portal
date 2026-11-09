@@ -152,16 +152,23 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                             return new VerifyOtpResult(false, false, VerifyOtpResult.GenericFailureMessage);
                         }
 
+                        var requiresPasswordSetup =
+                            user.MustChangePassword ||
+                            string.IsNullOrWhiteSpace(user.PasswordHash);
+
                         user.AccessFailedCount = 0;
                         user.LockoutEnd = null;
-                        user.MustChangePassword = false;
                         user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
 
                         var previousSuppressAudit = _context.SuppressAuditLogging;
                         _context.SuppressAuditLogging = true;
                         try
                         {
-                            await _userManager.UpdateAsync(user);
+                            var updateResult = await _userManager.UpdateAsync(user);
+                            if (!updateResult.Succeeded)
+                            {
+                                throw new InvalidOperationException("Failed to update Super Admin account after OTP verification.");
+                            }
                         }
                         finally
                         {
@@ -180,7 +187,7 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                             false,
                             "OTP verified.",
                             IsLoginVerified: true,
-                            RequiresPasswordSetup: false,
+                            RequiresPasswordSetup: requiresPasswordSetup,
                             Email: user.Email);
                     }
 

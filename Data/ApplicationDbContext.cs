@@ -549,7 +549,17 @@ namespace IT_Form.Data
             "Signature",
             "Hmac",
             "Hash",
-            "KeyValue"
+            "KeyValue",
+            "ApiKey",
+            "Secret",
+            "Credential",
+            "Authorization",
+            "Cookie",
+            "ConnectionString",
+            "Otp",
+            "RecoveryCode",
+            "Bearer",
+            "EmailBody"
         };
 
         // Re-entry guard — prevents the audit-log save from triggering another audit pass

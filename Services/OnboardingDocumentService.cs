@@ -87,7 +87,8 @@ namespace IT_Form.Services
                     try
                     {
                         var pdfBytes = _pdfService.GeneratePdf(request);
-                        var safeName = string.Join("_", (request.FullName ?? "Unknown").Split(Path.GetInvalidFileNameChars()));
+                        var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Unknown", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                        if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                         var entry = archive.CreateEntry($"Onboarding_{safeName}_ID{request.Id}.pdf", CompressionLevel.Fastest);
                         using var entryStream = entry.Open();
                         entryStream.Write(pdfBytes, 0, pdfBytes.Length);

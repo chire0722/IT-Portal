@@ -446,35 +446,6 @@ namespace IT_Form.Data
 
             await SeedConfiguredSuperAdminAsync(userManager, context, configuration, seedPassword);
 
-            if (users.Count > 0)
-            {
-                foreach (var seedUser in SeedUsers)
-                {
-                    foreach (var email in seedUser.AllEmails)
-                    {
-                        var existingSeedUser = await userManager.FindByEmailAsync(email);
-                        if (existingSeedUser == null)
-                        {
-                            continue;
-                        }
-
-                        var isSuperAdminSeed = await context.UserTitles
-                            .AsNoTracking()
-                            .AnyAsync(title => title.UserId == existingSeedUser.Id && title.Title == PortalTitles.SuperAdmin);
-                        if (isSuperAdminSeed)
-                        {
-                            continue;
-                        }
-
-                        var deleteResult = await userManager.DeleteAsync(existingSeedUser);
-                        if (!deleteResult.Succeeded)
-                        {
-                            var errors = string.Join("; ", deleteResult.Errors.Select(error => error.Description));
-                            throw new InvalidOperationException($"Failed to remove seed user '{email}': {errors}");
-                        }
-                    }
-                }
-            }
         }
 
         private static async Task SeedConfiguredSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration, string seedPassword)

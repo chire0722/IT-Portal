@@ -201,7 +201,7 @@ namespace IT_Form.Controllers
                                 : RedirectToAction("Index", "Home");
                         }
 
-                        return RedirectToAction(nameof(ResetPassword), new { email = model.Email, token = result.Token });
+                        return RedirectToAction(nameof(ResetPassword), new { email = result.Email ?? model.Email, token = result.Token });
                     }
 
                     if (result.ShouldRedirectToLogin)

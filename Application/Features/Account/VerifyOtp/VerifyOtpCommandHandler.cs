@@ -100,7 +100,7 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
 
                         if (updatedRows == 0)
                         {
-                            throw AccountOtpSupport.CreateValidationException("\u9a8c\u8bc1\u7801\u5df2\u8fc7\u671f\u6216\u4e0d\u5b58\u5728");
+                            throw AccountOtpSupport.CreateValidationException(VerifyOtpResult.GenericFailureMessage);
                         }
 
                         var refreshedState = await _context.OtpRecords

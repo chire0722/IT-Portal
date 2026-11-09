@@ -146,10 +146,12 @@ namespace IT_Form.Services
             try
             {
                 var pdfBytes = _pdfService.GeneratePdf(request);
+                var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Unknown", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                 return ProcessResult<BinaryFilePayload>.Success(new BinaryFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Onboarding_{request.FullName?.Replace(" ", "_") ?? "Draft"}_{request.RequestDate:yyyyMMdd}.pdf"));
+                    $"Onboarding_{safeName}_{request.RequestDate:yyyyMMdd}.pdf"));
             }
             catch (Exception ex)
             {

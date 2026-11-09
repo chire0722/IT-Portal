@@ -7,12 +7,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace IT_Form.Controllers
 {
     /// <summary>
     /// Handles web requests for the Signature area.
     /// </summary>
+    [EnableRateLimiting("public-signature")]
     public class SignatureController : AppControllerBase
     {
         private readonly ISender _sender;

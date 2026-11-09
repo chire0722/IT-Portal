@@ -43,20 +43,31 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Failure("No requests selected.", "Index");
             }
 
+            if (!user.HasClaim("UserTitle", "HR"))
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
+            var requestedIds = ids.Distinct().ToArray();
+            if (requestedIds.Length > 100)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure("Select no more than 100 requests per export.", "Index");
+            }
+
             var requests = await _context.OnboardingRequests
                 .AsNoTracking()
                 .AsSplitQuery()
                 .IncludeOnboardingPdfData()
-                .Where(r => ids.Contains(r.Id))
+                .Where(r => requestedIds.Contains(r.Id))
                 .ToListAsync(cancellationToken);
 
             requests = requests
                 .Where(request => HrRecordReadCompanyScopeSupport.CanAccessCompany(user, request.Branch))
                 .ToList();
 
-            if (!requests.Any())
+            if (requests.Count != requestedIds.Length)
             {
-                return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
+                return ProcessResult<BinaryFilePayload>.Forbidden();
             }
 
             var invalidRequest = requests.FirstOrDefault(request => VerifyIntegrity(request) != null);
@@ -142,7 +153,7 @@ namespace IT_Form.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate PDF for request #{Id}", id);
-                return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", id);
+                return ProcessResult<BinaryFilePayload>.Failure("Failed to generate the PDF. Please try again or contact IT.", "Details", id);
             }
         }
 

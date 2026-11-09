@@ -13,6 +13,8 @@ namespace IT_Form.Helpers
         public static string GetProfessionalHtmlTemplate(string title, string greeting, string paramsRows, string ctaUrl, string ctaLabel)
         {
             var year = System.DateTime.UtcNow.Year;
+            var safeCtaUrl = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(ctaUrl);
+            var safeCtaLabel = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(ctaLabel);
 
             return $@"<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
 <html xmlns='http://www.w3.org/1999/xhtml' xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office'>
@@ -80,13 +82,13 @@ namespace IT_Form.Helpers
                                 <td align='center'>
                                     <div>
                                         <!--[if mso]>
-                                        <v:roundrect xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office' href='{ctaUrl}' style='height:54px;v-text-anchor:middle;width:240px;' arcsize='12%' stroke='f' fillcolor='#6f42c1'>
+                                        <v:roundrect xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office' href='{safeCtaUrl}' style='height:54px;v-text-anchor:middle;width:240px;' arcsize='12%' stroke='f' fillcolor='#6f42c1'>
                                             <w:anchorlock/>
-                                            <center style='color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:700;'>{ctaLabel}</center>
+                                            <center style='color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:700;'>{safeCtaLabel}</center>
                                         </v:roundrect>
                                         <![endif]-->
                                         <!--[if !mso]><!-->
-                                        <a href='{ctaUrl}' target='_blank' style='background-color:#6f42c1;border-radius:6px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:16px;font-weight:700;line-height:54px;text-align:center;text-decoration:none;width:240px;-webkit-text-size-adjust:none;'>{ctaLabel}</a>
+                                        <a href='{ctaUrl}' target='_blank' style='background-color:#6f42c1;border-radius:6px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:16px;font-weight:700;line-height:54px;text-align:center;text-decoration:none;width:240px;-webkit-text-size-adjust:none;'>{safeCtaLabel}</a>
                                         <!--<![endif]-->
                                     </div>
                                 </td>

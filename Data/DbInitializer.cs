@@ -18,8 +18,6 @@ namespace IT_Form.Data
     /// </summary>
     public static class DbInitializer
     {
-        private const string DefaultBootstrapPassword = "Abc123!xyz";
-
         private static readonly string[] SeedAdminTitles = [PortalTitles.IT, PortalTitles.HR, PortalTitles.SuperAdmin];
 
         private static readonly SeedUserDefinition[] SeedUsers =
@@ -371,9 +369,10 @@ namespace IT_Form.Data
         /// </summary>
         public static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration)
         {
-            var seedPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"])
-                ?? DefaultBootstrapPassword;
-            if (string.IsNullOrWhiteSpace(seedPassword))
+            // Never create or reset a privileged bootstrap account with a public default password.
+            // Seed accounts are created only when an operator explicitly supplies a strong secret.
+            var seedPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"]);
+            if (seedPassword == null)
             {
                 return;
             }

@@ -1,5 +1,6 @@
 // Project comment: GetOffboardingEmployeeDetailsQueryHandler.cs is part of the IT Form application source code.
 
+using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.ViewModels;
@@ -15,10 +16,12 @@ namespace IT_Form.Application.Features.Offboarding.Create
     public sealed class GetOffboardingEmployeeDetailsQueryHandler : IRequestHandler<GetOffboardingEmployeeDetailsQuery, OffboardingEmployeeDetailsViewModel?>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public GetOffboardingEmployeeDetailsQueryHandler(ApplicationDbContext context)
+        public GetOffboardingEmployeeDetailsQueryHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -26,17 +29,23 @@ namespace IT_Form.Application.Features.Offboarding.Create
         /// </summary>
         public async Task<OffboardingEmployeeDetailsViewModel?> Handle(GetOffboardingEmployeeDetailsQuery request, CancellationToken cancellationToken)
         {
-            var onboarding = await _context.OnboardingRequests
-                .AsNoTracking()
-                .Where(o => o.Id == request.Id)
-                .ProjectToType<OffboardingEmployeeDetailsViewModel>()
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (onboarding == null)
+            var user = _currentUserAccessor.User;
+            if (!user.HasClaim("UserTitle", "HR"))
             {
                 return null;
             }
 
+            var onboardingRequest = await _context.OnboardingRequests
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == request.Id, cancellationToken);
+
+            if (onboardingRequest == null ||
+                !CompanyScopeHelper.CanAccessCompany(user, onboardingRequest.Branch))
+            {
+                return null;
+            }
+
+            var onboarding = onboardingRequest.Adapt<OffboardingEmployeeDetailsViewModel>();
             var currentHodEmail = await UserHelper.GetLatestHODEmailByCompanyAsync(_context, onboarding.Branch, onboarding.Department);
             onboarding.HODEmail = string.IsNullOrEmpty(currentHodEmail)
                 ? onboarding.HODEmail

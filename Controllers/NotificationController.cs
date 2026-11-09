@@ -252,6 +252,12 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ComposeRejectionEmail(int id, string type)
         {
+            if (!string.Equals(type, "Onboarding", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(type, "Offboarding", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest();
+            }
+
             string fullName = "";
             string reason = "";
             string toEmail = "";
@@ -308,7 +314,7 @@ namespace IT_Form.Controllers
                 BodyHtml = body,
                 ReturnUrl = Url.Action("Details", type, new { id }) ?? "/",
                 RequestId = id,
-                EmailType = "Rejection",
+                EmailType = $"Rejection_{type}",
                 HasAttachment = false,
                 SignatureImage = sender.Image
             };
@@ -322,6 +328,12 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ComposeEmployeeSignatureEmail(int id, string type)
         {
+            if (!string.Equals(type, "Onboarding", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(type, "Offboarding", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest();
+            }
+
             // Any user carrying the IT title must be blocked from employee-link generation.
             if (User.HasClaim("UserTitle", "IT") || !User.HasClaim("UserTitle", "HR"))
             {
@@ -413,44 +425,70 @@ namespace IT_Form.Controllers
                 return View("ConfirmEmail", model);
             }
 
-            try
+            if (!model.RequestId.HasValue || string.IsNullOrWhiteSpace(model.EmailType))
             {
-                byte[]? pdfBytes = null;
-                string? attachmentName = null;
+                return BadRequest("A valid request context is required to send workflow email.");
+            }
 
-                if (model.HasAttachment && model.RequestId.HasValue && !string.IsNullOrEmpty(model.EmailType))
+            var emailType = model.EmailType.Trim();
+            var isOnboarding = emailType is "Onboarding" or "Rejection_Onboarding" or "Nudge_Onboarding" or "SignatureAcknowledgement_Onboarding";
+            var isOffboarding = emailType is "Offboarding" or "Rejection_Offboarding" or "Nudge_Offboarding" or "SignatureAcknowledgement_Offboarding";
+            if (!isOnboarding && !isOffboarding)
+            {
+                return BadRequest("Unsupported email type.");
+            }
+
+            byte[]? pdfBytes = null;
+            string? attachmentName = null;
+
+            if (isOnboarding)
+            {
+                var request = await _context.OnboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOnboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == model.RequestId.Value);
+                if (request == null) return NotFound();
+                if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) &&
+                    !await IsAuthorizedAsHOD(request.Branch, request.HODEmail))
                 {
-                    if (model.EmailType.StartsWith("SignatureAcknowledgement_Onboarding"))
-                    {
-                        var req = await _context.OnboardingRequests
-                            .AsSplitQuery()
-                            .IncludeOnboardingPdfData()
-                            .FirstOrDefaultAsync(r => r.Id == model.RequestId);
-                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail)))
-                        {
-                            pdfBytes = _pdfService.GeneratePdf(req);
-                            attachmentName = $"Onboarding_Acknowledgement_{(req.FullName ?? "Employee").Replace(" ", "_")}.pdf";
-                        }
-                    }
-                    else if (model.EmailType.StartsWith("SignatureAcknowledgement_Offboarding"))
-                    {
-                        var req = await _context.OffboardingRequests
-                            .AsSplitQuery()
-                            .IncludeOffboardingPdfData()
-                            .FirstOrDefaultAsync(r => r.Id == model.RequestId);
-                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)))
-                        {
-                            pdfBytes = _pdfService.GenerateOffboardingPdf(req);
-                            attachmentName = $"Offboarding_Acknowledgement_{(req.FullName ?? "Employee").Replace(" ", "_")}.pdf";
-                        }
-                    }
+                    return Forbid();
                 }
 
+                if (model.HasAttachment && emailType == "SignatureAcknowledgement_Onboarding")
+                {
+                    pdfBytes = _pdfService.GeneratePdf(request);
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\\p{L}\\p{N}._-]+", "_").Trim('.', '_', '-');
+                    if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
+                    attachmentName = $"Onboarding_Acknowledgement_{safeName}.pdf";
+                }
+            }
+            else
+            {
+                var request = await _context.OffboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOffboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == model.RequestId.Value);
+                if (request == null) return NotFound();
+                if (!IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) &&
+                    !await IsAuthorizedAsHOD(request.Branch, request.HODEmail, request.AssignedHodId))
+                {
+                    return Forbid();
+                }
+
+                if (model.HasAttachment && emailType == "SignatureAcknowledgement_Offboarding")
+                {
+                    pdfBytes = _pdfService.GenerateOffboardingPdf(request);
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\\p{L}\\p{N}._-]+", "_").Trim('.', '_', '-');
+                    if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
+                    attachmentName = $"Offboarding_Acknowledgement_{safeName}.pdf";
+                }
+            }
+
+            try
+            {
                 string toStr = string.Join(";", model.To);
                 string ccStr = model.Cc != null ? string.Join(";", model.Cc) : "";
-
                 _outlookService.DisplayEmail(toStr, model.Subject, model.BodyHtml, pdfBytes, attachmentName, ccStr, model.SignatureImage);
-
                 TempData["SuccessMessage"] = "Email sent successfully.";
             }
             catch (Exception ex)
@@ -502,6 +540,12 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ComposeNudgeEmail(int id, string type)
         {
+            if (!string.Equals(type, "Onboarding", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(type, "Offboarding", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest();
+            }
+
             string fullName = "";
             string toEmail = "";
             string returnUrl = "";

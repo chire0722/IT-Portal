@@ -237,7 +237,6 @@ namespace IT_Form.Application.Features.Account.LoginAccount
             }
 
             user.AccessFailedCount += 1;
-            int attemptsLeft = maxAttempts - user.AccessFailedCount;
             if (user.AccessFailedCount >= maxAttempts)
             {
                 user.LockoutCount += 1;

@@ -25,6 +25,7 @@ namespace IT_Form.Controllers
         private readonly ILogger<NotificationController> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISignatureIntegrityService _integrityService;
+        private readonly IConfiguration _configuration;
 
         public NotificationController(
             ApplicationDbContext context,
@@ -41,6 +42,7 @@ namespace IT_Form.Controllers
             _logger = logger;
             _userManager = userManager;
             _integrityService = integrityService;
+            _configuration = configuration;
         }
 
         private async Task<(string? Name, string? Title, string? Image)> GetSenderInfoAsync()
@@ -54,7 +56,19 @@ namespace IT_Form.Controllers
         /// </summary>
         private string GetAppDomain()
         {
-            return $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+            var configuredDomain = _configuration["AppDomain"];
+            if (!string.IsNullOrWhiteSpace(configuredDomain) &&
+                Uri.TryCreate(configuredDomain, UriKind.Absolute, out var configuredUri) &&
+                (configuredUri.Scheme == Uri.UriSchemeHttps || configuredUri.Scheme == Uri.UriSchemeHttp) &&
+                string.IsNullOrEmpty(configuredUri.UserInfo) &&
+                string.IsNullOrEmpty(configuredUri.Query) &&
+                string.IsNullOrEmpty(configuredUri.Fragment))
+            {
+                return configuredUri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+            }
+
+            var scheme = Request.IsHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
+            return $"{scheme}://{Request.Host}{Request.PathBase}".TrimEnd('/');
         }
 
         private bool HasValidOnboardingSignatureIntegrity(OnboardingRequest request)

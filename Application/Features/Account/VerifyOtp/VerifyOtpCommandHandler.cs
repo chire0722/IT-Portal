@@ -56,13 +56,19 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
         /// </summary>
         public async Task<VerifyOtpResult> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var user = await _userManager.FindByEmailAsync(request.Email)
+                ?? await _userManager.FindByNameAsync(request.Email);
             if (user == null)
             {
                 return new VerifyOtpResult(
                     false,
                     false,
-                    "验证码已过期或不存在");
+                    VerifyOtpResult.GenericFailureMessage);
+            }
+
+            if (!user.IsActive || string.IsNullOrWhiteSpace(user.Email))
+            {
+                return new VerifyOtpResult(false, false, VerifyOtpResult.GenericFailureMessage);
             }
 
             return await _keyedLockProvider.ExecuteAsync(
@@ -72,13 +78,13 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                     var now = DateTime.UtcNow;
                     var otpRecord = await _context.OtpRecords
                         .AsNoTracking()
-                        .Where(otp => otp.Email == request.Email && otp.Purpose == request.Purpose && !otp.IsUsed && !otp.IsLocked)
+                        .Where(otp => otp.Email == user.Email && otp.Purpose == request.Purpose && !otp.IsUsed && !otp.IsLocked)
                         .OrderByDescending(otp => otp.CreatedAt)
                         .FirstOrDefaultAsync(ct);
 
                     if (otpRecord == null || otpRecord.ExpiresAt < now)
                     {
-                        throw AccountOtpSupport.CreateValidationException("\u9a8c\u8bc1\u7801\u5df2\u8fc7\u671f\u6216\u4e0d\u5b58\u5728");
+                        throw AccountOtpSupport.CreateValidationException(VerifyOtpResult.GenericFailureMessage);
                     }
 
                     if (!AccountOtpSupport.MatchesStoredCode(request.Code, otpRecord.Code))
@@ -115,11 +121,10 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                                 "OTP invalidated after {Attempts} failed attempts for user {UserId}.",
                                 refreshedState.FailedAttempts,
                                 user.Id);
-                            throw AccountOtpSupport.CreateValidationException("\u8fde\u7eed\u8f93\u9519 3 \u6b21\uff0c\u9a8c\u8bc1\u7801\u5df2\u4f5c\u5e9f\uff0c\u8bf7\u91cd\u65b0\u83b7\u53d6");
+                            throw AccountOtpSupport.CreateValidationException(VerifyOtpResult.GenericFailureMessage);
                         }
 
-                        throw AccountOtpSupport.CreateValidationException(
-                            $"\u9a8c\u8bc1\u7801\u4e0d\u6b63\u786e\uff0c\u8fd8\u53ef\u518d\u5c1d\u8bd5 {AccountOtpSupport.MaxFailedAttempts - refreshedState.FailedAttempts} \u6b21\u3002");
+                        throw AccountOtpSupport.CreateValidationException(VerifyOtpResult.GenericFailureMessage);
                     }
 
                     var consumedRows = await _context.OtpRecords
@@ -144,7 +149,7 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                             .AnyAsync(title => title.UserId == user.Id && title.Title == PortalTitles.SuperAdmin, ct);
                         if (!isSuperAdmin)
                         {
-                            return new VerifyOtpResult(false, true, "Invalid OTP purpose.");
+                            return new VerifyOtpResult(false, false, VerifyOtpResult.GenericFailureMessage);
                         }
 
                         user.AccessFailedCount = 0;
@@ -175,7 +180,8 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                             false,
                             "OTP verified.",
                             IsLoginVerified: true,
-                            RequiresPasswordSetup: false);
+                            RequiresPasswordSetup: false,
+                            Email: user.Email);
                     }
 
                     var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -183,7 +189,8 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                         true,
                         false,
                         "OTP verified.",
-                        token);
+                        token,
+                        Email: user.Email);
                 },
                 cancellationToken);
         }

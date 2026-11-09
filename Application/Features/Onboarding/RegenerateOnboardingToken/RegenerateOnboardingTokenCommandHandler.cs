@@ -40,7 +40,7 @@ namespace IT_Form.Application.Features.Onboarding.RegenerateOnboardingToken
             var user = _currentUserAccessor.User;
             var currentUsername = _currentUserAccessor.UserName;
 
-            if (user.HasClaim("UserTitle", "IT"))
+            if (!user.HasClaim("UserTitle", "HR"))
             {
                 return ProcessResult<object>.Forbidden();
             }

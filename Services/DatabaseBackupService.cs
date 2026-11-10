@@ -124,10 +124,10 @@ namespace IT_Form.Services
             CleanupStaleBackupStagingDirectories();
             var backupBytes = CreateSqliteBackupBytes(resolvedConnectionString);
 
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff");
             var fileName = Path.GetFileNameWithoutExtension(dbPath);
             var extension = Path.GetExtension(dbPath);
-            var backupFileName = $"{fileName}_{timestamp}{extension}.protected";
+            var backupFileName = $"{fileName}_{timestamp}_{Guid.NewGuid():N}{extension}.protected";
 
             CopyBackupToDirectory(backupBytes, backupDir, backupFileName, fileName, extension);
 

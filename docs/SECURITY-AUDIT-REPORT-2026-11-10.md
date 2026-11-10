@@ -53,6 +53,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Integrated scanning into the reviewed offboarding resignation-letter, company-logo create/update, and supported Excel import workflows (department, email contact, email group, server folder, shared mailbox, and standard software imports).
 - Excel uploads validate extension, declared media type, OOXML package structure, entry count, expanded size, per-entry size, macro presence, unsafe ZIP paths, and ZIP symlink entries.
 - Supported document/image/video uploads validate both declared MIME type and file signatures.
+- Added deep ImageSharp parsing, dimension/pixel limits, metadata stripping and canonical re-encoding for company logos, email signature images, and offboarding raster attachments before storage or rendering. Truncated/malformed image regression tests are included.
 - Added tests for ClamAV protocol verdicts, malformed responses, scanner-not-configured behavior, Excel ZIP traversal rejection, logo file signatures, and the remaining direct employee/asset/offboarding attachment paths.
 
 **Deployment limitation:** a real ClamAV daemon, signature freshness, network ACLs, monitoring/alerting, and EICAR detection in an isolated staging environment still require deployment verification. Source integration and mock-protocol tests are not proof that production malware scanning is operational. Remaining upload/attachment routes must be inventoried and checked before claiming complete coverage.
@@ -67,7 +68,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Deleting a company or offboarding request deletes associated files only after the database deletion succeeds.
 - Failed sensitive-file path persistence cleans up the newly written file; failed cleanup is logged or left for operator remediation rather than silently treated as successful.
 
-**Remaining limitation:** safe image re-encoding, deeper file-format parsing, production filesystem ACL verification, encrypted-volume proof, and complete upload-route coverage remain release gates.
+**Remaining limitation:** production filesystem ACL verification, encrypted-volume proof, and runtime evidence for the complete cross-role upload/download matrix remain release gates. The source-level route inventory is recorded in `docs/FILE-SECURITY-ROUTE-INVENTORY.md`.
 
 ### 2.5 Encryption, backup, and key management
 
@@ -88,6 +89,8 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Email confirmation POSTs now use a Data Protection integrity token bound to the request, email type, server-generated HTML/signature context, and current actor; request-level authorization, recipient limits/format validation, and subject header-injection checks run before dispatch.
 - A restricted HR-only DSAR case register now supports access, portability, correction and deletion request types, idempotent submission, allow-listed state transitions, optimistic concurrency, immutable events, and completion evidence references. It does not yet perform data discovery, secure export delivery, legal-hold evaluation, or deletion.
 - The retention service now permanently removes expired terminal email outbox records while preserving pending/processing messages for delivery recovery. The retention regression test passes. No webhook controller or webhook callback handler was found in the repository, so no webhook-specific patch was applicable; any future webhook must use authenticated, replay-resistant, signed payload validation.
+- Added `docs/ENCRYPTED-FIELD-INVENTORY.md` with the exact current `[EncryptColumn]` properties and the unprotected field categories requiring a field-by-field product decision.
+- Removed inline event attributes from Razor views, disabled `script-src-attr` inline execution, replaced the verification page's Tailwind browser runtime with local CSS, and removed `unsafe-eval`.
 
 ### 2.7 Documentation and governance evidence
 
@@ -125,7 +128,7 @@ These are automated CI results. They do not replace dynamic testing against a de
 ### P0 — Must be resolved before production approval
 
 1. **Production malware scanning:** deploy ClamAV on an isolated private network; restrict access to the application host; verify signature updates, health monitoring, alerting, timeout behavior, and EICAR detection in isolated staging.
-2. **Upload coverage:** complete a route-by-route inventory of every upload and attachment endpoint; prove that each required path validates, scans, fails closed, and cleans up partial files. The direct employee/asset/offboarding attachment paths are now covered in source and tests, but the inventory is not yet evidence-complete.
+2. **Upload/download authorization evidence:** the source route inventory is complete for the reviewed repository paths, but the full live cross-company/cross-role matrix still must run and be recorded; the direct employee/asset/offboarding attachment paths are covered in source and focused tests.
 3. **DSAR operations:** the code now has a restricted case register and state machine, but identity verification, data inventory-driven access/portability export, correction execution, legal holds, response deadlines, secure delivery, processor propagation, and deletion execution remain release gates.
 4. **Incident management:** the incident-response playbook is a procedure template; a case-managed incident register, named incident commander, on-call contacts, processor escalation, and tabletop evidence remain outstanding.
 5. **Privacy governance:** confirm the data controller, processor/sub-processor register, applicable Malaysian registration and DPO requirements, and GDPR Article 3 territorial scope with the responsible legal/privacy owner.
@@ -133,10 +136,10 @@ These are automated CI results. They do not replace dynamic testing against a de
 
 ### P1 — Required engineering and operational follow-up
 
-1. **Encryption scope:** inventory all personal and business-identifying fields. Marked-column encryption is not whole-database encryption.
+1. **Encryption scope:** the exact marked-field inventory is documented. A field-by-field classification of remaining personal/business data, query/index impact, migration/backfill, and re-protection plan is still required; marked-column encryption is not whole-database encryption.
 2. **HMAC production migration:** versioned key-ring code and regression tests are present; provision real versioned secrets, retain previous keys through migration, and obtain passing current-head CI evidence before production rotation.
-3. **Image processing:** add safe image re-encoding and deeper parsing where required by the threat model; confirm no untrusted image is rendered by an unsafe decoder.
-4. **CSP:** inline script blocks now require a per-response nonce; remaining inline event attributes still use `script-src-attr 'unsafe-inline'`, and the verification page still requires Tailwind's `unsafe-eval`. Migrate remaining handlers and remove those exceptions after testing all views.
+3. **Image processing:** source-level re-encoding and deep parsing are implemented for the reviewed image ingress paths; verify decoder limits and rendering behavior in the deployed runtime.
+4. **CSP:** source-level exceptions are removed (`script-src-attr 'none'` and no `unsafe-eval`); browser regression testing across all views remains required.
 5. **Authorization testing:** complete negative tests for every API, download, export, signed-link, and cross-company access route, including role changes and stale claims.
 6. **Audit privacy:** review nested, renamed, free-text, and custom audit/logging paths for personal data and secrets.
 7. **Retention:** terminal email outbox records are now removed by the retention service, but validate periods against actual business/legal purposes and test deletion/redaction across database rows, files, exports, logs, backups, and restored backups. Current redaction is not proven irreversible anonymisation.

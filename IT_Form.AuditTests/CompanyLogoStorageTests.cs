@@ -31,6 +31,7 @@ public sealed class CompanyLogoStorageTests
             Assert.StartsWith("uploads/companies/logos/", relativePath);
             var storedPath = Path.GetFullPath(Path.Combine(webRoot, relativePath));
             Assert.True(File.Exists(storedPath));
+            Assert.Equal(storedPath, CompanyLogoStorage.ResolveManagedPath(environment.Object, relativePath));
             Assert.Empty(Directory.GetFiles(Path.Combine(webRoot, "uploads", "companies", "logos"), "*.uploading"));
         }
         finally
@@ -51,9 +52,9 @@ public sealed class CompanyLogoStorageTests
 
         try
         {
-            CompanyLogoStorage.DeleteIfManaged(
-                environment.Object,
-                "uploads/companies/logos/../../../keep.txt");
+            const string traversalPath = "uploads/companies/logos/../../../keep.txt";
+            Assert.Null(CompanyLogoStorage.ResolveManagedPath(environment.Object, traversalPath));
+            CompanyLogoStorage.DeleteIfManaged(environment.Object, traversalPath);
 
             Assert.True(File.Exists(outsideFile));
         }

@@ -24,7 +24,10 @@ namespace IT_Form.Controllers
         /// Runs the Acknowledge operation.
         /// </summary>
         public async Task<IActionResult> Acknowledge(Guid token, string type)
-            => HandleAcknowledgePageResult(await _sender.Send(new GetSignatureAcknowledgePageQuery(token, type)));
+        {
+            ApplySensitiveLinkHeaders();
+            return HandleAcknowledgePageResult(await _sender.Send(new GetSignatureAcknowledgePageQuery(token, type)));
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -33,6 +36,7 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> Acknowledge(Guid token, string type, string signatureData, bool pdpaConsent = false)
         {
+            ApplySensitiveLinkHeaders();
             return await ExecuteWithValidationResult(
                 async () =>
                 {
@@ -63,7 +67,20 @@ namespace IT_Form.Controllers
         /// Runs the ViewPdf operation.
         /// </summary>
         public async Task<IActionResult> ViewPdf(Guid token, string type)
-            => HandlePdfResult(await _sender.Send(new GetSignaturePdfQuery(token, type)));
+        {
+            ApplySensitiveLinkHeaders();
+            return HandlePdfResult(await _sender.Send(new GetSignaturePdfQuery(token, type)));
+        }
+
+        private void ApplySensitiveLinkHeaders()
+        {
+            // Signature URLs carry bearer-like tokens in the query string.
+            // Prevent browser/proxy caching and prevent the token URL being sent as a Referer.
+            Response.Headers["Cache-Control"] = "no-store";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+            Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+        }
 
         /// <summary>
         /// Runs the HandleAcknowledgePageResult operation.

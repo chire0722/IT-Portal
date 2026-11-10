@@ -4,24 +4,21 @@
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
 **Pull request:** #3 — CI/CD hardening: .NET 10 build, tests, CodeQL and Dependabot  
-**Audited head commit:** `988f9790446c1940b22206ead2b158d04e78a13c`  
+**Audited code head before this report update:** `49f4d8147638c7d6df13a19bf90d54159f7d4e3b`  
 **Status:** Engineering remediation and source-level verification completed for this iteration. This is not a penetration-test attestation, legal opinion, certification, or declaration of GDPR, Malaysian PDPA, or NIST conformity.
 
 ## 1. Executive summary
 
-This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, backup-key rollover, and CI security checks.
+This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, audit privacy, HMAC key rotation, and a restricted DSAR case workflow.
 
-The latest GitHub Actions run for the audited head commit completed successfully:
+The earlier GitHub Actions baseline for the pre-change branch passed 379 tests (325 application tests and 54 audit tests). The current code head has a newly queued GitHub Actions run; its result is not claimed until GitHub reports it. A local current-source build passed. The local test host failed to connect during discovery after 90 seconds, so the four newly added HMAC-rotation tests are not counted as passed here.
 
-- .NET 10 application build: passed.
-- `IT_Form.Tests`: 325 passed, 0 failed.
-- `IT_Form.AuditTests`: 54 passed, 0 failed.
-- CodeQL C#: passed.
-- CodeQL Actions: passed.
-- Gitleaks: passed.
-- Dependency Review: passed.
+- .NET 10 application build on current source: passed with NU1900 package-vulnerability-feed access warning and one pre-existing nullable warning.
+- Pre-change baseline `IT_Form.Tests`: 325 passed, 0 failed.
+- Pre-change baseline `IT_Form.AuditTests`: 54 passed, 0 failed.
+- Current-head GitHub CI: queued as run `42778511217` at report-update time.
 
-**Total automated tests: 379 passed, 0 failed.**
+**Verified baseline total: 379 passed, 0 failed. Current-head added tests: 4 compiled but not counted as executed because the local test host did not connect.**
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 
@@ -34,6 +31,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Bulk PDF export rejects mixed-scope selections instead of silently exporting only an accessible subset.
 - Offboarding bulk PDF export requires HR authorization and verifies signature integrity before rendering each document.
 - Existing route-level authorization and company-scope helpers remain in place; a complete negative-test matrix for every route is still outstanding.
+- Added malware scanning to the direct employee Excel import, IT asset Excel import, and offboarding hardware-damage/hardware-return attachment paths; those paths also use bounded request bodies and cancellation-aware copying.
 
 ### 2.2 Digital signature integrity
 
@@ -43,6 +41,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - PDF rendering displays invalid-signature states instead of silently presenting tampered signature data as verified.
 - Added bounded PNG data-URL validation, including encoded-size and image-dimension limits, for signature inputs.
 - Added regression tests for synthetic HMAC markers and partial signature metadata.
+- Added a versioned HMAC key ring with current-version prefixes, previous-key verification, unversioned legacy verification during migration, malformed-version rejection, and configuration fail-closed behavior. The new four-test class compiles; execution remains pending the GitHub test run because the local test host did not connect.
 
 **Compatibility note:** historical records carrying synthetic import markers or incomplete signature metadata may now be rejected as unverified. Review and, where appropriate, re-sign those records through an approved process. Do not restore the bypass to make legacy records appear valid.
 
@@ -84,7 +83,8 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Offboarding CSV export uses formula-injection sanitization for spreadsheet-active values.
 - PDF generation no longer exposes raw internal exception messages to end users in the reviewed paths.
 - Existing audit payload and request-log sanitization remains in place.
-- Audit free-text and custom log statements still require a wider privacy review; structured payload sanitization does not guarantee that arbitrary free text contains no personal data.
+- Audit failure records no longer persist raw exception messages; free-text redaction covers common secret/email patterns; audit notification emails sanitize JSON and HTML-encode user-controlled values.
+- A restricted HR-only DSAR case register now supports access, portability, correction and deletion request types, idempotent submission, allow-listed state transitions, optimistic concurrency, immutable events, and completion evidence references. It does not yet perform data discovery, secure export delivery, legal-hold evaluation, or deletion.
 
 ### 2.7 Documentation and governance evidence
 
@@ -101,19 +101,19 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**GitHub Actions run:** `42767916053`  
-**Head commit:** `988f9790446c1940b22206ead2b158d04e78a13c`  
-**Run conclusion:** success
+**Previous GitHub Actions run:** `42767916053`  
+**Previous head:** `988f9790446c1940b22206ead2b158d04e78a13c`  
+**Current-head run:** `42778511217` — queued when this report was prepared
 
 | Check | Result |
 |---|---:|
-| .NET 10 build | Passed |
-| IT_Form.Tests | 325 passed / 0 failed |
-| IT_Form.AuditTests | 54 passed / 0 failed |
-| CodeQL C# | Passed |
-| CodeQL Actions | Passed |
-| Gitleaks | Passed |
-| Dependency Review | Passed |
+| Previous .NET 10 build | Passed |
+| Previous IT_Form.Tests | 325 passed / 0 failed |
+| Previous IT_Form.AuditTests | 54 passed / 0 failed |
+| Previous CodeQL C# / Actions | Passed |
+| Previous Gitleaks / Dependency Review | Passed |
+| Current-head build | Passed locally; NU1900 warning recorded |
+| Current-head GitHub CI | Queued; no result claimed |
 
 These are automated CI results. They do not replace dynamic testing against a deployed environment, a human security review, or an independent penetration test.
 
@@ -123,7 +123,7 @@ These are automated CI results. They do not replace dynamic testing against a de
 
 1. **Production malware scanning:** deploy ClamAV on an isolated private network; restrict access to the application host; verify signature updates, health monitoring, alerting, timeout behavior, and EICAR detection in isolated staging.
 2. **Upload coverage:** complete a route-by-route inventory of every upload and attachment endpoint; prove that each required path validates, scans, fails closed, and cleans up partial files.
-3. **DSAR operations:** the repository still does not evidence a complete case-managed data-subject request workflow for identity verification, access, correction, portability, deletion approval, legal holds, response deadlines, and completion evidence.
+3. **DSAR operations:** the code now has a restricted case register and state machine, but identity verification, data inventory-driven access/portability export, correction execution, legal holds, response deadlines, secure delivery, processor propagation, and deletion execution remain release gates.
 4. **Incident management:** the incident-response playbook is a procedure template; a case-managed incident register, named incident commander, on-call contacts, processor escalation, and tabletop evidence remain outstanding.
 5. **Privacy governance:** confirm the data controller, processor/sub-processor register, applicable Malaysian registration and DPO requirements, and GDPR Article 3 territorial scope with the responsible legal/privacy owner.
 6. **Production key and backup controls:** provision the Data Protection certificate and durable key ring on all production instances; verify private-key ACLs, encrypted volumes, backup custody, recovery-key availability, and a witnessed restore.
@@ -131,7 +131,7 @@ These are automated CI results. They do not replace dynamic testing against a de
 ### P1 — Required engineering and operational follow-up
 
 1. **Encryption scope:** inventory all personal and business-identifying fields. Marked-column encryption is not whole-database encryption.
-2. **HMAC key rotation:** the current signature-integrity service still uses a single configured HMAC key. Implement and test a versioned key migration before routine key replacement; retain the old key until historical signatures have been migrated or intentionally invalidated.
+2. **HMAC production migration:** versioned key-ring code and regression tests are present; provision real versioned secrets, retain previous keys through migration, and obtain passing current-head CI evidence before production rotation.
 3. **Image processing:** add safe image re-encoding and deeper parsing where required by the threat model; confirm no untrusted image is rendered by an unsafe decoder.
 4. **CSP:** continue removing remaining `unsafe-inline` and route-specific unsafe exceptions after inventorying inline scripts and testing all views.
 5. **Authorization testing:** complete negative tests for every API, download, export, signed-link, and cross-company access route, including role changes and stale claims.
@@ -156,8 +156,9 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 1. Keep the changes on `ci-cd/hardening` and review pull request #3; do not merge automatically.
 2. Resolve the P0 operational and governance blockers with named owners.
 3. Complete the remaining upload and authorization inventories and negative tests.
-4. Implement versioned HMAC key rotation before any production HMAC-key replacement.
+4. Provision and exercise the versioned HMAC key ring before any production HMAC-key replacement; do not remove previous keys until historical verification is complete.
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening has been implemented and the audited CI run passed. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented and the current source builds. The prior 379-test baseline passed, but current-head CI and the newly added test execution were still pending at report preparation time. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+

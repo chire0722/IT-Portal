@@ -172,10 +172,18 @@ namespace IT_Form.Application.Features.Offboarding.Step1
 
             var fileName = $"Offboarding_Return_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
             var previousPath = existing.HardwareReturnImagePath;
-            var reencoded = await ImageReencodingHelper.ReencodeAsync(hardwareReturnImage, cancellationToken);
-            fileName = Path.ChangeExtension(fileName, reencoded.Extension);
-            existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveBytesAsync(
-                reencoded.Bytes, env, "offboarding", fileName, cancellationToken);
+            if (extension is ".jpg" or ".jpeg" or ".png")
+            {
+                var reencoded = await ImageReencodingHelper.ReencodeAsync(hardwareReturnImage, cancellationToken);
+                fileName = Path.ChangeExtension(fileName, reencoded.Extension);
+                existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveBytesAsync(
+                    reencoded.Bytes, env, "offboarding", fileName, cancellationToken);
+            }
+            else
+            {
+                existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveAsync(
+                    hardwareReturnImage, env, "offboarding", fileName, cancellationToken);
+            }
 
             // The caller deletes the previous file only after the new path is committed.
             return previousPath;

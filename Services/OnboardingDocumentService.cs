@@ -15,6 +15,9 @@ namespace IT_Form.Services
     /// </summary>
     public sealed class OnboardingDocumentService : IOnboardingDocumentService
     {
+        private const int MaxSelectedRequests = 100;
+        private const long MaxTotalPdfBytes = 100L * 1024 * 1024;
+
         private readonly ApplicationDbContext _context;
         private readonly IPdfService _pdfService;
         private readonly ISignatureIntegrityService _integrityService;
@@ -53,6 +56,13 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Failure("Select valid requests before exporting.", "Index");
             }
 
+            if (requestedIds.Length > MaxSelectedRequests)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    $"Select no more than {MaxSelectedRequests} requests per export.",
+                    "Index");
+            }
+
             var requests = await _context.OnboardingRequests
                 .AsNoTracking()
                 .AsSplitQuery()
@@ -73,6 +83,7 @@ namespace IT_Form.Services
             using var memoryStream = new MemoryStream();
             using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
             {
+                long totalPdfBytes = 0;
                 foreach (var request in requests)
                 {
                     try
@@ -85,7 +96,27 @@ namespace IT_Form.Services
                         }
 
                         var pdfBytes = _pdfService.GeneratePdf(request);
-                        var safeName = string.Join("_", (request.FullName ?? "Unknown").Split(Path.GetInvalidFileNameChars()));
+                        totalPdfBytes += pdfBytes.LongLength;
+                        if (totalPdfBytes > MaxTotalPdfBytes)
+                        {
+                            return ProcessResult<BinaryFilePayload>.Failure(
+                                "The selected export exceeds the permitted size. Reduce the number of requests and retry.",
+                                "Index");
+                        }
+
+                        var invalidFileNameCharacters = Path.GetInvalidFileNameChars()
+                            .Concat(new[] { '/', '\\' })
+                            .ToHashSet();
+                        var safeName = new string((request.FullName ?? "Unknown")
+                            .Select(character => char.IsControl(character) || invalidFileNameCharacters.Contains(character)
+                                ? '_'
+                                : character)
+                            .ToArray())
+                            .Trim(' ', '.', '_');
+                        if (string.IsNullOrWhiteSpace(safeName))
+                        {
+                            safeName = "Employee";
+                        }
                         var entry = archive.CreateEntry($"Onboarding_{safeName}_ID{request.Id}.pdf", CompressionLevel.Fastest);
                         using var entryStream = entry.Open();
                         entryStream.Write(pdfBytes, 0, pdfBytes.Length);
@@ -93,6 +124,9 @@ namespace IT_Form.Services
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to generate PDF for Onboarding Request {Id}", request.Id);
+                        return ProcessResult<BinaryFilePayload>.Failure(
+                            "Unable to generate the requested export. Please retry or contact IT.",
+                            "Index");
                     }
                 }
             }
@@ -163,3 +197,4 @@ namespace IT_Form.Services
         }
     }
 }
+

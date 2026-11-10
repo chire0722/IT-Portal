@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using IT_Form.Controllers;
 using IT_Form.Models;
@@ -105,7 +106,11 @@ namespace IT_Form.Tests
                 Id = empId,
                 UserName = "verified-user",
                 Email = "verified-user@ytc.com",
-                FullName = "Verified User"
+                FullName = "Verified User",
+                UserCompanies = new List<UserCompany>
+                {
+                    new UserCompany { CompanyName = "HQ" }
+                }
             });
             context.DeviceVerificationTokens.Add(new DeviceVerificationToken
             {
@@ -328,6 +333,14 @@ namespace IT_Form.Tests
             {
                 HttpContext = new DefaultHttpContext()
             };
+            controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, "it-test-user"),
+                    new Claim("UserTitle", "IT"),
+                    new Claim("UserCompany", "HQ")
+                ],
+                "Test"));
 
             controller.ControllerContext.HttpContext.Request.Scheme = "http";
             controller.ControllerContext.HttpContext.Request.Host = new HostString(host, port);

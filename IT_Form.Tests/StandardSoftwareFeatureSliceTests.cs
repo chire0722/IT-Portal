@@ -515,8 +515,8 @@ public class StandardSoftwareFeatureSliceTests
         var content = new MemoryStream(buffer.ToArray());
         return new FormFile(content, 0, content.Length, "file", "software-import.xlsx")
         {
-            ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            Headers = new HeaderDictionary()
+            Headers = new HeaderDictionary(),
+            ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         };
     }
 

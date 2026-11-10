@@ -1,7 +1,7 @@
 using System.Security.Claims;
-using IT_Form.Helpers;
-using IT_Form.Security;
+using IT_Form.Application.Common.Support;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Application.Features.StandardSoftware;
@@ -12,7 +12,7 @@ namespace IT_Form.Application.Features.StandardSoftware;
 internal static class StandardSoftwareLicenseScopeSupport
 {
     public static bool CanAccessEmployee(ClaimsPrincipal? user, string? company)
-        => PortalTitles.IsSuperAdmin(user) || CompanyScopeHelper.CanAccessCompany(user, company);
+        => CompanyScopeHelper.CanAccessCompany(user, company);
 
     public static async Task<bool> CanAccessAsync(
         ApplicationDbContext context,
@@ -20,7 +20,7 @@ internal static class StandardSoftwareLicenseScopeSupport
         int softwareLicenseId,
         CancellationToken cancellationToken)
     {
-        if (PortalTitles.IsSuperAdmin(user) || !CompanyScopeHelper.HasScopedCompanies(user))
+        if (ItAdminCompanyScopeSupport.HasGlobalAccess(user))
         {
             return true;
         }
@@ -38,7 +38,7 @@ internal static class StandardSoftwareLicenseScopeSupport
             return false;
         }
 
-        var accessibleCompanyIds = await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(
+        var accessibleCompanyIds = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(
             context,
             user,
             cancellationToken);

@@ -339,8 +339,8 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(service => service.DecryptKey("encrypted-secret")).Returns("REAL-SECRET-KEY");
         var currentUser = new TestCurrentUserAccessor(
-            userName: "it.user",
-            titles: ["IT"],
+            userName: "manager.user",
+            titles: ["Manager"],
             companies: ["Company A"]);
         var handler = new GetStandardSoftwareKeysQueryHandler(context, encryption.Object, currentUser);
 

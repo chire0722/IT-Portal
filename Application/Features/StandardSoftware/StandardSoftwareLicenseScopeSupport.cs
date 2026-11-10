@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using IT_Form.Helpers;
+using IT_Form.Security;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,13 +11,16 @@ namespace IT_Form.Application.Features.StandardSoftware;
 /// </summary>
 internal static class StandardSoftwareLicenseScopeSupport
 {
+    public static bool CanAccessEmployee(ClaimsPrincipal? user, string? company)
+        => PortalTitles.IsSuperAdmin(user) || CompanyScopeHelper.CanAccessCompany(user, company);
+
     public static async Task<bool> CanAccessAsync(
         ApplicationDbContext context,
         ClaimsPrincipal? user,
         int softwareLicenseId,
         CancellationToken cancellationToken)
     {
-        if (!CompanyScopeHelper.HasScopedCompanies(user))
+        if (PortalTitles.IsSuperAdmin(user) || !CompanyScopeHelper.HasScopedCompanies(user))
         {
             return true;
         }

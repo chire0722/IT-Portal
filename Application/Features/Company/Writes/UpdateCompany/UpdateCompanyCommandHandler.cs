@@ -65,8 +65,8 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
             WorksOnSunday = entity.WorksOnSunday
         };
 
-        var newLogoPath = await CompanyLogoStorage.SaveAsync(_hostEnvironment, request.Logo, cancellationToken);
         request.Adapt(entity);
+        var newLogoPath = await CompanyLogoStorage.SaveAsync(_hostEnvironment, request.Logo, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(newLogoPath))
         {

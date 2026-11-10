@@ -634,11 +634,12 @@ app.UseStaticFiles();
 // Use Serilog to log every HTTP request
 app.UseSerilogRequestLogging();
 
-app.UseRateLimiter();
-
 app.UseRequestLocalization();
 
 app.UseAuthentication();
+// Rate limiting follows authentication so per-user partitions use the authenticated identity.
+// It remains before authorization so rejected requests do not execute protected endpoints.
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // --- Password Change Enforcement Middleware ---

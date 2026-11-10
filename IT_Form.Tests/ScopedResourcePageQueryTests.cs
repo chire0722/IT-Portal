@@ -487,7 +487,7 @@ public class ScopedResourcePageQueryTests
     /// <summary>
     /// Runs the ItUserWithAssignedCompany_OnlySeesResourcesWithinScope operation.
     /// </summary>
-    public async Task ItUserWithAssignedCompany_SeesCrossCompanyResourcePagesAndCompanyOptions()
+    public async Task ItUserWithAssignedCompany_OnlySeesResourcesWithinScope()
     {
         await using var context = CreateContext();
 

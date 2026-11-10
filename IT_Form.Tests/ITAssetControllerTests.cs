@@ -40,7 +40,7 @@ namespace IT_Form.Tests
         /// <summary>
         /// Runs the Index_RestrictsAssetsToAssignedCompany_ForCompanyScopedItUser operation.
         /// </summary>
-        public async Task Index_ShowsAssetsAcrossCompanies_ForCompanyScopedItUser()
+        public async Task Index_RestrictsAssetsToAssignedCompany_ForCompanyScopedItUser()
         {
             using var context = CreateContext();
             context.Companies.AddRange(

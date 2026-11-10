@@ -46,7 +46,7 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> ExportCsv(string searchString, RequestStatus? status)
         => HandleProcessResult(await _sender.Send(new ExportOffboardingCsvQuery(searchString, status)));
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")]
+    [HttpPost, RequestSizeLimit(128 * 1024), ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")]
     /// <summary>
     /// Runs the ExportBulkPdf operation.
     /// </summary>
@@ -218,3 +218,4 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> RegenerateToken(int id)
         => ProcessResponse(await _sender.Send(new ProcessOffboardingTokenRegenerationCommand(id)), "Details", id);
 }
+

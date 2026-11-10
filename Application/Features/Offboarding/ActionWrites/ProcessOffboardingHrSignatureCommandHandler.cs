@@ -4,6 +4,7 @@ using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -49,6 +50,16 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
             if (!await OffboardingActionWriteHelpers.IsUserAuthorizedForRequest(_context, user, _userManager, offboardingRequest, _currentUserAccessor.UserName))
                 return new CommandResponse { IsForbidden = true };
 
+            if (offboardingRequest.Status != RequestStatus.Draft ||
+                !string.IsNullOrWhiteSpace(offboardingRequest.HRSignature))
+            {
+                return new CommandResponse
+                {
+                    Message = "Only a draft request without an existing HR signature can be signed.",
+                    RequestId = request.Id
+                };
+            }
+
             var currentUser = await _userManager.GetUserAsync(user);
             var signedAt = DateTime.UtcNow;
             var signerName = !string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser.FullName : (_currentUserAccessor.UserName ?? "Unknown");
@@ -61,3 +72,4 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 }
+

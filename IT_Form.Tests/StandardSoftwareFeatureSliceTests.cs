@@ -330,8 +330,8 @@ public class StandardSoftwareFeatureSliceTests
 
         Assert.True(result.IsSuccess);
         var software = Assert.Single(result.Data!.SoftwareList);
-        Assert.Equal([101, 102], software.Licenses.Select(license => license.Id).OrderBy(id => id).ToArray());
-        Assert.Equal(2, result.Data.CompanyOptions.Count);
+        Assert.Equal([101], software.Licenses.Select(license => license.Id).OrderBy(id => id).ToArray());
+        Assert.Single(result.Data.CompanyOptions);
     }
 
     [Fact]

@@ -194,7 +194,7 @@ namespace IT_Form.Controllers
 
             using (var stream = new MemoryStream())
             {
-                await file.CopyToAsync(stream, HttpContext.RequestAborted);
+                await file.CopyToAsync(stream, HttpContext?.RequestAborted ?? CancellationToken.None);
                 stream.Position = 0;
                 using (var workbook = new XLWorkbook(stream))
                 {
@@ -513,3 +513,4 @@ namespace IT_Form.Controllers
         }
     }
 }
+

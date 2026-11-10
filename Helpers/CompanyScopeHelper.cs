@@ -21,6 +21,12 @@ public static class CompanyScopeHelper
     /// </summary>
     public static List<string> GetScopedCompanies(ClaimsPrincipal? user)
     {
+        // Super Admin is always global, even if an older identity still carries a company claim.
+        if (PortalTitles.IsSuperAdmin(user))
+        {
+            return [];
+        }
+
         var companies = UserHelper.GetClaimValues(user, "UserCompany")
             .Where(company => !string.IsNullOrWhiteSpace(company))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -31,6 +37,7 @@ public static class CompanyScopeHelper
             return companies;
         }
 
+        // Unscoped IT remains a global IT identity; scoped IT is constrained by its company claims.
         return RequiresExplicitCompanyScope(user)
             ? [NoCompanyAccessSentinel]
             : [];

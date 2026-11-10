@@ -433,7 +433,9 @@ namespace IT_Form.Controllers
                 return BadRequest("The email confirmation expired or is invalid. Reopen the request and try again.");
             }
 
-            if (!ValidateEmailAddresses(model.To, out var recipientError) ||
+            string? recipientError = null;
+            if (model.To is null || !model.To.Any(value => !string.IsNullOrWhiteSpace(value)) ||
+                !ValidateEmailAddresses(model.To, out recipientError) ||
                 !ValidateEmailAddresses(model.Cc, out recipientError) ||
                 string.IsNullOrWhiteSpace(model.Subject) ||
                 model.Subject.Length > 200 ||

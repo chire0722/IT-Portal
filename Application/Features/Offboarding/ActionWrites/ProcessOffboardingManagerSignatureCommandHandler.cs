@@ -5,6 +5,7 @@ using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -50,6 +51,18 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
             if (!CompanyScopeHelper.CanAccessCompany(user, offboardingRequest.Branch))
                 return new CommandResponse { IsForbidden = true, RequestId = request.Id };
 
+            if (offboardingRequest.Status != RequestStatus.PendingHODApproval ||
+                string.IsNullOrWhiteSpace(offboardingRequest.HRSignature) ||
+                string.IsNullOrWhiteSpace(offboardingRequest.ApprovedByUserId) ||
+                !string.IsNullOrWhiteSpace(offboardingRequest.HODSignature))
+            {
+                return new CommandResponse
+                {
+                    Message = "This request is not ready for the HOD signature.",
+                    RequestId = request.Id
+                };
+            }
+
             var currentUser = await _userManager.GetUserAsync(user);
             var userId = _userManager.GetUserId(user);
             if (string.IsNullOrWhiteSpace(userId))
@@ -78,3 +91,4 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 }
+

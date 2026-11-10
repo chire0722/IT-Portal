@@ -21,7 +21,10 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 .WithMessage("Unknown request type.");
 
             RuleFor(x => x.SignatureData)
+                .NotEmpty()
+                .WithMessage("Please provide your signature.")
                 .Must(SignatureDataUriValidator.IsValid)
+                .When(x => !string.IsNullOrWhiteSpace(x.SignatureData))
                 .WithMessage("Please provide a valid PNG signature image within the allowed size and dimensions.");
 
             RuleFor(x => x.PdpaConsent)

@@ -106,7 +106,7 @@ namespace IT_Form.Application.Features.StandardSoftware
         /// </summary>
         public async Task<ProcessResult<List<StandardSoftwareEmployeeOptionDto>>> Handle(GetStandardSoftwareEmployeesQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
             var employeeQuery = _context.OnboardingRequests
                 .AsNoTracking()
                 .Where(o => o.Status == RequestStatus.Approved || o.Status == RequestStatus.Completed);

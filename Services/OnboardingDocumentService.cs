@@ -158,7 +158,7 @@ namespace IT_Form.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate PDF for request #{Id}", id);
-                return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", id);
+                return ProcessResult<BinaryFilePayload>.Failure("Unable to generate the PDF. Please retry or contact IT.", "Details", id);
             }
         }
     }

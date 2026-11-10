@@ -51,6 +51,10 @@ namespace IT_Form.Application.Features.EmailGroup.ImportEmailGroups
             {
                 return new ImportEmailGroupsResult(false, string.Empty, "The Excel file appears to be empty.");
             }
+            if (usedRange.RowCount() > 5001 || usedRange.ColumnCount() > 20)
+            {
+                return new ImportEmailGroupsResult(false, string.Empty, "Email group import is limited to 5,000 data rows and 20 columns.");
+            }
 
             var rows = usedRange.RowsUsed().Skip(1);
             var rowList = rows.ToList();

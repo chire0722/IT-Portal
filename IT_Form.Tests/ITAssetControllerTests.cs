@@ -90,7 +90,7 @@ namespace IT_Form.Tests
         /// <summary>
         /// Runs the Edit_ForbidsCompanyScopedItUser_FromOpeningAnotherCompanyAsset operation.
         /// </summary>
-        public async Task Edit_AllowsCompanyScopedItUser_ToOpenAssetFromAnotherCompany()
+        public async Task Edit_ForbidsCompanyScopedItUser_FromOpeningAnotherCompanyAsset()
         {
             using var context = CreateContext();
             var asset = new ITAsset { AssetTag = "TAG-010", Company = "Beta", Status = AssetStatus.Available };

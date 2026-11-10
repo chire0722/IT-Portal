@@ -315,8 +315,7 @@ public class StandardSoftwareFeatureSliceTests
                     [
                         new SoftwareLicenseCompany { CompanyId = 2 }
                     ]
-                }
-,
+                },
                 new SoftwareLicense
                 {
                     Id = 103,

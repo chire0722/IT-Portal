@@ -53,7 +53,7 @@ public sealed class CompanyLogoStorageTests
         {
             CompanyLogoStorage.DeleteIfManaged(
                 environment.Object,
-                "uploads/companies/logos/../../../../keep.txt");
+                "uploads/companies/logos/../../../keep.txt");
 
             Assert.True(File.Exists(outsideFile));
         }

@@ -143,6 +143,55 @@ namespace IT_Form.Helpers
             }
         }
 
+        public static async Task<string> SaveBytesAsync(
+            ReadOnlyMemory<byte> contents,
+            IWebHostEnvironment environment,
+            string category,
+            string fileName,
+            CancellationToken cancellationToken = default)
+        {
+            if (contents.Length <= 0)
+            {
+                throw new ArgumentException("File contents are required.", nameof(contents));
+            }
+
+            var safeFileName = Path.GetFileName((fileName ?? string.Empty).Replace('\\', '/'));
+            if (string.IsNullOrWhiteSpace(safeFileName) || safeFileName is "." or "..")
+            {
+                throw new ArgumentException("A valid file name is required.", nameof(fileName));
+            }
+
+            var targetDirectory = GetCategoryRoot(environment, category);
+            var physicalPath = Path.Combine(targetDirectory, safeFileName);
+            var temporaryPath = Path.Combine(targetDirectory, $".upload-{Guid.NewGuid():N}.tmp");
+            try
+            {
+                await using (var stream = new FileStream(
+                    temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    81920, FileOptions.Asynchronous | FileOptions.SequentialScan))
+                {
+                    await stream.WriteAsync(contents, cancellationToken);
+                    await stream.FlushAsync(cancellationToken);
+                }
+
+                File.Move(temporaryPath, physicalPath);
+                return BuildStoredPath(category, safeFileName);
+            }
+            catch
+            {
+                try
+                {
+                    if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+                }
+                catch
+                {
+                    // Orphaned temporary files are not published and remain detectable for cleanup.
+                }
+
+                throw;
+            }
+        }
+
         /// <summary>
         /// Runs the MoveExistingFileToSecureStorage operation.
         /// </summary>
@@ -269,3 +318,4 @@ namespace IT_Form.Helpers
             => storedPath.Trim().Replace('\\', '/');
     }
 }
+

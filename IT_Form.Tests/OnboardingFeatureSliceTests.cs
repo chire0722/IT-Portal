@@ -548,6 +548,79 @@ public class OnboardingFeatureSliceTests
 
     [Fact]
     /// <summary>
+    /// Runs the CompleteOnboardingItSetupHandler_RejectsAssetFromDifferentCompany operation.
+    /// </summary>
+    public async Task CompleteOnboardingItSetupHandler_RejectsAssetFromDifferentCompany()
+    {
+        using var context = CreateContext();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 802,
+            FullName = "Cross Company User",
+            Branch = "HQ",
+            Status = RequestStatus.PendingITApproval,
+            FolderPermissions = new List<FolderPermission>(),
+            RequestSoftware = new List<RequestSoftware>(),
+            RequestEmailGroups = new List<RequestEmailGroup>(),
+            RequestSharedMailboxes = new List<RequestSharedMailbox>(),
+            IssuedAssets = new List<IssuedAsset>()
+        });
+        context.ITAssets.Add(new ITAsset
+        {
+            Id = 1,
+            AssetTag = "OTHER-001",
+            SerialNumber = "OTHER-SN-001",
+            AssetType = AssetType.Laptop,
+            Status = AssetStatus.Available,
+            Company = "Other Company"
+        });
+        await context.SaveChangesAsync();
+
+        var logger = Mock.Of<ILogger<CompleteOnboardingItSetupCommandHandler>>();
+        var currentUser = new Mock<ICurrentUserAccessor>();
+        currentUser.SetupGet(x => x.User).Returns(BuildUser("it-user", "IT", "HQ"));
+        var userManager = CreateUserManager();
+        userManager.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync(new ApplicationUser { Signature = "it-signature" });
+        var integrity = new Mock<ISignatureIntegrityService>();
+        integrity.Setup(x => x.ComputeHmac(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>()))
+            .Returns("HMAC");
+        var handler = new CompleteOnboardingItSetupCommandHandler(context, logger, userManager.Object, currentUser.Object, integrity.Object);
+
+        var result = await handler.Handle(new CompleteOnboardingItSetupCommand
+        {
+            Session = new OnboardingViewModel
+            {
+                Id = 802,
+                IssuedAssets = new List<AssetItemViewModel>
+                {
+                    new() { ITAssetId = 1, AssetType = AssetType.Laptop, IsChecked = true }
+                }
+            },
+            IsDraft = false,
+            CheckPhysicalClean = true,
+            CheckO365Setup = true,
+            CheckWindowsLogin = true,
+            CheckEmailSetup = true,
+            CheckSpecificSoftware = true,
+            CheckGeneralSoftware = true,
+            CheckAbcGroup = true,
+            CheckEmailMailGroup = true,
+            CheckDomainJoin = true,
+            CheckSharedDrive = true,
+            CheckWiFiSetup = true,
+            CheckPrinterSetup = true,
+            CheckScanFolder = true,
+            CheckVPNSetup = true
+        }, CancellationToken.None);
+
+        Assert.Equal(CompleteOnboardingItSetupStatus.InvalidAssetSelection, result.Status);
+        Assert.Equal(AssetStatus.Available, (await context.ITAssets.FindAsync(1))!.Status);
+        Assert.Equal(RequestStatus.PendingITApproval, (await context.OnboardingRequests.FindAsync(802))!.Status);
+    }
+
+    [Fact]
+    /// <summary>
     /// Runs the EditOnboardingRequestValidator_Fails_WhenIdInvalid operation.
     /// </summary>
     public async Task EditOnboardingRequestValidator_Fails_WhenIdInvalid()
@@ -1058,3 +1131,4 @@ public class OnboardingFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 }
+

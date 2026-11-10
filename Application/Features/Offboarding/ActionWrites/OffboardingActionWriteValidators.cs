@@ -13,7 +13,7 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         public ProcessOffboardingHrSignatureCommandValidator()
         {
             RuleFor(x => x.Id).GreaterThan(0);
-            RuleFor(x => x.SignatureBase64).NotEmpty().WithMessage("Signature data is invalid or too large.").Must(SignatureDataUriValidator.IsValid).When(x => !string.IsNullOrWhiteSpace(x.SignatureBase64)).WithMessage("Signature must be a valid PNG image within the allowed size and dimensions.");
+            RuleFor(x => x.SignatureBase64).NotEmpty().WithMessage("Signature data is invalid or too large.").Must(SignatureDataUriValidator.IsValid).When(x => !string.IsNullOrWhiteSpace(x.SignatureBase64), ApplyConditionTo.CurrentValidator).WithMessage("Signature must be a valid PNG image within the allowed size and dimensions.");
         }
     }
 

@@ -300,7 +300,7 @@ namespace IT_Form.Controllers
                 },
                 async () => BadRequest("Invalid software id."));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Updates data for the UpdateKey operation.
         /// </summary>
@@ -316,7 +316,7 @@ namespace IT_Form.Controllers
                 },
                 async () => BadRequest("Key value is required."));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the AssignKey operation.
         /// </summary>

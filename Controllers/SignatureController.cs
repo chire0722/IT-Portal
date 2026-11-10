@@ -26,7 +26,10 @@ namespace IT_Form.Controllers
         /// Runs the Acknowledge operation.
         /// </summary>
         public async Task<IActionResult> Acknowledge(Guid token, string type)
-            => HandleAcknowledgePageResult(await _sender.Send(new GetSignatureAcknowledgePageQuery(token, type)));
+        {
+            SetPrivateNoStoreHeaders();
+            return HandleAcknowledgePageResult(await _sender.Send(new GetSignatureAcknowledgePageQuery(token, type)));
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -35,6 +38,7 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> Acknowledge(Guid token, string type, string signatureData, bool pdpaConsent = false)
         {
+            SetPrivateNoStoreHeaders();
             return await ExecuteWithValidationResult(
                 async () =>
                 {
@@ -65,7 +69,18 @@ namespace IT_Form.Controllers
         /// Runs the ViewPdf operation.
         /// </summary>
         public async Task<IActionResult> ViewPdf(Guid token, string type)
-            => HandlePdfResult(await _sender.Send(new GetSignaturePdfQuery(token, type)));
+        {
+            SetPrivateNoStoreHeaders();
+            return HandlePdfResult(await _sender.Send(new GetSignaturePdfQuery(token, type)));
+        }
+
+        private void SetPrivateNoStoreHeaders()
+        {
+            Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+        }
 
         /// <summary>
         /// Runs the HandleAcknowledgePageResult operation.

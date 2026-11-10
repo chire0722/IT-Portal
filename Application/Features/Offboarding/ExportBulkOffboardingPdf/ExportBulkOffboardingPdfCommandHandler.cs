@@ -45,15 +45,12 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
                 return ProcessResult<BinaryFilePayload>.Forbidden();
             }
 
-            var requestedIds = request.Ids?
-                .Where(id => id > 0)
-                .Distinct()
-                .ToArray() ?? [];
-
-            if (requestedIds.Length == 0)
+            if (request.Ids == null || request.Ids.Length == 0 || request.Ids.Any(id => id <= 0))
             {
-                return ProcessResult<BinaryFilePayload>.Failure("No requests selected.", "Index");
+                return ProcessResult<BinaryFilePayload>.Failure("Select valid requests before exporting.", "Index");
             }
+
+            var requestedIds = request.Ids.Distinct().ToArray();
 
             if (requestedIds.Length > MaxSelectedRequests)
             {
@@ -125,6 +122,10 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
                     memoryStream.ToArray(),
                     "application/zip",
                     $"Offboarding_PDFs_{DateTime.UtcNow:yyyyMMdd}.zip"));
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

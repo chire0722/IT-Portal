@@ -363,4 +363,19 @@ public sealed class GetSignaturePdfQueryHandler
 
         return new(GetSignaturePdfStatus.Invalid, Message: "Unknown request type.");
     }
+
+    private static string CreateSafeDownloadName(string? fullName)
+    {
+        var safeName = System.Text.RegularExpressions.Regex.Replace(
+            fullName ?? "Employee",
+            @"[^\\p{L}\\p{N}._-]+",
+            "_").Trim('.', '_', '-');
+
+        if (string.IsNullOrWhiteSpace(safeName))
+        {
+            safeName = "Employee";
+        }
+
+        return safeName.Length > 80 ? safeName[..80] : safeName;
+    }
 }

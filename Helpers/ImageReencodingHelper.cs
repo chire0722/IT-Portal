@@ -36,7 +36,7 @@ public static class ImageReencodingHelper
             using var source = new MemoryStream(capacity: checked((int)file.Length));
             await input.CopyToAsync(source, cancellationToken);
             var bytes = source.ToArray();
-            var image = ImageResult.FromMemory(bytes, ColorComponents.RedGreenBlueAlpha);
+            var image = ImageResult.FromMemory(bytes, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
 
             if (image.Width <= 0 || image.Height <= 0 ||
                 image.Width > MaxWidth || image.Height > MaxHeight ||

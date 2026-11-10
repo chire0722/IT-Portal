@@ -216,7 +216,7 @@ public class UserManagementPageQueryTests
 
     [Fact]
     /// <summary>
-    /// Runs the ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies operation.
+    /// Runs the ItUserWithAssignedCompany_OnlySeesAndEditsUsersWithinScope operation.
     /// </summary>
     public async Task ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies()
     {

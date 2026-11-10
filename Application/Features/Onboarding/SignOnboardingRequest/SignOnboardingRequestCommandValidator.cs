@@ -19,7 +19,7 @@ namespace IT_Form.Application.Features.Onboarding.SignOnboardingRequest
                 .NotEmpty()
                 .WithMessage("Signature data is invalid or too large.")
                 .Must(SignatureDataUriValidator.IsValid)
-                .When(x => !string.IsNullOrWhiteSpace(x.SignatureData))
+                .When(x => !string.IsNullOrWhiteSpace(x.SignatureData), ApplyConditionTo.CurrentValidator)
                 .WithMessage("Signature must be a valid PNG image with bounded dimensions and size.");
         }
     }

@@ -270,7 +270,7 @@ public class SignatureReadQueryHandlerTests
         {
             Id = 8,
             AccessToken = token,
-            FullName = "../../evil\\r\\nname",
+            FullName = "../../evil\r\nname",
             Status = RequestStatus.PendingEmployeeSign,
             RequesterSignerName = "HR User",
             RequesterSignedAt = DateTime.UtcNow.AddDays(-2),

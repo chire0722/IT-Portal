@@ -43,9 +43,9 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
     /// </summary>
     public async Task<int> Handle(CreateCompanyCommand request, CancellationToken cancellationToken)
     {
-        await MalwareScanHelper.EnsureCleanAsync(request.Logo, _malwareScanner, "Company logo", cancellationToken);
-
         await _quotaControl.EnsureAvailableAsync(QuotaControl.Companies, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
+
+        await MalwareScanHelper.EnsureCleanAsync(request.Logo, _malwareScanner, "Company logo", cancellationToken);
 
         if (request.IsLoginPageLogo)
         {

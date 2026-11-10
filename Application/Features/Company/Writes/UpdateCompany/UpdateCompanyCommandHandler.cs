@@ -64,33 +64,12 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
             WorksOnSunday = entity.WorksOnSunday
         };
 
+        var newLogoPath = await CompanyLogoStorage.SaveAsync(_hostEnvironment, request.Logo, cancellationToken);
         request.Adapt(entity);
 
-        if (request.Logo != null && request.Logo.Length > 0)
+        if (!string.IsNullOrWhiteSpace(newLogoPath))
         {
-            var extension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
-            var fileName = $"{entity.Id}_Logo_{Guid.NewGuid():N}{extension}";
-            var directoryPath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "companies", "logos");
-
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-
-            if (!string.IsNullOrEmpty(originalCompany.LogoPath))
-            {
-                var oldPath = Path.Combine(_hostEnvironment.WebRootPath, originalCompany.LogoPath.TrimStart('/'));
-                if (File.Exists(oldPath))
-                {
-                    File.Delete(oldPath);
-                }
-            }
-
-            var fullPath = Path.Combine(directoryPath, fileName);
-            await using var fileStream = new FileStream(fullPath, FileMode.Create);
-            await request.Logo.CopyToAsync(fileStream, cancellationToken);
-
-            entity.LogoPath = Path.Combine("uploads", "companies", "logos", fileName).Replace("\\", "/");
+            entity.LogoPath = newLogoPath;
         }
 
         if (entity.IsLoginPageLogo)
@@ -106,7 +85,21 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
         }
 
         var syncedCount = await _companyReferenceSyncService.ApplyUpdatedCompanySyncAsync(originalCompany, entity);
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            CompanyLogoStorage.DeleteIfManaged(_hostEnvironment, newLogoPath);
+            throw;
+        }
+
+        if (!string.IsNullOrWhiteSpace(newLogoPath)
+            && !string.Equals(originalCompany.LogoPath, newLogoPath, StringComparison.Ordinal))
+        {
+            CompanyLogoStorage.DeleteIfManaged(_hostEnvironment, originalCompany.LogoPath);
+        }
 
         return syncedCount;
     }

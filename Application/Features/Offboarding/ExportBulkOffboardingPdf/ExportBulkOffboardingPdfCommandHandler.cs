@@ -34,18 +34,40 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
         /// <summary>
         /// Executes the request and returns the workflow result.
         /// </summary>
+        private const int MaxSelectedRequests = 100;
+        private const long MaxTotalPdfBytes = 100L * 1024 * 1024;
+
         public async Task<ProcessResult<BinaryFilePayload>> Handle(ExportBulkOffboardingPdfCommand request, CancellationToken cancellationToken)
         {
-            if (request.Ids == null || request.Ids.Length == 0)
+            var user = _currentUserAccessor.User;
+            if (user?.HasClaim("UserTitle", "HR") != true)
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
+            var requestedIds = request.Ids?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToArray() ?? [];
+
+            if (requestedIds.Length == 0)
+            {
                 return ProcessResult<BinaryFilePayload>.Failure("No requests selected.", "Index");
+            }
+
+            if (requestedIds.Length > MaxSelectedRequests)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    $"Select no more than {MaxSelectedRequests} requests per export.",
+                    "Index");
+            }
 
             var query = _context.OffboardingRequests
                 .AsNoTracking()
                 .AsSplitQuery()
                 .IncludeOffboardingPdfData()
-                .Where(r => request.Ids.Contains(r.Id));
+                .Where(r => requestedIds.Contains(r.Id));
 
-            var user = _currentUserAccessor.User;
             var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
             if (scopedCompanies.Count > 0)
             {
@@ -53,34 +75,64 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
             }
 
             var requests = await query.ToListAsync(cancellationToken);
-            if (!requests.Any())
-                return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
 
-            using var memoryStream = new MemoryStream();
-            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+            // Never silently export only the in-scope subset of a mixed-tenant selection.
+            if (requests.Count != requestedIds.Length)
             {
-                foreach (var r in requests)
+                return ProcessResult<BinaryFilePayload>.NotFound();
+            }
+
+            try
+            {
+                using var memoryStream = new MemoryStream();
+                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
                 {
-                    try
+                    long totalPdfBytes = 0;
+                    foreach (var requestItem in requests)
                     {
-                        var pdfBytes = _pdfService.GenerateOffboardingPdf(r);
-                        var safeName = string.Join("_", r.FullName.Split(Path.GetInvalidFileNameChars()));
-                        var entry = archive.CreateEntry($"Offboarding_{safeName}_ID{r.Id}.pdf", CompressionLevel.Fastest);
+                        var pdfBytes = _pdfService.GenerateOffboardingPdf(requestItem);
+                        totalPdfBytes += pdfBytes.LongLength;
+                        if (totalPdfBytes > MaxTotalPdfBytes)
+                        {
+                            return ProcessResult<BinaryFilePayload>.Failure(
+                                "The selected export exceeds the permitted size. Reduce the number of requests and retry.",
+                                "Index");
+                        }
+
+                        var invalidFileNameCharacters = Path.GetInvalidFileNameChars()
+                            .Concat(new[] { '/', '\\\\' })
+                            .ToHashSet();
+                        var safeName = new string(requestItem.FullName
+                            .Select(character => char.IsControl(character) || invalidFileNameCharacters.Contains(character)
+                                ? '_'
+                                : character)
+                            .ToArray())
+                            .Trim(' ', '.', '_');
+                        if (string.IsNullOrWhiteSpace(safeName))
+                        {
+                            safeName = "Employee";
+                        }
+
+                        var entry = archive.CreateEntry(
+                            $"Offboarding_{safeName}_ID{requestItem.Id}.pdf",
+                            CompressionLevel.Fastest);
                         using var entryStream = entry.Open();
                         entryStream.Write(pdfBytes, 0, pdfBytes.Length);
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to generate PDF for Offboarding Request {RequestId}", r.Id);
-                    }
                 }
-            }
 
-            memoryStream.Position = 0;
-            return ProcessResult<BinaryFilePayload>.Success(new BinaryFilePayload(
-                memoryStream.ToArray(),
-                "application/zip",
-                $"Offboarding_PDFs_{DateTime.Now:yyyyMMdd}.zip"));
+                return ProcessResult<BinaryFilePayload>.Success(new BinaryFilePayload(
+                    memoryStream.ToArray(),
+                    "application/zip",
+                    $"Offboarding_PDFs_{DateTime.UtcNow:yyyyMMdd}.zip"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate the requested bulk offboarding PDF export.");
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    "Unable to generate the requested export. Please retry or contact IT.",
+                    "Index");
+            }
         }
     }
 }

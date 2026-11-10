@@ -58,7 +58,7 @@ public class EmailGroupFeatureSliceTests
 
         var handler = new CreateEmailGroupCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+            new TestCurrentUserAccessor(titles: ["IT"]));
 
         var id = await handler.Handle(
             new CreateEmailGroupCommand("All Staff", "all.staff@test.local", true, []),

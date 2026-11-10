@@ -33,7 +33,7 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
         /// </summary>
         public async Task<BulkImportServerFoldersResult> Handle(BulkImportServerFoldersCommand request, CancellationToken cancellationToken)
         {
-            if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage))
+            if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage, 5 * 1024 * 1024))
             {
                 return new BulkImportServerFoldersResult(false, null, null, errorMessage);
             }

@@ -4,21 +4,21 @@
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
 **Pull request:** #3 — CI/CD hardening: .NET 10 build, tests, CodeQL and Dependabot  
-**Audited code head before this report-only commit:** `f28221f34a4d0626b7ba3976828f5f7731879e7d`  
+**Audited code head before this report-only commit:** `2e16f8378af2f212fee5e675d75c693257ea1ba3`  
 **Status:** Engineering remediation and source-level verification completed for this iteration. This is not a penetration-test attestation, legal opinion, certification, or declaration of GDPR, Malaysian PDPA, or NIST conformity.
 
 ## 1. Executive summary
 
 This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, audit privacy, HMAC key rotation, and a restricted DSAR case workflow.
 
-The final GitHub Actions run for the current code head passed 383 tests (329 application tests and 54 audit tests). A local current-source build also passed. The local test host failed to connect during discovery after 90 seconds, so GitHub is the authoritative current-head test evidence.
+The final GitHub Actions run for the current code head passed 389 tests (334 application tests and 55 audit tests). A local current-source build also passed. The local test host failed to connect during discovery after 90 seconds, so GitHub is the authoritative current-head test evidence.
 
-- .NET 10 application build on current source: passed with NU1900 package-vulnerability-feed access warning and one pre-existing nullable warning.
-- Current-head `IT_Form.Tests`: 329 passed, 0 failed.
-- Current-head `IT_Form.AuditTests`: 54 passed, 0 failed.
-- Current-head GitHub CI run: `42779132119`, passed.
+- .NET 10 application build on current source: passed with a local NU1900 package-vulnerability-feed access warning; the previously reported nullable warning is fixed.
+- Current-head `IT_Form.Tests`: 334 passed, 0 failed.
+- Current-head `IT_Form.AuditTests`: 55 passed, 0 failed.
+- Current-head GitHub CI run: `42787496931`, passed.
 
-**Current-head total: 383 passed, 0 failed, 0 skipped.**
+**Current-head total: 389 passed, 0 failed, 0 skipped.**
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 
@@ -41,7 +41,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - PDF rendering displays invalid-signature states instead of silently presenting tampered signature data as verified.
 - Added bounded PNG data-URL validation, including encoded-size and image-dimension limits, for signature inputs.
 - Added regression tests for synthetic HMAC markers and partial signature metadata.
-- Added a versioned HMAC key ring with current-version prefixes, previous-key verification, unversioned legacy verification during migration, malformed-version rejection, and configuration fail-closed behavior. The new four-test class compiles; execution remains pending the GitHub test run because the local test host did not connect.
+- Added a versioned HMAC key ring with current-version prefixes, previous-key verification, unversioned legacy verification during migration, malformed-version rejection, and configuration fail-closed behavior. Rotation regression tests pass in current-head CI.
 
 **Compatibility note:** historical records carrying synthetic import markers or incomplete signature metadata may now be rejected as unverified. Review and, where appropriate, re-sign those records through an approved process. Do not restore the bypass to make legacy records appear valid.
 
@@ -53,7 +53,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Integrated scanning into the reviewed offboarding resignation-letter, company-logo create/update, and supported Excel import workflows (department, email contact, email group, server folder, shared mailbox, and standard software imports).
 - Excel uploads validate extension, declared media type, OOXML package structure, entry count, expanded size, per-entry size, macro presence, unsafe ZIP paths, and ZIP symlink entries.
 - Supported document/image/video uploads validate both declared MIME type and file signatures.
-- Added tests for ClamAV protocol verdicts, malformed responses, scanner-not-configured behavior, Excel ZIP traversal rejection, and logo file signatures.
+- Added tests for ClamAV protocol verdicts, malformed responses, scanner-not-configured behavior, Excel ZIP traversal rejection, logo file signatures, and the remaining direct employee/asset/offboarding attachment paths.
 
 **Deployment limitation:** a real ClamAV daemon, signature freshness, network ACLs, monitoring/alerting, and EICAR detection in an isolated staging environment still require deployment verification. Source integration and mock-protocol tests are not proof that production malware scanning is operational. Remaining upload/attachment routes must be inventoried and checked before claiming complete coverage.
 
@@ -81,11 +81,13 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 ### 2.6 Export and audit hardening
 
 - Offboarding CSV export uses formula-injection sanitization for spreadsheet-active values.
-- PDF generation no longer exposes raw internal exception messages to end users in the reviewed paths.
+- PDF generation no longer exposes raw internal exception messages to end users in the reviewed paths. Bulk onboarding and offboarding PDF exports are capped at 100 requests and 100 MB of generated PDF data, bounded at the HTTP request, validator, and service layers, and fail rather than returning a partial archive.
 - Existing audit payload and request-log sanitization remains in place.
 - Audit failure records no longer persist raw exception messages; free-text redaction covers common secret/email patterns; audit notification emails sanitize JSON and HTML-encode user-controlled values.
+- Background email HTML now encodes interpolated user values, stores only sanitized exception types in the outbox error field, and has a regression test for markup injection.
+- Email confirmation POSTs now use a Data Protection integrity token bound to the request, email type, server-generated HTML/signature context, and current actor; request-level authorization, recipient limits/format validation, and subject header-injection checks run before dispatch.
 - A restricted HR-only DSAR case register now supports access, portability, correction and deletion request types, idempotent submission, allow-listed state transitions, optimistic concurrency, immutable events, and completion evidence references. It does not yet perform data discovery, secure export delivery, legal-hold evaluation, or deletion.
-- Reviewed the existing retention background service, email outbox and PDF/export paths at source level. No webhook controller or webhook callback handler was found in the repository, so no webhook-specific patch was applicable; any future webhook must use authenticated, replay-resistant, signed payload validation.
+- The retention service now permanently removes expired terminal email outbox records while preserving pending/processing messages for delivery recovery. The retention regression test passes. No webhook controller or webhook callback handler was found in the repository, so no webhook-specific patch was applicable; any future webhook must use authenticated, replay-resistant, signed payload validation.
 
 ### 2.7 Documentation and governance evidence
 
@@ -102,19 +104,19 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**Current GitHub Actions run:** `42779132119`  
-**Code head tested:** `f28221f34a4d0626b7ba3976828f5f7731879e7d`  
+**Current GitHub Actions run:** `42787496931`  
+**Code head tested:** `2e16f8378af2f212fee5e675d75c693257ea1ba3`  
 **Run conclusion:** success
 
 | Check | Result |
 |---|---:|
 | .NET 10 build | Passed |
-| IT_Form.Tests | 329 passed / 0 failed |
-| IT_Form.AuditTests | 54 passed / 0 failed |
+| IT_Form.Tests | 334 passed / 0 failed |
+| IT_Form.AuditTests | 55 passed / 0 failed |
 | CodeQL C# | Passed |
 | CodeQL Actions | Passed |
 | Gitleaks current tree | No leaks found |
-| Dependency Review | Passed |
+| Dependency Review | Skipped — no dependency manifest change in this run |
 
 These are automated CI results. They do not replace dynamic testing against a deployed environment, a human security review, or an independent penetration test.
 
@@ -123,7 +125,7 @@ These are automated CI results. They do not replace dynamic testing against a de
 ### P0 — Must be resolved before production approval
 
 1. **Production malware scanning:** deploy ClamAV on an isolated private network; restrict access to the application host; verify signature updates, health monitoring, alerting, timeout behavior, and EICAR detection in isolated staging.
-2. **Upload coverage:** complete a route-by-route inventory of every upload and attachment endpoint; prove that each required path validates, scans, fails closed, and cleans up partial files.
+2. **Upload coverage:** complete a route-by-route inventory of every upload and attachment endpoint; prove that each required path validates, scans, fails closed, and cleans up partial files. The direct employee/asset/offboarding attachment paths are now covered in source and tests, but the inventory is not yet evidence-complete.
 3. **DSAR operations:** the code now has a restricted case register and state machine, but identity verification, data inventory-driven access/portability export, correction execution, legal holds, response deadlines, secure delivery, processor propagation, and deletion execution remain release gates.
 4. **Incident management:** the incident-response playbook is a procedure template; a case-managed incident register, named incident commander, on-call contacts, processor escalation, and tabletop evidence remain outstanding.
 5. **Privacy governance:** confirm the data controller, processor/sub-processor register, applicable Malaysian registration and DPO requirements, and GDPR Article 3 territorial scope with the responsible legal/privacy owner.
@@ -134,12 +136,12 @@ These are automated CI results. They do not replace dynamic testing against a de
 1. **Encryption scope:** inventory all personal and business-identifying fields. Marked-column encryption is not whole-database encryption.
 2. **HMAC production migration:** versioned key-ring code and regression tests are present; provision real versioned secrets, retain previous keys through migration, and obtain passing current-head CI evidence before production rotation.
 3. **Image processing:** add safe image re-encoding and deeper parsing where required by the threat model; confirm no untrusted image is rendered by an unsafe decoder.
-4. **CSP:** continue removing remaining `unsafe-inline` and route-specific unsafe exceptions after inventorying inline scripts and testing all views.
+4. **CSP:** inline script blocks now require a per-response nonce; remaining inline event attributes still use `script-src-attr 'unsafe-inline'`, and the verification page still requires Tailwind's `unsafe-eval`. Migrate remaining handlers and remove those exceptions after testing all views.
 5. **Authorization testing:** complete negative tests for every API, download, export, signed-link, and cross-company access route, including role changes and stale claims.
 6. **Audit privacy:** review nested, renamed, free-text, and custom audit/logging paths for personal data and secrets.
-7. **Retention:** validate retention periods against actual business/legal purposes and test deletion/redaction across database rows, files, exports, logs, backups, and restored backups. Current redaction is not proven irreversible anonymisation.
+7. **Retention:** terminal email outbox records are now removed by the retention service, but validate periods against actual business/legal purposes and test deletion/redaction across database rows, files, exports, logs, backups, and restored backups. Current redaction is not proven irreversible anonymisation.
 8. **Resilience:** establish off-host/immutable backups, RTO/RPO, restore monitoring, and periodic witnessed recovery exercises.
-9. **Background jobs and integrations:** prove retry/lease/idempotency behavior, dead-letter handling, queue confidentiality, notification payload redaction, PDF resource limits, and timeout/authentication controls for every external integration. The current source review is not production evidence for these controls.
+9. **Background jobs and integrations:** the email outbox has bounded retry/lease/dead-letter behavior and current tests cover dispatch; still prove idempotency, queue confidentiality, notification payload redaction, PDF limits in deployment, and timeout/authentication controls for every external integration. The current source review is not production evidence for these controls.
 
 ### P2 — Continuous improvement
 
@@ -162,5 +164,5 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening is implemented and the current source builds. The prior 379-test baseline passed, but current-head CI and the newly added test execution were still pending at report preparation time. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented, the current source builds, and current-head GitHub CI passed 389 tests with CodeQL, Gitleaks, and CodeQL Actions successful. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
 

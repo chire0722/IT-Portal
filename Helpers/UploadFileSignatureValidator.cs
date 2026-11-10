@@ -64,7 +64,8 @@ public static class UploadFileSignatureValidator
             ex is IOException ||
             ex is InvalidOperationException ||
             ex is NotSupportedException ||
-            ex is ArgumentException)
+            ex is ArgumentException ||
+            ex is NullReferenceException)
         {
             return false;
         }

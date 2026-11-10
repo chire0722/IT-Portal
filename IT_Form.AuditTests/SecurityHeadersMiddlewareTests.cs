@@ -30,14 +30,14 @@ public sealed class SecurityHeadersMiddlewareTests
         Assert.DoesNotContain("http://", csp);
         Assert.DoesNotContain("'unsafe-eval'", csp);
         Assert.DoesNotContain("script-src 'self' 'unsafe-inline'", csp);
-        Assert.Contains("script-src-attr 'unsafe-inline'", csp);
+        Assert.Contains("script-src-attr 'none'", csp);
         Assert.Matches("script-src 'self' 'nonce-[A-Za-z0-9+/=]+", csp);
         Assert.DoesNotContain("cdn.tailwindcss.com", csp);
     }
 
 
     [Fact]
-    public async Task InvokeAsync_ScopesTailwindUnsafeEvalExceptionToVerificationRoutes()
+    public async Task InvokeAsync_DoesNotGrantVerificationRouteScriptExceptions()
     {
         var context = new DefaultHttpContext();
         context.Request.Path = "/Verification/Index";
@@ -46,8 +46,9 @@ public sealed class SecurityHeadersMiddlewareTests
         await middleware.InvokeAsync(context);
 
         var csp = context.Response.Headers["Content-Security-Policy"].ToString();
-        Assert.Contains("'unsafe-eval'", csp);
-        Assert.Contains("https://cdn.tailwindcss.com", csp);
+        Assert.DoesNotContain("'unsafe-eval'", csp);
+        Assert.DoesNotContain("https://cdn.tailwindcss.com", csp);
+        Assert.Contains("script-src-attr 'none'", csp);
         Assert.DoesNotContain("script-src 'self' 'unsafe-inline'", csp);
     }
 

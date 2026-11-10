@@ -56,7 +56,7 @@ namespace IT_Form.Tests
             });
             await context.SaveChangesAsync();
 
-            var controller = GetController<StandardSoftwareController>(context, role: "IT");
+            var controller = GetController<StandardSoftwareController>(context, role: "SuperAdmin");
 
             var result = await controller.GetEmployees();
 

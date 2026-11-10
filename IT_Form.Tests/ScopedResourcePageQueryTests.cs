@@ -485,7 +485,7 @@ public class ScopedResourcePageQueryTests
 
     [Fact]
     /// <summary>
-    /// Runs the ItUserWithAssignedCompany_SeesCrossCompanyResourcePagesAndCompanyOptions operation.
+    /// Runs the ItUserWithAssignedCompany_OnlySeesResourcesWithinScope operation.
     /// </summary>
     public async Task ItUserWithAssignedCompany_SeesCrossCompanyResourcePagesAndCompanyOptions()
     {

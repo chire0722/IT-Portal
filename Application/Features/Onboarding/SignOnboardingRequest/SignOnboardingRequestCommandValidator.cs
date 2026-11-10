@@ -1,6 +1,7 @@
 // Project comment: SignOnboardingRequestCommandValidator.cs is part of the IT Form application source code.
 
 using FluentValidation;
+using IT_Form.Helpers;
 
 namespace IT_Form.Application.Features.Onboarding.SignOnboardingRequest
 {
@@ -15,9 +16,8 @@ namespace IT_Form.Application.Features.Onboarding.SignOnboardingRequest
             RuleFor(x => x.SignatureType)
                 .NotEmpty();
             RuleFor(x => x.SignatureData)
-                .NotEmpty()
-                .MaximumLength(500_000)
-                .WithMessage("Signature data is invalid or too large.");
+                .Must(SignatureDataUriValidator.IsValid)
+                .WithMessage("Signature must be a valid PNG image with bounded dimensions and size.");
         }
     }
 }

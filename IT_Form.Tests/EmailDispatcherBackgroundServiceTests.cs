@@ -1,6 +1,7 @@
 // Project comment: EmailDispatcherBackgroundServiceTests.cs is part of the IT Form application source code.
 
 using System.Text.Json;
+using System.Reflection;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
@@ -21,6 +22,22 @@ namespace IT_Form.Tests;
 /// </summary>
 public class EmailDispatcherBackgroundServiceTests
 {
+    [Fact]
+    public void GeneratedEmailMarkup_EncodesUserControlledValues()
+    {
+        var welcomeBody = (string)typeof(EmailDispatcherBackgroundService)
+            .GetMethod("BuildWelcomeEmailBody", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, ["<img src=x onerror=alert(1)>"])!;
+        var lockoutBody = (string)typeof(EmailDispatcherBackgroundService)
+            .GetMethod("BuildLockoutAlertBody", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, ["attacker@example.com<script>", "user<1>", DateTime.UtcNow])!;
+
+        Assert.Contains("&lt;img", welcomeBody);
+        Assert.DoesNotContain("<img", welcomeBody);
+        Assert.Contains("&lt;script&gt;", lockoutBody);
+        Assert.Contains("user&lt;1&gt;", lockoutBody);
+    }
+
     [Fact]
     /// <summary>
     /// Runs the ExecuteAsync_SendsOtpEmailViaSmtp operation.
@@ -84,3 +101,4 @@ public class EmailDispatcherBackgroundServiceTests
             Times.Once);
     }
 }
+

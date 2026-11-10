@@ -426,7 +426,16 @@ public class StandardSoftwareFeatureSliceTests
             .Include(item => item.SoftwareLicenseCompanies)
             .SingleAsync();
         Assert.Equal([1], license.SoftwareLicenseCompanies.Select(link => link.CompanyId).ToArray());
-        Assert.Equal("ALPHA-KEY", (await context.SoftwareKeys.SingleAsync()).KeyValue);
+        var importedKey = await context.SoftwareKeys.SingleAsync();
+        Assert.Equal("ALPHA-KEY", importedKey.KeyValue);
+        Assert.False(string.IsNullOrWhiteSpace(importedKey.KeyValueHash));
+
+        var duplicateResult = await handler.Handle(
+            new ImportStandardSoftwareCommand(CreateSoftwareImportFile(
+                ["Adobe Acrobat", "FALSE", "TRUE", "Acrobat Pro", "ALPHA-KEY", "Perpetual", "", "1", "FALSE"])),
+            CancellationToken.None);
+        Assert.True(duplicateResult.Succeeded);
+        Assert.Single(await context.SoftwareKeys.ToListAsync());
     }
 
     [Fact]

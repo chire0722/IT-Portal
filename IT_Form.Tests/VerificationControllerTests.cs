@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using IT_Form.Controllers;
 using IT_Form.Models;
@@ -105,7 +106,11 @@ namespace IT_Form.Tests
                 Id = empId,
                 UserName = "verified-user",
                 Email = "verified-user@ytc.com",
-                FullName = "Verified User"
+                FullName = "Verified User",
+                UserCompanies = new List<UserCompany>
+                {
+                    new UserCompany { CompanyName = "HQ" }
+                }
             });
             context.DeviceVerificationTokens.Add(new DeviceVerificationToken
             {
@@ -142,6 +147,37 @@ namespace IT_Form.Tests
             Assert.Contains(current.Token, link, StringComparison.OrdinalIgnoreCase);
         }
 
+
+        [Fact]
+        public async Task GenerateToken_RejectsEmployeeOutsideCurrentCompanyScope()
+        {
+            using var context = CreateContext();
+            var employeeId = Guid.NewGuid().ToString();
+            context.Users.Add(new ApplicationUser
+            {
+                Id = employeeId,
+                UserName = "other-company",
+                Email = "other-company@example.com",
+                FullName = "Other Company User",
+                UserCompanies = new List<UserCompany>
+                {
+                    new UserCompany { CompanyName = "Company B" }
+                }
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>(),
+                "localhost",
+                5063);
+
+            var result = await controller.GenerateToken(employeeId);
+
+            Assert.IsType<ForbidResult>(result);
+            Assert.Empty(await context.DeviceVerificationTokens.ToListAsync());
+        }
+
         [Fact]
         /// <summary>
         /// Runs the GenerateTokenWithoutEmployee_ReturnsAssetOnlyLink_AndStoresAnonymousToken operation.
@@ -170,7 +206,7 @@ namespace IT_Form.Tests
 
             Assert.False(string.IsNullOrWhiteSpace(link));
             Assert.Equal("asset-only", assignmentMode);
-            Assert.Null(expiresAtUtc);
+            Assert.NotNull(expiresAtUtc);
             Assert.Contains("/verify/", link, StringComparison.OrdinalIgnoreCase);
 
             var storedToken = await context.DeviceVerificationTokens.SingleAsync();
@@ -181,9 +217,9 @@ namespace IT_Form.Tests
 
         [Fact]
         /// <summary>
-        /// Runs the Index_AllowsOldAssetOnlyToken_WithoutExpiry operation.
+        /// Runs the Index_RejectsExpiredAssetOnlyToken operation.
         /// </summary>
-        public async Task Index_AllowsOldAssetOnlyToken_WithoutExpiry()
+        public async Task Index_RejectsExpiredAssetOnlyToken()
         {
             using var context = CreateContext();
             context.DeviceVerificationTokens.Add(new DeviceVerificationToken
@@ -207,14 +243,14 @@ namespace IT_Form.Tests
             var token = await context.DeviceVerificationTokens.FirstAsync();
             var result = await controller.Index(token.Token);
 
-            Assert.IsType<ViewResult>(result);
+            Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]
         /// <summary>
-        /// Runs the DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry operation.
+        /// Runs the DownloadTool_RejectsExpiredAssetOnlyToken operation.
         /// </summary>
-        public async Task DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry()
+        public async Task DownloadTool_RejectsExpiredAssetOnlyToken()
         {
             using var context = CreateContext();
             context.DeviceVerificationTokens.Add(new DeviceVerificationToken
@@ -238,8 +274,7 @@ namespace IT_Form.Tests
             var token = await context.DeviceVerificationTokens.FirstAsync();
             var result = await controller.DownloadTool(token.Token);
 
-            var file = Assert.IsType<FileContentResult>(result);
-            Assert.Equal("application/zip", file.ContentType);
+            Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]
@@ -328,6 +363,14 @@ namespace IT_Form.Tests
             {
                 HttpContext = new DefaultHttpContext()
             };
+            controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, "it-test-user"),
+                    new Claim("UserTitle", "IT"),
+                    new Claim("UserCompany", "HQ")
+                ],
+                "Test"));
 
             controller.ControllerContext.HttpContext.Request.Scheme = "http";
             controller.ControllerContext.HttpContext.Request.Host = new HostString(host, port);

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Linq.Expressions;
 using IT_Form.Data;
 using IT_Form.Models;
+using IT_Form.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace IT_Form.Helpers;
@@ -20,6 +21,12 @@ public static class CompanyScopeHelper
     /// </summary>
     public static List<string> GetScopedCompanies(ClaimsPrincipal? user)
     {
+        // Super Admin is always global, even if an older identity still carries a company claim.
+        if (PortalTitles.IsSuperAdmin(user))
+        {
+            return [];
+        }
+
         var companies = UserHelper.GetClaimValues(user, "UserCompany")
             .Where(company => !string.IsNullOrWhiteSpace(company))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -30,6 +37,7 @@ public static class CompanyScopeHelper
             return companies;
         }
 
+        // Unscoped IT remains a global IT identity; scoped IT is constrained by its company claims.
         return RequiresExplicitCompanyScope(user)
             ? [NoCompanyAccessSentinel]
             : [];
@@ -258,6 +266,7 @@ public static class CompanyScopeHelper
     /// </summary>
     private static bool RequiresExplicitCompanyScope(ClaimsPrincipal? user)
         => user?.Identity?.IsAuthenticated == true &&
+           !PortalTitles.HasGlobalCompanyAccess(user) &&
            user.HasClaim(claim =>
                claim.Type == "UserTitle" &&
                !string.IsNullOrWhiteSpace(claim.Value));

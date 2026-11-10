@@ -36,7 +36,7 @@ internal static class PageQueryLookupSupport
         ClaimsPrincipal? user,
         CancellationToken cancellationToken)
     {
-        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(user);
+        var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
         var companies = await context.Companies
             .AsNoTracking()
             .Where(company => company.IsActive)

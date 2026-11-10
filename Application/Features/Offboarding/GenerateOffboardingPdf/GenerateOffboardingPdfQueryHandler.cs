@@ -6,6 +6,7 @@ using IT_Form.Data;
 using IT_Form.Application.Features.Offboarding;
 using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -54,10 +55,14 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
                 return ProcessResult<BinaryFilePayload>.Forbidden();
 
             var entityId = offboardingRequest.Id.ToString();
-            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt, offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt, offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt, offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.EmployeeSignerName, offboardingRequest.EmployeeSignedAt, offboardingRequest.EmployeeSignature, offboardingRequest.EmployeeSignatureHmac, "Employee"))
+            var requiresHr = offboardingRequest.Status is RequestStatus.PendingApproval or RequestStatus.PendingHODApproval or RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresHod = offboardingRequest.Status is RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresIt = offboardingRequest.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = offboardingRequest.Status is RequestStatus.Completed or RequestStatus.Approved;
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt, offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac, isRequired: requiresHr) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt, offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac, isRequired: requiresHod) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt, offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac, isRequired: requiresIt) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId, offboardingRequest.EmployeeSignerName, offboardingRequest.EmployeeSignedAt, offboardingRequest.EmployeeSignature, offboardingRequest.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
             {
                 return ProcessResult<BinaryFilePayload>.Failure(
                     "Digital signature integrity validation failed. The document may have been tampered with or uses a compromised legacy key.",
@@ -68,15 +73,17 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
             try
             {
                 var pdfBytes = _pdfService.GenerateOffboardingPdf(offboardingRequest);
+                var safeName = System.Text.RegularExpressions.Regex.Replace(offboardingRequest.FullName ?? "Unknown", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                 return ProcessResult<BinaryFilePayload>.Success(new BinaryFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Offboarding_{offboardingRequest.FullName.Replace(" ", "_")}_{offboardingRequest.RequestDate:yyyyMMdd}.pdf"));
+                    $"Offboarding_{safeName}_{offboardingRequest.RequestDate:yyyyMMdd}.pdf"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate PDF for offboarding request #{Id}", request.Id);
-                return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", request.Id);
+                return ProcessResult<BinaryFilePayload>.Failure("Failed to generate the PDF. Please try again or contact IT.", "Details", request.Id);
             }
         }
     }

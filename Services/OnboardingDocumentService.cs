@@ -4,6 +4,7 @@ using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.IO.Compression;
 using System.Security.Claims;
@@ -42,20 +43,31 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Failure("No requests selected.", "Index");
             }
 
+            if (!user.HasClaim("UserTitle", "HR"))
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
+            var requestedIds = ids.Distinct().ToArray();
+            if (requestedIds.Length > 100)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure("Select no more than 100 requests per export.", "Index");
+            }
+
             var requests = await _context.OnboardingRequests
                 .AsNoTracking()
                 .AsSplitQuery()
                 .IncludeOnboardingPdfData()
-                .Where(r => ids.Contains(r.Id))
+                .Where(r => requestedIds.Contains(r.Id))
                 .ToListAsync(cancellationToken);
 
             requests = requests
                 .Where(request => HrRecordReadCompanyScopeSupport.CanAccessCompany(user, request.Branch))
                 .ToList();
 
-            if (!requests.Any())
+            if (requests.Count != requestedIds.Length)
             {
-                return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
+                return ProcessResult<BinaryFilePayload>.Forbidden();
             }
 
             var invalidRequest = requests.FirstOrDefault(request => VerifyIntegrity(request) != null);
@@ -75,7 +87,8 @@ namespace IT_Form.Services
                     try
                     {
                         var pdfBytes = _pdfService.GeneratePdf(request);
-                        var safeName = string.Join("_", (request.FullName ?? "Unknown").Split(Path.GetInvalidFileNameChars()));
+                        var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Unknown", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                        if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                         var entry = archive.CreateEntry($"Onboarding_{safeName}_ID{request.Id}.pdf", CompressionLevel.Fastest);
                         using var entryStream = entry.Open();
                         entryStream.Write(pdfBytes, 0, pdfBytes.Length);
@@ -133,15 +146,17 @@ namespace IT_Form.Services
             try
             {
                 var pdfBytes = _pdfService.GeneratePdf(request);
+                var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Unknown", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
                 return ProcessResult<BinaryFilePayload>.Success(new BinaryFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Onboarding_{request.FullName?.Replace(" ", "_") ?? "Draft"}_{request.RequestDate:yyyyMMdd}.pdf"));
+                    $"Onboarding_{safeName}_{request.RequestDate:yyyyMMdd}.pdf"));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate PDF for request #{Id}", id);
-                return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", id);
+                return ProcessResult<BinaryFilePayload>.Failure("Failed to generate the PDF. Please try again or contact IT.", "Details", id);
             }
         }
 

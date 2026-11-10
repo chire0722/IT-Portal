@@ -44,6 +44,28 @@ public class HomeQueryTests
         Assert.True(result.IsForbidden);
     }
 
+
+    [Fact]
+    public async Task AnalyticsQuery_HrWithoutCompanyClaimsRetainsGlobalReadAccess()
+    {
+        await using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        await context.SaveChangesAsync();
+
+        var handler = new GetHomeAnalyticsQueryHandler(
+            context,
+            new TestCurrentUserAccessor("hr@company.com", "hr-1", ["HR"]));
+
+        var result = await handler.Handle(new GetHomeAnalyticsQuery(2025, null), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Data!.CompanyOptions.Count);
+        Assert.Contains(result.Data.CompanyOptions, company => company.DisplayName == "Alpha");
+        Assert.Contains(result.Data.CompanyOptions, company => company.DisplayName == "Beta");
+    }
+
     [Fact]
     public async Task AnalyticsQuery_PopulatesSuperAdminOnlyAnalytics_ForSuperAdmin()
     {
@@ -588,6 +610,9 @@ public class HomeQueryTests
             FullName = "HR Importer",
             IsActive = true
         });
+        var currentMonthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var importedCompletedAt = currentMonthStart.AddDays(3).AddHours(8);
+        var signedCompletedAt = currentMonthStart.AddDays(2).AddHours(8);
         context.OnboardingRequests.AddRange(
             new OnboardingRequest
             {
@@ -596,8 +621,8 @@ public class HomeQueryTests
                 FullName = "Imported Employee",
                 Department = "Finance",
                 Status = RequestStatus.Completed,
-                RequestDate = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc),
-                CompletedAt = new DateTime(2026, 5, 3, 8, 0, 0, DateTimeKind.Utc)
+                RequestDate = currentMonthStart.AddDays(2),
+                CompletedAt = importedCompletedAt
             },
             new OnboardingRequest
             {
@@ -606,9 +631,9 @@ public class HomeQueryTests
                 FullName = "Signed Employee",
                 Department = "IT",
                 Status = RequestStatus.Completed,
-                RequestDate = new DateTime(2026, 5, 1, 8, 0, 0, DateTimeKind.Utc),
-                EmployeeSignedAt = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc),
-                CompletedAt = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc)
+                RequestDate = currentMonthStart.AddDays(1),
+                EmployeeSignedAt = signedCompletedAt.AddHours(-1),
+                CompletedAt = signedCompletedAt
             });
         await context.SaveChangesAsync();
 
@@ -618,11 +643,11 @@ public class HomeQueryTests
             new TestCurrentUserAccessor("hr.user", "hr-id", "HR"),
             cache);
 
-        var result = await handler.Handle(new GetHomeDashboardQuery(2026), CancellationToken.None);
+        var result = await handler.Handle(new GetHomeDashboardQuery(DateTime.UtcNow.Year), CancellationToken.None);
 
         var recent = result.ViewModel.RecentCompletedOnboarding.ToList();
         Assert.Equal("Imported Employee", recent[0].FullName);
-        Assert.Equal(new DateTime(2026, 5, 3, 8, 0, 0, DateTimeKind.Utc), recent[0].CompletedAt);
+        Assert.Equal(importedCompletedAt, recent[0].CompletedAt);
         Assert.Equal("HR Importer", recent[0].SubmittedByName);
         Assert.Equal(2, result.ViewModel.CompletedThisMonthCount);
     }

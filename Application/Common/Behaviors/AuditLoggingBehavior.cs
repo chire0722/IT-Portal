@@ -2,7 +2,6 @@
 
 using System.Text.Json;
 using FluentValidation;
-using IT_Form.Application.Features.Account;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
@@ -71,6 +70,7 @@ namespace IT_Form.Application.Common.Behaviors
             try
             {
                 var response = await next();
+                var commandSucceeded = IsSuccessfulResponse(response);
 
                 try
                 {
@@ -80,8 +80,8 @@ namespace IT_Form.Application.Common.Behaviors
                         Action = action,
                         Payload = payload,
                         CreatedAt = DateTime.UtcNow,
-                        IsSuccess = true,
-                        ErrorMessage = null,
+                        IsSuccess = commandSucceeded,
+                        ErrorMessage = commandSucceeded ? null : "Command returned an unsuccessful result.",
                         Timestamp = DateTime.UtcNow,
                         EntityName = "Command",
                         EntityId = "-",
@@ -157,6 +157,26 @@ namespace IT_Form.Application.Common.Behaviors
             }
         }
 
+        private static bool IsSuccessfulResponse(TResponse response)
+        {
+            if (response is null)
+            {
+                return true;
+            }
+
+            var responseType = response.GetType();
+            foreach (var propertyName in new[] { "IsSuccess", "IsAuthenticated", "IsVerified" })
+            {
+                var property = responseType.GetProperty(propertyName);
+                if (property?.PropertyType == typeof(bool) && property.GetValue(response) is bool value)
+                {
+                    return value;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Runs the WriteSuccessAuditLogAsync operation.
         /// </summary>
@@ -193,29 +213,12 @@ namespace IT_Form.Application.Common.Behaviors
                 return false;
             }
 
-            // SuperAdmin commands must remain auditable; privileged login OTP is
-            // excluded explicitly below because it is a high-volume authentication event.
-
-            var requestName = request.GetType().Name;
-            if (string.Equals(requestName, "LoginAccountCommand", StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            return !IsPrivilegedLoginOtpRequest(request, requestName);
-        }
-
-        private static bool IsPrivilegedLoginOtpRequest(TRequest request, string requestName)
-        {
-            if (!string.Equals(requestName, "VerifyOtpCommand", StringComparison.Ordinal) &&
-                !string.Equals(requestName, "ResendOtpCommand", StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            var purposeProperty = request.GetType().GetProperty("Purpose");
-            var purpose = purposeProperty?.GetValue(request)?.ToString();
-            return string.Equals(purpose, OtpPurposes.PrivilegedLogin, StringComparison.Ordinal);
+            // Authentication OTP commands are audited as security events too.
+            // AuditPayloadSanitizer removes OTP values and account identifiers from payloads.
+            return !string.Equals(
+                request.GetType().Name,
+                "LoginAccountCommand",
+                StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -227,12 +230,12 @@ namespace IT_Form.Application.Common.Behaviors
             {
                 return AuditPayloadSanitizer.SerializeSanitized(request, SerializerOptions);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return JsonSerializer.Serialize(new
                 {
                     Error = "Payload serialization failed.",
-                    Exception = "Payload serialization failed; detailed exception is recorded in application logs.",
+                    Exception = "Payload serialization failed; sensitive exception details are intentionally omitted.",
                     RequestType = request.GetType().FullName
                 }, SerializerOptions);
             }

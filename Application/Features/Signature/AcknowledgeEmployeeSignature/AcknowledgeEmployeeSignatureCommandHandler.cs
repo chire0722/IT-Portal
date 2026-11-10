@@ -4,6 +4,7 @@ using IT_Form.Application.Common.Models;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
@@ -54,6 +55,18 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             AcknowledgeEmployeeSignatureCommand request,
             CancellationToken cancellationToken)
         {
+            // Enforce consent at the handler boundary as well as in FluentValidation,
+            // so direct MediatR handler invocation cannot record consent that was not given.
+            if (!request.PdpaConsent)
+            {
+                return ProcessResult<object>.Failure("Please confirm the PDPA privacy notice before submitting.");
+            }
+
+            if (!ImageUploadHelper.TryDecodeRasterImageDataUrl(request.SignatureData, out _, out _))
+            {
+                return ProcessResult<object>.Failure("Signature must be a valid PNG, JPG, GIF, or WebP image.");
+            }
+
             if (string.Equals(request.Type, "Onboarding", StringComparison.OrdinalIgnoreCase))
             {
                 return await HandleOnboardingAsync(request, cancellationToken);
@@ -94,6 +107,18 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             if (onboardingRequest.Status != RequestStatus.PendingEmployeeSign)
             {
                 return ProcessResult<object>.Failure("This request is not currently awaiting employee signature.");
+            }
+
+            // Do not rely on the public GET page for integrity enforcement. A caller can
+            // POST directly, so validate every upstream signature again at the write boundary.
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingRequest.Id.ToString(),
+                    onboardingRequest.RequesterSignerName, onboardingRequest.RequesterSignedAt,
+                    onboardingRequest.RequesterSignature, onboardingRequest.RequesterSignatureHmac, isRequired: true) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingRequest.Id.ToString(),
+                    onboardingRequest.ITAdminSignerName, onboardingRequest.ITAdminSignedAt,
+                    onboardingRequest.ITAdminSignature, onboardingRequest.ITAdminSignatureHmac, isRequired: true))
+            {
+                return ProcessResult<object>.Failure("Previous onboarding signatures failed integrity validation. Contact HR.");
             }
 
             if (!string.IsNullOrEmpty(onboardingRequest.EmployeeSignature))
@@ -155,6 +180,21 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
             if (offboardingRequest.Status != RequestStatus.PendingEmployeeSign)
             {
                 return ProcessResult<object>.Failure("This request is not currently awaiting employee signature.");
+            }
+
+            // Revalidate upstream signatures in the command handler so direct POSTs
+            // cannot bypass the integrity checks performed by the acknowledgement page.
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(),
+                    offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt,
+                    offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac, isRequired: true) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(),
+                    offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt,
+                    offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac, isRequired: true) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(),
+                    offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt,
+                    offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac, isRequired: true))
+            {
+                return ProcessResult<object>.Failure("Previous offboarding signatures failed integrity validation. Contact HR.");
             }
 
             if (!string.IsNullOrEmpty(offboardingRequest.EmployeeSignature))
@@ -258,7 +298,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 var detailsUrl = $"{appDomain}/{type}/Details/{requestId}";
 
                 var subject = $"COMPLETED: {type} Sign-Off - {employeeName}";
-                var greeting = $"Dear {creator.FullName ?? creator.UserName},";
+                var safeCreatorName = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(creator.FullName ?? creator.UserName ?? "User");
+                var safeEmployeeName = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(employeeName);
+                var greeting = $"Dear {safeCreatorName},";
                 var paramsRows = $@"
                     <tr>
                         <td style='padding: 14px 15px; font-size: 14px; color: #1E293B; border-bottom: 1px solid #F1F5F9; font-weight: 600;'>Employee Name</td>
@@ -278,7 +320,7 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 var senderSignature = creator.EmailSignatureImage;
                 var htmlBody = Helpers.EmailTemplateHelper.GetProfessionalHtmlTemplate(
                     $"{type} Process Completed",
-                    $"{greeting}<br/><br/>The digital sign-off for <strong>{employeeName}</strong> has been successfully completed by the employee. The request is now archived as Completed.",
+                    $"{greeting}<br/><br/>The digital sign-off for <strong>{safeEmployeeName}</strong> has been successfully completed by the employee. The request is now archived as Completed.",
                     paramsRows,
                     detailsUrl,
                     "View Completed Request",

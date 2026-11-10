@@ -138,7 +138,8 @@ namespace IT_Form.Controllers
                     selectedCompanyId.HasValue ? [selectedCompanyId.Value] : []));
                 ArgumentNullException.ThrowIfNull(result);
 
-                if (result.Status == AddSoftwareLicenseStatus.InvalidSubscriptionExpiry)
+                if (result.Status == AddSoftwareLicenseStatus.InvalidSubscriptionExpiry ||
+                    result.Status == AddSoftwareLicenseStatus.InvalidSeatLimit)
                 {
                     TempData["ErrorMessage"] = result.Message;
                     return RedirectToAction(nameof(Index));
@@ -151,7 +152,7 @@ namespace IT_Form.Controllers
                 nameof(Index),
                 new { });
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the EditLicense operation.
         /// </summary>
@@ -235,7 +236,7 @@ namespace IT_Form.Controllers
                 nameof(Index),
                 new { });
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the AddKey operation.
         /// </summary>
@@ -253,7 +254,7 @@ namespace IT_Form.Controllers
                 },
                 async () => BadRequest("Key value is required."));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Deletes data for the DeleteKey operation.
         /// </summary>
@@ -282,7 +283,7 @@ namespace IT_Form.Controllers
         public async Task<IActionResult> GetKeys(int softwareId)
             => HandleJsonProcessResult(await _sender.Send(new GetStandardSoftwareKeysQuery(softwareId)));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the QuickAllocateSeat operation.
         /// </summary>
@@ -294,13 +295,14 @@ namespace IT_Form.Controllers
                 ArgumentNullException.ThrowIfNull(result);
 
                 if (result.Status == QuickAllocateSubscriptionSeatStatus.NotFound) return NotFound();
-                if (result.Status == QuickAllocateSubscriptionSeatStatus.NotSubscription) return BadRequest(result.Message);
+                if (result.Status == QuickAllocateSubscriptionSeatStatus.NotSubscription ||
+                    result.Status == QuickAllocateSubscriptionSeatStatus.SeatLimitReached) return BadRequest(result.Message);
 
                 return Json(new { success = true });
                 },
                 async () => BadRequest("Invalid software id."));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Updates data for the UpdateKey operation.
         /// </summary>
@@ -316,7 +318,7 @@ namespace IT_Form.Controllers
                 },
                 async () => BadRequest("Key value is required."));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the AssignKey operation.
         /// </summary>

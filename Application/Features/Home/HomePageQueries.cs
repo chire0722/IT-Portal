@@ -600,7 +600,7 @@ public sealed class GetHomeAnalyticsQueryHandler : IRequestHandler<GetHomeAnalyt
         var viewModel = new DashboardViewModel();
         var period = HomeDashboardSupport.CreatePeriodContext(request.Year);
         HomeDashboardSupport.ApplyPeriodContext(viewModel, period);
-        var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(user);
+        var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
         var accessibleCompanyIds = scopedCompanies.Count > 0
             ? await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(_context, user, cancellationToken, activeOnly: true)
             : null;

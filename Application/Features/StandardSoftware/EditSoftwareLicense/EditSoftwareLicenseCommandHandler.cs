@@ -44,6 +44,11 @@ namespace IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense
                 return new EditSoftwareLicenseResult(EditSoftwareLicenseStatus.InvalidSubscriptionExpiry, "Expiry Date is required for subscription version.");
             }
 
+            if (request.IsSubscription && !request.IsFree && (request.ContractLimit ?? 0) > 5000)
+            {
+                return new EditSoftwareLicenseResult(EditSoftwareLicenseStatus.InvalidSeatLimit, "Paid subscription seat limits cannot exceed 5,000.");
+            }
+
             await EnsureExistingLicenseIsInScopeAsync(license.SoftwareLicenseCompanies.Select(link => link.CompanyId), cancellationToken);
             await EnsureRequestedCompaniesAreAllowedAsync(request.SelectedCompanyIds, cancellationToken);
 

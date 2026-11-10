@@ -15,6 +15,10 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
                 .NotEmpty()
                 .WithMessage("Email is required.");
 
+            RuleFor(x => x.Purpose)
+                .Must(purpose => purpose == OtpPurposes.PasswordReset || purpose == OtpPurposes.PrivilegedLogin)
+                .WithMessage("Unsupported OTP purpose.");
+
             RuleFor(x => x.Code)
                 .NotEmpty()
                 .WithMessage("OTP code is required.")

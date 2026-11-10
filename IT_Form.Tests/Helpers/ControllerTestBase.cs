@@ -84,6 +84,15 @@ namespace IT_Form.Tests.Helpers
                     It.IsAny<DateTime>(),
                     It.IsAny<string>()))
                 .Returns("HMAC");
+            MockIntegrityService
+                .Setup(s => s.Verify(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .Returns(true);
         }
 
         /// <summary>
@@ -323,10 +332,10 @@ namespace IT_Form.Tests.Helpers
                                 new GetStandardSoftwareEditPageQueryHandler(context).Handle(cmd, ct));
                         sender.Setup(s => s.Send(It.IsAny<GetStandardSoftwareKeysQuery>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((GetStandardSoftwareKeysQuery cmd, System.Threading.CancellationToken ct) =>
-                                new GetStandardSoftwareKeysQueryHandler(context, MockEncryptionService.Object).Handle(cmd, ct));
+                                new GetStandardSoftwareKeysQueryHandler(context, MockEncryptionService.Object, scopedCurrentUser).Handle(cmd, ct));
                         sender.Setup(s => s.Send(It.IsAny<GetStandardSoftwareEmployeesQuery>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((GetStandardSoftwareEmployeesQuery cmd, System.Threading.CancellationToken ct) =>
-                                new GetStandardSoftwareEmployeesQueryHandler(context).Handle(cmd, ct));
+                                new GetStandardSoftwareEmployeesQueryHandler(context, scopedCurrentUser).Handle(cmd, ct));
                         sender.Setup(s => s.Send(It.IsAny<CreateItAssetCommand>(), It.IsAny<System.Threading.CancellationToken>()))
                             .Returns((CreateItAssetCommand cmd, System.Threading.CancellationToken ct) =>
                                 new CreateItAssetCommandHandler(context, scopedCurrentUser).Handle(cmd, ct));

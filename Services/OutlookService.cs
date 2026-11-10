@@ -1,6 +1,7 @@
 // Project comment: OutlookService.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -26,6 +27,11 @@ namespace IT_Form.Services
             _scopeFactory = scopeFactory;
         }
 
+        private static int CountRecipients(string? recipients)
+            => string.IsNullOrWhiteSpace(recipients)
+                ? 0
+                : recipients.Split(new[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
+
         /// <summary>
         /// Runs the DisplayEmail operation.
         /// </summary>
@@ -33,7 +39,7 @@ namespace IT_Form.Services
         {
             try
             {
-                _logger.LogInformation("Attempting to send email. Original To: {To}, CC: {Cc}, BypassActiveCheck: {Bypass}", to, cc, bypassActiveCheck);
+                _logger.LogInformation("Attempting to send email. ToRecipientCount={ToCount}, CcRecipientCount={CcCount}, BypassActiveCheck={Bypass}", CountRecipients(to), CountRecipients(cc), bypassActiveCheck);
 
                 if (string.IsNullOrWhiteSpace(_smtpSettings.Username) || 
                     string.IsNullOrWhiteSpace(_smtpSettings.Password) || 
@@ -76,7 +82,7 @@ namespace IT_Form.Services
                         {
                             if (!bypassActiveCheck && deactivatedEmails.Contains(addr.ToLower()))
                             {
-                                _logger.LogInformation("Dropped deactivated user from TO list: {Email}", addr);
+                                _logger.LogInformation("Dropped deactivated user from TO list.");
                             }
                             else
                             {
@@ -103,7 +109,7 @@ namespace IT_Form.Services
                         {
                             if (!bypassActiveCheck && deactivatedEmails.Contains(addr.ToLower()))
                             {
-                                _logger.LogInformation("Dropped deactivated user from CC list: {Email}", addr);
+                                _logger.LogInformation("Dropped deactivated user from CC list.");
                             }
                             else
                             {
@@ -113,48 +119,36 @@ namespace IT_Form.Services
                     }
                 }
 
-                message.Subject = subject;
+                message.Subject = (subject ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
                 if (attachment != null && !string.IsNullOrEmpty(attachmentName))
                 {
                     message.Attachments.Add(new System.Net.Mail.Attachment(new MemoryStream(attachment), attachmentName));
                 }
 
-                // Handle Signature CID Embedding
-                if (!string.IsNullOrWhiteSpace(signatureBase64) && signatureBase64.Contains("base64,"))
+                // Only embed validated passive raster signature images.
+                if (ImageUploadHelper.TryDecodeRasterImageDataUrl(signatureBase64, out var contentType, out var imageBytes))
                 {
-                    try
+                    string plainText = "Please view this email in an HTML-enabled client.";
+                    var plainView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainText, null, "text/plain");
+                    message.AlternateViews.Add(plainView);
+
+                    var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(htmlBody, null, "text/html");
+                    var imageStream = new MemoryStream(imageBytes);
+                    var signatureResource = new System.Net.Mail.LinkedResource(imageStream, contentType)
                     {
-                        var parts = signatureBase64.Split(',');
-                        var header = parts[0];
-                        var base64Data = parts[1];
-                        var contentType = header.Split(':')[1].Split(';')[0];
-                        var imageBytes = System.Convert.FromBase64String(base64Data);
-
-                        // Plain text fallback (extract from HTML or use generic)
-                        string plainText = "Please view this email in an HTML-enabled client.";
-                        var plainView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainText, null, "text/plain");
-                        message.AlternateViews.Add(plainView);
-
-                        // HTML view with linked resource
-                        var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(htmlBody, null, "text/html");
-
-                        var imageStream = new MemoryStream(imageBytes);
-                        var signatureResource = new System.Net.Mail.LinkedResource(imageStream, contentType);
-                        signatureResource.ContentId = "signature";
-                        signatureResource.TransferEncoding = System.Net.Mime.TransferEncoding.Base64;
-
-                        htmlView.LinkedResources.Add(signatureResource);
-                        message.AlternateViews.Add(htmlView);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to embed signature CID. Falling back to simple HTML body.");
-                        message.Body = htmlBody;
-                        message.IsBodyHtml = true;
-                    }
+                        ContentId = "signature",
+                        TransferEncoding = System.Net.Mime.TransferEncoding.Base64
+                    };
+                    htmlView.LinkedResources.Add(signatureResource);
+                    message.AlternateViews.Add(htmlView);
                 }
                 else
                 {
+                    if (!string.IsNullOrWhiteSpace(signatureBase64))
+                    {
+                        _logger.LogWarning("An invalid or unsupported email signature image was omitted.");
+                    }
+
                     message.Body = htmlBody;
                     message.IsBodyHtml = true;
                 }
@@ -167,7 +161,7 @@ namespace IT_Form.Services
 
                 // Send email synchronously to replace the previous Display() COM behavior
                 client.Send(message);
-                _logger.LogInformation("Email sent successfully to {To}", to);
+                _logger.LogInformation("Email sent successfully. ToRecipientCount={ToCount}, CcRecipientCount={CcCount}", message.To.Count, message.CC.Count);
             }
             catch (System.Exception ex)
             {

@@ -58,7 +58,7 @@ public class SharedMailboxFeatureSliceTests
 
         var handler = new CreateSharedMailboxCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+            new TestCurrentUserAccessor(titles: ["IT"]));
 
         var id = await handler.Handle(
             new CreateSharedMailboxCommand("Global Mailbox", "global.mailbox@test.local", true, []),

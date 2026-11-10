@@ -3,6 +3,7 @@
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.Onboarding.SaveOnboardingStep1;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
@@ -21,6 +22,25 @@ namespace IT_Form.Tests;
 /// </summary>
 public class CompanyScopeFeatureSliceTests
 {
+
+    [Fact]
+    public void CompanyScopeHelper_PreservesGlobalSuperAdminAndUnscopedItButRestrictsScopedIt()
+    {
+        var superAdmin = new TestCurrentUserAccessor(
+            "superadmin",
+            titles: ["SuperAdmin"],
+            companies: ["Alpha"]).User;
+        var globalIt = new TestCurrentUserAccessor("global-it", titles: ["IT"]).User;
+        var scopedIt = new TestCurrentUserAccessor("scoped-it", titles: ["IT"], companies: ["Alpha"]).User;
+        var unscopedHr = new TestCurrentUserAccessor("hr", titles: ["HR"]).User;
+
+        Assert.True(CompanyScopeHelper.CanAccessCompany(superAdmin, "Beta"));
+        Assert.True(CompanyScopeHelper.CanAccessCompany(globalIt, "Beta"));
+        Assert.True(CompanyScopeHelper.CanAccessCompany(scopedIt, "Alpha"));
+        Assert.False(CompanyScopeHelper.CanAccessCompany(scopedIt, "Beta"));
+        Assert.False(CompanyScopeHelper.CanAccessCompany(unscopedHr, "Beta"));
+    }
+
     [Fact]
     /// <summary>
     /// Creates data for the CreateItAssetHandler_AllowsItUserWithoutCompanyAssignment operation.

@@ -56,7 +56,7 @@ public class ServerFolderFeatureSliceTests
 
         var handler = new CreateServerFolderCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+            new TestCurrentUserAccessor(titles: ["IT"]));
 
         var id = await handler.Handle(
             new CreateServerFolderCommand("Global_Share", true, []),

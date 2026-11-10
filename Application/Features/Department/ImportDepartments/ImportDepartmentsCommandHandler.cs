@@ -51,6 +51,10 @@ namespace IT_Form.Application.Features.Department.ImportDepartments
             {
                 return new ImportDepartmentsResult(false, string.Empty, "The Excel file appears to be empty.");
             }
+            if (usedRange.RowCount() > 5001 || usedRange.ColumnCount() > 20)
+            {
+                return new ImportDepartmentsResult(false, string.Empty, "Department import is limited to 5,000 data rows and 20 columns.");
+            }
 
             var usesDescriptionColumn = string.Equals(
                 ws.Cell(1, 2).GetString().Trim(),

@@ -42,6 +42,7 @@ namespace IT_Form.Controllers
             => HandleProcessResult(await _sender.Send(new GetOffboardingDetailsApiQuery(id)));
 
         [HttpPost("{id:int}/sign/hr")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the SignHr operation.
         /// </summary>
@@ -49,6 +50,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOffboardingHrSignatureCommand(id, request.SignatureBase64)));
 
         [HttpPost("{id:int}/sign/manager")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the SignManager operation.
         /// </summary>
@@ -56,6 +58,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOffboardingManagerSignatureCommand(id, request.SignatureBase64)));
 
         [HttpPost("{id:int}/sign/it")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the SignIt operation.
         /// </summary>
@@ -63,6 +66,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOffboardingItSignatureCommand(id, request.SignatureBase64)));
 
         [HttpPost("{id:int}/sign/employee")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the SignEmployee operation.
         /// </summary>
@@ -70,6 +74,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOffboardingEmployeeManualSignatureCommand(id, request.SignatureBase64)));
 
         [HttpPost("{id:int}/reject")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the Reject operation.
         /// </summary>
@@ -77,6 +82,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOffboardingRejectionCommand(id, request.Reason)));
 
         [HttpPost("{id:int}/regenerate-token")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the RegenerateToken operation.
         /// </summary>
@@ -84,6 +90,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOffboardingTokenRegenerationCommand(id)));
 
         [HttpDelete("{id:int}")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Deletes data for the Delete operation.
         /// </summary>

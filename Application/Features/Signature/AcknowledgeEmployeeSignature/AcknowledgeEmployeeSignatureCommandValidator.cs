@@ -1,6 +1,7 @@
 // Project comment: AcknowledgeEmployeeSignatureCommandValidator.cs is part of the IT Form application source code.
 
 using FluentValidation;
+using IT_Form.Helpers;
 
 namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
 {
@@ -23,7 +24,9 @@ namespace IT_Form.Application.Features.Signature.AcknowledgeEmployeeSignature
                 .NotEmpty()
                 .WithMessage("Please provide your signature.")
                 .MaximumLength(500000)
-                .WithMessage("Signature data is too large.");
+                .WithMessage("Signature data is too large.")
+                .Must(signature => ImageUploadHelper.TryDecodeRasterImageDataUrl(signature, out _, out _))
+                .WithMessage("Signature must be a valid PNG, JPG, GIF, or WebP image.");
 
             RuleFor(x => x.PdpaConsent)
                 .Equal(true)

@@ -1,6 +1,8 @@
 // Project comment: AssignSoftwareKeyCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Application.Common.Abstractions;
+using IT_Form.Helpers;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Services;
 using MediatR;
@@ -18,15 +20,18 @@ namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
         private readonly ApplicationDbContext _context;
         private readonly ILicenseEncryptionService _encryptionService;
         private readonly IEmailBackgroundQueue _emailBackgroundQueue;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
         public AssignSoftwareKeyCommandHandler(
             ApplicationDbContext context,
             ILicenseEncryptionService encryptionService,
-            IEmailBackgroundQueue emailBackgroundQueue)
+            IEmailBackgroundQueue emailBackgroundQueue,
+            ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
             _encryptionService = encryptionService;
             _emailBackgroundQueue = emailBackgroundQueue;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -40,11 +45,29 @@ namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
                 return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.NotFound, "Key not found.");
             }
             var previousOnboardingRequestId = key.OnboardingRequestId;
+            var currentUser = _currentUserAccessor.User;
+
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, currentUser, key.SoftwareLicenseId, cancellationToken))
+            {
+                return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.NotFound, "Key not found.");
+            }
+
+            if (previousOnboardingRequestId.HasValue)
+            {
+                var previousEmployee = await _context.OnboardingRequests
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(employee => employee.Id == previousOnboardingRequestId.Value, cancellationToken);
+                if (previousEmployee != null && !StandardSoftwareLicenseScopeSupport.CanAccessEmployee(currentUser, previousEmployee.Branch))
+                {
+                    return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.EmployeeNotFound, "Employee not found.");
+                }
+            }
 
             if (request.OnboardingRequestId.HasValue && request.OnboardingRequestId.Value > 0)
             {
                 var employee = await _context.OnboardingRequests.FindAsync(new object[] { request.OnboardingRequestId.Value }, cancellationToken);
-                if (employee == null)
+                if (employee == null || !StandardSoftwareLicenseScopeSupport.CanAccessEmployee(currentUser, employee.Branch))
                 {
                     return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.EmployeeNotFound, "Employee not found.");
                 }

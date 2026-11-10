@@ -4,10 +4,13 @@ using ClosedXML.Excel;
 using IT_Form.Data;
 using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Helpers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 {
@@ -16,6 +19,7 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
     /// </summary>
     public sealed class ImportStandardSoftwareCommandHandler : IRequestHandler<ImportStandardSoftwareCommand, ImportStandardSoftwareResult>
     {
+        private const int MaxGeneratedSeatsPerImport = 5000;
         private readonly ApplicationDbContext _context;
         private readonly IQuotaControl _quotaControl;
         private readonly ICurrentUserAccessor _currentUserAccessor;
@@ -43,6 +47,7 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
             int keysAdded = 0;
             int rowErrorCount = 0;
             var rowErrors = new List<string>();
+            var generatedSeats = 0;
 
             using var stream = request.File.OpenReadStream();
             using var wb = new XLWorkbook(stream);
@@ -51,6 +56,22 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
             if (usedRange == null)
             {
                 return new ImportStandardSoftwareResult(false, null, "The Excel file appears to be empty.");
+            }
+            if (usedRange.RowCount() > 5001 || usedRange.ColumnCount() > 20)
+            {
+                return new ImportStandardSoftwareResult(false, null, "Software import is limited to 5,000 data rows and 20 columns.");
+            }
+
+            // Scoped IT users import new license versions only into companies they administer.
+            // A global IT/Super Admin identity returns null and retains legacy global-import behavior.
+            var accessibleCompanyIds = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(
+                _context,
+                _currentUserAccessor.User,
+                cancellationToken);
+
+            if (accessibleCompanyIds is { Count: 0 })
+            {
+                return new ImportStandardSoftwareResult(false, null, "Your account is not assigned to an active company scope.");
             }
 
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -137,7 +158,28 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
                             continue;
                         }
 
-                        int.TryParse(quantityStr, out var quantity);
+                        var quantity = 0;
+                        if (isSub && !isFree)
+                        {
+                            if (!int.TryParse(quantityStr, System.Globalization.NumberStyles.None,
+                                    System.Globalization.CultureInfo.InvariantCulture, out quantity) ||
+                                quantity <= 0)
+                            {
+                                rowErrorCount++;
+                                rowErrors.Add($"Row {row.RowNumber()}: Paid subscription quantity must be a positive whole number.");
+                                continue;
+                            }
+
+                            if (quantity > MaxGeneratedSeatsPerImport - generatedSeats)
+                            {
+                                rowErrorCount++;
+                                rowErrors.Add($"Row {row.RowNumber()}: Subscription seat generation is limited to {MaxGeneratedSeatsPerImport:N0} seats per import.");
+                                continue;
+                            }
+
+                            generatedSeats += quantity;
+                        }
+
                         existingVersion = new IT_Form.Models.SoftwareLicense
                         {
                             StandardSoftwareId = software.Id,
@@ -145,7 +187,13 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
                             IsSubscription = isSub,
                             IsFree = isFree,
                             ExpiryDate = expiry,
-                            ContractLimit = quantity
+                            ContractLimit = quantity,
+                            SoftwareLicenseCompanies = accessibleCompanyIds == null
+                                ? []
+                                : accessibleCompanyIds.Select(companyId => new IT_Form.Models.SoftwareLicenseCompany
+                                {
+                                    CompanyId = companyId
+                                }).ToList()
                         };
                         SoftwareLicenseSeatSyncSupport.NormalizeLicenseSettings(existingVersion);
                         _context.SoftwareLicenses.Add(existingVersion);
@@ -158,19 +206,50 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 
                     if (!string.IsNullOrEmpty(licenseKey))
                     {
-                        bool keyExists = existingVersion.Keys.Any(k => k.KeyValue == licenseKey);
+                        if (licenseKey.Length > 1000)
+                        {
+                            rowErrorCount++;
+                            rowErrors.Add($"Row {row.RowNumber()}: License keys cannot exceed 1,000 characters.");
+                            continue;
+                        }
+
+                        if (existingVersion.Id > 0 &&
+                            !await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                                _context,
+                                _currentUserAccessor.User,
+                                existingVersion.Id,
+                                cancellationToken))
+                        {
+                            rowErrorCount++;
+                            rowErrors.Add($"Row {row.RowNumber()}: The existing license version is outside your company scope; its key was not changed.");
+                            continue;
+                        }
+
+                        var keyHash = ComputeKeyHash(licenseKey);
+                        bool keyExists = existingVersion.Keys.Any(key =>
+                            key.KeyValueHash == keyHash ||
+                            string.Equals(key.KeyValue, licenseKey, StringComparison.Ordinal));
                         if (!keyExists)
                         {
-                            var newKey = new IT_Form.Models.SoftwareKey
+                            // KeyValue is encrypted by the EF EncryptColumn value converter on persistence.
+                            // Store the stable hash separately for duplicate detection without decrypting secrets.
+                            var existsGlobally = await _context.SoftwareKeys
+                                .AsNoTracking()
+                                .AnyAsync(key => key.KeyValueHash == keyHash, cancellationToken);
+                            if (!existsGlobally)
                             {
-                                SoftwareLicenseId = existingVersion.Id,
-                                KeyValue = licenseKey,
-                                IsAssigned = false,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                            _context.SoftwareKeys.Add(newKey);
-                            existingVersion.Keys.Add(newKey);
-                            keysAdded++;
+                                var newKey = new IT_Form.Models.SoftwareKey
+                                {
+                                    SoftwareLicenseId = existingVersion.Id,
+                                    KeyValue = licenseKey,
+                                    KeyValueHash = keyHash,
+                                    IsAssigned = false,
+                                    CreatedAt = DateTime.UtcNow
+                                };
+                                _context.SoftwareKeys.Add(newKey);
+                                existingVersion.Keys.Add(newKey);
+                                keysAdded++;
+                            }
                         }
                     }
                 }
@@ -186,5 +265,11 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 
             return new ImportStandardSoftwareResult(true, successMessage, importErrorMessage);
         }
+        private static string ComputeKeyHash(string key)
+        {
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(key.Trim()));
+            return Convert.ToBase64String(bytes);
+        }
+
     }
 }

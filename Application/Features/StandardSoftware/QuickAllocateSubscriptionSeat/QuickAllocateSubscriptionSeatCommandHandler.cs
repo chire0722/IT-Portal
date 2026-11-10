@@ -13,11 +13,14 @@ namespace IT_Form.Application.Features.StandardSoftware.QuickAllocateSubscriptio
     public sealed class QuickAllocateSubscriptionSeatCommandHandler : IRequestHandler<QuickAllocateSubscriptionSeatCommand, QuickAllocateSubscriptionSeatResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly IT_Form.Application.Common.Abstractions.ICurrentUserAccessor _currentUserAccessor;
         public QuickAllocateSubscriptionSeatCommandHandler(
             ApplicationDbContext context,
-            ILicenseEncryptionService encryptionService)
+            ILicenseEncryptionService encryptionService,
+            IT_Form.Application.Common.Abstractions.ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -31,9 +34,20 @@ namespace IT_Form.Application.Features.StandardSoftware.QuickAllocateSubscriptio
                 return new QuickAllocateSubscriptionSeatResult(QuickAllocateSubscriptionSeatStatus.NotFound, "License not found.");
             }
 
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, _currentUserAccessor.User, license.Id, cancellationToken))
+            {
+                return new QuickAllocateSubscriptionSeatResult(QuickAllocateSubscriptionSeatStatus.NotFound, "License not found.");
+            }
+
             if (!license.IsSubscription)
             {
                 return new QuickAllocateSubscriptionSeatResult(QuickAllocateSubscriptionSeatStatus.NotSubscription, "Only applicable for subscriptions.");
+            }
+
+            if (license.ContractLimit >= 5000)
+            {
+                return new QuickAllocateSubscriptionSeatResult(QuickAllocateSubscriptionSeatStatus.SeatLimitReached, "A license cannot exceed 5,000 subscription seats.");
             }
 
             license.ContractLimit += 1;

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Application.Features.StandardSoftware.AddSoftwareKey;
 using IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey;
 using IT_Form.Application.Features.StandardSoftware.DeleteSoftwareKey;
@@ -12,6 +13,7 @@ using IT_Form.Application.Features.StandardSoftware.UpdateSoftwareKey;
 using IT_Form.Data;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -46,12 +48,16 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     /// </summary>
     public async Task AddSoftwareKeyHandler_ReturnsFailed_WhenImportFails()
     {
+        using var context = CreateContext();
         var licenseService = new Mock<ILicenseService>();
         licenseService
             .Setup(x => x.ImportKeysAsync(10, It.IsAny<List<string>>()))
             .ReturnsAsync((false, "Import failed.", 0));
 
-        var handler = new AddSoftwareKeyCommandHandler(licenseService.Object);
+        var handler = new AddSoftwareKeyCommandHandler(
+            licenseService.Object,
+            context,
+            new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
         var result = await handler.Handle(new AddSoftwareKeyCommand(10, "abc"), CancellationToken.None);
 
         Assert.Equal(AddSoftwareKeyStatus.Failed, result.Status);
@@ -82,7 +88,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         });
         await context.SaveChangesAsync();
 
-        var handler = new DeleteSoftwareKeyCommandHandler(context);
+        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
         var result = await handler.Handle(new DeleteSoftwareKeyCommand(5), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareKeyStatus.AssignedBlocked, result.Status);
@@ -106,7 +112,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
-        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object);
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
 
         var result = await handler.Handle(new QuickAllocateSubscriptionSeatCommand(7), CancellationToken.None);
 
@@ -141,7 +147,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
-        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object);
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
 
         var result = await handler.Handle(new QuickAllocateSubscriptionSeatCommand(8), CancellationToken.None);
 
@@ -162,7 +168,10 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
 
-        var handler = new UpdateSoftwareKeyCommandHandler(context, encryption.Object);
+        var handler = new UpdateSoftwareKeyCommandHandler(
+            context,
+            encryption.Object,
+            new TestCurrentUserAccessor("it.user", "it-id", ["IT"], ["HQ"]));
         var result = await handler.Handle(new UpdateSoftwareKeyCommand(999, "new-key"), CancellationToken.None);
 
         Assert.Equal(UpdateSoftwareKeyStatus.NotFound, result.Status);
@@ -180,8 +189,10 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
             Id = 20,
             StandardSoftwareId = 1,
             SoftwareName = "Office E3",
-            IsSubscription = false
+            IsSubscription = false,
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 1 }]
         });
+        context.Companies.Add(new Company { Id = 1, Name = "HQ", IsActive = true });
         context.SoftwareKeys.Add(new SoftwareKey
         {
             Id = 21,
@@ -195,7 +206,11 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
         var queue = new Mock<IEmailBackgroundQueue>();
 
-        var handler = new AssignSoftwareKeyCommandHandler(context, encryption.Object, queue.Object);
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "it.user",
+            titles: ["IT"],
+            companies: ["HQ"]);
+        var handler = new AssignSoftwareKeyCommandHandler(context, encryption.Object, queue.Object, currentUser);
         var result = await handler.Handle(new AssignSoftwareKeyCommand(21, 12345), CancellationToken.None);
 
         Assert.Equal(AssignSoftwareKeyStatus.EmployeeNotFound, result.Status);
@@ -222,7 +237,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         context.SoftwareLicenses.Add(license);
         await context.SaveChangesAsync();
 
-        var handler = new DeleteSoftwareKeyCommandHandler(context);
+        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
         var result = await handler.Handle(new DeleteSoftwareKeyCommand(41), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareKeyStatus.Deleted, result.Status);
@@ -252,4 +267,119 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
+
+    [Fact]
+    public async Task AssignSoftwareKeyHandler_RejectsEmployeeOutsideCurrentCompanyScope()
+    {
+        using var context = CreateContext();
+        var license = new SoftwareLicense
+        {
+            Id = 70,
+            StandardSoftwareId = 1,
+            SoftwareName = "Office E3",
+            IsSubscription = false,
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 1 }]
+        };
+        context.Companies.Add(new Company { Id = 1, Name = "Company A", IsActive = true });
+        context.SoftwareLicenses.Add(license);
+        var key = new SoftwareKey
+        {
+            Id = 71,
+            SoftwareLicenseId = 70,
+            SoftwareLicense = license,
+            IsAssigned = false,
+            KeyValue = "encrypted-key"
+        };
+        context.SoftwareKeys.Add(key);
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 72,
+            FullName = "Company B Employee",
+            Branch = "Company B",
+            Status = RequestStatus.Completed
+        });
+        await context.SaveChangesAsync();
+
+        var encryption = new Mock<ILicenseEncryptionService>();
+        encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string value) => value);
+        var queue = new Mock<IEmailBackgroundQueue>();
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "it.user",
+            titles: ["IT"],
+            companies: ["Company A"]);
+        var handler = new AssignSoftwareKeyCommandHandler(context, encryption.Object, queue.Object, currentUser);
+
+        var result = await handler.Handle(new AssignSoftwareKeyCommand(71, 72), CancellationToken.None);
+
+        Assert.Equal(AssignSoftwareKeyStatus.EmployeeNotFound, result.Status);
+        var persistedKey = await context.SoftwareKeys.SingleAsync(item => item.Id == 71);
+        Assert.False(persistedKey.IsAssigned);
+        Assert.Null(persistedKey.OnboardingRequestId);
+    }
+
+
+
+    [Fact]
+    public async Task QuickAllocateSubscriptionSeatHandler_RejectsSeatLimitAboveMaximum()
+    {
+        using var context = CreateContext();
+        context.Companies.Add(new Company { Id = 1, Name = "HQ", IsActive = true });
+        context.SoftwareLicenses.Add(new SoftwareLicense
+        {
+            Id = 90,
+            StandardSoftwareId = 1,
+            SoftwareName = "Enterprise Subscription",
+            IsSubscription = true,
+            ContractLimit = 5000,
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 1 }]
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(
+            context,
+            Mock.Of<ILicenseEncryptionService>(),
+            new TestCurrentUserAccessor(titles: ["SuperAdmin"]));
+
+        var result = await handler.Handle(
+            new QuickAllocateSubscriptionSeatCommand(90),
+            CancellationToken.None);
+
+        Assert.Equal(QuickAllocateSubscriptionSeatStatus.SeatLimitReached, result.Status);
+        Assert.Equal(5000, (await context.SoftwareLicenses.SingleAsync()).ContractLimit);
+        Assert.Empty(await context.SoftwareKeys.ToListAsync());
+    }
+
+    [Fact]
+    public async Task GetSoftwareKeys_DeniesDecryptedKeysOutsideCurrentCompanyScope()
+    {
+        using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 101, Name = "Company A", IsActive = true },
+            new Company { Id = 102, Name = "Company B", IsActive = true });
+        var license = new SoftwareLicense
+        {
+            Id = 103,
+            StandardSoftwareId = 10,
+            SoftwareName = "Restricted Product",
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 102 }],
+            Keys = [new SoftwareKey { Id = 104, SoftwareLicenseId = 103, KeyValue = "encrypted-secret", IsAssigned = false }]
+        };
+        context.SoftwareLicenses.Add(license);
+        await context.SaveChangesAsync();
+
+        var encryption = new Mock<ILicenseEncryptionService>();
+        encryption.Setup(service => service.DecryptKey("encrypted-secret")).Returns("REAL-SECRET-KEY");
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "manager.user",
+            titles: ["Manager"],
+            companies: ["Company A"]);
+        var handler = new GetStandardSoftwareKeysQueryHandler(context, encryption.Object, currentUser);
+
+        var result = await handler.Handle(new GetStandardSoftwareKeysQuery(103), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        Assert.Null(result.Data);
+        encryption.Verify(service => service.DecryptKey(It.IsAny<string>()), Times.Never);
+    }
+
 }

@@ -5,6 +5,7 @@ using IT_Form.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Encodings.Web;
 using IT_Form.Models;
@@ -24,6 +25,8 @@ namespace IT_Form.Controllers
         private readonly IOutlookService _outlookService;
         private readonly ILogger<NotificationController> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ISignatureIntegrityService _integrityService;
+        private readonly IConfiguration _configuration;
 
         public NotificationController(
             ApplicationDbContext context,
@@ -31,13 +34,16 @@ namespace IT_Form.Controllers
             IOutlookService outlookService,
             ILogger<NotificationController> logger,
             IConfiguration configuration,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ISignatureIntegrityService integrityService)
         {
             _context = context;
             _pdfService = pdfService;
             _outlookService = outlookService;
             _logger = logger;
             _userManager = userManager;
+            _integrityService = integrityService;
+            _configuration = configuration;
         }
 
         private async Task<(string? Name, string? Title, string? Image)> GetSenderInfoAsync()
@@ -51,12 +57,89 @@ namespace IT_Form.Controllers
         /// </summary>
         private string GetAppDomain()
         {
-            return $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+            var configuredDomain = _configuration["AppDomain"];
+            if (!string.IsNullOrWhiteSpace(configuredDomain) &&
+                Uri.TryCreate(configuredDomain, UriKind.Absolute, out var configuredUri) &&
+                (configuredUri.Scheme == Uri.UriSchemeHttps || configuredUri.Scheme == Uri.UriSchemeHttp) &&
+                string.IsNullOrEmpty(configuredUri.UserInfo) &&
+                string.IsNullOrEmpty(configuredUri.Query) &&
+                string.IsNullOrEmpty(configuredUri.Fragment))
+            {
+                return configuredUri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+            }
+
+            var scheme = Request.IsHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
+            return $"{scheme}://{Request.Host}{Request.PathBase}".TrimEnd('/');
+        }
+
+        private bool HasValidOnboardingSignatureIntegrity(OnboardingRequest request)
+        {
+            var entityId = request.Id.ToString();
+            var requiresRequester = request.Status != RequestStatus.Draft && request.Status != RequestStatus.Rejected;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
+
+            return SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                       request.RequesterSignerName, request.RequesterSignedAt, request.RequesterSignature,
+                       request.RequesterSignatureHmac, isRequired: requiresRequester) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                       request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature,
+                       request.ITAdminSignatureHmac, isRequired: requiresIt) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", entityId,
+                       request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature,
+                       request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee);
+        }
+
+        private bool HasValidOffboardingSignatureIntegrity(OffboardingRequest request)
+        {
+            var entityId = request.Id.ToString();
+            var requiresHr = request.Status is RequestStatus.PendingApproval or RequestStatus.PendingHODApproval or RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresHod = request.Status is RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresIt = request.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = request.Status is RequestStatus.Completed or RequestStatus.Approved;
+
+            return SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.HRSignerName, request.HRSignedAt, request.HRSignature,
+                       request.HRSignatureHmac, isRequired: requiresHr) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.HODSignerName, request.HODSignedAt, request.HODSignature,
+                       request.HODSignatureHmac, isRequired: requiresHod) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.ITAdminSignerName, request.ITAdminSignedAt, request.ITAdminSignature,
+                       request.ITAdminSignatureHmac, isRequired: requiresIt) &&
+                   SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", entityId,
+                       request.EmployeeSignerName, request.EmployeeSignedAt, request.EmployeeSignature,
+                       request.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee);
         }
 
         /// <summary>
         /// Runs the IsAuthorizedForBranch operation.
         /// </summary>
+        private static bool IsValidEmailAddress(string? address)
+        {
+            if (string.IsNullOrWhiteSpace(address) ||
+                address.Length > 254 ||
+                address.Any(char.IsControl) ||
+                address.Contains(' '))
+            {
+                return false;
+            }
+
+            try
+            {
+                var parsed = new MailAddress(address);
+                return string.Equals(parsed.Address, address, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
         private bool IsAuthorizedForBranch(string? requestBranch, string? createdBy)
         {
             if (!CompanyScopeHelper.CanAccessCompany(User, requestBranch)) return false;
@@ -252,6 +335,12 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ComposeRejectionEmail(int id, string type)
         {
+            if (!string.Equals(type, "Onboarding", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(type, "Offboarding", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest();
+            }
+
             string fullName = "";
             string reason = "";
             string toEmail = "";
@@ -308,7 +397,7 @@ namespace IT_Form.Controllers
                 BodyHtml = body,
                 ReturnUrl = Url.Action("Details", type, new { id }) ?? "/",
                 RequestId = id,
-                EmailType = "Rejection",
+                EmailType = $"Rejection_{type}",
                 HasAttachment = false,
                 SignatureImage = sender.Image
             };
@@ -322,6 +411,12 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ComposeEmployeeSignatureEmail(int id, string type)
         {
+            if (!string.Equals(type, "Onboarding", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(type, "Offboarding", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest();
+            }
+
             // Any user carrying the IT title must be blocked from employee-link generation.
             if (User.HasClaim("UserTitle", "IT") || !User.HasClaim("UserTitle", "HR"))
             {
@@ -344,6 +439,7 @@ namespace IT_Form.Controllers
                 fullName = req.FullName ?? "";
                 toEmail = req.EmailAddress ?? "";
                 token = req.AccessToken;
+                if (!HasValidOnboardingSignatureIntegrity(req)) return BadRequest("Signature integrity validation failed.");
                 pdfBytes = _pdfService.GeneratePdf(req);
             }
             else
@@ -357,6 +453,7 @@ namespace IT_Form.Controllers
                 fullName = req.FullName ?? "";
                 toEmail = req.EmailAddress ?? "";
                 token = req.AccessToken;
+                if (!HasValidOffboardingSignatureIntegrity(req)) return BadRequest("Signature integrity validation failed.");
                 pdfBytes = _pdfService.GenerateOffboardingPdf(req);
             }
 
@@ -403,6 +500,7 @@ namespace IT_Form.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("workflow-email")]
         /// <summary>
         /// Runs the SendConfirmedEmail operation.
         /// </summary>
@@ -413,44 +511,98 @@ namespace IT_Form.Controllers
                 return View("ConfirmEmail", model);
             }
 
-            try
+            var recipients = (model.To ?? new List<string>())
+                .Concat(model.Cc ?? new List<string>())
+                .ToList();
+            if (model.To == null ||
+                model.To.Count == 0 ||
+                model.To.Count > 10 ||
+                (model.Cc?.Count ?? 0) > 10 ||
+                recipients.Count > 20 ||
+                recipients.Any(address => !IsValidEmailAddress(address)) ||
+                string.IsNullOrWhiteSpace(model.Subject) ||
+                model.Subject.Length > 200 ||
+                model.Subject.Any(char.IsControl) ||
+                (model.BodyHtml?.Length ?? 0) > 100_000)
             {
-                byte[]? pdfBytes = null;
-                string? attachmentName = null;
+                return BadRequest("Email recipients or content exceed the allowed limits.");
+            }
 
-                if (model.HasAttachment && model.RequestId.HasValue && !string.IsNullOrEmpty(model.EmailType))
+            if (!model.RequestId.HasValue || string.IsNullOrWhiteSpace(model.EmailType))
+            {
+                return BadRequest("A valid request context is required to send workflow email.");
+            }
+
+            var emailType = model.EmailType.Trim();
+            var isOnboarding = emailType is "Onboarding" or "Rejection_Onboarding" or "Nudge_Onboarding" or "SignatureAcknowledgement_Onboarding";
+            var isOffboarding = emailType is "Offboarding" or "Rejection_Offboarding" or "Nudge_Offboarding" or "SignatureAcknowledgement_Offboarding";
+            if (!isOnboarding && !isOffboarding)
+            {
+                return BadRequest("Unsupported email type.");
+            }
+
+            var isSignatureAcknowledgement = emailType.StartsWith("SignatureAcknowledgement_", StringComparison.Ordinal);
+            if (isSignatureAcknowledgement &&
+                (!User.HasClaim("UserTitle", "HR") || User.HasClaim("UserTitle", "IT")))
+            {
+                return Forbid();
+            }
+
+            byte[]? pdfBytes = null;
+            string? attachmentName = null;
+
+            if (isOnboarding)
+            {
+                var request = await _context.OnboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOnboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == model.RequestId.Value);
+                if (request == null) return NotFound();
+                var canSendAsManager = User.HasClaim("UserTitle", "Manager") &&
+                                       IsAuthorizedForBranch(request.Branch, request.CreatedByUserId);
+                if (!await IsAuthorizedAsHOD(request.Branch, request.HODEmail) && !canSendAsManager)
                 {
-                    if (model.EmailType.StartsWith("SignatureAcknowledgement_Onboarding"))
-                    {
-                        var req = await _context.OnboardingRequests
-                            .AsSplitQuery()
-                            .IncludeOnboardingPdfData()
-                            .FirstOrDefaultAsync(r => r.Id == model.RequestId);
-                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail)))
-                        {
-                            pdfBytes = _pdfService.GeneratePdf(req);
-                            attachmentName = $"Onboarding_Acknowledgement_{(req.FullName ?? "Employee").Replace(" ", "_")}.pdf";
-                        }
-                    }
-                    else if (model.EmailType.StartsWith("SignatureAcknowledgement_Offboarding"))
-                    {
-                        var req = await _context.OffboardingRequests
-                            .AsSplitQuery()
-                            .IncludeOffboardingPdfData()
-                            .FirstOrDefaultAsync(r => r.Id == model.RequestId);
-                        if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)))
-                        {
-                            pdfBytes = _pdfService.GenerateOffboardingPdf(req);
-                            attachmentName = $"Offboarding_Acknowledgement_{(req.FullName ?? "Employee").Replace(" ", "_")}.pdf";
-                        }
-                    }
+                    return Forbid();
                 }
 
+                if (model.HasAttachment && emailType == "SignatureAcknowledgement_Onboarding")
+                {
+                    if (!HasValidOnboardingSignatureIntegrity(request)) return BadRequest("Signature integrity validation failed.");
+                    pdfBytes = _pdfService.GeneratePdf(request);
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                    if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
+                    attachmentName = $"Onboarding_Acknowledgement_{safeName}.pdf";
+                }
+            }
+            else
+            {
+                var request = await _context.OffboardingRequests
+                    .AsSplitQuery()
+                    .IncludeOffboardingPdfData()
+                    .FirstOrDefaultAsync(r => r.Id == model.RequestId.Value);
+                if (request == null) return NotFound();
+                var canSendAsManager = User.HasClaim("UserTitle", "Manager") &&
+                                       IsAuthorizedForBranch(request.Branch, request.CreatedByUserId);
+                if (!await IsAuthorizedAsHOD(request.Branch, request.HODEmail, request.AssignedHodId) && !canSendAsManager)
+                {
+                    return Forbid();
+                }
+
+                if (model.HasAttachment && emailType == "SignatureAcknowledgement_Offboarding")
+                {
+                    if (!HasValidOffboardingSignatureIntegrity(request)) return BadRequest("Signature integrity validation failed.");
+                    pdfBytes = _pdfService.GenerateOffboardingPdf(request);
+                    var safeName = System.Text.RegularExpressions.Regex.Replace(request.FullName ?? "Employee", @"[^\p{L}\p{N}._-]+", "_").Trim('.', '_', '-');
+                    if (string.IsNullOrWhiteSpace(safeName)) safeName = "Employee";
+                    attachmentName = $"Offboarding_Acknowledgement_{safeName}.pdf";
+                }
+            }
+
+            try
+            {
                 string toStr = string.Join(";", model.To);
                 string ccStr = model.Cc != null ? string.Join(";", model.Cc) : "";
-
-                _outlookService.DisplayEmail(toStr, model.Subject, model.BodyHtml, pdfBytes, attachmentName, ccStr, model.SignatureImage);
-
+                _outlookService.DisplayEmail(toStr, model.Subject, model.BodyHtml ?? string.Empty, pdfBytes, attachmentName, ccStr, model.SignatureImage);
                 TempData["SuccessMessage"] = "Email sent successfully.";
             }
             catch (Exception ex)
@@ -479,7 +631,7 @@ namespace IT_Form.Controllers
                     .AsSplitQuery()
                     .IncludeOnboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
-                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail))) pdfBytes = _pdfService.GeneratePdf(req);
+                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail)) && HasValidOnboardingSignatureIntegrity(req)) pdfBytes = _pdfService.GeneratePdf(req);
             }
             else if (type.StartsWith("SignatureAcknowledgement_Offboarding"))
             {
@@ -487,7 +639,7 @@ namespace IT_Form.Controllers
                     .AsSplitQuery()
                     .IncludeOffboardingPdfData()
                     .FirstOrDefaultAsync(r => r.Id == id);
-                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId))) pdfBytes = _pdfService.GenerateOffboardingPdf(req);
+                if (req != null && (IsAuthorizedForBranch(req.Branch, req.CreatedByUserId) || await IsAuthorizedAsHOD(req.Branch, req.HODEmail, req.AssignedHodId)) && HasValidOffboardingSignatureIntegrity(req)) pdfBytes = _pdfService.GenerateOffboardingPdf(req);
             }
 
             if (pdfBytes != null)
@@ -502,6 +654,12 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> ComposeNudgeEmail(int id, string type)
         {
+            if (!string.Equals(type, "Onboarding", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(type, "Offboarding", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest();
+            }
+
             string fullName = "";
             string toEmail = "";
             string returnUrl = "";

@@ -56,6 +56,12 @@ namespace IT_Form.Application.Features.Account.VerifyOtp
         /// </summary>
         public async Task<VerifyOtpResult> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)
         {
+            if (request.Purpose != OtpPurposes.PasswordReset &&
+                request.Purpose != OtpPurposes.PrivilegedLogin)
+            {
+                return new VerifyOtpResult(false, false, VerifyOtpResult.GenericFailureMessage);
+            }
+
             var user = await _userManager.FindByEmailAsync(request.Email)
                 ?? await _userManager.FindByNameAsync(request.Email);
             if (user == null)

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Common.Mapping;
@@ -97,9 +98,9 @@ public class DepartmentFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Creates data for the CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies operation.
+    /// Creates data for the CreateDepartmentHandler_RejectsCrossCompanyAssignment operation.
     /// </summary>
-    public async Task CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies()
+    public async Task CreateDepartmentHandler_RejectsCrossCompanyAssignment()
     {
         using var context = CreateContext();
         context.Companies.AddRange(
@@ -111,16 +112,12 @@ public class DepartmentFeatureSliceTests
             context,
             new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
 
-        var id = await handler.Handle(
-            new CreateDepartmentCommand("Regional Ops", null, true, [2]),
-            CancellationToken.None);
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            handler.Handle(
+                new CreateDepartmentCommand("Regional Ops", null, true, [2]),
+                CancellationToken.None));
 
-        var entity = await context.Departments
-            .Include(department => department.DepartmentCompanies)
-            .SingleAsync(department => department.Id == id);
-
-        Assert.Equal("Regional Ops", entity.Name);
-        Assert.Equal([2], entity.DepartmentCompanies.Select(link => link.CompanyId).ToList());
+        Assert.Empty(await context.Departments.ToListAsync());
     }
 
     [Fact]
@@ -133,7 +130,7 @@ public class DepartmentFeatureSliceTests
 
         var handler = new CreateDepartmentCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+            new TestCurrentUserAccessor(titles: ["IT"]));
 
         var id = await handler.Handle(
             new CreateDepartmentCommand("Global Support", null, true, []),
@@ -222,7 +219,7 @@ public class DepartmentFeatureSliceTests
         workbook.SaveAs(stream);
         stream.Position = 0;
 
-        IFormFile file = new FormFile(stream, 0, stream.Length, "file", "departments.xlsx");
+        IFormFile file = new FormFile(stream, 0, stream.Length, "file", "departments.xlsx") { Headers = new HeaderDictionary(), ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
         var handler = new ImportDepartmentsCommandHandler(context, new TestCurrentUserAccessor());
 
         var result = await handler.Handle(new ImportDepartmentsCommand(file), CancellationToken.None);

@@ -18,7 +18,11 @@ internal static class ItAdminCompanyScopeSupport
     /// Runs the HasGlobalAccess operation.
     /// </summary>
     public static bool HasGlobalAccess(ClaimsPrincipal? user)
-        => PortalTitles.HasGlobalCompanyAccess(user);
+        => PortalTitles.IsSuperAdmin(user) ||
+           (PortalTitles.IsPrivilegedIt(user) &&
+            user?.Claims.Any(claim =>
+                claim.Type == "UserCompany" &&
+                !string.IsNullOrWhiteSpace(claim.Value)) != true);
 
     /// <summary>
     /// Gets the data required by the GetScopedCompanies operation.

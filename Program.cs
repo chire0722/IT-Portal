@@ -517,6 +517,31 @@ builder.Services.AddRateLimiter(options =>
                 AutoReplenishment = true
             }));
 
+    // Bound privileged workflow email sends per authenticated user to reduce abuse.
+    options.AddPolicy("workflow-email", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ??
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    // Public device-verification links poll status every few seconds; keep token guessing bounded per IP.
+    options.AddPolicy("public-verification", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
@@ -609,11 +634,12 @@ app.UseStaticFiles();
 // Use Serilog to log every HTTP request
 app.UseSerilogRequestLogging();
 
-app.UseRateLimiter();
-
 app.UseRequestLocalization();
 
 app.UseAuthentication();
+// Rate limiting follows authentication so per-user partitions use the authenticated identity.
+// It remains before authorization so rejected requests do not execute protected endpoints.
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // --- Password Change Enforcement Middleware ---

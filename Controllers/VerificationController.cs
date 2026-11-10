@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using System.IO;
 using System.IO.Compression;
 using IT_Form.Helpers;
@@ -27,12 +28,14 @@ namespace IT_Form.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("public-verification")]
         [HttpGet("/verify/{token}")]
         /// <summary>
         /// Runs the Index operation.
         /// </summary>
         public async Task<IActionResult> Index(string token)
         {
+            SetPrivateNoStoreHeaders();
             if (string.IsNullOrWhiteSpace(token))
             {
                 return BadRequest("Invalid token.");
@@ -56,6 +59,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost("/api/inventory/generate-token/{employeeId}")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the GenerateToken operation.
         /// </summary>
@@ -65,6 +69,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost("/api/inventory/generate-token")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the GenerateTokenWithoutEmployee operation.
         /// </summary>
@@ -81,10 +86,24 @@ namespace IT_Form.Controllers
             ApplicationUser? user = null;
             if (!string.IsNullOrWhiteSpace(employeeId))
             {
-                user = await _context.Users.FindAsync(employeeId);
+                user = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(employee => employee.Id == employeeId);
                 if (user == null)
                 {
                     return NotFound("Employee not found.");
+                }
+
+                var targetCompanies = await _context.UserCompanies
+                    .AsNoTracking()
+                    .Where(company => company.UserId == user.Id)
+                    .Select(company => company.CompanyName)
+                    .ToArrayAsync();
+
+                if (targetCompanies.Length == 0 ||
+                    !CompanyScopeHelper.CanAccessAnyCompany(User, targetCompanies))
+                {
+                    return Forbid();
                 }
             }
 
@@ -109,20 +128,21 @@ namespace IT_Form.Controllers
             {
                 token = newToken.Token,
                 link = link,
-                expiresAtUtc = HasExpiringEmployeeContext(newToken)
-                    ? newToken.CreatedAt.AddMinutes(GetTokenLifetimeMinutes())
-                    : (DateTime?)null,
+                expiresAtUtc = newToken.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()),
                 assignmentMode = user == null ? "asset-only" : "employee-specific",
                 employeeName = user?.FullName
             });
         }
 
+        [AllowAnonymous]
+        [EnableRateLimiting("public-verification")]
         [HttpGet("/api/inventory/status/{token}")]
         /// <summary>
         /// Gets the data required by the GetStatus operation.
         /// </summary>
         public async Task<IActionResult> GetStatus(string token)
         {
+            SetPrivateNoStoreHeaders();
             var dbToken = await _context.DeviceVerificationTokens.FirstOrDefaultAsync(t => t.Token == token);
             if (dbToken == null)
             {
@@ -153,12 +173,14 @@ namespace IT_Form.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("public-verification")]
         [HttpGet("/api/inventory/download/{token}")]
         /// <summary>
         /// Runs the DownloadTool operation.
         /// </summary>
         public async Task<IActionResult> DownloadTool(string token)
         {
+            SetPrivateNoStoreHeaders();
             var dbToken = await _context.DeviceVerificationTokens.FirstOrDefaultAsync(t => t.Token == token);
             if (dbToken == null || dbToken.IsVerified)
             {
@@ -260,17 +282,18 @@ namespace IT_Form.Controllers
         }
 
         /// <summary>
-        /// Runs the HasExpiringEmployeeContext operation.
-        /// </summary>
-        private static bool HasExpiringEmployeeContext(DeviceVerificationToken token)
-            => !string.IsNullOrWhiteSpace(token.EmployeeId);
-
-        /// <summary>
         /// Runs the IsExpired operation.
         /// </summary>
+        private void SetPrivateNoStoreHeaders()
+        {
+            Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+        }
+
         private bool IsExpired(DeviceVerificationToken token)
-            => HasExpiringEmployeeContext(token) &&
-               token.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()) <= DateTime.UtcNow;
+            => token.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()) <= DateTime.UtcNow;
 
         /// <summary>
         /// Builds the value returned by the BuildPowerShellAuditScript operation.

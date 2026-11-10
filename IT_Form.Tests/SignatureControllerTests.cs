@@ -9,6 +9,7 @@ using IT_Form.Models;
 using IT_Form.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
+using Moq;
 using IT_Form.Tests.Helpers;
 
 namespace IT_Form.Tests
@@ -29,19 +30,38 @@ namespace IT_Form.Tests
                 Id = 1, 
                 AccessToken = Guid.NewGuid(), 
                 Status = RequestStatus.PendingEmployeeSign,
+                RequesterSignerName = "HR User",
+                RequesterSignedAt = DateTime.UtcNow.AddHours(-2),
+                RequesterSignature = "data:image/png;base64,REQ",
+                RequesterSignatureHmac = "HMAC",
+                ITAdminSignerName = "IT User",
+                ITAdminSignedAt = DateTime.UtcNow.AddHours(-1),
+                ITAdminSignature = "data:image/png;base64,IT",
+                ITAdminSignatureHmac = "HMAC",
                 EmployeeSignedAt = DateTime.UtcNow,
                 EmployeeSignature = "data:image/png;base64,TAMPERED",
                 EmployeeSignatureHmac = "FORGED_HMAC" // Mismatch
             };
             context.OnboardingRequests.Add(req);
             await context.SaveChangesAsync();
+            MockIntegrityService
+                .Setup(service => service.Verify(
+                    "OnboardingRequest",
+                    "1",
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>(),
+                    "data:image/png;base64,TAMPERED",
+                    "FORGED_HMAC"))
+                .Returns(false);
 
             var controller = GetController<SignatureController>(context);
             
             // Call GET Acknowledge which performs integrity check
             var result = await controller.Acknowledge(req.AccessToken, "Onboarding");
 
-            Assert.IsType<BadRequestObjectResult>(result); 
+            Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("no-store, no-cache, must-revalidate", controller.Response.Headers["Cache-Control"].ToString());
+            Assert.Equal("no-referrer", controller.Response.Headers["Referrer-Policy"].ToString());
         }
 
         [Fact]
@@ -58,7 +78,15 @@ namespace IT_Form.Tests
                 FullName = "Test Employee",
                 Department = "IT",
                 Branch = "HQ",
-                Status = RequestStatus.PendingEmployeeSign
+                Status = RequestStatus.PendingEmployeeSign,
+                RequesterSignerName = "HR User",
+                RequesterSignedAt = DateTime.UtcNow.AddHours(-2),
+                RequesterSignature = "data:image/png;base64,REQ",
+                RequesterSignatureHmac = "HMAC",
+                ITAdminSignerName = "IT User",
+                ITAdminSignedAt = DateTime.UtcNow.AddHours(-1),
+                ITAdminSignature = "data:image/png;base64,IT",
+                ITAdminSignatureHmac = "HMAC",
             };
             context.OnboardingRequests.Add(req);
             await context.SaveChangesAsync();
@@ -89,7 +117,15 @@ namespace IT_Form.Tests
                 FullName = "Test Employee",
                 Department = "IT",
                 Branch = "HQ",
-                Status = RequestStatus.PendingEmployeeSign
+                Status = RequestStatus.PendingEmployeeSign,
+                RequesterSignerName = "HR User",
+                RequesterSignedAt = DateTime.UtcNow.AddHours(-2),
+                RequesterSignature = "data:image/png;base64,REQ",
+                RequesterSignatureHmac = "HMAC",
+                ITAdminSignerName = "IT User",
+                ITAdminSignedAt = DateTime.UtcNow.AddHours(-1),
+                ITAdminSignature = "data:image/png;base64,IT",
+                ITAdminSignatureHmac = "HMAC"
             };
             context.OnboardingRequests.Add(req);
             await context.SaveChangesAsync();
@@ -99,7 +135,7 @@ namespace IT_Form.Tests
             var result = await controller.Acknowledge(
                 req.AccessToken,
                 "Onboarding",
-                "data:image/png;base64,VALID",
+                "data:image/png;base64,iVBORw0KGgo=",
                 pdpaConsent: false);
 
             var viewResult = Assert.IsType<ViewResult>(result);

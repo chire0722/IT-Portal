@@ -199,6 +199,9 @@ namespace IT_Form.Controllers
                     if (range == null)
                         return BadRequest("Uploaded file contains no data.");
 
+                    if (range.RowCount() > 5001 || range.ColumnCount() > 20)
+                        return BadRequest("Employee import is limited to 5,000 data rows and 20 columns.");
+
                     var headerRow = range.FirstRowUsed();
                     var columnMap = BuildColumnMap(headerRow);
                     var rows = range.RowsUsed().Skip(1); // Skip header

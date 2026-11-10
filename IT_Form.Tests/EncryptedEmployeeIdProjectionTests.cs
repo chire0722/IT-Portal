@@ -109,7 +109,11 @@ public sealed class EncryptedEmployeeIdProjectionTests
         Assert.NotNull(rawStoredEmployeeId);
         Assert.NotEqual("E-42", rawStoredEmployeeId);
 
-        var handler = new GetOffboardingEmployeeDetailsQueryHandler(context);
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "hr@test.local",
+            titles: ["HR"],
+            companies: ["HQ"]);
+        var handler = new GetOffboardingEmployeeDetailsQueryHandler(context, currentUser);
         var model = await handler.Handle(new GetOffboardingEmployeeDetailsQuery(42), CancellationToken.None);
 
         Assert.NotNull(model);

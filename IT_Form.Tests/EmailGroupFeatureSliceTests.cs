@@ -58,7 +58,7 @@ public class EmailGroupFeatureSliceTests
 
         var handler = new CreateEmailGroupCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+            new TestCurrentUserAccessor(titles: ["IT"]));
 
         var id = await handler.Handle(
             new CreateEmailGroupCommand("All Staff", "all.staff@test.local", true, []),
@@ -124,9 +124,9 @@ public class EmailGroupFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Runs the AddCurrentEmployeeHandler_AllowsItUserAcrossCompanies operation.
+    /// Runs the AddCurrentEmployeeHandler_RejectsCrossCompanyGroupAndEmployee operation.
     /// </summary>
-    public async Task AddCurrentEmployeeHandler_AllowsItUserAcrossCompanies()
+    public async Task AddCurrentEmployeeHandler_RejectsCrossCompanyGroupAndEmployee()
     {
         using var context = CreateContext();
 
@@ -156,8 +156,8 @@ public class EmailGroupFeatureSliceTests
 
         var result = await handler.Handle(new AddCurrentEmployeeToEmailGroupCommand(12, 23), CancellationToken.None);
 
-        Assert.Equal(AddCurrentEmployeeToEmailGroupStatus.Added, result.Status);
-        Assert.True(await context.RequestEmailGroups.AnyAsync(link => link.EmailGroupId == 12 && link.OnboardingRequestId == 23));
+        Assert.Equal(AddCurrentEmployeeToEmailGroupStatus.Forbidden, result.Status);
+        Assert.False(await context.RequestEmailGroups.AnyAsync(link => link.EmailGroupId == 12 && link.OnboardingRequestId == 23));
     }
 
     [Fact]

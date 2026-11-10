@@ -65,7 +65,7 @@ namespace IT_Form.Tests
             }
 
             stream.Position = 0;
-            IFormFile file = new FormFile(stream, 0, stream.Length, "file", "staff-import.xlsx");
+            IFormFile file = new FormFile(stream, 0, stream.Length, "file", "staff-import.xlsx") { Headers = new HeaderDictionary(), ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
 
             var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "YTC PRECAST SDN BHD");
 
@@ -140,7 +140,7 @@ namespace IT_Form.Tests
             }
 
             stream.Position = 0;
-            IFormFile file = new FormFile(stream, 0, stream.Length, "file", "staff-import.xlsx");
+            IFormFile file = new FormFile(stream, 0, stream.Length, "file", "staff-import.xlsx") { Headers = new HeaderDictionary(), ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
 
             var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "YTC Precast");
 

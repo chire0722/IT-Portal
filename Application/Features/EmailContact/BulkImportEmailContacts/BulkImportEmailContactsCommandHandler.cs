@@ -43,7 +43,17 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
                 using var workbook = new XLWorkbook(stream);
                 var worksheet = workbook.Worksheet(1);
                 var rangeUsed = worksheet.RangeUsed();
-                var rows = rangeUsed != null ? rangeUsed.RowsUsed().Skip(1) : Enumerable.Empty<IXLRangeRow>();
+                if (rangeUsed == null)
+                {
+                    return new BulkImportEmailContactsResult(false, null, null, "The uploaded workbook contains no data.");
+                }
+
+                if (rangeUsed.RowCount() > 5001 || rangeUsed.ColumnCount() > 20)
+                {
+                    return new BulkImportEmailContactsResult(false, null, null, "Email contact import is limited to 5,000 data rows and 20 columns.");
+                }
+
+                var rows = rangeUsed.RowsUsed().Skip(1);
 
                 int successCount = 0;
                 int skipCount = 0;

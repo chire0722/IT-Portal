@@ -560,7 +560,11 @@ namespace IT_Form.Controllers
                     {
                         var worksheet = workbook.Worksheet(1);
                         var rangeUsed = worksheet.RangeUsed();
-                        var rows = rangeUsed != null ? rangeUsed.RowsUsed().Skip(1) : Enumerable.Empty<IXLRangeRow>();
+                        if (rangeUsed == null)
+                            return BadRequest("Uploaded file contains no data.");
+                        if (rangeUsed.RowCount() > 5001 || rangeUsed.ColumnCount() > 20)
+                            return BadRequest("Asset import is limited to 5,000 data rows and 20 columns.");
+                        var rows = rangeUsed.RowsUsed().Skip(1);
                         var candidateRows = rows
                             .Where(row => !string.IsNullOrWhiteSpace(row.Cell(1).GetValue<string>()?.Trim()))
                             .ToList();

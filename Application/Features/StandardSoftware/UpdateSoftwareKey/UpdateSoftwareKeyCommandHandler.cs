@@ -15,13 +15,16 @@ namespace IT_Form.Application.Features.StandardSoftware.UpdateSoftwareKey
     {
         private readonly ApplicationDbContext _context;
         private readonly ILicenseEncryptionService _encryptionService;
+        private readonly IT_Form.Application.Common.Abstractions.ICurrentUserAccessor _currentUserAccessor;
 
         public UpdateSoftwareKeyCommandHandler(
             ApplicationDbContext context,
-            ILicenseEncryptionService encryptionService)
+            ILicenseEncryptionService encryptionService,
+            IT_Form.Application.Common.Abstractions.ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
             _encryptionService = encryptionService;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -31,6 +34,12 @@ namespace IT_Form.Application.Features.StandardSoftware.UpdateSoftwareKey
         {
             var key = await _context.SoftwareKeys.FindAsync(new object[] { request.Id }, cancellationToken);
             if (key == null)
+            {
+                return new UpdateSoftwareKeyResult(UpdateSoftwareKeyStatus.NotFound, "Key not found.");
+            }
+
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, _currentUserAccessor.User, key.SoftwareLicenseId, cancellationToken))
             {
                 return new UpdateSoftwareKeyResult(UpdateSoftwareKeyStatus.NotFound, "Key not found.");
             }

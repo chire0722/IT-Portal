@@ -3,6 +3,7 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using IT_Form.ViewModels;
 using Mapster;
@@ -102,6 +103,7 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 .Select(item => new
                 {
                     item.Id,
+                    item.Status,
                     item.AccessToken,
                     item.FullName,
                     item.Department,
@@ -130,9 +132,12 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
             }
 
             var onboardingId = record.Id.ToString();
-            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.RequesterSignerName, record.RequesterSignedAt, record.RequesterSignature, record.RequesterSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.ITAdminSignerName, record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.EmployeeSignerName, record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac, "Employee"))
+            var requiresRequester = record.Status != RequestStatus.Draft && record.Status != RequestStatus.Rejected;
+            var requiresIt = record.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = record.Status is RequestStatus.Completed or RequestStatus.Approved;
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.RequesterSignerName, record.RequesterSignedAt, record.RequesterSignature, record.RequesterSignatureHmac, isRequired: requiresRequester) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.ITAdminSignerName, record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac, isRequired: requiresIt) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, record.EmployeeSignerName, record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
             {
                 return new(
                     GetSignatureAcknowledgePageStatus.IntegrityFailed,
@@ -166,6 +171,7 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 .Select(item => new
                 {
                     item.Id,
+                    item.Status,
                     item.AccessToken,
                     item.FullName,
                     item.Department,
@@ -198,10 +204,14 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
             }
 
             var offboardingId = record.Id.ToString();
-            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.HRSignerName, record.HRSignedAt, record.HRSignature, record.HRSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.HODSignerName, record.HODSignedAt, record.HODSignature, record.HODSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.ITAdminSignerName, record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.EmployeeSignerName, record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac, "Employee"))
+            var requiresHr = record.Status is RequestStatus.PendingApproval or RequestStatus.PendingHODApproval or RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresHod = record.Status is RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresIt = record.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = record.Status is RequestStatus.Completed or RequestStatus.Approved;
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.HRSignerName, record.HRSignedAt, record.HRSignature, record.HRSignatureHmac, isRequired: requiresHr) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.HODSignerName, record.HODSignedAt, record.HODSignature, record.HODSignatureHmac, isRequired: requiresHod) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.ITAdminSignerName, record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac, isRequired: requiresIt) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, record.EmployeeSignerName, record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
             {
                 return new(
                     GetSignatureAcknowledgePageStatus.IntegrityFailed,
@@ -287,9 +297,12 @@ public sealed class GetSignaturePdfQueryHandler
             }
 
             var onboardingId = onboardingRequest.Id.ToString();
-            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.RequesterSignerName, onboardingRequest.RequesterSignedAt, onboardingRequest.RequesterSignature, onboardingRequest.RequesterSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.ITAdminSignerName, onboardingRequest.ITAdminSignedAt, onboardingRequest.ITAdminSignature, onboardingRequest.ITAdminSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.EmployeeSignerName, onboardingRequest.EmployeeSignedAt, onboardingRequest.EmployeeSignature, onboardingRequest.EmployeeSignatureHmac, "Employee"))
+            var requiresRequester = onboardingRequest.Status != RequestStatus.Draft && onboardingRequest.Status != RequestStatus.Rejected;
+            var requiresIt = onboardingRequest.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = onboardingRequest.Status is RequestStatus.Completed or RequestStatus.Approved;
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.RequesterSignerName, onboardingRequest.RequesterSignedAt, onboardingRequest.RequesterSignature, onboardingRequest.RequesterSignatureHmac, isRequired: requiresRequester) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.ITAdminSignerName, onboardingRequest.ITAdminSignedAt, onboardingRequest.ITAdminSignature, onboardingRequest.ITAdminSignatureHmac, isRequired: requiresIt) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", onboardingId, onboardingRequest.EmployeeSignerName, onboardingRequest.EmployeeSignedAt, onboardingRequest.EmployeeSignature, onboardingRequest.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
             {
                 return new(GetSignaturePdfStatus.IntegrityFailed, Message: "Signature integrity metadata is missing, compromised, or invalid.");
             }
@@ -300,7 +313,7 @@ public sealed class GetSignaturePdfQueryHandler
                 new SignaturePdfFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Onboarding_{onboardingRequest.FullName?.Replace(" ", "_")}.pdf"));
+                    $"Onboarding_{CreateSafeDownloadName(onboardingRequest.FullName)}.pdf"));
         }
 
         if (string.Equals(request.Type, "Offboarding", StringComparison.OrdinalIgnoreCase))
@@ -327,10 +340,14 @@ public sealed class GetSignaturePdfQueryHandler
             }
 
             var offboardingId = offboardingRequest.Id.ToString();
-            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt, offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt, offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt, offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac) ||
-                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.EmployeeSignerName, offboardingRequest.EmployeeSignedAt, offboardingRequest.EmployeeSignature, offboardingRequest.EmployeeSignatureHmac, "Employee"))
+            var requiresHr = offboardingRequest.Status is RequestStatus.PendingApproval or RequestStatus.PendingHODApproval or RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresHod = offboardingRequest.Status is RequestStatus.PendingITApproval or RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresIt = offboardingRequest.Status is RequestStatus.PendingEmployeeSign or RequestStatus.Completed or RequestStatus.Approved;
+            var requiresEmployee = offboardingRequest.Status is RequestStatus.Completed or RequestStatus.Approved;
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.HRSignerName, offboardingRequest.HRSignedAt, offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac, isRequired: requiresHr) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.HODSignerName, offboardingRequest.HODSignedAt, offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac, isRequired: requiresHod) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.ITAdminSignerName, offboardingRequest.ITAdminSignedAt, offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac, isRequired: requiresIt) ||
+                !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingId, offboardingRequest.EmployeeSignerName, offboardingRequest.EmployeeSignedAt, offboardingRequest.EmployeeSignature, offboardingRequest.EmployeeSignatureHmac, "Employee", isRequired: requiresEmployee))
             {
                 return new(GetSignaturePdfStatus.IntegrityFailed, Message: "Signature integrity metadata is missing, compromised, or invalid.");
             }
@@ -341,9 +358,24 @@ public sealed class GetSignaturePdfQueryHandler
                 new SignaturePdfFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Offboarding_{offboardingRequest.FullName?.Replace(" ", "_")}.pdf"));
+                    $"Offboarding_{CreateSafeDownloadName(offboardingRequest.FullName)}.pdf"));
         }
 
         return new(GetSignaturePdfStatus.Invalid, Message: "Unknown request type.");
+    }
+
+    private static string CreateSafeDownloadName(string? fullName)
+    {
+        var safeName = System.Text.RegularExpressions.Regex.Replace(
+            fullName ?? "Employee",
+            @"[^\p{L}\p{N}._-]+",
+            "_").Trim('.', '_', '-');
+
+        if (string.IsNullOrWhiteSpace(safeName))
+        {
+            safeName = "Employee";
+        }
+
+        return safeName.Length > 80 ? safeName[..80] : safeName;
     }
 }

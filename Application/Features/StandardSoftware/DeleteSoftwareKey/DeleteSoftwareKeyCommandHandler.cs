@@ -12,10 +12,14 @@ namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareKey
     public sealed class DeleteSoftwareKeyCommandHandler : IRequestHandler<DeleteSoftwareKeyCommand, DeleteSoftwareKeyResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly IT_Form.Application.Common.Abstractions.ICurrentUserAccessor _currentUserAccessor;
 
-        public DeleteSoftwareKeyCommandHandler(ApplicationDbContext context)
+        public DeleteSoftwareKeyCommandHandler(
+            ApplicationDbContext context,
+            IT_Form.Application.Common.Abstractions.ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -27,6 +31,12 @@ namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareKey
                 .Include(item => item.SoftwareLicense)
                 .FirstOrDefaultAsync(item => item.Id == request.Id, cancellationToken);
             if (key == null)
+            {
+                return new DeleteSoftwareKeyResult(DeleteSoftwareKeyStatus.NotFound, "Key not found.");
+            }
+
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, _currentUserAccessor.User, key.SoftwareLicenseId, cancellationToken))
             {
                 return new DeleteSoftwareKeyResult(DeleteSoftwareKeyStatus.NotFound, "Key not found.");
             }

@@ -57,6 +57,28 @@ public sealed class ResendOtpCommandHandler : IRequestHandler<ResendOtpCommand, 
                 ResendOtpResult.GenericResponseMessage);
         }
 
+        if (request.Purpose == OtpPurposes.PrivilegedLogin)
+        {
+            var isSuperAdmin = await _context.UserTitles
+                .AsNoTracking()
+                .AnyAsync(title => title.UserId == user.Id && title.Title == PortalTitles.SuperAdmin, cancellationToken);
+
+            if (!isSuperAdmin || (!user.MustChangePassword && !string.IsNullOrWhiteSpace(user.PasswordHash)))
+            {
+                return new ResendOtpResult(
+                    request.Email,
+                    false,
+                    ResendOtpResult.GenericResponseMessage);
+            }
+        }
+        else if (request.Purpose != OtpPurposes.PasswordReset)
+        {
+            return new ResendOtpResult(
+                request.Email,
+                false,
+                ResendOtpResult.GenericResponseMessage);
+        }
+
         return await _keyedLockProvider.ExecuteAsync(
             AccountOtpSupport.BuildOperationKey(user.Id),
             async ct =>

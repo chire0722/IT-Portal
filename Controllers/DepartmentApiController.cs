@@ -25,6 +25,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Creates data for the Create operation.
         /// </summary>
@@ -35,6 +36,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Updates data for the Update operation.
         /// </summary>
@@ -45,6 +47,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Deletes data for the Delete operation.
         /// </summary>

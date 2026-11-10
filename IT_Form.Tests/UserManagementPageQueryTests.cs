@@ -216,9 +216,9 @@ public class UserManagementPageQueryTests
 
     [Fact]
     /// <summary>
-    /// Runs the ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies operation.
+    /// Runs the ItUserWithAssignedCompany_OnlySeesAndEditsUsersWithinScope operation.
     /// </summary>
-    public async Task ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies()
+    public async Task ItUserWithAssignedCompany_OnlySeesAndEditsUsersWithinScope()
     {
         await using var context = CreateContext();
 
@@ -281,18 +281,15 @@ public class UserManagementPageQueryTests
 
         Assert.True(indexResult.IsSuccess);
         var scopedUsers = Assert.IsType<List<UserManagementIndexListItem>>(indexResult.Data);
-        Assert.Equal(2, scopedUsers.Count);
+        Assert.Single(scopedUsers);
         Assert.Contains(scopedUsers, item => item.Id == "u-alpha");
-        Assert.Contains(scopedUsers, item => item.Id == "u-beta");
+        Assert.DoesNotContain(scopedUsers, item => item.Id == "u-beta");
 
         Assert.True(createResult.IsSuccess);
-        Assert.Equal(["Alpha Only", "Beta Only", "Global Dept"], createResult.Data!.Departments.Select(department => department.Name).ToList());
-        Assert.Equal(["Alpha", "Beta"], createResult.Data!.Companies.Select(company => company.DisplayName).ToList());
+        Assert.Equal(["Alpha Only", "Global Dept"], createResult.Data!.Departments.Select(department => department.Name).ToList());
+        Assert.Equal(["Alpha"], createResult.Data!.Companies.Select(company => company.DisplayName).ToList());
 
-        Assert.True(editResult.IsSuccess);
-        Assert.Equal("u-beta", editResult.Data!.Id);
-        Assert.Equal(["Beta"], editResult.Data.SelectedCompanies);
-        Assert.Equal(["Alpha", "Beta"], editResult.Data.Companies.Select(company => company.DisplayName).ToList());
+        Assert.False(editResult.IsSuccess);
     }
 
     /// <summary>

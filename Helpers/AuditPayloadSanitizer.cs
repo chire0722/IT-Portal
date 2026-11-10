@@ -24,17 +24,34 @@ public static class AuditPayloadSanitizer
         "code",
         "file",
         "image",
-        "resignationletter"
+        "resignationletter",
+        "authorization",
+        "cookie",
+        "credential",
+        "connectionstring",
+        "privatekey",
+        "clientsecret",
+        "accesskey",
+        "refresh",
+        "otp",
+        "emailbody"
     ];
 
     private static readonly HashSet<string> PersonalFieldNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "FullName",
         "EmployeeID",
+        "EmployeeId",
+        "UserName",
+        "UserId",
+        "CreatedByUserId",
         "Email",
         "EmailAddress",
         "HODEmail",
         "ContactNumber",
+        "PhoneNumber",
+        "Address",
+        "IpAddress",
         "ForwardToEmail",
         "EmployeeSignerName",
         "RequesterSignerName",

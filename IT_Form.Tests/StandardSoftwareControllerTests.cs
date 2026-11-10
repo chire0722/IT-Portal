@@ -51,11 +51,12 @@ namespace IT_Form.Tests
             {
                 Id = 5,
                 FullName = "Alicia Tan",
+                Branch = "HQ",
                 Status = Models.Enums.RequestStatus.Completed
             });
             await context.SaveChangesAsync();
 
-            var controller = GetController<StandardSoftwareController>(context, role: "IT");
+            var controller = GetController<StandardSoftwareController>(context, role: "SuperAdmin");
 
             var result = await controller.GetEmployees();
 
@@ -92,7 +93,7 @@ namespace IT_Form.Tests
             context.SoftwareLicenses.Add(license);
             await context.SaveChangesAsync();
 
-            var controller = GetController<StandardSoftwareController>(context, role: "IT");
+            var controller = GetController<StandardSoftwareController>(context, role: "SuperAdmin");
 
             var result = await controller.GetKeys(9);
 

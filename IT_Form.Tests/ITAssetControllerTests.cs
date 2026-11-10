@@ -38,9 +38,9 @@ namespace IT_Form.Tests
 
         [Fact]
         /// <summary>
-        /// Runs the Index_ShowsAssetsAcrossCompanies_ForCompanyScopedItUser operation.
+        /// Runs the Index_RestrictsAssetsToAssignedCompany_ForCompanyScopedItUser operation.
         /// </summary>
-        public async Task Index_ShowsAssetsAcrossCompanies_ForCompanyScopedItUser()
+        public async Task Index_RestrictsAssetsToAssignedCompany_ForCompanyScopedItUser()
         {
             using var context = CreateContext();
             context.Companies.AddRange(
@@ -56,9 +56,9 @@ namespace IT_Form.Tests
 
             var viewResult = Assert.IsType<ViewResult>(result);
             var model = Assert.IsAssignableFrom<AssetAnalyticsViewModel>(viewResult.ViewData.Model);
-            Assert.Equal(2, model.Assets.Count());
+            Assert.Single(model.Assets);
             Assert.Contains(model.Assets, asset => asset.Company == "Alpha");
-            Assert.Contains(model.Assets, asset => asset.Company == "Beta");
+            Assert.DoesNotContain(model.Assets, asset => asset.Company == "Beta");
         }
 
         [Fact]
@@ -88,9 +88,9 @@ namespace IT_Form.Tests
 
         [Fact]
         /// <summary>
-        /// Runs the Edit_AllowsCompanyScopedItUser_ToOpenAssetFromAnotherCompany operation.
+        /// Runs the Edit_ForbidsCompanyScopedItUser_FromOpeningAnotherCompanyAsset operation.
         /// </summary>
-        public async Task Edit_AllowsCompanyScopedItUser_ToOpenAssetFromAnotherCompany()
+        public async Task Edit_ForbidsCompanyScopedItUser_FromOpeningAnotherCompanyAsset()
         {
             using var context = CreateContext();
             var asset = new ITAsset { AssetTag = "TAG-010", Company = "Beta", Status = AssetStatus.Available };
@@ -100,9 +100,7 @@ namespace IT_Form.Tests
             var controller = GetController<ITAssetController>(context, role: "IT", branch: "Alpha");
             var result = await controller.Edit(asset.Id);
 
-            var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsType<ITAsset>(viewResult.Model);
-            Assert.Equal(asset.Id, model.Id);
+            Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]

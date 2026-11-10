@@ -116,7 +116,7 @@ Create and maintain an approved vendor/sub-processor register covering hosting, 
 
 ### P1 — Application hardening
 
-1. CSP no longer trusts hard-coded private HTTP origins and now explicitly restricts objects, base URIs, form actions, and connections. The `unsafe-eval` exception and Tailwind browser CDN are now scoped to the device-verification route only; replace that page's CDN runtime with precompiled local CSS to remove the exception entirely. Reduce the remaining `unsafe-inline` through nonce/hash-based scripts after inventorying inline scripts and testing every view.
+1. CSP no longer trusts hard-coded private HTTP origins and now explicitly restricts objects, base URIs, form actions, and connections. Inline script blocks use a per-response nonce, `script-src-attr` is `none`, and the device-verification page uses local precompiled CSS without a browser Tailwind runtime or `unsafe-eval`. Browser regression testing across every view remains a release check.
 3. PDF/image/video uploads validate allowed extensions, MIME types and magic-byte signatures; ClamAV scans offboarding resignation letters, company logos, and supported Excel import workflows before persistence/processing, failing closed on scanner outage. PDF downloads are forced to attachment. Verify remaining upload paths, production scanner health/alerting, safe image re-encoding, quarantine requirements, and deeper file-format parsing. Upload endpoints have explicit request-body limits aligned to per-file limits.
 4. Complete a route-by-route authorization matrix and negative tests for cross-company access, exports, downloads, APIs, and signature/token endpoints.
 5. Review request/audit/application logs for personal data, tokens, query strings, exception content, and retention. Verification bearer tokens and employee IDs in known route paths are redacted from Serilog request-path logs; custom log statements and other routes still require review.
@@ -154,3 +154,4 @@ Before production approval, require:
 - Malaysia PDP Commissioner — [DPO appointment circular and guidelines](https://www.pdp.gov.my/en/akta/personal-data-protection-guidelines-on-the-appointment-of-data-protection-officer-dpo/), [DPO FAQ and appointment thresholds](https://www.pdp.gov.my/en/faq/), and [Data Breach Notification guideline (PDF)](https://www.pdp.gov.my/ppdpv1/wp-content/uploads/2025/08/GP_DBN_ENG.pdf).
 - European Union — [Regulation (EU) 2016/679 (GDPR), official EUR-Lex text](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
 - NIST — [The NIST Cybersecurity Framework (CSF) 2.0, NIST CSWP 29 (2024), DOI: 10.6028/NIST.CSWP.29](https://doi.org/10.6028/NIST.CSWP.29).
+

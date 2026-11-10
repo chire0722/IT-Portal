@@ -17,7 +17,8 @@ public sealed class CompanyLogoStorageTests
 
         try
         {
-            var bytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0 };
+            var bytes = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
             await using var source = new MemoryStream(bytes);
             IFormFile file = new FormFile(source, 0, source.Length, "logo", "logo.png")
             {
@@ -64,3 +65,4 @@ public sealed class CompanyLogoStorageTests
         }
     }
 }
+

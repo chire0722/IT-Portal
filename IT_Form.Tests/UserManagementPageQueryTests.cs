@@ -218,7 +218,7 @@ public class UserManagementPageQueryTests
     /// <summary>
     /// Runs the ItUserWithAssignedCompany_OnlySeesAndEditsUsersWithinScope operation.
     /// </summary>
-    public async Task ItUserWithAssignedCompany_SeesAndEditsUsersAcrossCompanies()
+    public async Task ItUserWithAssignedCompany_OnlySeesAndEditsUsersWithinScope()
     {
         await using var context = CreateContext();
 

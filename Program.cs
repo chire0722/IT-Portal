@@ -188,7 +188,49 @@ if (!builder.Environment.IsDevelopment())
             "The configured Data Protection certificate was not found as a valid LocalMachine/My certificate with an accessible RSA private key of at least 2048 bits.");
     }
 
-    dataProtectionBuilder.ProtectKeysWithCertificate(keyRingCertificate);
+    var unprotectCertificates = new List<X509Certificate2> { keyRingCertificate };
+    var previousThumbprints = (builder.Configuration["DataProtection:UnprotectCertificateThumbprints"] ?? string.Empty)
+        .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    foreach (var previousThumbprint in previousThumbprints)
+    {
+        var normalizedPreviousThumbprint = previousThumbprint.Replace(" ", string.Empty, StringComparison.Ordinal);
+        if (string.Equals(normalizedPreviousThumbprint, normalizedThumbprint, StringComparison.OrdinalIgnoreCase))
+        {
+            continue;
+        }
+
+        // Expired certificates may still be required to decrypt historical key-ring entries.
+        var previousCertificates = certificateStore.Certificates.Find(
+            X509FindType.FindByThumbprint,
+            normalizedPreviousThumbprint,
+            validOnly: false);
+
+        var previousCertificate = previousCertificates
+            .OfType<X509Certificate2>()
+            .FirstOrDefault(certificate =>
+            {
+                if (!certificate.HasPrivateKey)
+                {
+                    return false;
+                }
+
+                using var rsa = certificate.GetRSAPrivateKey();
+                return rsa is not null && rsa.KeySize >= 2048;
+            });
+
+        if (previousCertificate is null)
+        {
+            throw new InvalidOperationException(
+                "A configured Data Protection unprotect certificate was not found with an accessible RSA private key of at least 2048 bits.");
+        }
+
+        unprotectCertificates.Add(previousCertificate);
+    }
+
+    dataProtectionBuilder
+        .ProtectKeysWithCertificate(keyRingCertificate)
+        .UnprotectKeysWithAnyCertificate(unprotectCertificates.ToArray());
 }
 
 

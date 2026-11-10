@@ -51,6 +51,7 @@ namespace IT_Form.Tests
             {
                 Id = 5,
                 FullName = "Alicia Tan",
+                Branch = "HQ",
                 Status = Models.Enums.RequestStatus.Completed
             });
             await context.SaveChangesAsync();

@@ -49,3 +49,12 @@ certificates/
 /sqlite3.exe
 /sqlite3_analyzer.exe
 /sqldiff.exe
+
+# Generated verification/build workspaces - never commit
+.codexbuild/
+.build-verify/
+# Environment-specific configuration and runtime key material
+appsettings.Production.json
+appsettings.Secrets.json
+appsettings.*.local.json
+App_Data/DataProtection-Keys/

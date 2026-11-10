@@ -46,7 +46,7 @@ The application deliberately does not generate, install, or commit a production 
 
 ## Malware scanning for sensitive uploads
 
-The offboarding resignation-letter upload path requires a clean ClamAV scan before the request is persisted. Configure the scanner endpoint through the secret/environment configuration provider:
+The offboarding resignation-letter and company-logo upload paths require a clean ClamAV scan before the uploaded content is persisted or published. Configure the scanner endpoint through the secret/environment configuration provider:
 
 | Environment variable | Purpose | Default |
 |---|---|---|

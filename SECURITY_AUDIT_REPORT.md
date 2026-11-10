@@ -28,6 +28,9 @@ The work was isolated to `security/audit-hardening`. The proposed changes are no
 - Restrict onboarding token regeneration and bulk exports to HR; cap bulk exports and reject partially unauthorized selections.
 - Validate authorization in offboarding signature handlers and deletion workflows.
 - Apply explicit company assignments to scoped IT administrators across license lookup, creation/editing, imports, key reads/decryption, and key/seat mutations. Super Admin and unscoped global IT retain global license administration. Employee assignment remains company-scoped.
+- Keep unscoped legacy software licenses visible only to global administrators; scoped IT users see only company-linked license versions.
+- Preserve global Super Admin access even when legacy identities still contain a company claim, while retaining explicit company restrictions for scoped IT identities.
+- Bind newly imported license versions to the importing scoped IT user's companies; reject attempts to add keys to an existing license outside that scope.
 
 ### Signatures, integrity and privacy
 - Revalidate required upstream HMAC signatures before employee acknowledgement, public acknowledgement/PDF reads, offboarding PDF generation, and notification attachments/previews.
@@ -46,6 +49,8 @@ The work was isolated to `security/audit-hardening`. The proposed changes are no
 - Sanitize ZIP entry names and download filenames against path/header injection.
 - Reject SVG and malformed signature/logo image data.
 - Bound spreadsheet imports to 5,000 data rows and 20 columns across the import paths reviewed.
+- Hash imported license keys for idempotency, reject oversized key values, and prevent duplicate imports from creating duplicate key records.
+- Cap generated subscription seats at 5,000 per import and 5,000 per license; enforce the same limit in add/edit/quick-allocation flows to prevent memory and database exhaustion.
 - Validate upload fixtures and add regression coverage for safe image parsing.
 
 ### HTTP and configuration hardening
@@ -66,11 +71,10 @@ The work was isolated to `security/audit-hardening`. The proposed changes are no
 CI workflow: `.github/workflows/dotnet-security.yml`  
 Validation stages: .NET 10 restore, application build, application tests, audit tests.
 
-- Earlier successful CI on commit `673631b5`: application build and 342 tests passed (328 application tests + 14 audit tests).
-- A subsequent CI log exposed one nullable email-body warning; a null guard was added.
-- The latest software-license/key scope changes introduced a missing test-helper constructor argument; corrected in `ControllerTestBase.cs`.
-- Latest code head at report update: `9d140931c3878383c498af8d82a457eeef730724`.
-- CI run #386 is validating the latest code head; do not merge until Restore, Build, Application Tests, and Audit Tests all pass.
+- Latest verified code head: `24f6114d8ce80893d0fe279b1d6744a276b8f881` on `security/audit-hardening`.
+- GitHub Actions run **#465** completed successfully: restore passed, application build passed, **335 application tests passed**, and **14 audit tests passed** (349 tests total).
+- A previous CI failure exposed two stale expectations from the old cross-company IT behavior; the tests were updated to assert the new explicit company boundary. The subsequent full run #465 passed.
+- The application build and both test suites passed after the scoped-license, Excel import, subscription-seat cap, and global-identity fixes.
 - Build/test success does not replace staging verification of database migrations, native SQLite compatibility, SMTP, backups, Data Protection, reverse-proxy headers, and browser workflows.
 
 ## Residual risks and required follow-up

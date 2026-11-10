@@ -44,6 +44,28 @@ public class HomeQueryTests
         Assert.True(result.IsForbidden);
     }
 
+
+    [Fact]
+    public async Task AnalyticsQuery_HrWithoutCompanyClaimsRetainsGlobalReadAccess()
+    {
+        await using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        await context.SaveChangesAsync();
+
+        var handler = new GetHomeAnalyticsQueryHandler(
+            context,
+            new TestCurrentUserAccessor("hr@company.com", "hr-1", ["HR"]));
+
+        var result = await handler.Handle(new GetHomeAnalyticsQuery(2025, null), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Data!.CompanyOptions.Count);
+        Assert.Contains(result.Data.CompanyOptions, company => company.DisplayName == "Alpha");
+        Assert.Contains(result.Data.CompanyOptions, company => company.DisplayName == "Beta");
+    }
+
     [Fact]
     public async Task AnalyticsQuery_PopulatesSuperAdminOnlyAnalytics_ForSuperAdmin()
     {

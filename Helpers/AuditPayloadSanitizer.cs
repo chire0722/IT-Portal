@@ -1,6 +1,7 @@
 // Project comment: AuditPayloadSanitizer.cs is part of the IT Form application source code.
 
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace IT_Form.Helpers;
 
@@ -72,6 +73,30 @@ public static class AuditPayloadSanitizer
         {
             return RedactString(json) ?? string.Empty;
         }
+    }
+
+    /// <summary>
+    /// Produces a bounded, non-sensitive value suitable for an audit error field.
+    /// Exception messages are not an audit trail and may contain user input or secrets.
+    /// </summary>
+    public static string SanitizeExceptionMessage(Exception exception) =>
+        $"Operation failed ({exception.GetType().Name}).";
+
+    /// <summary>
+    /// Redacts common secret and email patterns from non-JSON audit text.
+    /// </summary>
+    public static string RedactFreeText(string? value)
+    {
+        var bounded = RedactString(value) ?? string.Empty;
+        bounded = Regex.Replace(
+            bounded,
+            @"(?i)\b(password|token|secret|api[-_]?key|hmac|signature|authorization|bearer)\s*[:=]\s*[^\s,;]+",
+            "$1=***REDACTED***");
+        return Regex.Replace(
+            bounded,
+            @"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+            Redacted,
+            RegexOptions.IgnoreCase);
     }
 
     /// <summary>

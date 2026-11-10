@@ -84,10 +84,24 @@ namespace IT_Form.Controllers
             ApplicationUser? user = null;
             if (!string.IsNullOrWhiteSpace(employeeId))
             {
-                user = await _context.Users.FindAsync(employeeId);
+                user = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(employee => employee.Id == employeeId);
                 if (user == null)
                 {
                     return NotFound("Employee not found.");
+                }
+
+                var targetCompanies = await _context.UserCompanies
+                    .AsNoTracking()
+                    .Where(company => company.UserId == user.Id)
+                    .Select(company => company.CompanyName)
+                    .ToArrayAsync();
+
+                if (targetCompanies.Length == 0 ||
+                    !CompanyScopeHelper.CanAccessAnyCompany(User, targetCompanies))
+                {
+                    return Forbid();
                 }
             }
 

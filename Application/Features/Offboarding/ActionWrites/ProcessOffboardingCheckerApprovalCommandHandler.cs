@@ -3,6 +3,7 @@
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using MediatR;
@@ -52,6 +53,22 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
                 return new CommandResponse { IsNotFound = true };
             }
 
+            if (!CompanyScopeHelper.CanAccessCompany(user, offboardingRequest.Branch))
+            {
+                return new CommandResponse { IsForbidden = true, RequestId = request.Id };
+            }
+
+            if (offboardingRequest.Status != RequestStatus.PendingApproval ||
+                string.IsNullOrWhiteSpace(offboardingRequest.HRSignature) ||
+                !string.IsNullOrWhiteSpace(offboardingRequest.HODSignature))
+            {
+                return new CommandResponse
+                {
+                    Message = "This request is not ready for checker approval.",
+                    RequestId = request.Id
+                };
+            }
+
             var username = _currentUserAccessor.UserName ?? string.Empty;
             if (!offboardingRequest.CanBeCheckerApprovedBy(username))
             {
@@ -73,3 +90,4 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         }
     }
 }
+

@@ -19,6 +19,7 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
     /// </summary>
     public sealed class ImportStandardSoftwareCommandHandler : IRequestHandler<ImportStandardSoftwareCommand, ImportStandardSoftwareResult>
     {
+        private const int MaxGeneratedSeatsPerImport = 5000;
         private readonly ApplicationDbContext _context;
         private readonly IQuotaControl _quotaControl;
         private readonly ICurrentUserAccessor _currentUserAccessor;
@@ -46,6 +47,7 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
             int keysAdded = 0;
             int rowErrorCount = 0;
             var rowErrors = new List<string>();
+            var generatedSeats = 0;
 
             using var stream = request.File.OpenReadStream();
             using var wb = new XLWorkbook(stream);
@@ -156,7 +158,28 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
                             continue;
                         }
 
-                        int.TryParse(quantityStr, out var quantity);
+                        var quantity = 0;
+                        if (isSub && !isFree)
+                        {
+                            if (!int.TryParse(quantityStr, System.Globalization.NumberStyles.None,
+                                    System.Globalization.CultureInfo.InvariantCulture, out quantity) ||
+                                quantity <= 0)
+                            {
+                                rowErrorCount++;
+                                rowErrors.Add($"Row {row.RowNumber()}: Paid subscription quantity must be a positive whole number.");
+                                continue;
+                            }
+
+                            if (quantity > MaxGeneratedSeatsPerImport - generatedSeats)
+                            {
+                                rowErrorCount++;
+                                rowErrors.Add($"Row {row.RowNumber()}: Subscription seat generation is limited to {MaxGeneratedSeatsPerImport:N0} seats per import.");
+                                continue;
+                            }
+
+                            generatedSeats += quantity;
+                        }
+
                         existingVersion = new IT_Form.Models.SoftwareLicense
                         {
                             StandardSoftwareId = software.Id,

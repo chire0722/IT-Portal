@@ -16,7 +16,10 @@ namespace IT_Form.Application.Features.Onboarding.SignOnboardingRequest
             RuleFor(x => x.SignatureType)
                 .NotEmpty();
             RuleFor(x => x.SignatureData)
+                .NotEmpty()
+                .WithMessage("Signature data is invalid or too large.")
                 .Must(SignatureDataUriValidator.IsValid)
+                .When(x => !string.IsNullOrWhiteSpace(x.SignatureData))
                 .WithMessage("Signature must be a valid PNG image with bounded dimensions and size.");
         }
     }

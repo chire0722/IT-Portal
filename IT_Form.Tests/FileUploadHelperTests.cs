@@ -14,7 +14,7 @@ namespace IT_Form.Tests
         [Fact]
         public void IsValidExcelFile_AcceptsValidXlsxPackage()
         {
-            using var file = CreateFormFile(CreateWorkbook(), "assets.xlsx", XlsxMimeType);
+            var file = CreateFormFile(CreateWorkbook(), "assets.xlsx", XlsxMimeType);
 
             var result = FileUploadHelper.IsValidExcelFile(file, out var error);
 
@@ -25,7 +25,7 @@ namespace IT_Form.Tests
         [Fact]
         public void IsValidExcelFile_RejectsTextRenamedAsXlsx()
         {
-            using var file = CreateFormFile(Encoding.UTF8.GetBytes("not an excel workbook"), "assets.xlsx", XlsxMimeType);
+            var file = CreateFormFile(Encoding.UTF8.GetBytes("not an excel workbook"), "assets.xlsx", XlsxMimeType);
 
             var result = FileUploadHelper.IsValidExcelFile(file, out var error);
 
@@ -36,7 +36,7 @@ namespace IT_Form.Tests
         [Fact]
         public void IsValidExcelFile_RejectsLegacyXlsBecauseImporterRequiresXlsx()
         {
-            using var file = CreateFormFile(new byte[] { 0xD0, 0xCF, 0x11, 0xE0 }, "assets.xls", "application/vnd.ms-excel");
+            var file = CreateFormFile(new byte[] { 0xD0, 0xCF, 0x11, 0xE0 }, "assets.xls", "application/vnd.ms-excel");
 
             var result = FileUploadHelper.IsValidExcelFile(file, out var error);
 
@@ -47,7 +47,7 @@ namespace IT_Form.Tests
         [Fact]
         public void IsValidExcelFile_RejectsMismatchedDeclaredMimeType()
         {
-            using var file = CreateFormFile(CreateWorkbook(), "assets.xlsx", "text/html");
+            var file = CreateFormFile(CreateWorkbook(), "assets.xlsx", "text/html");
 
             var result = FileUploadHelper.IsValidExcelFile(file, out var error);
 
@@ -58,7 +58,7 @@ namespace IT_Form.Tests
         [Fact]
         public void IsValidExcelFile_RejectsMacroEnabledPackage()
         {
-            using var file = CreateFormFile(CreateWorkbook(includeMacro: true), "assets.xlsx", XlsxMimeType);
+            var file = CreateFormFile(CreateWorkbook(includeMacro: true), "assets.xlsx", XlsxMimeType);
 
             var result = FileUploadHelper.IsValidExcelFile(file, out var error);
 
@@ -69,7 +69,7 @@ namespace IT_Form.Tests
         [Fact]
         public void IsValidExcelFile_RejectsZipThatIsNotAnOfficeWorkbook()
         {
-            using var file = CreateFormFile(CreateZipWithOnlyEntry("readme.txt", "hello"), "assets.xlsx", XlsxMimeType);
+            var file = CreateFormFile(CreateZipWithOnlyEntry("readme.txt", "hello"), "assets.xlsx", XlsxMimeType);
 
             var result = FileUploadHelper.IsValidExcelFile(file, out var error);
 

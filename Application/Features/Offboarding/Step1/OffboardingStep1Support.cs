@@ -192,24 +192,58 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         /// <summary>
         /// Runs the MarkReturnedAssetsAsync operation.
         /// </summary>
-        internal static async Task MarkReturnedAssetsAsync(
+        internal static async Task<string?> MarkReturnedAssetsAsync(
             ApplicationDbContext context,
+            OffboardingRequest offboardingRequest,
             IReadOnlyCollection<int>? returnedAssetIds,
             CancellationToken cancellationToken)
         {
             if (returnedAssetIds == null || returnedAssetIds.Count == 0)
             {
-                return;
+                return null;
+            }
+
+            if (!offboardingRequest.OnboardingRequestId.HasValue)
+            {
+                return "Returned inventory assets must be linked to the employee's onboarding assignment before they can be reconciled.";
+            }
+
+            var requestedAssetIds = returnedAssetIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            if (requestedAssetIds.Count != returnedAssetIds.Count)
+            {
+                return "The returned asset list contains an invalid or duplicated asset id.";
+            }
+
+            var assignedAssetIds = await context.IssuedAssets
+                .Where(issue => issue.OnboardingRequestId == offboardingRequest.OnboardingRequestId &&
+                                issue.ITAssetId.HasValue &&
+                                requestedAssetIds.Contains(issue.ITAssetId.Value) &&
+                                issue.ITAsset!.Status == AssetStatus.Issued &&
+                                issue.ITAsset.Company == offboardingRequest.Branch)
+                .Select(issue => issue.ITAssetId!.Value)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            if (assignedAssetIds.Count != requestedAssetIds.Count)
+            {
+                return "Every returned inventory asset must be currently assigned to this employee and company.";
             }
 
             var returnedAssets = await context.ITAssets
-                .Where(a => returnedAssetIds.Contains(a.Id) && a.Status == AssetStatus.Issued)
+                .Where(a => requestedAssetIds.Contains(a.Id) &&
+                            a.Status == AssetStatus.Issued &&
+                            a.Company == offboardingRequest.Branch)
                 .ToListAsync(cancellationToken);
 
             foreach (var asset in returnedAssets)
             {
                 asset.Status = AssetStatus.Available;
             }
+
+            return null;
         }
 
         /// <summary>

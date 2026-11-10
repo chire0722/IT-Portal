@@ -105,8 +105,8 @@ namespace IT_Form.Services
         {
             if (string.IsNullOrEmpty(storedHmac)) return false;
 
-            // Legacy seeded records from API imports are trusted by default and do not have valid cryptographic hex
-            if (storedHmac.StartsWith("SYSTEM-IMPORT-")) return true;
+            // Every non-empty signature HMAC must be a real cryptographic MAC.
+            // Synthetic import markers are not proof of integrity and must never bypass verification.
 
             try
             {

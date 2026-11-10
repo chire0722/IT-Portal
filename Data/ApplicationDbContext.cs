@@ -1058,7 +1058,8 @@ namespace IT_Form.Data
                             auditEmail,
                             subject,
                             htmlBody,
-                            BypassActiveCheck: true)));
+                            BypassActiveCheck: true),
+                        _encryptionService));
                 }
 
                 if (queuedMessages.Count > 0)
@@ -1116,4 +1117,5 @@ namespace IT_Form.Data
         }
     }
 }
+
 

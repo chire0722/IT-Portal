@@ -47,18 +47,9 @@ namespace IT_Form.Application.Features.Onboarding.DeleteOnboardingRequest
 
             var user = _currentUserAccessor.User;
             var currentUsername = _currentUserAccessor.UserName;
-            if (!CompanyScopeHelper.CanAccessCompany(user, onboardingRequest.Branch))
+            if (!OnboardingRequestAuthorizationHelper.CanDelete(user, onboardingRequest))
             {
                 return ProcessResult<object>.Forbidden();
-            }
-
-            var isHr = user.HasClaim("UserTitle", "HR");
-            if (!onboardingRequest.CanBeDeletedBy(isHr))
-            {
-                return ProcessResult<object>.Failure(
-                    "Only Draft, Rejected, or HR-signed (awaiting others) requests can be deleted.",
-                    "Index",
-                    ajaxAware: true);
             }
 
             await _context.LogActionAsync(

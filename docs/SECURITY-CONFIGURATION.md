@@ -18,6 +18,7 @@ Configure these in the hosting platform's secret/configuration store, then resta
 | `IT_FORM__SmtpSettings__Password` | SMTP credential/app password |
 | `IT_FORM__SmtpSettings__FromName` | Sender display name |
 | `IT_FORM__SmtpSettings__EnableSsl` | Whether SMTP TLS is enabled |
+| `IT_FORM__SmtpSettings__TimeoutSeconds` | SMTP send timeout, bounded to 1–120 seconds |
 | `IT_FORM__AllowedHosts` | Production host names accepted by ASP.NET Core |
 | `IT_FORM__AppDomain` | Public HTTPS application URL |
 | `IT_FORM__DatabaseBackup__BackupPath` | Local backup directory |
@@ -48,7 +49,7 @@ The application deliberately does not generate, install, or commit a production 
 
 ## Malware scanning for sensitive uploads
 
-The offboarding resignation-letter and company-logo upload paths require a clean ClamAV scan before the uploaded content is persisted or published. Configure the scanner endpoint through the secret/environment configuration provider:
+The offboarding resignation-letter, company-logo, and supported spreadsheet-import paths require a clean ClamAV scan before the uploaded content is persisted or processed. Configure the scanner endpoint through the secret/environment configuration provider:
 
 | Environment variable | Purpose | Default |
 |---|---|---|
@@ -60,7 +61,7 @@ The application uses ClamAV's `zINSTREAM` protocol. Keep the daemon on loopback 
 
 A malware verdict of `FOUND` rejects the upload. Missing configuration, timeout, connection failure, malformed/unknown scanner response or daemon error also rejects the upload; it never falls back to allowing the file.
 
-**Coverage limitation:** this integration currently protects the sensitive offboarding resignation-letter upload path. It does not establish that every upload surface (for example company logos or spreadsheet imports) is scanned. Those paths remain a release-gated backlog item until integrated and tested.
+**Coverage limitation:** the source-level route inventory is recorded in `docs/FILE-SECURITY-ROUTE-INVENTORY.md`. Production scanner health, signature freshness, EICAR verification, and route-by-route deployment tests remain release gates.
 
 ## HMAC key generation and rotation
 
@@ -112,3 +113,4 @@ If the organisation is required to appoint a DPO under the current Commissioner 
 - `IT_FORM__PdpaCompliance__DpoContactEmail`
 
 Do not set these values to a generic IT mailbox unless that mailbox is the formally designated DPO contact.
+

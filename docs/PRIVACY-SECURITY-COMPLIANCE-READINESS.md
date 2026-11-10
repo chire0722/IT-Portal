@@ -22,6 +22,8 @@ Relevant amendment provisions include:
 
 The organisation must confirm its controller/processor roles, whether it falls within any controller-registration class, and the current DPO and breach-notification requirements in the Commissioner’s current circulars and guidelines.
 
+The Commissioner’s published DPO FAQ states that appointment is required where processing involves **more than 20,000 data subjects**, **more than 10,000 data subjects whose data includes sensitive personal data (including financial information)**, or **regular and systematic monitoring**. Where a DPO is required, the appointment must be notified within 21 days. Not every organisation automatically meets these criteria; determine this from the actual data inventory and monitoring activities.
+
 ### GDPR
 
 GDPR is **not automatically applicable merely because the application is hosted in Malaysia**. Confirm territorial scope under Article 3 (for example, an EU establishment or relevant offering/monitoring of individuals in the EU).
@@ -82,12 +84,12 @@ The privacy page currently provides a reporting email, but source review did not
 
 - 24/7 or otherwise appropriately staffed reporting and escalation route;
 - incident record with discovery time, affected systems/data, containment, evidence preservation, risk/harm assessment, and decisions;
-- Malaysian Commissioner and affected-person notification decision process under Act 709 as amended and the current DBN guideline/circular;
+- Malaysian Commissioner notification process under the DBN Guideline: notify as soon as practicable and no later than **72 hours** when the guideline's notification criteria are met; assess separately whether affected-person notification is required due to significant harm;
 - GDPR supervisory-authority notification within 72 hours where Article 33 applies, and data-subject communication where Article 34 applies;
 - processor-to-controller escalation clauses and contact details;
 - tabletop exercises and post-incident review.
 
-Do not infer a single universal notification clock for all Malaysian incidents from the Act text alone; follow the current Commissioner guideline/circular and obtain legal advice for each incident.
+The Malaysian DBN Guideline specifies a 72-hour maximum for Commissioner notification when its criteria are met. Its assessment includes significant-scale and significant-harm criteria; the Commissioner’s DBN reporting portal identifies more than 1,000 affected data subjects as significant scale. Follow the current guideline/circular for the start of the clock and each notification decision.
 
 ### P1 — Data minimisation, accuracy, and retention
 
@@ -110,8 +112,7 @@ Create and maintain an approved vendor/sub-processor register covering hosting, 
 
 ### P1 — Application hardening
 
-1. Reduce CSP use of `unsafe-eval` and `unsafe-inline`; move toward nonce/hash-based scripts after inventorying inline scripts and testing every view.
-2. Remove unused hard-coded private HTTP origins from CSP after verifying no supported deployment depends on them.
+1. CSP no longer trusts hard-coded private HTTP origins and now explicitly restricts objects, base URIs, form actions, and connections. `unsafe-eval` remains temporarily because the standalone device-verification page uses the browser-based Tailwind CDN; replace it with precompiled local CSS to remove that directive. Reduce `unsafe-inline` through nonce/hash-based scripts after inventorying inline scripts and testing every view.
 3. PDF/image/video uploads now validate allowed extensions, MIME types, and magic-byte signatures; PDF downloads are forced to attachment. Add safe image re-encoding and deeper file-format parsing if the threat model requires it. Upload endpoints have explicit request-body limits aligned to per-file limits.
 4. Complete a route-by-route authorization matrix and negative tests for cross-company access, exports, downloads, APIs, and signature/token endpoints.
 5. Review request/audit/application logs for personal data, tokens, query strings, exception content, and retention.
@@ -146,6 +147,6 @@ Before production approval, require:
 
 - Malaysia Personal Data Protection Department — [Act 709, amendment, circulars and guidelines](https://www.pdp.gov.my/en/akta/pdp-act-2010-en/).
 - Laws of Malaysia — [Personal Data Protection (Amendment) Act 2024, Act A1727](https://www.pdp.gov.my/ppdpv1/wp-content/uploads/2024/11/Act-A1727.pdf).
-- Malaysia PDP Commissioner — [DPO appointment circular and guidelines](https://www.pdp.gov.my/en/akta/personal-data-protection-guidelines-on-the-appointment-of-data-protection-officer-dpo/) and [Data Breach Notification guidelines](https://www.pdp.gov.my/en/akta/personal-data-protection-guidelines-on-data-breach-notification-dbn/).
+- Malaysia PDP Commissioner — [DPO appointment circular and guidelines](https://www.pdp.gov.my/en/akta/personal-data-protection-guidelines-on-the-appointment-of-data-protection-officer-dpo/), [DPO FAQ and appointment thresholds](https://www.pdp.gov.my/en/faq/), and [Data Breach Notification guideline (PDF)](https://www.pdp.gov.my/ppdpv1/wp-content/uploads/2025/08/GP_DBN_ENG.pdf).
 - European Union — [Regulation (EU) 2016/679 (GDPR), official EUR-Lex text](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
 - NIST — [The NIST Cybersecurity Framework (CSF) 2.0, NIST CSWP 29 (2024), DOI: 10.6028/NIST.CSWP.29](https://doi.org/10.6028/NIST.CSWP.29).

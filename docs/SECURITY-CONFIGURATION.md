@@ -64,3 +64,13 @@ Before any history rewrite:
 A history rewrite changes commit IDs and can affect pull requests, forks, tags, and existing clones. This PR deliberately does not perform a force-push or rewrite `main`.
 
 Reference: [GitHub Docs — Removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).
+
+
+## DPO contact details for the privacy notice
+
+If the organisation is required to appoint a DPO under the current Commissioner criteria, configure the appointed officer's business contact details. The privacy notice displays the DPO card only when an official contact email is configured.
+
+- `IT_FORM__PdpaCompliance__DpoName`
+- `IT_FORM__PdpaCompliance__DpoContactEmail`
+
+Do not set these values to a generic IT mailbox unless that mailbox is the formally designated DPO contact.

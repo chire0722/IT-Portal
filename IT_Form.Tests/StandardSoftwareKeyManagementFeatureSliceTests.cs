@@ -57,7 +57,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         var handler = new AddSoftwareKeyCommandHandler(
             licenseService.Object,
             context,
-            new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
+            new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
         var result = await handler.Handle(new AddSoftwareKeyCommand(10, "abc"), CancellationToken.None);
 
         Assert.Equal(AddSoftwareKeyStatus.Failed, result.Status);
@@ -88,7 +88,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         });
         await context.SaveChangesAsync();
 
-        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
+        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
         var result = await handler.Handle(new DeleteSoftwareKeyCommand(5), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareKeyStatus.AssignedBlocked, result.Status);
@@ -112,7 +112,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
-        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
 
         var result = await handler.Handle(new QuickAllocateSubscriptionSeatCommand(7), CancellationToken.None);
 
@@ -147,7 +147,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
-        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
 
         var result = await handler.Handle(new QuickAllocateSubscriptionSeatCommand(8), CancellationToken.None);
 
@@ -237,7 +237,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         context.SoftwareLicenses.Add(license);
         await context.SaveChangesAsync();
 
-        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
+        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: ["IT"], companies: []));
         var result = await handler.Handle(new DeleteSoftwareKeyCommand(41), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareKeyStatus.Deleted, result.Status);

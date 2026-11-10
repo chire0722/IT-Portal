@@ -36,7 +36,7 @@
                 </div>
                 <div class="col-md-6">
                     <label asp-for="Department" class="form-label">Department *</label>
-                    <select asp-for="Department" class="form-select" id="deptSelect" onchange="toggleOtherDept()">
+                    <select asp-for="Department" class="form-select" id="deptSelect" data-csp-change="toggleOtherDept">
                         <option value="">Select Department</option>
                         @foreach (var dept in Model.Departments)
                         {
@@ -224,5 +224,6 @@
     </script>
     <partial name="_ValidationScriptsPartial" />
 }
+
 
 

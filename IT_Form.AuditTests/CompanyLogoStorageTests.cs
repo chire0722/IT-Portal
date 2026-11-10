@@ -28,7 +28,7 @@ public sealed class CompanyLogoStorageTests
             var relativePath = await CompanyLogoStorage.SaveAsync(environment.Object, file);
 
             Assert.NotNull(relativePath);
-            Assert.StartsWith("uploads/companies/logos/", relativePath, StringComparison.Ordinal);
+            Assert.StartsWith("uploads/companies/logos/", relativePath);
             var storedPath = Path.GetFullPath(Path.Combine(webRoot, relativePath));
             Assert.True(File.Exists(storedPath));
             Assert.Empty(Directory.GetFiles(Path.Combine(webRoot, "uploads", "companies", "logos"), "*.uploading"));

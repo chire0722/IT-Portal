@@ -219,7 +219,7 @@ namespace IT_Form.Tests
         /// <summary>
         /// Runs the Index_RejectsExpiredAssetOnlyToken operation.
         /// </summary>
-        public async Task Index_AllowsOldAssetOnlyToken_WithoutExpiry()
+        public async Task Index_RejectsExpiredAssetOnlyToken()
         {
             using var context = CreateContext();
             context.DeviceVerificationTokens.Add(new DeviceVerificationToken
@@ -250,7 +250,7 @@ namespace IT_Form.Tests
         /// <summary>
         /// Runs the DownloadTool_RejectsExpiredAssetOnlyToken operation.
         /// </summary>
-        public async Task DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry()
+        public async Task DownloadTool_RejectsExpiredAssetOnlyToken()
         {
             using var context = CreateContext();
             context.DeviceVerificationTokens.Add(new DeviceVerificationToken

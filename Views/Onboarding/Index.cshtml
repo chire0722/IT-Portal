@@ -191,7 +191,7 @@
                                         @if (req.Status == RequestStatus.Draft || req.Status == RequestStatus.Rejected)
                                         {
                                                                                      <button type="button" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete request for @req.FullName"
-                                                                                             onclick="openDeleteModal(@req.Id, '@(req.FullName?.Replace("'", "\\'") ?? "Unknown")')">
+                                                                                             data-csp-click="openDeleteModal" data-csp-arg0="@req.Id" data-csp-arg1="@(req.FullName ?? "Unknown")">
                                                                                              <i class="fas fa-trash-alt" aria-hidden="true"></i>
                                                                                          </button>
                                         }
@@ -312,5 +312,6 @@
             });
         </script>
 }
+
 
 

@@ -612,7 +612,7 @@ namespace IT_Form.Services
                         {
                             try
                             {
-                                var base64Data = signatureBase64![(signatureBase64.IndexOf("base64,", StringComparison.Ordinal) + "base64,".Length)..];
+                                var base64Data = signatureBase64![(signatureBase64!.IndexOf("base64,", StringComparison.Ordinal) + "base64,".Length)..];
                                 var imageBytes = Convert.FromBase64String(base64Data);
                                 container.Image(imageBytes).FitArea();
                             }

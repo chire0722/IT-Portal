@@ -101,7 +101,7 @@ The Malaysian DBN Guideline specifies a 72-hour maximum for Commissioner notific
 
 ### P1 — Encryption and key management
 
-- The SQLite database itself is not encrypted by the application code. Some fields are encrypted through EF Core converters; this is not whole-database encryption.
+- The SQLite database itself is not encrypted by the application code. EF Core converters encrypt only properties explicitly marked with `EncryptColumn`; source review found other personal/business-identifying fields (for example names, department/branch/designation, desk details, signer names, free-text remarks, and some audit identifiers) that are not uniformly covered. This is not whole-database or complete field-level encryption.
 - Backup files are protected by ASP.NET Core Data Protection, but the Data Protection key ring is persisted to a local filesystem path without an explicit at-rest key-encryption provider in the reviewed startup code.
 - Require host-volume encryption, restrictive OS ACLs for database/uploads/logs/key rings, protected key backups, key rotation/recovery procedures, and tested restore access.
 - For production, use an approved key-protection mechanism (for example, platform-managed key storage or a certificate/managed key service) and document key custodians and recovery procedures.
@@ -112,7 +112,7 @@ Create and maintain an approved vendor/sub-processor register covering hosting, 
 
 ### P1 — Application hardening
 
-1. CSP no longer trusts hard-coded private HTTP origins and now explicitly restricts objects, base URIs, form actions, and connections. `unsafe-eval` remains temporarily because the standalone device-verification page uses the browser-based Tailwind CDN; replace it with precompiled local CSS to remove that directive. Reduce `unsafe-inline` through nonce/hash-based scripts after inventorying inline scripts and testing every view.
+1. CSP no longer trusts hard-coded private HTTP origins and now explicitly restricts objects, base URIs, form actions, and connections. The `unsafe-eval` exception and Tailwind browser CDN are now scoped to the device-verification route only; replace that page's CDN runtime with precompiled local CSS to remove the exception entirely. Reduce the remaining `unsafe-inline` through nonce/hash-based scripts after inventorying inline scripts and testing every view.
 3. PDF/image/video uploads now validate allowed extensions, MIME types, and magic-byte signatures; PDF downloads are forced to attachment. Add safe image re-encoding and deeper file-format parsing if the threat model requires it. Upload endpoints have explicit request-body limits aligned to per-file limits.
 4. Complete a route-by-route authorization matrix and negative tests for cross-company access, exports, downloads, APIs, and signature/token endpoints.
 5. Review request/audit/application logs for personal data, tokens, query strings, exception content, and retention. Verification bearer tokens and employee IDs in known route paths are redacted from Serilog request-path logs; custom log statements and other routes still require review.

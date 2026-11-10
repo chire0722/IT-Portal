@@ -27,6 +27,23 @@ public sealed class SecurityHeadersMiddlewareTests
         Assert.Contains("frame-ancestors 'none'", csp);
         Assert.DoesNotContain("172.16.", csp);
         Assert.DoesNotContain("http://", csp);
+        Assert.DoesNotContain("'unsafe-eval'", csp);
+        Assert.DoesNotContain("cdn.tailwindcss.com", csp);
+    }
+
+
+    [Fact]
+    public async Task InvokeAsync_ScopesTailwindUnsafeEvalExceptionToVerificationRoutes()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/Verification/Index";
+        var middleware = new SecurityHeadersMiddleware(_ => Task.CompletedTask);
+
+        await middleware.InvokeAsync(context);
+
+        var csp = context.Response.Headers["Content-Security-Policy"].ToString();
+        Assert.Contains("'unsafe-eval'", csp);
+        Assert.Contains("https://cdn.tailwindcss.com", csp);
     }
 
     [Fact]

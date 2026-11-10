@@ -17,11 +17,17 @@ namespace IT_Form.Security
         public async Task InvokeAsync(HttpContext context)
         {
             // 1. Content Security Policy (CSP)
-            // External origins are limited to the CDN assets actually used by the Razor views.
-            // unsafe-eval remains temporarily required by the browser-based Tailwind CDN on Verification/Index.
+            // Keep the Tailwind browser CDN and its unsafe-eval requirement scoped to the
+            // device verification page only. Other application routes do not receive that exception.
+            var isVerificationPage = context.Request.Path.StartsWithSegments(
+                "/Verification", StringComparison.OrdinalIgnoreCase);
+            var scriptSources = isVerificationPage
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
+                : "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; ";
+
             context.Response.Headers.Append("Content-Security-Policy",
                 "default-src 'self'; " +
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+                scriptSources +
                 "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
                 "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
                 "img-src 'self' data: blob:; " +

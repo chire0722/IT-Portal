@@ -22,20 +22,16 @@ namespace IT_Form.Security
         {
             // 1. Content Security Policy (CSP)
             // Inline script blocks receive a per-response nonce through CspNonceTagHelper.
-            // Inline event attributes remain temporarily compatible through script-src-attr
-            // while the existing Razor views are migrated to unobtrusive handlers.
+            // Event handlers are delegated through the local csp-events.js module so that
+            // script-src-attr can remain disabled.
             var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
             context.Items[CspNonceItemKey] = nonce;
-            var isVerificationPage = context.Request.Path.StartsWithSegments(
-                "/Verification", StringComparison.OrdinalIgnoreCase);
-            var scriptSources = isVerificationPage
-                ? $"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
-                : $"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; ";
+            var scriptSources = $"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; ";
 
             context.Response.Headers.Append("Content-Security-Policy",
                 "default-src 'self'; " +
                 scriptSources +
-                "script-src-attr 'unsafe-inline'; " +
+                "script-src-attr 'none'; " +
                 "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
                 "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
                 "img-src 'self' data: blob:; " +

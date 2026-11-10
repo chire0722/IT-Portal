@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
 using IT_Form.Data;
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.ITAsset.EditItAsset;
@@ -16,6 +17,7 @@ using System.Threading.Tasks;
 using IT_Form.Models.ViewModels;
 using ClosedXML.Excel;
 using IT_Form.Helpers;
+using IT_Form.Services;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using MediatR;
 using System.Security.Claims;
@@ -31,12 +33,18 @@ namespace IT_Form.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISender _sender;
         private readonly IQuotaControl _quotaControl;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
-        public ITAssetController(ApplicationDbContext context, ISender sender, IQuotaControl quotaControl)
+        public ITAssetController(
+            ApplicationDbContext context,
+            ISender sender,
+            IQuotaControl quotaControl,
+            IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _sender = sender;
             _quotaControl = quotaControl;
+            _malwareScanner = malwareScanner;
         }
 
         // GET: ITAsset
@@ -554,9 +562,23 @@ namespace IT_Form.Controllers
 
             try
             {
+                await MalwareScanHelper.EnsureCleanAsync(
+                    file,
+                    _malwareScanner,
+                    "IT asset import",
+                    HttpContext.RequestAborted);
+            }
+            catch (ValidationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
                 using (var stream = new MemoryStream())
                 {
-                    await file.CopyToAsync(stream);
+                    await file.CopyToAsync(stream, HttpContext.RequestAborted);
                     stream.Position = 0;
                     using (var workbook = new ClosedXML.Excel.XLWorkbook(stream))
                     {

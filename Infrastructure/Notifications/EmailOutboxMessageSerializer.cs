@@ -2,6 +2,7 @@
 
 using System.Text.Json;
 using IT_Form.Models;
+using IT_Form.Services;
 
 namespace IT_Form.Infrastructure.Notifications;
 
@@ -15,35 +16,43 @@ internal static class EmailOutboxMessageSerializer
     /// <summary>
     /// Runs the Serialize operation.
     /// </summary>
-    public static EmailOutboxMessage Serialize(IEmailBackgroundMessage message)
+    public static EmailOutboxMessage Serialize(
+        IEmailBackgroundMessage message,
+        ILicenseEncryptionService encryptionService)
         => message switch
         {
-            WelcomeEmailMessage welcome => Create(nameof(WelcomeEmailMessage), welcome),
-            OtpEmailMessage otp => Create(nameof(OtpEmailMessage), otp),
-            ItLockoutAlertMessage lockout => Create(nameof(ItLockoutAlertMessage), lockout),
-            RenderedEmailMessage rendered => Create(nameof(RenderedEmailMessage), rendered),
+            WelcomeEmailMessage welcome => Create(nameof(WelcomeEmailMessage), welcome, encryptionService),
+            OtpEmailMessage otp => Create(nameof(OtpEmailMessage), otp, encryptionService),
+            ItLockoutAlertMessage lockout => Create(nameof(ItLockoutAlertMessage), lockout, encryptionService),
+            RenderedEmailMessage rendered => Create(nameof(RenderedEmailMessage), rendered, encryptionService),
             _ => throw new InvalidOperationException($"Unsupported email background message type: {message.GetType().FullName}")
         };
 
     /// <summary>
     /// Runs the Deserialize operation.
     /// </summary>
-    public static IEmailBackgroundMessage Deserialize(string messageType, string payloadJson)
+    public static IEmailBackgroundMessage Deserialize(
+        string messageType,
+        string payloadJson,
+        ILicenseEncryptionService encryptionService)
         => messageType switch
         {
-            nameof(WelcomeEmailMessage) => Deserialize<WelcomeEmailMessage>(payloadJson),
-            nameof(OtpEmailMessage) => Deserialize<OtpEmailMessage>(payloadJson),
-            nameof(ItLockoutAlertMessage) => Deserialize<ItLockoutAlertMessage>(payloadJson),
-            nameof(RenderedEmailMessage) => Deserialize<RenderedEmailMessage>(payloadJson),
+            nameof(WelcomeEmailMessage) => Deserialize<WelcomeEmailMessage>(encryptionService.DecryptKey(payloadJson)),
+            nameof(OtpEmailMessage) => Deserialize<OtpEmailMessage>(encryptionService.DecryptKey(payloadJson)),
+            nameof(ItLockoutAlertMessage) => Deserialize<ItLockoutAlertMessage>(encryptionService.DecryptKey(payloadJson)),
+            nameof(RenderedEmailMessage) => Deserialize<RenderedEmailMessage>(encryptionService.DecryptKey(payloadJson)),
             _ => throw new InvalidOperationException($"Unsupported email outbox message type: {messageType}")
         };
 
-    private static EmailOutboxMessage Create<TMessage>(string messageType, TMessage message)
+    private static EmailOutboxMessage Create<TMessage>(
+        string messageType,
+        TMessage message,
+        ILicenseEncryptionService encryptionService)
         where TMessage : IEmailBackgroundMessage
         => new()
         {
             MessageType = messageType,
-            PayloadJson = JsonSerializer.Serialize(message, SerializerOptions),
+            PayloadJson = encryptionService.EncryptKey(JsonSerializer.Serialize(message, SerializerOptions)),
             AvailableAfterUtc = DateTime.UtcNow
         };
 
@@ -51,3 +60,4 @@ internal static class EmailOutboxMessageSerializer
         => JsonSerializer.Deserialize<TMessage>(payloadJson, SerializerOptions)
            ?? throw new InvalidOperationException($"Unable to deserialize email outbox payload to {typeof(TMessage).Name}.");
 }
+

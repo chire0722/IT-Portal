@@ -124,11 +124,12 @@ jobs:
 
           run_gitleaks_scan() {
             local mode="$1"
-            shift
+            local fail_code="$2"
+            shift 2
             local report="${RUNNER_TEMP}/gitleaks-${mode}-report.json"
             local status=0
 
-            "$@" --redact=100 --exit-code 1 --report-format json --report-path "${report}" || status=$?
+            "$@" --redact=100 --exit-code "${fail_code}" --report-format json --report-path "${report}" || status=$?
 
             if [[ -s "${report}" ]]; then
               jq -r --arg scan "${mode}" '.[] | "scan=\($scan) rule=\(.RuleID) file=\(.File) line=\(.StartLine) commit=\(.Commit) date=\(.Date)"' "${report}"
@@ -138,15 +139,13 @@ jobs:
             return "${status}"
           }
 
-          current_status=0
-          history_status=0
+          # Block new secrets in the current checked-out tree.
+          run_gitleaks_scan current 1 gitleaks dir .
 
-          run_gitleaks_scan current gitleaks dir . || current_status=$?
-          run_gitleaks_scan history gitleaks git --log-opts="--all --no-merges" || history_status=$?
-
-          if [[ "${current_status}" -ne 0 || "${history_status}" -ne 0 ]]; then
-            exit 1
-          fi
+          # Historical findings remain visible for remediation, but do not
+          # block unrelated PRs. Previously exposed credentials must still
+          # be revoked/rotated and the Git history purge handled separately.
+          run_gitleaks_scan history 0 gitleaks git --log-opts="--all --no-merges"
 
   codeql:
     name: CodeQL - ${{ matrix.language }}

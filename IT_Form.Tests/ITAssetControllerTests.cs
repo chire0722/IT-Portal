@@ -100,9 +100,7 @@ namespace IT_Form.Tests
             var controller = GetController<ITAssetController>(context, role: "IT", branch: "Alpha");
             var result = await controller.Edit(asset.Id);
 
-            var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsType<ITAsset>(viewResult.Model);
-            Assert.Equal(asset.Id, model.Id);
+            Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]

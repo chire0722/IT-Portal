@@ -132,14 +132,13 @@ AppDomain.CurrentDomain.SetData("DataDirectory", dataDirectory);
 // Keep the key ring outside the publish folder and allow production to use a durable mounted volume.
 var localAppDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 var configuredKeyRingPath = builder.Configuration["DataProtection:KeyRingPath"];
-var dataProtectionRoot = !string.IsNullOrWhiteSpace(configuredKeyRingPath)
+var dataProtectionPath = !string.IsNullOrWhiteSpace(configuredKeyRingPath)
     ? (Path.IsPathRooted(configuredKeyRingPath)
         ? configuredKeyRingPath
         : Path.GetFullPath(configuredKeyRingPath, builder.Environment.ContentRootPath))
     : (string.IsNullOrWhiteSpace(localAppDataRoot)
-        ? dataDirectory
-        : Path.Combine(localAppDataRoot, "IT_Form"));
-var dataProtectionPath = Path.Combine(dataProtectionRoot, "DataProtection-Keys");
+        ? Path.Combine(dataDirectory, "DataProtection-Keys")
+        : Path.Combine(localAppDataRoot, "IT_Form", "DataProtection-Keys"));
 Directory.CreateDirectory(dataProtectionPath);
 var dataProtectionBuilder = builder.Services
     .AddDataProtection()

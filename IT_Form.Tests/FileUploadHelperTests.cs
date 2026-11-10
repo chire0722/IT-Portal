@@ -78,6 +78,17 @@ namespace IT_Form.Tests
         }
 
         [Fact]
+        public void IsValidExcelFile_RejectsZipPathTraversalEntries()
+        {
+            var file = CreateFormFile(CreateWorkbook(includeUnsafePath: true), "assets.xlsx", XlsxMimeType);
+
+            var result = FileUploadHelper.IsValidExcelFile(file, out var error);
+
+            Assert.False(result);
+            Assert.Contains("unsafe", error);
+        }
+
+        [Fact]
         public void IsValidExcelFile_EnforcesEndpointSpecificSizeLimit()
         {
             var stream = new MemoryStream(new byte[] { 0x50 });
@@ -145,7 +156,7 @@ namespace IT_Form.Tests
             Assert.True(UploadFileSignatureValidator.HasAllowedSignature(file, ".webm"));
         }
 
-        private static byte[] CreateWorkbook(bool includeMacro = false)
+        private static byte[] CreateWorkbook(bool includeMacro = false, bool includeUnsafePath = false)
         {
             using var stream = new MemoryStream();
             using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
@@ -155,6 +166,11 @@ namespace IT_Form.Tests
                 if (includeMacro)
                 {
                     AddEntry(archive, "xl/vbaProject.bin", "macro");
+                }
+
+                if (includeUnsafePath)
+                {
+                    AddEntry(archive, "../outside.txt", "unsafe");
                 }
             }
 

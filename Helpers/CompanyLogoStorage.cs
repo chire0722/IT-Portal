@@ -11,7 +11,8 @@ namespace IT_Form.Helpers;
 public static class CompanyLogoStorage
 {
     private const long MaxLogoBytes = 1024 * 1024;
-    private static readonly string[] AllowedExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+    private static readonly string[] AllowedExtensions = [".png", ".jpg", ".jpeg", ".gif"];
+    private static readonly string[] ManagedExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
 
     public static async Task<string?> SaveAsync(
         IWebHostEnvironment environment,
@@ -112,7 +113,7 @@ public static class CompanyLogoStorage
             var extension = Path.GetExtension(candidate);
 
             if (!candidate.StartsWith(rootWithSeparator, comparison)
-                || !AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+                || !ManagedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
             {
                 return null;
             }

@@ -1,6 +1,7 @@
 // Project comment: CreateCompanyCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Services;
@@ -21,17 +22,20 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
     private readonly IWebHostEnvironment _hostEnvironment;
     private readonly IQuotaControl _quotaControl;
     private readonly ICurrentUserAccessor _currentUserAccessor;
+    private readonly IFileMalwareScanner? _malwareScanner;
 
     public CreateCompanyCommandHandler(
         ApplicationDbContext context,
         IWebHostEnvironment hostEnvironment,
         IQuotaControl? quotaControl = null,
-        ICurrentUserAccessor? currentUserAccessor = null)
+        ICurrentUserAccessor? currentUserAccessor = null,
+        IFileMalwareScanner? malwareScanner = null)
     {
         _context = context;
         _hostEnvironment = hostEnvironment;
         _quotaControl = quotaControl ?? new QuotaControl(context);
         _currentUserAccessor = currentUserAccessor ?? new CurrentUserAccessor(new HttpContextAccessor());
+        _malwareScanner = malwareScanner;
     }
 
     /// <summary>
@@ -39,6 +43,8 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
     /// </summary>
     public async Task<int> Handle(CreateCompanyCommand request, CancellationToken cancellationToken)
     {
+        await MalwareScanHelper.EnsureCleanAsync(request.Logo, _malwareScanner, "Company logo", cancellationToken);
+
         await _quotaControl.EnsureAvailableAsync(QuotaControl.Companies, user: _currentUserAccessor.User, cancellationToken: cancellationToken);
 
         if (request.IsLoginPageLogo)

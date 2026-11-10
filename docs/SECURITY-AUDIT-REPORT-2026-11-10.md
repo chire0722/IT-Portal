@@ -13,12 +13,14 @@ This iteration hardened authentication/authorization-sensitive workflows, signat
 
 The final GitHub Actions run for the current code head passed 391 tests (336 application tests and 55 audit tests). GitHub is the authoritative current-head build and test evidence.
 
-- .NET 10 application build on current source: passed with a local NU1900 package-vulnerability-feed access warning; the previously reported nullable warning is fixed.
+- .NET 10 application build on the current code head: passed in GitHub Actions; the previously reported nullable warning is fixed.
 - Current-head `IT_Form.Tests`: 336 passed, 0 failed.
 - Current-head `IT_Form.AuditTests`: 55 passed, 0 failed.
 - Current-head GitHub CI run: `42802133045`, passed.
 
 **Current-head total: 391 passed, 0 failed, 0 skipped.**
+
+The report-only follow-up run `42803077210` also passed all executable checks on the final PR tree; Dependency Review was skipped because that follow-up changed documentation only.
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 

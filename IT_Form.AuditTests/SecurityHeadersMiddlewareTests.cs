@@ -1,5 +1,6 @@
 using IT_Form.Security;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace IT_Form.AuditTests;
 
@@ -28,6 +29,9 @@ public sealed class SecurityHeadersMiddlewareTests
         Assert.DoesNotContain("172.16.", csp);
         Assert.DoesNotContain("http://", csp);
         Assert.DoesNotContain("'unsafe-eval'", csp);
+        Assert.DoesNotContain("script-src 'self' 'unsafe-inline'", csp);
+        Assert.Contains("script-src-attr 'unsafe-inline'", csp);
+        Assert.Matches("script-src 'self' 'nonce-[A-Za-z0-9+/=]+", csp);
         Assert.DoesNotContain("cdn.tailwindcss.com", csp);
     }
 
@@ -44,6 +48,7 @@ public sealed class SecurityHeadersMiddlewareTests
         var csp = context.Response.Headers["Content-Security-Policy"].ToString();
         Assert.Contains("'unsafe-eval'", csp);
         Assert.Contains("https://cdn.tailwindcss.com", csp);
+        Assert.DoesNotContain("script-src 'self' 'unsafe-inline'", csp);
     }
 
     [Fact]
@@ -58,4 +63,26 @@ public sealed class SecurityHeadersMiddlewareTests
         Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"].ToString());
         Assert.Equal("strict-origin-when-cross-origin", context.Response.Headers["Referrer-Policy"].ToString());
     }
+
+    [Fact]
+    public async Task CspNonceTagHelper_AddsRequestNonceToScriptElement()
+    {
+        var context = new TagHelperContext(
+            tagName: "script",
+            allAttributes: new TagHelperAttributeList(),
+            items: new Dictionary<object, object?>
+            {
+                [SecurityHeadersMiddleware.CspNonceItemKey] = "nonce-value"
+            },
+            uniqueId: "script-1");
+        var output = new TagHelperOutput(
+            "script",
+            new TagHelperAttributeList(),
+            (_, _) => Task.FromResult<TagHelperContent>(new DefaultTagHelperContent()));
+
+        await new CspNonceTagHelper().ProcessAsync(context, output);
+
+        Assert.Equal("nonce-value", output.Attributes["nonce"]?.Value);
+    }
 }
+

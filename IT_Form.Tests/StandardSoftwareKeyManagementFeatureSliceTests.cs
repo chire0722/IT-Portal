@@ -47,12 +47,16 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     /// </summary>
     public async Task AddSoftwareKeyHandler_ReturnsFailed_WhenImportFails()
     {
+        using var context = CreateContext();
         var licenseService = new Mock<ILicenseService>();
         licenseService
             .Setup(x => x.ImportKeysAsync(10, It.IsAny<List<string>>()))
             .ReturnsAsync((false, "Import failed.", 0));
 
-        var handler = new AddSoftwareKeyCommandHandler(licenseService.Object);
+        var handler = new AddSoftwareKeyCommandHandler(
+            licenseService.Object,
+            context,
+            new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
         var result = await handler.Handle(new AddSoftwareKeyCommand(10, "abc"), CancellationToken.None);
 
         Assert.Equal(AddSoftwareKeyStatus.Failed, result.Status);
@@ -83,7 +87,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         });
         await context.SaveChangesAsync();
 
-        var handler = new DeleteSoftwareKeyCommandHandler(context);
+        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
         var result = await handler.Handle(new DeleteSoftwareKeyCommand(5), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareKeyStatus.AssignedBlocked, result.Status);
@@ -107,7 +111,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
-        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object);
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
 
         var result = await handler.Handle(new QuickAllocateSubscriptionSeatCommand(7), CancellationToken.None);
 
@@ -142,7 +146,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
 
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
-        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object);
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(context, encryption.Object, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
 
         var result = await handler.Handle(new QuickAllocateSubscriptionSeatCommand(8), CancellationToken.None);
 
@@ -230,7 +234,7 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         context.SoftwareLicenses.Add(license);
         await context.SaveChangesAsync();
 
-        var handler = new DeleteSoftwareKeyCommandHandler(context);
+        var handler = new DeleteSoftwareKeyCommandHandler(context, new TestCurrentUserAccessor(userName: "test", titles: [], companies: []));
         var result = await handler.Handle(new DeleteSoftwareKeyCommand(41), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareKeyStatus.Deleted, result.Status);

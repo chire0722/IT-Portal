@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - "security/**"
+      - "ci-cd/**"
   pull_request:
     branches:
       - main

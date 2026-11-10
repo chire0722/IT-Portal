@@ -42,6 +42,22 @@ Before enabling this requirement in production:
 
 The application deliberately does not generate, install, or commit a production certificate. A missing/invalid certificate blocks production startup; this is a release gate, not a reason to disable the check.
 
+## Malware scanning for sensitive uploads
+
+The offboarding resignation-letter upload path requires a clean ClamAV scan before the request is persisted. Configure the scanner endpoint through the secret/environment configuration provider:
+
+| Environment variable | Purpose | Default |
+|---|---|---|
+| `IT_FORM__MalwareScanning__ClamAvHost` | Hostname/IP of the isolated ClamAV daemon | No default; scanning fails closed |
+| `IT_FORM__MalwareScanning__ClamAvPort` | ClamAV TCP port | `3310` |
+| `IT_FORM__MalwareScanning__TimeoutSeconds` | Maximum scan time | `30` seconds; bounded to 1–120 |
+
+The application uses ClamAV's `zINSTREAM` protocol. Keep the daemon on loopback or a private, isolated network segment; do not expose the unauthenticated ClamAV TCP service to the public internet. Apply network ACLs so only the application host can connect, keep signature databases updated, and monitor scanner health.
+
+A malware verdict of `FOUND` rejects the upload. Missing configuration, timeout, connection failure, malformed/unknown scanner response or daemon error also rejects the upload; it never falls back to allowing the file.
+
+**Coverage limitation:** this integration currently protects the sensitive offboarding resignation-letter upload path. It does not establish that every upload surface (for example company logos or spreadsheet imports) is scanned. Those paths remain a release-gated backlog item until integrated and tested.
+
 ## HMAC key generation and rotation
 
 Generate a new standard Base64 key outside the repository, for example:

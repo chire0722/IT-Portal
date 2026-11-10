@@ -90,6 +90,16 @@ Record:
 
 Do not place live bearer tokens, employee identifiers or personal-data payloads in test reports.
 
-## 6. Release gate
+## 6. Remediation already added to the assessment branch
+
+- `OnboardingApiController.Delete` now requires the `RequireHROrIT` policy.
+- `OnboardingRequestAuthorizationHelper.CanDelete` independently checks authentication, HR/IT role, company scope and the request's permitted deletion state. The command handler calls this helper, so direct MediatR invocation does not bypass the policy.
+- `SecureFilesController.Download` authorizes against the owning offboarding record before checking physical file existence. Out-of-scope/missing records use the same not-found response, and successful responses set no-store/no-referrer/nosniff headers.
+- `DownloadOffboardingResignationQueryHandler` returns not-found for out-of-scope records; the controller adds no-store/no-referrer/nosniff headers.
+- Bulk offboarding PDF export now requires HR in the handler, rejects invalid IDs and mixed/out-of-scope selections rather than exporting a partial subset, caps selection at 100 requests and total generated PDF bytes at 100 MiB, and fails the entire export if a PDF cannot be generated.
+- Offboarding CSV export now rechecks HR role in the handler and uses `CsvExportSanitizer` to neutralize spreadsheet formula-like cell values.
+- New authorization helper and CSV sanitizer regression tests have been added. Their CI execution is still pending.
+
+## 7. Release gate
 
 The authorization gate is not closed by unit tests alone. Require route-by-route regression tests, API integration tests and authenticated browser testing in staging. A failed cross-company test is a release blocker. Keep a named reviewer independent of the code author for high-impact authorization changes.

@@ -179,9 +179,10 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
 
                 return new BulkImportServerFoldersResult(true, successMessage, infoMessage, importErrorMessage);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return new BulkImportServerFoldersResult(false, null, null, "Error processing file: " + ex.Message);
+                // Keep parser, filesystem, and database exception details out of user-facing responses.
+                return new BulkImportServerFoldersResult(false, null, null, "Unable to process the uploaded workbook. Verify that it is a valid .xlsx file and try again.");
             }
         }
     }

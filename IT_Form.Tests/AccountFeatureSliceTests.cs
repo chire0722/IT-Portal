@@ -810,6 +810,46 @@ public class AccountFeatureSliceTests
             Times.Once);
     }
 
+
+    [Fact]
+    public async Task ResendOtpCommandHandler_RejectsPrivilegedLoginPurposeForNonSuperAdmin()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        await using var context = CreateSqliteContext(connection);
+        await context.Database.EnsureCreatedAsync();
+        context.Users.Add(new ApplicationUser
+        {
+            Id = "ordinary-user",
+            Email = "user@example.com",
+            NormalizedEmail = "USER@EXAMPLE.COM",
+            UserName = "user@example.com",
+            NormalizedUserName = "USER@EXAMPLE.COM",
+            IsActive = true,
+            MustChangePassword = true
+        });
+        await context.SaveChangesAsync();
+
+        var queue = new Mock<IEmailBackgroundQueue>();
+        var handler = new ResendOtpCommandHandler(
+            context,
+            new SecureOtpGenerator(),
+            queue.Object,
+            new KeyedLockProvider(),
+            Mock.Of<ILogger<ResendOtpCommandHandler>>());
+
+        var result = await handler.Handle(
+            new ResendOtpCommand("user@example.com", "127.0.0.1", OtpPurposes.PrivilegedLogin),
+            CancellationToken.None);
+
+        Assert.False(result.IsQueued);
+        Assert.Empty(await context.OtpRecords.ToListAsync());
+        queue.Verify(
+            service => service.QueueEmailAsync(It.IsAny<IEmailBackgroundMessage>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
     [Fact]
     /// <summary>
     /// Runs the LogoutCommandHandler_SignsOutAndWritesAuditLog operation.

@@ -97,7 +97,7 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
                         }
 
                         var invalidFileNameCharacters = Path.GetInvalidFileNameChars()
-                            .Concat(new[] { '/', '\\\\' })
+                            .Concat(new[] { '/', '\\' })
                             .ToHashSet();
                         var safeName = new string(requestItem.FullName
                             .Select(character => char.IsControl(character) || invalidFileNameCharacters.Contains(character)

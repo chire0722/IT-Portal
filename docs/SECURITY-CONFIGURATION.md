@@ -8,7 +8,9 @@ Configure these in the hosting platform's secret/configuration store, then resta
 
 | Environment variable | Purpose |
 |---|---|
-| `IT_FORM__SignatureHmac__Key` | Base64-encoded HMAC key, at least 32 random bytes |
+| `IT_FORM__SignatureHmac__CurrentVersion` | Active HMAC key version, for example `v2` |
+| `IT_FORM__SignatureHmac__Keys__v1` / `IT_FORM__SignatureHmac__Keys__v2` | Base64-encoded HMAC keys, each at least 32 random bytes; retain prior versions while historical signatures are migrated |
+| `IT_FORM__SignatureHmac__Key` | Legacy single-key setting accepted only during migration; new signatures remain unversioned until the key-ring settings are supplied |
 | `IT_FORM__InventorySync__ApiKey` | Inventory integration key, only if the legacy key endpoint is required |
 | `IT_FORM__SmtpSettings__Host` | SMTP host |
 | `IT_FORM__SmtpSettings__Port` | SMTP port |
@@ -68,7 +70,7 @@ Generate a new standard Base64 key outside the repository, for example:
 openssl rand -base64 32
 ```
 
-Store the result as `IT_FORM__SignatureHmac__Key`. Never commit the generated value.
+Store the result under the versioned key setting, for example `IT_FORM__SignatureHmac__Keys__v2`, set `IT_FORM__SignatureHmac__CurrentVersion=v2`, and keep the prior key setting available for verification until all records have been migrated. Never commit generated values. During migration, the legacy `IT_FORM__SignatureHmac__Key` remains accepted so historic unversioned MACs can be verified.
 
 **Important:** the current signature-integrity implementation uses one HMAC key for both creating and verifying signatures. Replacing it can make previously stored signature HMACs fail verification. Before rotating an existing production key, plan and test a controlled migration/re-signing strategy; do not simply replace the key during a routine deployment.
 

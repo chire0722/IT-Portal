@@ -115,7 +115,16 @@ jobs:
           gitleaks version
 
       - name: Scan all reachable Git history for secrets
-        run: gitleaks git --redact --exit-code 1 --log-opts="--all --no-merges"
+        shell: bash
+        run: |
+          set -uo pipefail
+          report="${RUNNER_TEMP}/gitleaks-report.json"
+          scan_status=0
+          gitleaks git --redact=100 --exit-code 1 --log-opts="--all --no-merges" --report-format json --report-path "${report}" || scan_status=$?
+          if [[ -s "${report}" ]]; then
+            jq -r '.[] | "rule=\(.RuleID) file=\(.File) line=\(.StartLine) commit=\(.Commit) date=\(.Date)"' "${report}"
+          fi
+          exit "${scan_status}"
 
   codeql:
     name: CodeQL - ${{ matrix.language }}

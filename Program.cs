@@ -395,6 +395,7 @@ builder.Services.AddHostedService<DatabaseBackupService>();
 // --- Security Services ---
 builder.Services.AddSingleton<ISignatureIntegrityService, SignatureIntegrityService>(); // HMAC signing (H-03)
 builder.Services.AddSingleton<ILicenseEncryptionService, LicenseEncryptionService>();
+builder.Services.AddSingleton<IFileMalwareScanner, ClamAvMalwareScanner>();
 builder.Services.AddScoped<ILicenseService, LicenseService>();
 builder.Services.AddHostedService<DataRetentionService>();                               // PDPA retention (M-06)
 

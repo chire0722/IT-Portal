@@ -39,6 +39,8 @@ using MediatR;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 
 
@@ -127,17 +129,68 @@ if (!Directory.Exists(dataDirectory))
 AppDomain.CurrentDomain.SetData("DataDirectory", dataDirectory);
 
 // --- Data Protection ---
-// Persist keys outside the publish folder so cookies remain valid across republishes on the same machine.
+// Keep the key ring outside the publish folder and allow production to use a durable mounted volume.
 var localAppDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-var dataProtectionRoot = string.IsNullOrWhiteSpace(localAppDataRoot)
-    ? dataDirectory
-    : Path.Combine(localAppDataRoot, "IT_Form");
+var configuredKeyRingPath = builder.Configuration["DataProtection:KeyRingPath"];
+var dataProtectionRoot = !string.IsNullOrWhiteSpace(configuredKeyRingPath)
+    ? (Path.IsPathRooted(configuredKeyRingPath)
+        ? configuredKeyRingPath
+        : Path.GetFullPath(configuredKeyRingPath, builder.Environment.ContentRootPath))
+    : (string.IsNullOrWhiteSpace(localAppDataRoot)
+        ? dataDirectory
+        : Path.Combine(localAppDataRoot, "IT_Form"));
 var dataProtectionPath = Path.Combine(dataProtectionRoot, "DataProtection-Keys");
 Directory.CreateDirectory(dataProtectionPath);
 var dataProtectionBuilder = builder.Services
     .AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
     .SetApplicationName("IT_Form");
+
+// Production key-ring XML must be encrypted with a certificate whose private key is
+// accessible only to the application identity. Fail startup rather than silently
+// persisting new master keys in plaintext when the production certificate is absent.
+if (!builder.Environment.IsDevelopment())
+{
+    var configuredThumbprint = builder.Configuration["DataProtection:CertificateThumbprint"];
+    var normalizedThumbprint = configuredThumbprint?
+        .Replace(" ", string.Empty, StringComparison.Ordinal)
+        .Trim();
+
+    if (string.IsNullOrWhiteSpace(normalizedThumbprint))
+    {
+        throw new InvalidOperationException(
+            "Production requires DataProtection:CertificateThumbprint to protect the ASP.NET Core Data Protection key ring.");
+    }
+
+    using var certificateStore = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+    certificateStore.Open(OpenFlags.ReadOnly);
+
+    var matchingCertificates = certificateStore.Certificates.Find(
+        X509FindType.FindByThumbprint,
+        normalizedThumbprint,
+        validOnly: true);
+
+    var keyRingCertificate = matchingCertificates
+        .OfType<X509Certificate2>()
+        .FirstOrDefault(certificate =>
+        {
+            if (!certificate.HasPrivateKey)
+            {
+                return false;
+            }
+
+            using var rsa = certificate.GetRSAPrivateKey();
+            return rsa is not null && rsa.KeySize >= 2048;
+        });
+
+    if (keyRingCertificate is null)
+    {
+        throw new InvalidOperationException(
+            "The configured Data Protection certificate was not found as a valid LocalMachine/My certificate with an accessible RSA private key of at least 2048 bits.");
+    }
+
+    dataProtectionBuilder.ProtectKeysWithCertificate(keyRingCertificate);
+}
 
 
 

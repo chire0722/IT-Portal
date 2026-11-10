@@ -22,13 +22,13 @@ Configure these in the hosting platform's secret/configuration store, then resta
 | `IT_FORM__DatabaseBackup__AdditionalBackupPath` | Optional additional backup destination |
 | `IT_FORM__DatabaseBackup2__AdditionalBackupPath` | Optional second backup destination |
 | `IT_FORM__DataProtection__KeyRingPath` | Persistent directory for the ASP.NET Core Data Protection key ring |
-| `IT_FORM__DataProtection__CertificateThumbprint` | Thumbprint of a valid RSA certificate in `LocalMachine\\My`; its private key must be readable by the application identity |
+| `IT_FORM__DataProtection__CertificateThumbprint` | Thumbprint of a valid RSA certificate in `LocalMachine\My`; its private key must be readable by the application identity |
 
 Do not place these values in GitHub workflow YAML, source files, issue comments, or build artifacts. If deployment later uses GitHub Actions, inject them from repository/environment secrets at deploy time; this repository intentionally has no deployment job yet.
 
 ## ASP.NET Core Data Protection key-ring protection
 
-Production startup now fails closed unless `IT_FORM__DataProtection__CertificateThumbprint` is configured and resolves to a valid certificate in the Windows `LocalMachine\\My` store with an accessible RSA private key of at least 2048 bits. The application uses that certificate to protect newly persisted Data Protection key-ring XML.
+Production startup now fails closed unless `IT_FORM__DataProtection__CertificateThumbprint` is configured and resolves to a valid certificate in the Windows `LocalMachine\My` store with an accessible RSA private key of at least 2048 bits. The application uses that certificate to protect newly persisted Data Protection key-ring XML.
 
 Set `IT_FORM__DataProtection__KeyRingPath` to the **full directory** used for the persistent key ring. It must be on durable storage, outside the publish directory and web root. Every application instance that must read the same cookies, protected fields or backups must have access to the same key ring and the corresponding certificate private key.
 

@@ -19,7 +19,7 @@ public sealed class RequestLogPathSanitizerTests
     public void Sanitize_RedactsGuidAndLongOpaqueSegments()
     {
         var guid = Guid.NewGuid().ToString("D");
-        var opaqueToken = "0123456789abcdef0123456789abcdef";
+        var opaqueToken = "fake-test-token-with-no-secret-1234567890";
 
         Assert.Equal("/api/request/[REDACTED]", RequestLogPathSanitizer.Sanitize(new PathString($"/api/request/{guid}")));
         Assert.Equal("/api/request/[REDACTED]", RequestLogPathSanitizer.Sanitize(new PathString($"/api/request/{opaqueToken}")));

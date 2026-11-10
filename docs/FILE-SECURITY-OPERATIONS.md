@@ -95,6 +95,6 @@ The current write path attempts immediate deletion of a failed temporary upload.
 - records deletion failures without exposing personal data;
 - never deletes final stored files or quarantine evidence under legal hold.
 
-## 7. Release gates
+## 8. Release gates
 
 Do not claim end-to-end file security until scanner integration, fail-closed behavior, parser limits, quarantine isolation, ACL verification, cleanup monitoring, and negative authorization tests pass in staging. CI unit tests alone do not prove production malware scanning or filesystem isolation.

@@ -65,6 +65,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOnboardingTokenRegenerationCommand(id)));
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = "RequireHROrIT")]
         /// <summary>
         /// Deletes data for the Delete operation.
         /// </summary>

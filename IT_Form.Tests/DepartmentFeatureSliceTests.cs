@@ -223,7 +223,14 @@ public class DepartmentFeatureSliceTests
         stream.Position = 0;
 
         IFormFile file = new FormFile(stream, 0, stream.Length, "file", "departments.xlsx") { Headers = new HeaderDictionary() };
-        var handler = new ImportDepartmentsCommandHandler(context, new TestCurrentUserAccessor());
+        var malwareScanner = new Mock<IFileMalwareScanner>();
+        malwareScanner
+            .Setup(scanner => scanner.ScanAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MalwareScanVerdict.Clean);
+        var handler = new ImportDepartmentsCommandHandler(
+            context,
+            new TestCurrentUserAccessor(),
+            malwareScanner: malwareScanner.Object);
 
         var result = await handler.Handle(new ImportDepartmentsCommand(file), CancellationToken.None);
 

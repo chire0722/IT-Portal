@@ -30,7 +30,7 @@ public static class SignatureDataUriValidator
         }
 
         var buffer = new byte[MaxImageBytes];
-        if (!Convert.TryFromBase64String(encoded, buffer, out var bytesWritten)
+        if (!Convert.TryFromBase64Chars(encoded, buffer, out var bytesWritten)
             || bytesWritten < 24
             || !PngSignature.SequenceEqual(buffer.AsSpan(0, 8)))
         {

@@ -1,5 +1,7 @@
 // Project comment: SecurityHeadersMiddleware.cs is part of the IT Form application source code.
 
+using System.Security.Cryptography;
+
 namespace IT_Form.Security
 {
     /// <summary>
@@ -7,6 +9,8 @@ namespace IT_Form.Security
     /// </summary>
     public class SecurityHeadersMiddleware
     {
+        public const string CspNonceItemKey = "IT_Form.Security.CspNonce";
+
         private readonly RequestDelegate _next;
 
         public SecurityHeadersMiddleware(RequestDelegate next) => _next = next;
@@ -17,17 +21,21 @@ namespace IT_Form.Security
         public async Task InvokeAsync(HttpContext context)
         {
             // 1. Content Security Policy (CSP)
-            // Keep the Tailwind browser CDN and its unsafe-eval requirement scoped to the
-            // device verification page only. Other application routes do not receive that exception.
+            // Inline script blocks receive a per-response nonce through CspNonceTagHelper.
+            // Inline event attributes remain temporarily compatible through script-src-attr
+            // while the existing Razor views are migrated to unobtrusive handlers.
+            var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
+            context.Items[CspNonceItemKey] = nonce;
             var isVerificationPage = context.Request.Path.StartsWithSegments(
                 "/Verification", StringComparison.OrdinalIgnoreCase);
             var scriptSources = isVerificationPage
-                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
-                : "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; ";
+                ? $"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
+                : $"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; ";
 
             context.Response.Headers.Append("Content-Security-Policy",
                 "default-src 'self'; " +
                 scriptSources +
+                "script-src-attr 'unsafe-inline'; " +
                 "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
                 "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
                 "img-src 'self' data: blob:; " +
@@ -61,3 +69,4 @@ namespace IT_Form.Security
         }
     }
 }
+

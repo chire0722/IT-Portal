@@ -29,11 +29,16 @@ namespace IT_Form.Application.Features.StandardSoftware
     {
         private readonly ApplicationDbContext _context;
         private readonly ILicenseEncryptionService _encryptionService;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public GetStandardSoftwareKeysQueryHandler(ApplicationDbContext context, ILicenseEncryptionService encryptionService)
+        public GetStandardSoftwareKeysQueryHandler(
+            ApplicationDbContext context,
+            ILicenseEncryptionService encryptionService,
+            ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
             _encryptionService = encryptionService;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -50,6 +55,12 @@ namespace IT_Form.Application.Features.StandardSoftware
             if (license == null)
             {
                 return ProcessResult<StandardSoftwareKeysResponseDto>.NotFound();
+            }
+
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, _currentUserAccessor.User, license.Id, cancellationToken))
+            {
+                return ProcessResult<StandardSoftwareKeysResponseDto>.Forbidden();
             }
 
             var keys = license.Keys.OrderByDescending(k => k.CreatedAt).ToList();
@@ -94,7 +105,7 @@ namespace IT_Form.Application.Features.StandardSoftware
         /// </summary>
         public async Task<ProcessResult<List<StandardSoftwareEmployeeOptionDto>>> Handle(GetStandardSoftwareEmployeesQuery request, CancellationToken cancellationToken)
         {
-            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(_currentUserAccessor.User);
+            var scopedCompanies = ItAdminCompanyScopeSupport.GetScopedCompanies(_currentUserAccessor.User);
             var employeeQuery = _context.OnboardingRequests
                 .AsNoTracking()
                 .Where(o => o.Status == RequestStatus.Approved || o.Status == RequestStatus.Completed);

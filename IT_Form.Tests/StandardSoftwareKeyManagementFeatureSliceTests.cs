@@ -318,6 +318,37 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
     }
 
 
+
+    [Fact]
+    public async Task QuickAllocateSubscriptionSeatHandler_RejectsSeatLimitAboveMaximum()
+    {
+        using var context = CreateContext();
+        context.Companies.Add(new Company { Id = 1, Name = "HQ", IsActive = true });
+        context.SoftwareLicenses.Add(new SoftwareLicense
+        {
+            Id = 90,
+            StandardSoftwareId = 1,
+            SoftwareName = "Enterprise Subscription",
+            IsSubscription = true,
+            ContractLimit = 5000,
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 1 }]
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new QuickAllocateSubscriptionSeatCommandHandler(
+            context,
+            Mock.Of<ILicenseEncryptionService>(),
+            new TestCurrentUserAccessor(titles: ["SuperAdmin"]));
+
+        var result = await handler.Handle(
+            new QuickAllocateSubscriptionSeatCommand(90),
+            CancellationToken.None);
+
+        Assert.Equal(QuickAllocateSubscriptionSeatStatus.SeatLimitReached, result.Status);
+        Assert.Equal(5000, (await context.SoftwareLicenses.SingleAsync()).ContractLimit);
+        Assert.Empty(await context.SoftwareKeys.ToListAsync());
+    }
+
     [Fact]
     public async Task GetSoftwareKeys_DeniesDecryptedKeysOutsideCurrentCompanyScope()
     {

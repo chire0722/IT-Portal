@@ -43,7 +43,7 @@ namespace IT_Form.Application.Features.Offboarding.DownloadOffboardingResignatio
                 return ProcessResult<BinaryFilePayload>.NotFound();
 
             if (!await OffboardingReadAccessSupport.IsUserAuthorizedForRequest(_context, _currentUserAccessor.User, _userManager, offboardingRequest, _currentUserAccessor.UserName))
-                return ProcessResult<BinaryFilePayload>.Forbidden();
+                return ProcessResult<BinaryFilePayload>.NotFound();
 
             await _context.LogActionAsync(nameof(OffboardingRequest), request.Id.ToString(), "Read", $"Read resignation letter for: {offboardingRequest.FullName}");
             var filePath = SensitiveFileStorage.ResolvePhysicalPath(_environment, offboardingRequest.ResignationLetterPath);

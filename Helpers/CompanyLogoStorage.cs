@@ -115,7 +115,7 @@ public static class CompanyLogoStorage
         try
         {
             var logoDirectory = Path.GetFullPath(Path.Combine(environment.WebRootPath, "uploads", "companies", "logos"));
-            var normalizedRelativePath = relativePath.Replace('\\\\', '/').TrimStart('/');
+            var normalizedRelativePath = relativePath.Replace('\\', '/').TrimStart('/');
             var candidate = Path.GetFullPath(Path.Combine(environment.WebRootPath, normalizedRelativePath));
             var rootWithSeparator = logoDirectory.EndsWith(Path.DirectorySeparatorChar)
                 ? logoDirectory

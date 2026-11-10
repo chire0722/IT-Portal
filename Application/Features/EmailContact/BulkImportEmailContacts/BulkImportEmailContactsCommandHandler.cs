@@ -13,10 +13,12 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
     public sealed class BulkImportEmailContactsCommandHandler : IRequestHandler<BulkImportEmailContactsCommand, BulkImportEmailContactsResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
-        public BulkImportEmailContactsCommandHandler(ApplicationDbContext context)
+        public BulkImportEmailContactsCommandHandler(ApplicationDbContext context, IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
+            _malwareScanner = malwareScanner;
         }
 
         /// <summary>
@@ -28,6 +30,8 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
             {
                 return new BulkImportEmailContactsResult(false, null, null, "Please select a valid Excel file.");
             }
+
+                await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Email contact import", cancellationToken);
 
             try
             {

@@ -281,7 +281,7 @@ public class StandardSoftwareFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Runs the StandardSoftwareIndexQuery_ShowsLicensesAcrossCompanies_ForCompanyScopedItUser operation.
+    /// Runs the StandardSoftwareIndexQuery_RestrictsLicensesToAssignedCompany operation.
     /// </summary>
     public async Task StandardSoftwareIndexQuery_ShowsLicensesAcrossCompanies_ForCompanyScopedItUser()
     {

@@ -59,6 +59,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost("/api/inventory/generate-token/{employeeId}")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the GenerateToken operation.
         /// </summary>
@@ -68,6 +69,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost("/api/inventory/generate-token")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the GenerateTokenWithoutEmployee operation.
         /// </summary>

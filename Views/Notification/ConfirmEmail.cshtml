@@ -35,8 +35,11 @@
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="ReturnUrl" />
                         <input type="hidden" asp-for="BodyHtml" />
+                        <input type="hidden" asp-for="BodyIntegrity" />
                         <input type="hidden" asp-for="RequestId" />
                         <input type="hidden" asp-for="EmailType" />
+                        <input type="hidden" asp-for="RequestType" />
+                        <input type="hidden" asp-for="ConfirmationActorId" />
                         <input type="hidden" asp-for="HasAttachment" />
                         <input type="hidden" asp-for="SignatureImage" />
 
@@ -232,3 +235,4 @@
         }
     </style>
 }
+

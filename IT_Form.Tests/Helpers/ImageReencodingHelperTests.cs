@@ -14,6 +14,7 @@ public sealed class ImageReencodingHelperTests
         await using var stream = new MemoryStream(OnePixelPng);
         var file = new FormFile(stream, 0, stream.Length, "image", "image.png")
         {
+            Headers = new HeaderDictionary(),
             ContentType = "image/png"
         };
 
@@ -33,6 +34,7 @@ public sealed class ImageReencodingHelperTests
         await using var stream = new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         var file = new FormFile(stream, 0, stream.Length, "image", "image.png")
         {
+            Headers = new HeaderDictionary(),
             ContentType = "image/png"
         };
 

@@ -11,7 +11,7 @@ using IT_Form.Helpers;
 
 namespace IT_Form.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "RequireHROrIT")]
     /// <summary>
     /// Handles web requests for the Employee area.
     /// </summary>

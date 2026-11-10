@@ -167,9 +167,42 @@ namespace IT_Form.Services
             Directory.CreateDirectory(backupDir);
 
             var backupPath = Path.Combine(backupDir, backupFileName);
+            var temporaryProtectedPath = backupPath + $".tmp-{Guid.NewGuid():N}";
             var encryptedBackup = _backupProtector.Protect(backupBytes);
-            File.WriteAllBytes(backupPath, encryptedBackup);
-            _logger.LogInformation("Encrypted database backup created successfully: {Path}", backupPath);
+
+            try
+            {
+                // Write only ciphertext to the destination and publish it atomically.
+                using (var stream = new FileStream(
+                    temporaryProtectedPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81920,
+                    options: FileOptions.SequentialScan))
+                {
+                    stream.Write(encryptedBackup, 0, encryptedBackup.Length);
+                    stream.Flush(flushToDisk: true);
+                }
+
+                // No overwrite: a collision is treated as a failed backup, never silent replacement.
+                File.Move(temporaryProtectedPath, backupPath);
+                _logger.LogInformation("Encrypted database backup created successfully: {Path}", backupPath);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(temporaryProtectedPath))
+                    {
+                        File.Delete(temporaryProtectedPath);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    _logger.LogWarning(ex, "Could not remove a temporary protected backup file.");
+                }
+            }
 
             RotateBackups(backupDir, fileName, extension);
         }

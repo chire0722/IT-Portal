@@ -76,6 +76,8 @@ public static class UploadFileSignatureValidator
             ".pdf" => string.Equals(contentType, "application/pdf", StringComparison.OrdinalIgnoreCase),
             ".jpg" or ".jpeg" => string.Equals(contentType, "image/jpeg", StringComparison.OrdinalIgnoreCase),
             ".png" => string.Equals(contentType, "image/png", StringComparison.OrdinalIgnoreCase),
+            ".gif" => string.Equals(contentType, "image/gif", StringComparison.OrdinalIgnoreCase),
+            ".webp" => string.Equals(contentType, "image/webp", StringComparison.OrdinalIgnoreCase),
             ".mp4" => string.Equals(contentType, "video/mp4", StringComparison.OrdinalIgnoreCase),
             ".mov" => string.Equals(contentType, "video/quicktime", StringComparison.OrdinalIgnoreCase) ||
                       string.Equals(contentType, "video/mp4", StringComparison.OrdinalIgnoreCase),
@@ -89,6 +91,12 @@ public static class UploadFileSignatureValidator
             ".pdf" => StartsWith(header, bytesRead, [0x25, 0x50, 0x44, 0x46, 0x2D]), // %PDF-
             ".jpg" or ".jpeg" => StartsWith(header, bytesRead, [0xFF, 0xD8, 0xFF]),
             ".png" => StartsWith(header, bytesRead, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+            ".gif" => StartsWith(header, bytesRead, [0x47, 0x49, 0x46, 0x38]) &&
+                      (StartsWith(header, bytesRead, [0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
+                       StartsWith(header, bytesRead, [0x47, 0x49, 0x46, 0x38, 0x39, 0x61])),
+            ".webp" => bytesRead >= 12 &&
+                       StartsWith(header, bytesRead, [0x52, 0x49, 0x46, 0x46]) &&
+                       header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50,
             ".mp4" or ".mov" => bytesRead >= 8 &&
                                 header[4] == 0x66 && header[5] == 0x74 &&
                                 header[6] == 0x79 && header[7] == 0x70, // ftyp

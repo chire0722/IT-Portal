@@ -639,10 +639,10 @@ namespace IT_Form.Controllers
                                 _context.ITAssets.Add(asset);
                                 successCount++;
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
                                 errorCount++;
-                                errorMessages.Add($"Row {row.RowNumber()}: {ex.Message}");
+                                errorMessages.Add($"Row {row.RowNumber()}: The row could not be imported because its data is invalid or conflicts with an existing record.");
                             }
                         }
 
@@ -659,9 +659,10 @@ namespace IT_Form.Controllers
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                TempData["ErrorMessage"] = "Error processing file: " + ex.Message;
+                // Do not disclose parser, filesystem, or database exception details to the caller.
+                TempData["ErrorMessage"] = "Unable to process the uploaded workbook. Verify that it is a valid .xlsx file and try again.";
             }
 
             return RedirectToAction(nameof(Index));

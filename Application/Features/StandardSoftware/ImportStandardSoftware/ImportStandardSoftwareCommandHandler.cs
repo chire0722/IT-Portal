@@ -9,6 +9,8 @@ using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Helpers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 {
@@ -181,6 +183,13 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 
                     if (!string.IsNullOrEmpty(licenseKey))
                     {
+                        if (licenseKey.Length > 1000)
+                        {
+                            rowErrorCount++;
+                            rowErrors.Add($"Row {row.RowNumber()}: License keys cannot exceed 1,000 characters.");
+                            continue;
+                        }
+
                         if (existingVersion.Id > 0 &&
                             !await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
                                 _context,
@@ -193,19 +202,31 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
                             continue;
                         }
 
-                        bool keyExists = existingVersion.Keys.Any(k => k.KeyValue == licenseKey);
+                        var keyHash = ComputeKeyHash(licenseKey);
+                        bool keyExists = existingVersion.Keys.Any(key =>
+                            key.KeyValueHash == keyHash ||
+                            string.Equals(key.KeyValue, licenseKey, StringComparison.Ordinal));
                         if (!keyExists)
                         {
-                            var newKey = new IT_Form.Models.SoftwareKey
+                            // KeyValue is encrypted by the EF EncryptColumn value converter on persistence.
+                            // Store the stable hash separately for duplicate detection without decrypting secrets.
+                            var existsGlobally = await _context.SoftwareKeys
+                                .AsNoTracking()
+                                .AnyAsync(key => key.KeyValueHash == keyHash, cancellationToken);
+                            if (!existsGlobally)
                             {
-                                SoftwareLicenseId = existingVersion.Id,
-                                KeyValue = licenseKey,
-                                IsAssigned = false,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                            _context.SoftwareKeys.Add(newKey);
-                            existingVersion.Keys.Add(newKey);
-                            keysAdded++;
+                                var newKey = new IT_Form.Models.SoftwareKey
+                                {
+                                    SoftwareLicenseId = existingVersion.Id,
+                                    KeyValue = licenseKey,
+                                    KeyValueHash = keyHash,
+                                    IsAssigned = false,
+                                    CreatedAt = DateTime.UtcNow
+                                };
+                                _context.SoftwareKeys.Add(newKey);
+                                existingVersion.Keys.Add(newKey);
+                                keysAdded++;
+                            }
                         }
                     }
                 }
@@ -221,5 +242,11 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 
             return new ImportStandardSoftwareResult(true, successMessage, importErrorMessage);
         }
+        private static string ComputeKeyHash(string key)
+        {
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(key.Trim()));
+            return Convert.ToBase64String(bytes);
+        }
+
     }
 }

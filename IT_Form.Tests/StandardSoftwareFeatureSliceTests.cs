@@ -283,7 +283,7 @@ public class StandardSoftwareFeatureSliceTests
     /// <summary>
     /// Runs the StandardSoftwareIndexQuery_RestrictsLicensesToAssignedCompany operation.
     /// </summary>
-    public async Task StandardSoftwareIndexQuery_ShowsLicensesAcrossCompanies_ForCompanyScopedItUser()
+    public async Task StandardSoftwareIndexQuery_RestrictsLicensesToAssignedCompany()
     {
         using var context = CreateContext();
         context.Companies.AddRange(

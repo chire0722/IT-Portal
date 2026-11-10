@@ -2,7 +2,7 @@
 
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
-**Status:** Operational procedure pending formal controller/DPO approval. The application does not yet evidence a complete case-managed DSAR workflow.
+**Status:** Operational procedure pending formal controller/DPO approval. The application now provides a restricted, idempotent DSAR case register and state-transition API; identity verification, data discovery, secure export, legal-hold assessment and deletion execution remain controlled gates.
 
 ## 1. Purpose and ownership
 
@@ -110,15 +110,17 @@ Use separation of duties:
 
 Record decisions, legal exceptions, partial fulfilment, processor responses, data categories disclosed/removed, and completion timestamps. Audit records must not themselves reproduce the full sensitive data being processed.
 
-## 9. Current application gap and implementation backlog
+## 9. Current application implementation and remaining backlog
 
-The reviewed source tree does not evidence a full DSAR case-management feature. Until implemented, this procedure must be run using an access-controlled case register and approved secure export tooling.
+The application now includes `DataSubjectRequest` and immutable transition events, restricted to HR, with request types for access, portability, correction and deletion. Submission retries are protected by a unique idempotency key, state transitions are allow-listed, updates use an optimistic concurrency stamp, and completion requires a non-sensitive evidence reference. The feature is a case register and workflow gate; it intentionally does not disclose data or perform deletion automatically.
+
+Until the remaining capabilities below are implemented and approved, use the case register together with the controlled procedure in this document and approved secure export tooling.
 
 Required application capabilities:
-- DSAR case entity with status, due date, owner, reviewer, jurisdiction and decision;
-- immutable event/audit history;
-- role-restricted case access;
-- identity verification workflow;
+- due date, jurisdiction, reviewer and legal-hold fields;
+- immutable event/audit history with retention evidence;
+- role-restricted case access and company-scope review;
+- identity verification evidence and a verified-subject binding;
 - data inventory-driven search/export;
 - encrypted export staging and expiring delivery;
 - deletion approval, legal-hold and processor propagation;

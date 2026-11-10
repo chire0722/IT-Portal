@@ -218,6 +218,25 @@ namespace IT_Form.Models
             Status != RequestStatus.Completed;
 
         /// <summary>
+        /// Returns whether every required IT offboarding control has been completed.
+        /// </summary>
+        public bool HasCompleteItChecklist() =>
+            CheckPhysicalClean &&
+            CheckO365Deactivate &&
+            CheckWindowsDisable &&
+            CheckEmailSignOut &&
+            CheckSpecificSoftwareDeactivate &&
+            CheckGeneralSoftwareDeactivate &&
+            CheckAbcGroupRemove &&
+            CheckEmailMailGroupRemove &&
+            CheckDomainDisjoin &&
+            CheckSharedDriveRemove &&
+            CheckWiFiDisable &&
+            CheckPrinterRemove &&
+            CheckScanFolderRemove &&
+            CheckVPNDisable;
+
+        /// <summary>
         /// Runs the CanStartItSetup operation.
         /// </summary>
         public bool CanStartItSetup() => Status == RequestStatus.PendingITApproval;
@@ -364,7 +383,6 @@ namespace IT_Form.Models
             if (hasHR && hasHOD && hasIT)
             {
                 Status = RequestStatus.PendingEmployeeSign;
-                CompletedAt = signedAtUtc;
             }
             else if (hasHR && hasHOD)
             {
@@ -379,3 +397,4 @@ namespace IT_Form.Models
         }
     }
 }
+

@@ -75,12 +75,21 @@ namespace IT_Form.Helpers
 
                 foreach (var entry in archive.Entries)
                 {
+                    var normalizedEntryName = entry.FullName.Replace('\\\\', '/');
+                    var entrySegments = normalizedEntryName.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                    var unixFileType = (entry.ExternalAttributes >> 16) & 0xF000;
+                    var hasUnsafePath = normalizedEntryName.StartsWith('/', StringComparison.Ordinal)
+                        || normalizedEntryName.Contains(':', StringComparison.Ordinal)
+                        || entrySegments.Any(segment => segment is "." or "..");
+
                     if (string.IsNullOrWhiteSpace(entry.FullName) ||
+                        hasUnsafePath ||
+                        unixFileType == 0xA000 ||
                         !entryNames.Add(entry.FullName) ||
                         entry.Length < 0 ||
                         entry.Length > MaxEntrySize)
                     {
-                        errorMessage = "The workbook package contains invalid or duplicate entries.";
+                        errorMessage = "The workbook package contains invalid, unsafe, or duplicate entries.";
                         return false;
                     }
 

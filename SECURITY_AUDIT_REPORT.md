@@ -27,7 +27,7 @@ The work was isolated to `security/audit-hardening`. The proposed changes are no
 - Validate offboarding checker authorization before applying approval mutations.
 - Restrict onboarding token regeneration and bulk exports to HR; cap bulk exports and reject partially unauthorized selections.
 - Validate authorization in offboarding signature handlers and deletion workflows.
-- Add a shared software-license scope guard before license-key read/decrypt and key/seat mutation operations. Global IT license administration remains consistent with the portal's existing policy; employee assignment remains company-scoped.
+- Apply explicit company assignments to scoped IT administrators across license lookup, creation/editing, imports, key reads/decryption, and key/seat mutations. Super Admin and unscoped global IT retain global license administration. Employee assignment remains company-scoped.
 
 ### Signatures, integrity and privacy
 - Revalidate required upstream HMAC signatures before employee acknowledgement, public acknowledgement/PDF reads, offboarding PDF generation, and notification attachments/previews.
@@ -69,8 +69,8 @@ Validation stages: .NET 10 restore, application build, application tests, audit 
 - Earlier successful CI on commit `673631b5`: application build and 342 tests passed (328 application tests + 14 audit tests).
 - A subsequent CI log exposed one nullable email-body warning; a null guard was added.
 - The latest software-license/key scope changes introduced a missing test-helper constructor argument; corrected in `ControllerTestBase.cs`.
-- Latest head at report creation: `a4221e9f375639dad85b314f45754cba1ed9e8ae`.
-- CI for the latest head is still running; the report must be updated with its final outcome before merge.
+- Latest code head at report update: `9d140931c3878383c498af8d82a457eeef730724`.
+- CI run #386 is validating the latest code head; do not merge until Restore, Build, Application Tests, and Audit Tests all pass.
 - Build/test success does not replace staging verification of database migrations, native SQLite compatibility, SMTP, backups, Data Protection, reverse-proxy headers, and browser workflows.
 
 ## Residual risks and required follow-up

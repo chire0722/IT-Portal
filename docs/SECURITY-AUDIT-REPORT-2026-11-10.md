@@ -4,21 +4,21 @@
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
 **Pull request:** #3 — CI/CD hardening: .NET 10 build, tests, CodeQL and Dependabot  
-**Audited code head before this report update:** `49f4d8147638c7d6df13a19bf90d54159f7d4e3b`  
+**Audited code head before this report-only commit:** `f28221f34a4d0626b7ba3976828f5f7731879e7d`  
 **Status:** Engineering remediation and source-level verification completed for this iteration. This is not a penetration-test attestation, legal opinion, certification, or declaration of GDPR, Malaysian PDPA, or NIST conformity.
 
 ## 1. Executive summary
 
 This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, audit privacy, HMAC key rotation, and a restricted DSAR case workflow.
 
-The earlier GitHub Actions baseline for the pre-change branch passed 379 tests (325 application tests and 54 audit tests). The current code head has a newly queued GitHub Actions run; its result is not claimed until GitHub reports it. A local current-source build passed. The local test host failed to connect during discovery after 90 seconds, so the four newly added HMAC-rotation tests are not counted as passed here.
+The final GitHub Actions run for the current code head passed 383 tests (329 application tests and 54 audit tests). A local current-source build also passed. The local test host failed to connect during discovery after 90 seconds, so GitHub is the authoritative current-head test evidence.
 
 - .NET 10 application build on current source: passed with NU1900 package-vulnerability-feed access warning and one pre-existing nullable warning.
-- Pre-change baseline `IT_Form.Tests`: 325 passed, 0 failed.
-- Pre-change baseline `IT_Form.AuditTests`: 54 passed, 0 failed.
-- Current-head GitHub CI: queued as run `42778511217` at report-update time.
+- Current-head `IT_Form.Tests`: 329 passed, 0 failed.
+- Current-head `IT_Form.AuditTests`: 54 passed, 0 failed.
+- Current-head GitHub CI run: `42779132119`, passed.
 
-**Verified baseline total: 379 passed, 0 failed. Current-head added tests: 4 compiled but not counted as executed because the local test host did not connect.**
+**Current-head total: 383 passed, 0 failed, 0 skipped.**
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 
@@ -101,19 +101,19 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**Previous GitHub Actions run:** `42767916053`  
-**Previous head:** `988f9790446c1940b22206ead2b158d04e78a13c`  
-**Current-head run:** `42778511217` — queued when this report was prepared
+**Current GitHub Actions run:** `42779132119`  
+**Code head tested:** `f28221f34a4d0626b7ba3976828f5f7731879e7d`  
+**Run conclusion:** success
 
 | Check | Result |
 |---|---:|
-| Previous .NET 10 build | Passed |
-| Previous IT_Form.Tests | 325 passed / 0 failed |
-| Previous IT_Form.AuditTests | 54 passed / 0 failed |
-| Previous CodeQL C# / Actions | Passed |
-| Previous Gitleaks / Dependency Review | Passed |
-| Current-head build | Passed locally; NU1900 warning recorded |
-| Current-head GitHub CI | Queued; no result claimed |
+| .NET 10 build | Passed |
+| IT_Form.Tests | 329 passed / 0 failed |
+| IT_Form.AuditTests | 54 passed / 0 failed |
+| CodeQL C# | Passed |
+| CodeQL Actions | Passed |
+| Gitleaks current tree | No leaks found |
+| Dependency Review | Passed |
 
 These are automated CI results. They do not replace dynamic testing against a deployed environment, a human security review, or an independent penetration test.
 

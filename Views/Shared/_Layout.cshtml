@@ -240,7 +240,7 @@
             <div class="app-toast toast-success" role="alert">
                 <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
                 <span>@TempData["SuccessMessage"]</span>
-                <button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss notification">&times;</button>
+                <button type="button" class="toast-close" data-csp-click="remove-parent" aria-label="Dismiss notification">&times;</button>
             </div>
         }
         @if (TempData["ErrorMessage"] != null)
@@ -248,7 +248,7 @@
             <div class="app-toast toast-error" role="alert">
                 <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 <span>@TempData["ErrorMessage"]</span>
-                <button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss notification">&times;</button>
+                <button type="button" class="toast-close" data-csp-click="remove-parent" aria-label="Dismiss notification">&times;</button>
             </div>
         }
     </div>
@@ -258,6 +258,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/table-sort.js" asp-append-version="true"></script>
+    <script src="~/js/csp-events.js" asp-append-version="true"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Mobile Sidebar Toggle
@@ -311,5 +312,6 @@
 </body>
 
 </html>
+
 
 

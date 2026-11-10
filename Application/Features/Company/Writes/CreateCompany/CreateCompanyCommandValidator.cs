@@ -76,6 +76,7 @@ public sealed class CreateCompanyCommandValidator : AbstractValidator<CreateComp
         var extension = (Path.GetExtension(file.FileName ?? string.Empty) ?? string.Empty).ToLowerInvariant();
         var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
         return AllowedLogoExtensions.Contains(extension) &&
-               AllowedLogoContentTypes.Contains(contentType);
+               AllowedLogoContentTypes.Contains(contentType) &&
+               UploadFileSignatureValidator.HasAllowedSignature(file, AllowedLogoExtensions);
     }
 }

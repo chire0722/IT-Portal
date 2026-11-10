@@ -1,6 +1,7 @@
 // Project comment: DeleteSoftwareLicenseCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Application.Common.Abstractions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,10 +13,12 @@ namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareLicense
     public sealed class DeleteSoftwareLicenseCommandHandler : IRequestHandler<DeleteSoftwareLicenseCommand, DeleteSoftwareLicenseResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public DeleteSoftwareLicenseCommandHandler(ApplicationDbContext context)
+        public DeleteSoftwareLicenseCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -28,6 +31,12 @@ namespace IT_Form.Application.Features.StandardSoftware.DeleteSoftwareLicense
                 .FirstOrDefaultAsync(l => l.Id == request.Id, cancellationToken);
 
             if (license == null)
+            {
+                return new DeleteSoftwareLicenseResult(DeleteSoftwareLicenseStatus.NotFound, "Version not found.");
+            }
+
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, _currentUserAccessor.User, license.Id, cancellationToken))
             {
                 return new DeleteSoftwareLicenseResult(DeleteSoftwareLicenseStatus.NotFound, "Version not found.");
             }

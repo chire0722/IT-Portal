@@ -122,6 +122,8 @@ public class CompanyFeatureSliceTests
         logo.SetupGet(file => file.Length).Returns(1);
         logo.SetupGet(file => file.FileName).Returns("logo.png");
         logo.SetupGet(file => file.ContentType).Returns("image/png");
+        logo.Setup(file => file.OpenReadStream()).Returns(() =>
+            new MemoryStream(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }));
 
         var result = validator.Validate(new CreateCompanyCommand(
             "Test",

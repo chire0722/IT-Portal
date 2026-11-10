@@ -6,6 +6,7 @@ using IT_Form.Application.Common.Support;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Services;
 using IT_Form.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,12 +21,14 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
         private readonly IQuotaControl _quotaControl;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
-        public BulkImportServerFoldersCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
+        public BulkImportServerFoldersCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null, IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
             _quotaControl = quotaControl ?? new QuotaControl(context);
+            _malwareScanner = malwareScanner;
         }
 
         /// <summary>
@@ -40,6 +43,8 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
 
             try
             {
+                await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Server folder import", cancellationToken);
+
                 using var stream = new MemoryStream();
                 await request.File.CopyToAsync(stream, cancellationToken);
                 stream.Position = 0;

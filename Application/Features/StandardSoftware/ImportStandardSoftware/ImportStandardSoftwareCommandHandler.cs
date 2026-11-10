@@ -4,6 +4,7 @@ using ClosedXML.Excel;
 using IT_Form.Data;
 using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Helpers;
 using MediatR;
@@ -55,6 +56,18 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
             if (usedRange.RowCount() > 5001 || usedRange.ColumnCount() > 20)
             {
                 return new ImportStandardSoftwareResult(false, null, "Software import is limited to 5,000 data rows and 20 columns.");
+            }
+
+            // Scoped IT users import new license versions only into companies they administer.
+            // A global IT/Super Admin identity returns null and retains legacy global-import behavior.
+            var accessibleCompanyIds = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(
+                _context,
+                _currentUserAccessor.User,
+                cancellationToken);
+
+            if (accessibleCompanyIds is { Count: 0 })
+            {
+                return new ImportStandardSoftwareResult(false, null, "Your account is not assigned to an active company scope.");
             }
 
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -149,7 +162,13 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
                             IsSubscription = isSub,
                             IsFree = isFree,
                             ExpiryDate = expiry,
-                            ContractLimit = quantity
+                            ContractLimit = quantity,
+                            SoftwareLicenseCompanies = accessibleCompanyIds == null
+                                ? []
+                                : accessibleCompanyIds.Select(companyId => new IT_Form.Models.SoftwareLicenseCompany
+                                {
+                                    CompanyId = companyId
+                                }).ToList()
                         };
                         SoftwareLicenseSeatSyncSupport.NormalizeLicenseSettings(existingVersion);
                         _context.SoftwareLicenses.Add(existingVersion);
@@ -162,6 +181,18 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
 
                     if (!string.IsNullOrEmpty(licenseKey))
                     {
+                        if (existingVersion.Id > 0 &&
+                            !await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                                _context,
+                                _currentUserAccessor.User,
+                                existingVersion.Id,
+                                cancellationToken))
+                        {
+                            rowErrorCount++;
+                            rowErrors.Add($"Row {row.RowNumber()}: The existing license version is outside your company scope; its key was not changed.");
+                            continue;
+                        }
+
                         bool keyExists = existingVersion.Keys.Any(k => k.KeyValue == licenseKey);
                         if (!keyExists)
                         {

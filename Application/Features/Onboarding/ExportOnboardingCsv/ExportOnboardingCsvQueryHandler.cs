@@ -1,6 +1,7 @@
 // Project comment: ExportOnboardingCsvQueryHandler.cs is part of the IT Form application source code.
 
 using System.Text;
+using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
 using MediatR;
@@ -15,10 +16,14 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
         : IRequestHandler<ExportOnboardingCsvQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public ExportOnboardingCsvQueryHandler(ApplicationDbContext context)
+        public ExportOnboardingCsvQueryHandler(
+            ApplicationDbContext context,
+            ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -28,6 +33,12 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
             ExportOnboardingCsvQuery request,
             CancellationToken cancellationToken)
         {
+            var user = _currentUserAccessor.User;
+            if (user?.HasClaim("UserTitle", "HR") != true)
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
             var requests = _context.OnboardingRequests
                 .AsNoTracking()
                 .AsQueryable()
@@ -78,3 +89,4 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
         }
     }
 }
+

@@ -207,6 +207,53 @@ public class OnboardingFeatureSliceTests
 
     [Fact]
     /// <summary>
+    /// Runs the RegenerateTokenHandler_RejectsNonHrDirectInvocation operation.
+    /// </summary>
+    public async Task RegenerateTokenHandler_RejectsNonHrDirectInvocation()
+    {
+        using var context = CreateContext();
+        var oldToken = Guid.NewGuid();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 302,
+            Status = RequestStatus.PendingEmployeeSign,
+            AccessToken = oldToken,
+            Branch = "HQ",
+            CreatedByUserId = "manager-user"
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new RegenerateOnboardingTokenCommandHandler(
+            context,
+            new TestCurrentUserAccessor("manager-user", titles: ["Manager"], companies: ["HQ"]));
+
+        var result = await handler.Handle(new RegenerateOnboardingTokenCommand(302), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        var saved = await context.OnboardingRequests.FindAsync(302);
+        Assert.NotNull(saved);
+        Assert.Equal(oldToken, saved!.AccessToken);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the RegenerateTokenHandler_HidesMissingRecordFromNonHr operation.
+    /// </summary>
+    public async Task RegenerateTokenHandler_HidesMissingRecordFromNonHr()
+    {
+        using var context = CreateContext();
+        var handler = new RegenerateOnboardingTokenCommandHandler(
+            context,
+            new TestCurrentUserAccessor("manager-user", titles: ["Manager"], companies: ["HQ"]));
+
+        var result = await handler.Handle(new RegenerateOnboardingTokenCommand(999), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        Assert.False(result.IsNotFound);
+    }
+
+    [Fact]
+    /// <summary>
     /// Runs the RejectValidator_Fails_WhenReasonMissing operation.
     /// </summary>
     public void RejectValidator_Fails_WhenReasonMissing()

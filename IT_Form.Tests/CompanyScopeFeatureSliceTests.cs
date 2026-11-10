@@ -1,6 +1,7 @@
 // Project comment: CompanyScopeFeatureSliceTests.cs is part of the IT Form application source code.
 
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
+using IT_Form.Application.Features.Onboarding.ExportOnboardingCsv;
 using IT_Form.Application.Features.Onboarding.SaveOnboardingStep1;
 using IT_Form.Data;
 using IT_Form.Models;
@@ -21,6 +22,24 @@ namespace IT_Form.Tests;
 /// </summary>
 public class CompanyScopeFeatureSliceTests
 {
+    [Fact]
+    /// <summary>
+    /// Runs the ExportOnboardingCsvHandler_RequiresHrRole operation.
+    /// </summary>
+    public async Task ExportOnboardingCsvHandler_RequiresHrRole()
+    {
+        await using var context = CreateContext();
+        var handler = new ExportOnboardingCsvQueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["Alpha"]));
+
+        var result = await handler.Handle(
+            new ExportOnboardingCsvQuery(null, null),
+            CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+    }
+
     [Fact]
     /// <summary>
     /// Creates data for the CreateItAssetHandler_AllowsItUserWithoutCompanyAssignment operation.

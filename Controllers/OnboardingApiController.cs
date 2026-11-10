@@ -58,6 +58,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOnboardingRejectionCommand(id, request.Reason)));
 
         [HttpPost("{id:int}/regenerate-token")]
+        [Authorize(Policy = "RequireHR")]
         /// <summary>
         /// Runs the RegenerateToken operation.
         /// </summary>
@@ -73,3 +74,4 @@ namespace IT_Form.Controllers
             => HandleProcessResult(await _sender.Send(new DeleteOnboardingRequestCommand(id, false)));
     }
 }
+

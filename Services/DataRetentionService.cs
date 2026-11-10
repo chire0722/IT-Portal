@@ -107,6 +107,7 @@ namespace IT_Form.Services
 
             await PurgeExpiredTokensAsync(db, ct);
             await RedactExpiredAuditLogsAsync(db, ct);
+            await PurgeExpiredEmailOutboxAsync(db, cutoff, ct);
         }
 
         /// <summary>
@@ -321,6 +322,34 @@ namespace IT_Form.Services
             }
         }
 
+        /// <summary>
+        /// Permanently removes terminal email outbox records after their retention period.
+        /// Pending and processing messages remain durable so an interrupted delivery is not
+        /// silently lost; terminal records no longer need to retain recipient or message data.
+        /// </summary>
+        private async Task PurgeExpiredEmailOutboxAsync(ApplicationDbContext db, DateTime cutoff, CancellationToken ct)
+        {
+            var staleMessages = await db.EmailOutboxMessages
+                .Where(message =>
+                    message.CreatedAtUtc < cutoff &&
+                    (message.Status == Models.Enums.EmailOutboxStatus.Sent ||
+                     message.Status == Models.Enums.EmailOutboxStatus.Failed ||
+                     message.Status == Models.Enums.EmailOutboxStatus.DeadLetter))
+                .ToListAsync(ct);
+
+            if (staleMessages.Count == 0)
+            {
+                return;
+            }
+
+            db.EmailOutboxMessages.RemoveRange(staleMessages);
+            await db.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "DataRetentionService: permanently removed {Count} terminal email outbox records older than {Cutoff:yyyy-MM-dd}.",
+                staleMessages.Count,
+                cutoff);
+        }
+
         private TimeSpan RecordRetentionPeriod =>
             TimeSpan.FromDays(Math.Max(1, _options.RecordRetentionDays));
 
@@ -331,3 +360,4 @@ namespace IT_Form.Services
             TimeSpan.FromDays(Math.Max(1, _options.AuditLogRetentionDays));
     }
 }
+

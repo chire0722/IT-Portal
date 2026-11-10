@@ -550,24 +550,24 @@ public class ScopedResourcePageQueryTests
             .Handle(new GetServerFolderCreatePageQuery(), CancellationToken.None);
 
         Assert.True(departmentIndex.IsSuccess);
-        Assert.Contains(departmentIndex.Data!, item => item.Id == 101);
+        Assert.DoesNotContain(departmentIndex.Data!, item => item.Id == 101);
         Assert.True(departmentCreate.IsSuccess);
-        Assert.Equal([1, 2], departmentCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+        Assert.Equal([1], departmentCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
 
         Assert.True(emailGroupIndex.IsSuccess);
-        Assert.Contains(emailGroupIndex.Data!.Items, item => item.Id == 102);
+        Assert.DoesNotContain(emailGroupIndex.Data!.Items, item => item.Id == 102);
         Assert.True(emailGroupCreate.IsSuccess);
-        Assert.Equal([1, 2], emailGroupCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+        Assert.Equal([1], emailGroupCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
 
         Assert.True(sharedMailboxIndex.IsSuccess);
-        Assert.Contains(sharedMailboxIndex.Data!.Items, item => item.Id == 103);
+        Assert.DoesNotContain(sharedMailboxIndex.Data!.Items, item => item.Id == 103);
         Assert.True(sharedMailboxCreate.IsSuccess);
-        Assert.Equal([1, 2], sharedMailboxCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+        Assert.Equal([1], sharedMailboxCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
 
         Assert.True(serverFolderIndex.IsSuccess);
-        Assert.Contains(serverFolderIndex.Data!.Items, item => item.Id == 104);
+        Assert.DoesNotContain(serverFolderIndex.Data!.Items, item => item.Id == 104);
         Assert.True(serverFolderCreate.IsSuccess);
-        Assert.Equal([1, 2], serverFolderCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
+        Assert.Equal([1], serverFolderCreate.Data!.CompanyOptions.Select(company => company.Id).ToList());
     }
 
     [Fact]

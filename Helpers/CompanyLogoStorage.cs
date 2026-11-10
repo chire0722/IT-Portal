@@ -105,22 +105,42 @@ public static class CompanyLogoStorage
         }
     }
 
-    public static void DeleteIfManaged(IWebHostEnvironment environment, string? relativePath)
+    public static string? ResolveManagedPath(IWebHostEnvironment environment, string? relativePath)
     {
-        if (environment == null || string.IsNullOrWhiteSpace(environment.WebRootPath)
-            || string.IsNullOrWhiteSpace(relativePath))
+        if (string.IsNullOrWhiteSpace(environment.WebRootPath) || string.IsNullOrWhiteSpace(relativePath))
         {
-            return;
+            return null;
         }
 
-        var logoDirectory = Path.GetFullPath(Path.Combine(environment.WebRootPath, "uploads", "companies", "logos"));
-        var candidate = Path.GetFullPath(Path.Combine(environment.WebRootPath, relativePath.TrimStart('/', '\\')));
-        var rootWithSeparator = logoDirectory.EndsWith(Path.DirectorySeparatorChar)
-            ? logoDirectory
-            : logoDirectory + Path.DirectorySeparatorChar;
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        try
+        {
+            var logoDirectory = Path.GetFullPath(Path.Combine(environment.WebRootPath, "uploads", "companies", "logos"));
+            var normalizedRelativePath = relativePath.Replace('\\\\', '/').TrimStart('/');
+            var candidate = Path.GetFullPath(Path.Combine(environment.WebRootPath, normalizedRelativePath));
+            var rootWithSeparator = logoDirectory.EndsWith(Path.DirectorySeparatorChar)
+                ? logoDirectory
+                : logoDirectory + Path.DirectorySeparatorChar;
+            var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            var extension = Path.GetExtension(candidate);
 
-        if (!candidate.StartsWith(rootWithSeparator, comparison))
+            if (!candidate.StartsWith(rootWithSeparator, comparison)
+                || !AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return candidate;
+        }
+        catch (Exception ex) when (ex is ArgumentException || ex is IOException || ex is NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    public static void DeleteIfManaged(IWebHostEnvironment environment, string? relativePath)
+    {
+        var candidate = ResolveManagedPath(environment, relativePath);
+        if (string.IsNullOrWhiteSpace(candidate))
         {
             return;
         }

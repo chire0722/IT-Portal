@@ -135,11 +135,15 @@ namespace IT_Form.Infrastructure.Notifications
             var outboxMessage = await claimContext.EmailOutboxMessages
                 .AsNoTracking()
                 .SingleAsync(message => message.Id == messageId, cancellationToken);
+            var encryptionService = claimScope.ServiceProvider.GetRequiredService<ILicenseEncryptionService>();
 
             try
             {
                 await DispatchMessageAsync(
-                    EmailOutboxMessageSerializer.Deserialize(outboxMessage.MessageType, outboxMessage.PayloadJson),
+                    EmailOutboxMessageSerializer.Deserialize(
+                        outboxMessage.MessageType,
+                        outboxMessage.PayloadJson,
+                        encryptionService),
                     cancellationToken);
 
                 await MarkMessageSentAsync(messageId, cancellationToken);
@@ -213,7 +217,7 @@ namespace IT_Form.Infrastructure.Notifications
                         welcomeEmail.Email,
                         "Welcome to the company",
                         BuildWelcomeEmailBody(welcomeEmail.EmployeeName));
-                    _logger.LogInformation("SMTP welcome email sent to {Email}.", welcomeEmail.Email);
+                    _logger.LogInformation("SMTP welcome email sent.");
                     break;
 
                 case OtpEmailMessage otpEmail:
@@ -221,7 +225,7 @@ namespace IT_Form.Infrastructure.Notifications
                         otpEmail.Email,
                         otpEmail.Subject,
                         otpEmail.HtmlBody);
-                    _logger.LogInformation("SMTP OTP email sent to {Email}.", otpEmail.Email);
+                    _logger.LogInformation("SMTP OTP email sent.");
                     break;
 
                 case RenderedEmailMessage renderedEmail:
@@ -234,7 +238,7 @@ namespace IT_Form.Infrastructure.Notifications
                         renderedEmail.Cc,
                         renderedEmail.SignatureBase64,
                         renderedEmail.BypassActiveCheck);
-                    _logger.LogInformation("SMTP rendered email sent to {Email}.", renderedEmail.Email);
+                    _logger.LogInformation("SMTP rendered email sent.");
                     break;
 
                 case ItLockoutAlertMessage lockoutAlert:
@@ -270,9 +274,7 @@ namespace IT_Form.Infrastructure.Notifications
                     foreach (var targetEmail in targetEmails)
                     {
                         outlookService.DisplayEmail(targetEmail, subject, body);
-                        _logger.LogInformation(
-                            "SMTP lockout alert email sent to {TargetEmail}.",
-                            targetEmail);
+                        _logger.LogInformation("SMTP lockout alert email sent.");
                     }
 
                     break;

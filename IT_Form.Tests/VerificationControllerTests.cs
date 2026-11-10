@@ -147,6 +147,37 @@ namespace IT_Form.Tests
             Assert.Contains(current.Token, link, StringComparison.OrdinalIgnoreCase);
         }
 
+
+        [Fact]
+        public async Task GenerateToken_RejectsEmployeeOutsideCurrentCompanyScope()
+        {
+            using var context = CreateContext();
+            var employeeId = Guid.NewGuid().ToString();
+            context.Users.Add(new ApplicationUser
+            {
+                Id = employeeId,
+                UserName = "other-company",
+                Email = "other-company@example.com",
+                FullName = "Other Company User",
+                UserCompanies = new List<UserCompany>
+                {
+                    new UserCompany { CompanyName = "Company B" }
+                }
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateVerificationController(
+                context,
+                new Dictionary<string, string?>(),
+                "localhost",
+                5063);
+
+            var result = await controller.GenerateToken(employeeId);
+
+            Assert.IsType<ForbidResult>(result);
+            Assert.Empty(await context.DeviceVerificationTokens.ToListAsync());
+        }
+
         [Fact]
         /// <summary>
         /// Runs the GenerateTokenWithoutEmployee_ReturnsAssetOnlyLink_AndStoresAnonymousToken operation.

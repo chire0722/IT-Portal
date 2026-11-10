@@ -107,6 +107,44 @@ public class StandardSoftwareFeatureSliceTests
         Assert.Equal(AddSoftwareLicenseStatus.InvalidSubscriptionExpiry, result.Status);
     }
 
+
+    [Fact]
+    public async Task AddSoftwareLicenseHandler_RejectsExcessiveSubscriptionSeatLimit()
+    {
+        using var context = CreateContext();
+        context.StandardSoftware.Add(new StandardSoftware { Id = 13, SoftwareName = "Enterprise App" });
+        await context.SaveChangesAsync();
+
+        var quota = new Mock<IQuotaControl>();
+        quota.Setup(service => service.EnsureAvailableAsync(
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<ClaimsPrincipal?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var handler = new AddSoftwareLicenseCommandHandler(
+            context,
+            new TestCurrentUserAccessor("super-user", titles: ["SuperAdmin"]),
+            quota.Object);
+
+        var result = await handler.Handle(
+            new AddSoftwareLicenseCommand(
+                13,
+                "Enterprise App Subscription",
+                null,
+                true,
+                false,
+                DateTime.UtcNow.AddDays(30),
+                5001,
+                null,
+                null,
+                []),
+            CancellationToken.None);
+
+        Assert.Equal(AddSoftwareLicenseStatus.InvalidSeatLimit, result.Status);
+        Assert.Empty(await context.SoftwareLicenses.ToListAsync());
+    }
+
     [Fact]
     /// <summary>
     /// Runs the AddSoftwareLicenseHandler_CreatesSeatRows_ForSubscriptionQuantity operation.

@@ -2,6 +2,7 @@
 
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Services;
 using Mapster;
 using MediatR;
@@ -18,15 +19,18 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _hostEnvironment;
     private readonly ICompanyReferenceSyncService _companyReferenceSyncService;
+    private readonly IFileMalwareScanner? _malwareScanner;
 
     public UpdateCompanyCommandHandler(
         ApplicationDbContext context,
         IWebHostEnvironment hostEnvironment,
-        ICompanyReferenceSyncService companyReferenceSyncService)
+        ICompanyReferenceSyncService companyReferenceSyncService,
+        IFileMalwareScanner? malwareScanner = null)
     {
         _context = context;
         _hostEnvironment = hostEnvironment;
         _companyReferenceSyncService = companyReferenceSyncService;
+        _malwareScanner = malwareScanner;
     }
 
     /// <summary>
@@ -34,6 +38,8 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
     /// </summary>
     public async Task<int> Handle(UpdateCompanyCommand request, CancellationToken cancellationToken)
     {
+        await MalwareScanHelper.EnsureCleanAsync(request.Logo, _malwareScanner, "Company logo", cancellationToken);
+
         var entity = await _context.Companies
             .FirstOrDefaultAsync(company => company.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(CompanyEntity), request.Id);

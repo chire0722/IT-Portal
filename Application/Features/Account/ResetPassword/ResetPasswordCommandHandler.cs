@@ -1,12 +1,14 @@
 // Project comment: ResetPasswordCommandHandler.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Application.Common.Validation;
 using IT_Form.Infrastructure.Notifications;
 using IT_Form.Models;
 using IT_Form.Services;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
+using System.Text.Encodings.Web;
 
 namespace IT_Form.Application.Features.Account.ResetPassword
 {
@@ -59,7 +61,7 @@ namespace IT_Form.Application.Features.Account.ResetPassword
             }
 
             user.MustChangePassword = false;
-            await _userManager.UpdateAsync(user);
+            (await _userManager.UpdateAsync(user)).EnsureSucceeded();
             _cache.Remove($"claims-transform:{user.Id}");
 
             _context.AuditLogs.Add(new AuditLog
@@ -77,7 +79,7 @@ namespace IT_Form.Application.Features.Account.ResetPassword
             await QueueSecurityAlertAsync(user, "Password Reset (OTP)", cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            await _userManager.UpdateSecurityStampAsync(user);
+            (await _userManager.UpdateSecurityStampAsync(user)).EnsureSucceeded();
 
             return new ResetPasswordResult(
                 true,
@@ -94,7 +96,7 @@ namespace IT_Form.Application.Features.Account.ResetPassword
             string body = $@"
                 <div style='font-family: sans-serif; padding: 20px; border: 1px solid #f87171; border-radius: 8px; background: #fffafb;'>
                     <h2 style='color: #dc2626;'>Security Alert</h2>
-                    <p>Hello <b>{user.FullName}</b>,</p>
+                    <p>Hello <b>{HtmlEncoder.Default.Encode(user.FullName ?? "there")}</b>,</p>
                     <p>This is an automated notification to inform you that your password for the IT Asset Management System was recently updated via <b>{method}</b>.</p>
                     <p><b>Time:</b> {DateTime.UtcNow.AddHours(8):dd/MM/yyyy HH:mm:ss} (SGT)</p>
                 </div>";
@@ -102,7 +104,7 @@ namespace IT_Form.Application.Features.Account.ResetPassword
             await _emailBackgroundQueue.QueueEmailAsync(
                 new RenderedEmailMessage(user.Email!, subject, body),
                 cancellationToken);
-            _logger.LogInformation("Queued security alert for {Email} regarding password change.", user.Email);
+            _logger.LogInformation("Queued password-change security alert for user {UserId}.", user.Id);
         }
     }
 }

@@ -75,7 +75,8 @@ namespace IT_Form.Helpers
         }
 
         /// <summary>
-        /// Saves data for the SaveAsync operation.
+        /// Saves a sensitive upload using a temporary file and an atomic same-volume move.
+        /// A failed or cancelled copy is cleaned up and is never exposed under its final name.
         /// </summary>
         public static async Task<string> SaveAsync(
             IFormFile file,
@@ -84,14 +85,52 @@ namespace IT_Form.Helpers
             string fileName,
             CancellationToken cancellationToken = default)
         {
-            var safeFileName = Path.GetFileName(fileName);
-            var physicalPath = Path.Combine(GetCategoryRoot(environment, category), safeFileName);
+            ArgumentNullException.ThrowIfNull(file);
+            var safeFileName = Path.GetFileName((fileName ?? string.Empty).Replace('\\', '/'));
+            if (string.IsNullOrWhiteSpace(safeFileName) || safeFileName is "." or "..")
+            {
+                throw new ArgumentException("A valid file name is required.", nameof(fileName));
+            }
 
-            // Refuse filename collisions instead of silently overwriting an existing sensitive file.
-            await using var stream = new FileStream(physicalPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            await file.CopyToAsync(stream, cancellationToken);
+            var targetDirectory = GetCategoryRoot(environment, category);
+            var physicalPath = Path.Combine(targetDirectory, safeFileName);
+            var temporaryPath = Path.Combine(targetDirectory, $".upload-{Guid.NewGuid():N}.tmp");
 
-            return BuildStoredPath(category, safeFileName);
+            try
+            {
+                await using (var stream = new FileStream(
+                    temporaryPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81920,
+                    options: FileOptions.Asynchronous | FileOptions.SequentialScan))
+                {
+                    await file.CopyToAsync(stream, cancellationToken);
+                    await stream.FlushAsync(cancellationToken);
+                }
+
+                // File.Move without overwrite is atomic on the same volume and preserves collision protection.
+                File.Move(temporaryPath, physicalPath);
+                return BuildStoredPath(category, safeFileName);
+            }
+            catch
+            {
+                // Preserve the original copy/move/cancellation exception; cleanup must not mask it.
+                try
+                {
+                    if (File.Exists(temporaryPath))
+                    {
+                        File.Delete(temporaryPath);
+                    }
+                }
+                catch
+                {
+                    // A failed cleanup is detectable as a .upload-*.tmp orphan for operational cleanup.
+                }
+
+                throw;
+            }
         }
 
         /// <summary>

@@ -13,8 +13,8 @@ namespace IT_Form.Application.Features.Company.Writes.UpdateCompany;
 /// </summary>
 public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateCompanyCommand>
 {
-    private static readonly string[] AllowedLogoExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
-    private static readonly string[] AllowedLogoContentTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+    private static readonly string[] AllowedLogoExtensions = [".png", ".jpg", ".jpeg", ".gif"];
+    private static readonly string[] AllowedLogoContentTypes = ["image/png", "image/jpeg", "image/gif"];
     private const long MaxLogoBytes = 1 * 1024 * 1024;
 
     private readonly ApplicationDbContext _context;
@@ -55,7 +55,7 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
 
         RuleFor(x => x.Logo)
             .Must(BeAllowedLogoFile)
-            .WithMessage("Only PNG, JPG, GIF, and WebP logo images are allowed.");
+            .WithMessage("Only PNG, JPG, and GIF logo images are allowed.");
     }
 
     /// <summary>
@@ -125,3 +125,4 @@ public sealed class UpdateCompanyCommandValidator : AbstractValidator<UpdateComp
                UploadFileSignatureValidator.HasAllowedSignature(file, AllowedLogoExtensions);
     }
 }
+

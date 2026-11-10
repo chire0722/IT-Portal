@@ -115,6 +115,31 @@ namespace IT_Form.Controllers
         /// <summary>
         /// Runs the IsAuthorizedForBranch operation.
         /// </summary>
+        private static bool IsValidEmailAddress(string? address)
+        {
+            if (string.IsNullOrWhiteSpace(address) ||
+                address.Length > 254 ||
+                address.Any(char.IsControl) ||
+                address.Contains(' '))
+            {
+                return false;
+            }
+
+            try
+            {
+                var parsed = new MailAddress(address);
+                return string.Equals(parsed.Address, address, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
         private bool IsAuthorizedForBranch(string? requestBranch, string? createdBy)
         {
             if (!CompanyScopeHelper.CanAccessCompany(User, requestBranch)) return false;
@@ -484,6 +509,23 @@ namespace IT_Form.Controllers
             if (!ModelState.IsValid)
             {
                 return View("ConfirmEmail", model);
+            }
+
+            var recipients = (model.To ?? new List<string>())
+                .Concat(model.Cc ?? new List<string>())
+                .ToList();
+            if (model.To == null ||
+                model.To.Count == 0 ||
+                model.To.Count > 10 ||
+                (model.Cc?.Count ?? 0) > 10 ||
+                recipients.Count > 20 ||
+                recipients.Any(address => !IsValidEmailAddress(address)) ||
+                string.IsNullOrWhiteSpace(model.Subject) ||
+                model.Subject.Length > 200 ||
+                model.Subject.Any(char.IsControl) ||
+                (model.BodyHtml?.Length ?? 0) > 100_000)
+            {
+                return BadRequest("Email recipients or content exceed the allowed limits.");
             }
 
             if (!model.RequestId.HasValue || string.IsNullOrWhiteSpace(model.EmailType))

@@ -559,7 +559,15 @@ app.Use(async (context, next) =>
 });
 app.UseStaticFiles();
 // Use Serilog to log every HTTP request
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set(
+            "RequestPath",
+            IT_Form.Security.RequestLogPathSanitizer.Sanitize(httpContext.Request.Path));
+    };
+});
 
 app.UseRateLimiter();
 

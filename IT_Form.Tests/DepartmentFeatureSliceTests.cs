@@ -110,7 +110,7 @@ public class DepartmentFeatureSliceTests
 
         var handler = new CreateDepartmentCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"]));
+            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
 
         await Assert.ThrowsAsync<ValidationException>(() =>
             handler.Handle(
@@ -130,7 +130,7 @@ public class DepartmentFeatureSliceTests
 
         var handler = new CreateDepartmentCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+            new TestCurrentUserAccessor(titles: ["IT"]));
 
         var id = await handler.Handle(
             new CreateDepartmentCommand("Global Support", null, true, []),

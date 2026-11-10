@@ -43,7 +43,7 @@ Configuration:
 
 The ClamAV daemon must be deployed on loopback or an isolated private network with firewall rules permitting only the application host. Do not expose clamd's unauthenticated TCP port publicly. Monitor signature freshness and daemon availability.
 
-**Coverage remains partial:** integrate the same scanner into company logo uploads, spreadsheet imports and every other upload/attachment entry point before claiming system-wide malware scanning. Do not silently bypass scanning for a scanner outage.
+**Coverage remains partial:** spreadsheet imports and other remaining upload/attachment entry points still need the same scanner before claiming system-wide malware scanning. Do not silently bypass scanning for a scanner outage.
 
 
 

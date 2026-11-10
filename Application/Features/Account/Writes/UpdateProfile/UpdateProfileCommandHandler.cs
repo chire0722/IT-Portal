@@ -3,6 +3,8 @@
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Common.Validation;
 using IT_Form.Data;
+using IT_Form.Helpers;
+using IT_Form.Services;
 using IT_Form.Models;
 using Mapster;
 using MediatR;
@@ -17,13 +19,16 @@ public sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileC
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _context;
+    private readonly IFileMalwareScanner? _malwareScanner;
 
     public UpdateProfileCommandHandler(
         UserManager<ApplicationUser> userManager,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        IFileMalwareScanner? malwareScanner = null)
     {
         _userManager = userManager;
         _context = context;
+        _malwareScanner = malwareScanner;
     }
 
     /// <summary>
@@ -46,6 +51,12 @@ public sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileC
 
         if (request.SignatureImageFile != null && request.SignatureImageFile.Length > 0)
         {
+            await MalwareScanHelper.EnsureCleanAsync(
+                request.SignatureImageFile,
+                _malwareScanner,
+                "Email signature image",
+                cancellationToken);
+
             using var memoryStream = new MemoryStream();
             await request.SignatureImageFile.CopyToAsync(memoryStream, cancellationToken);
             var base64 = Convert.ToBase64String(memoryStream.ToArray());

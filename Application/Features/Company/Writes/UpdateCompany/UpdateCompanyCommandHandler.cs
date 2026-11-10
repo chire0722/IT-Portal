@@ -84,9 +84,10 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
             }
         }
 
-        var syncedCount = await _companyReferenceSyncService.ApplyUpdatedCompanySyncAsync(originalCompany, entity);
+        int syncedCount;
         try
         {
+            syncedCount = await _companyReferenceSyncService.ApplyUpdatedCompanySyncAsync(originalCompany, entity);
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch

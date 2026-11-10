@@ -5,6 +5,7 @@ using IT_Form.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Encodings.Web;
 using IT_Form.Models;
@@ -24,6 +25,7 @@ namespace IT_Form.Controllers
         private readonly IOutlookService _outlookService;
         private readonly ILogger<NotificationController> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly EmailConfirmationIntegrity _emailConfirmationIntegrity;
 
         public NotificationController(
             ApplicationDbContext context,
@@ -31,13 +33,15 @@ namespace IT_Form.Controllers
             IOutlookService outlookService,
             ILogger<NotificationController> logger,
             IConfiguration configuration,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IDataProtectionProvider dataProtectionProvider)
         {
             _context = context;
             _pdfService = pdfService;
             _outlookService = outlookService;
             _logger = logger;
             _userManager = userManager;
+            _emailConfirmationIntegrity = new EmailConfirmationIntegrity(dataProtectionProvider);
         }
 
         private async Task<(string? Name, string? Title, string? Image)> GetSenderInfoAsync()
@@ -159,9 +163,12 @@ namespace IT_Form.Controllers
                 ReturnUrl = Url.Action("Details", "Onboarding", new { id = request.Id }) ?? "/",
                 RequestId = request.Id,
                 EmailType = "Onboarding",
+                RequestType = "Onboarding",
+                ConfirmationActorId = _userManager.GetUserId(User),
                 HasAttachment = false,
-                SignatureImage = sender.Image
+                SignatureImage = sender.Image,
             };
+            vm.BodyIntegrity = _emailConfirmationIntegrity.Create(vm);
             return View("ConfirmEmail", vm);
         }
 
@@ -241,9 +248,12 @@ namespace IT_Form.Controllers
                 ReturnUrl = Url.Action("Details", "Offboarding", new { id = request.Id }) ?? "/",
                 RequestId = request.Id,
                 EmailType = "Offboarding",
+                RequestType = "Offboarding",
+                ConfirmationActorId = _userManager.GetUserId(User),
                 HasAttachment = false,
-                SignatureImage = sender.Image
+                SignatureImage = sender.Image,
             };
+            vm.BodyIntegrity = _emailConfirmationIntegrity.Create(vm);
             return View("ConfirmEmail", vm);
         }
 
@@ -309,9 +319,12 @@ namespace IT_Form.Controllers
                 ReturnUrl = Url.Action("Details", type, new { id }) ?? "/",
                 RequestId = id,
                 EmailType = "Rejection",
+                RequestType = type,
+                ConfirmationActorId = _userManager.GetUserId(User),
                 HasAttachment = false,
-                SignatureImage = sender.Image
+                SignatureImage = sender.Image,
             };
+            vm.BodyIntegrity = _emailConfirmationIntegrity.Create(vm);
             return View("ConfirmEmail", vm);
         }
 
@@ -395,9 +408,12 @@ namespace IT_Form.Controllers
                 ReturnUrl = Url.Action("Details", type, new { id }) ?? "/",
                 RequestId = id,
                 EmailType = $"SignatureAcknowledgement_{type}",
+                RequestType = type,
+                ConfirmationActorId = _userManager.GetUserId(User),
                 HasAttachment = true,
-                SignatureImage = sender.Image
+                SignatureImage = sender.Image,
             };
+            vm.BodyIntegrity = _emailConfirmationIntegrity.Create(vm);
             return View("ConfirmEmail", vm);
         }
 
@@ -408,6 +424,26 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> SendConfirmedEmail(EmailConfirmationViewModel model)
         {
+            if (!_emailConfirmationIntegrity.Validate(model) ||
+                !string.Equals(model.ConfirmationActorId, _userManager.GetUserId(User), StringComparison.Ordinal) ||
+                !model.RequestId.HasValue ||
+                !string.Equals(model.RequestType, "Onboarding", StringComparison.Ordinal) &&
+                !string.Equals(model.RequestType, "Offboarding", StringComparison.Ordinal))
+            {
+                return BadRequest("The email confirmation expired or is invalid. Reopen the request and try again.");
+            }
+
+            if (!ValidateEmailAddresses(model.To, out var recipientError) ||
+                !ValidateEmailAddresses(model.Cc, out recipientError) ||
+                string.IsNullOrWhiteSpace(model.Subject) ||
+                model.Subject.Length > 200 ||
+                model.Subject.Contains('\r') ||
+                model.Subject.Contains('\n'))
+            {
+                ModelState.AddModelError(string.Empty, recipientError ?? "Enter valid email recipients and a valid subject.");
+                return View("ConfirmEmail", model);
+            }
+
             if (!ModelState.IsValid)
             {
                 return View("ConfirmEmail", model);
@@ -446,6 +482,12 @@ namespace IT_Form.Controllers
                     }
                 }
 
+                var authorized = await IsAuthorizedToSendAsync(model.RequestId.Value, model.RequestType!);
+                if (!authorized)
+                {
+                    return Forbid();
+                }
+
                 string toStr = string.Join(";", model.To);
                 string ccStr = model.Cc != null ? string.Join(";", model.Cc) : "";
 
@@ -464,6 +506,63 @@ namespace IT_Form.Controllers
                 return Redirect(model.ReturnUrl);
             }
             return RedirectToAction("Index", "Home");
+        }
+
+        private async Task<bool> IsAuthorizedToSendAsync(int requestId, string requestType)
+        {
+            if (string.Equals(requestType, "Onboarding", StringComparison.Ordinal))
+            {
+                var request = await _context.OnboardingRequests
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(item => item.Id == requestId);
+                return request is not null &&
+                       (IsAuthorizedForBranch(request.Branch, request.CreatedByUserId) ||
+                        await IsAuthorizedAsHOD(request.Branch, request.HODEmail));
+            }
+
+            var offboarding = await _context.OffboardingRequests
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == requestId);
+            return offboarding is not null &&
+                   (IsAuthorizedForBranch(offboarding.Branch, offboarding.CreatedByUserId) ||
+                    await IsAuthorizedAsHOD(offboarding.Branch, offboarding.HODEmail, offboarding.AssignedHodId));
+        }
+
+        private static bool ValidateEmailAddresses(IEnumerable<string>? addresses, out string? error)
+        {
+            error = null;
+            var values = addresses?.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()).ToList() ?? [];
+            if (values.Count > 50)
+            {
+                error = "You can send to no more than 50 recipients at once.";
+                return false;
+            }
+
+            foreach (var value in values)
+            {
+                if (value.Length > 254 || value.Contains('\r') || value.Contains('\n'))
+                {
+                    error = "One or more email addresses are invalid.";
+                    return false;
+                }
+
+                try
+                {
+                    var parsed = new MailAddress(value);
+                    if (!string.Equals(parsed.Address, value, StringComparison.OrdinalIgnoreCase))
+                    {
+                        error = "Use plain email addresses without display names.";
+                        return false;
+                    }
+                }
+                catch (FormatException)
+                {
+                    error = "One or more email addresses are invalid.";
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         [HttpGet]
@@ -569,10 +668,14 @@ namespace IT_Form.Controllers
                 ReturnUrl = returnUrl,
                 RequestId = id,
                 EmailType = $"Nudge_{type}",
+                RequestType = type,
+                ConfirmationActorId = _userManager.GetUserId(User),
                 HasAttachment = false,
-                SignatureImage = sender.Image
+                SignatureImage = sender.Image,
             };
+            vm.BodyIntegrity = _emailConfirmationIntegrity.Create(vm);
             return View("ConfirmEmail", vm);
         }
     }
 }
+

@@ -102,9 +102,11 @@ The Malaysian DBN Guideline specifies a 72-hour maximum for Commissioner notific
 ### P1 — Encryption and key management
 
 - The SQLite database itself is not encrypted by the application code. EF Core converters encrypt only properties explicitly marked with `EncryptColumn`; source review found other personal/business-identifying fields (for example names, department/branch/designation, desk details, signer names, free-text remarks, and some audit identifiers) that are not uniformly covered. This is not whole-database or complete field-level encryption.
-- Backup files are protected by ASP.NET Core Data Protection, but the Data Protection key ring is persisted to a local filesystem path without an explicit at-rest key-encryption provider in the reviewed startup code.
-- Require host-volume encryption, restrictive OS ACLs for database/uploads/logs/key rings, protected key backups, key rotation/recovery procedures, and tested restore access.
-- For production, use an approved key-protection mechanism (for example, platform-managed key storage or a certificate/managed key service) and document key custodians and recovery procedures.
+- Backup files and marked sensitive fields use ASP.NET Core Data Protection. Production startup now requires a valid RSA certificate from the Windows `LocalMachine\\My` store and configures certificate protection for newly persisted Data Protection key-ring XML. The certificate private key must be ACL-restricted to the application identity.
+- This change does **not** encrypt the SQLite database as a whole. EF Core converters still protect only properties explicitly marked with `EncryptColumn`; other personal/business-identifying fields (for example names, department/branch/designation, desk details, signer names, free-text remarks and some audit identifiers) are not uniformly covered.
+- Certificate protection does **not** retroactively encrypt existing key-ring XML files. Existing key files, database files, upload directories and logs still require host-volume encryption and restrictive OS ACLs. Historical exposed key material must be assessed as compromised if it was used in a real environment.
+- Configure a durable `DataProtection:KeyRingPath`, install the certificate on every application instance, verify private-key ACLs, maintain protected key backups, and test cookie/field/backup decryption and restore. Plan key/certificate rollover and dependent-data re-protection before retiring historical keys.
+- The code change is committed to the assessment branch; production certificate provisioning, deployment validation and restore evidence remain outstanding release gates.
 
 ### P1 — Processor and cross-border governance
 

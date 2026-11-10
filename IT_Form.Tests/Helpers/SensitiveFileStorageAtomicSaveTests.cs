@@ -97,4 +97,50 @@ public sealed class SensitiveFileStorageAtomicSaveTests
             }
         }
     }
+
+    [Fact]
+    public async Task SaveAsync_DoesNotOverwriteExistingFile_WhenFinalNameCollides()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"it-portal-upload-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var environment = new Mock<IWebHostEnvironment>();
+            environment.SetupGet(x => x.ContentRootPath).Returns(root);
+
+            var targetDirectory = Path.Combine(
+                root,
+                "App_Data",
+                SensitiveFileStorage.SecureFolderName,
+                SensitiveFileStorage.OffboardingCategory);
+            Directory.CreateDirectory(targetDirectory);
+            var physicalPath = Path.Combine(targetDirectory, "employee-document.pdf");
+            await File.WriteAllBytesAsync(physicalPath, new byte[] { 9, 9, 9 });
+
+            var file = new Mock<IFormFile>();
+            file.Setup(x => x.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns<Stream, CancellationToken>(async (destination, cancellationToken) =>
+                {
+                    await destination.WriteAsync(new byte[] { 1, 2, 3 }, cancellationToken);
+                });
+
+            await Assert.ThrowsAsync<IOException>(() =>
+                SensitiveFileStorage.SaveAsync(
+                    file.Object,
+                    environment.Object,
+                    SensitiveFileStorage.OffboardingCategory,
+                    "employee-document.pdf"));
+
+            Assert.Equal(new byte[] { 9, 9, 9 }, await File.ReadAllBytesAsync(physicalPath));
+            Assert.Empty(Directory.GetFiles(targetDirectory, ".upload-*.tmp"));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
 }

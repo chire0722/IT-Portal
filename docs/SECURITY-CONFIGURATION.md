@@ -49,7 +49,7 @@ The `.codexbuild/` and `.build-verify/` directories are generated workspaces, no
 
 ## Coordinated Git-history cleanup (manual maintenance window)
 
-The current Gitleaks gate intentionally scans reachable Git history and will remain red while the historical findings exist. Do not add broad allowlists just to make the check green.
+The Gitleaks workflow has two distinct checks: the current working-tree scan is blocking and must report no findings; the reachable-history scan is non-blocking but reports redacted finding metadata so historical exposures remain visible without blocking unrelated security fixes. A non-blocking historical scan is not evidence that old secrets are safe. Do not add broad allowlists just to make the report appear clean. Investigate each match, rotate any real exposed credential/key, and handle history removal through the coordinated process below.
 
 Before any history rewrite:
 

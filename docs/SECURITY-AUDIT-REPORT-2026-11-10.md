@@ -85,6 +85,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Existing audit payload and request-log sanitization remains in place.
 - Audit failure records no longer persist raw exception messages; free-text redaction covers common secret/email patterns; audit notification emails sanitize JSON and HTML-encode user-controlled values.
 - A restricted HR-only DSAR case register now supports access, portability, correction and deletion request types, idempotent submission, allow-listed state transitions, optimistic concurrency, immutable events, and completion evidence references. It does not yet perform data discovery, secure export delivery, legal-hold evaluation, or deletion.
+- Reviewed the existing retention background service, email outbox and PDF/export paths at source level. No webhook controller or webhook callback handler was found in the repository, so no webhook-specific patch was applicable; any future webhook must use authenticated, replay-resistant, signed payload validation.
 
 ### 2.7 Documentation and governance evidence
 
@@ -138,6 +139,7 @@ These are automated CI results. They do not replace dynamic testing against a de
 6. **Audit privacy:** review nested, renamed, free-text, and custom audit/logging paths for personal data and secrets.
 7. **Retention:** validate retention periods against actual business/legal purposes and test deletion/redaction across database rows, files, exports, logs, backups, and restored backups. Current redaction is not proven irreversible anonymisation.
 8. **Resilience:** establish off-host/immutable backups, RTO/RPO, restore monitoring, and periodic witnessed recovery exercises.
+9. **Background jobs and integrations:** prove retry/lease/idempotency behavior, dead-letter handling, queue confidentiality, notification payload redaction, PDF resource limits, and timeout/authentication controls for every external integration. The current source review is not production evidence for these controls.
 
 ### P2 — Continuous improvement
 

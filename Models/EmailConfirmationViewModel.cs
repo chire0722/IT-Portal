@@ -22,6 +22,9 @@ namespace IT_Form.Models
         // Hidden fields to recreate the email context and route back
         public string BodyHtml { get; set; } = string.Empty;
         public string ReturnUrl { get; set; } = string.Empty;
+        public string? RequestType { get; set; }
+        public string? ConfirmationActorId { get; set; }
+        public string BodyIntegrity { get; set; } = string.Empty;
         
         // These fields are needed if we must regenerate an attachment just-in-time
         public int? RequestId { get; set; }
@@ -30,3 +33,4 @@ namespace IT_Form.Models
         public string? SignatureImage { get; set; }
     }
 }
+

@@ -35,11 +35,12 @@ Set `IT_FORM__DataProtection__KeyRingPath` to the **full directory** used for th
 
 Before enabling this requirement in production:
 1. Back up the existing key ring and database/backup files using an access-controlled process.
-2. Install the certificate on every host and grant the application identity read access to its private key only.
-3. Configure the same durable key-ring directory and certificate thumbprint on each instance.
-4. Test application startup, cookie validation, encrypted software-key reads/writes and protected-backup restore in staging.
-5. Plan certificate rollover and recovery. Keep the prior certificate private key available for as long as protected key-ring entries require it.
-6. Review existing key XML. Enabling certificate protection does **not retroactively encrypt existing key files**; protect their storage separately and migrate/retire exposed historical keys only after dependent data has been safely re-protected or deliberately invalidated.
+2. Install the active certificate on every host and grant the application identity read access to its private key only.
+3. Configure the same durable key-ring directory and active certificate thumbprint on each instance.
+4. During rollover, add prior certificate thumbprints to `IT_FORM__DataProtection__UnprotectCertificateThumbprints` before changing the active certificate. The application uses these certificates only for decryption; expired prior certificates are accepted when their private keys remain available.
+5. Test application startup, cookie validation, encrypted software-key reads/writes and protected-backup restore in staging, including data protected with the previous certificate.
+6. Remove a prior certificate/private key only after all dependent key-ring entries and protected data have been migrated or intentionally invalidated.
+7. Review existing key XML. Enabling certificate protection does **not retroactively encrypt existing key files**; protect their storage separately and migrate/retire exposed historical keys only after dependent data has been safely re-protected or deliberately invalidated.
 
 The application deliberately does not generate, install, or commit a production certificate. A missing/invalid certificate blocks production startup; this is a release gate, not a reason to disable the check.
 

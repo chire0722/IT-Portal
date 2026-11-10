@@ -56,9 +56,9 @@ namespace IT_Form.Tests
 
             var viewResult = Assert.IsType<ViewResult>(result);
             var model = Assert.IsAssignableFrom<AssetAnalyticsViewModel>(viewResult.ViewData.Model);
-            Assert.Equal(2, model.Assets.Count());
+            Assert.Single(model.Assets);
             Assert.Contains(model.Assets, asset => asset.Company == "Alpha");
-            Assert.Contains(model.Assets, asset => asset.Company == "Beta");
+            Assert.DoesNotContain(model.Assets, asset => asset.Company == "Beta");
         }
 
         [Fact]

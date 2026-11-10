@@ -37,7 +37,7 @@ A source-code feature does not automatically satisfy a CSF outcome. Evidence mus
 
 | CSF 2.0 outcome | IT-Portal evidence / gap | Required evidence and owner |
 |---|---|---|
-| PR.AA — Identity Management, Authentication and Access Control | ASP.NET Identity, Argon2id, lockout/rate-limit controls, role/claim checks and company-scope enforcement exist in source | MFA policy, complete route-level authorization matrix, cross-company negative tests, privileged access review — IT/Security |
+| PR.AA — Identity Management, Authentication and Access Control | ASP.NET Identity, Argon2id, lockout/rate-limit controls, role/claim checks and company-scope enforcement exist in source; onboarding deletion now checks HR/IT + company scope in controller and handler; secure downloads authorize before file-existence checks; bulk offboarding export rejects mixed-scope selections | MFA policy, full route-level authorization matrix execution, download/export/signed-link negative tests, privileged access review — IT/Security |
 | PR.AT — Awareness and Training | No training evidence in repository | Role-based privacy/security training and completion records — HR/Privacy |
 | PR.DS — Data Security | Marked-column Data Protection conversion; protected SQLite backups; private sensitive-upload directory | Full data classification, encryption scope, certificate/KMS-protected key ring, encrypted volumes, key custody/rotation/recovery and restore test — IT |
 | PR.PS — Platform Security | Production secure-cookie and HTTP header hardening; pinned CI actions; dependency checks | Staging/production hardening evidence, patch SLA, secure proxy/TLS, host ACLs, runtime/OS compatibility — IT |

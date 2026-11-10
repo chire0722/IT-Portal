@@ -60,28 +60,21 @@ public sealed class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyC
         }
 
         var entity = request.Adapt<CompanyEntity>();
+        var newLogoPath = await CompanyLogoStorage.SaveAsync(_hostEnvironment, request.Logo, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(newLogoPath))
+        {
+            entity.LogoPath = newLogoPath;
+        }
 
         _context.Companies.Add(entity);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        if (request.Logo != null && request.Logo.Length > 0)
+        try
         {
-            var extension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
-            var fileName = $"{entity.Id}_Logo_{Guid.NewGuid():N}{extension}";
-            var relativePath = Path.Combine("uploads", "companies", "logos", fileName).Replace("\\", "/");
-            var directoryPath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "companies", "logos");
-
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-
-            var fullPath = Path.Combine(directoryPath, fileName);
-            await using var fileStream = new FileStream(fullPath, FileMode.Create);
-            await request.Logo.CopyToAsync(fileStream, cancellationToken);
-
-            entity.LogoPath = relativePath;
             await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            CompanyLogoStorage.DeleteIfManaged(_hostEnvironment, newLogoPath);
+            throw;
         }
 
         return entity.Id;

@@ -102,14 +102,28 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 "offboarding hardware-return image",
                 cancellationToken);
 
+            // Reconcile the employee/company assignment before writing new files. This keeps
+            // a rejected asset selection from leaving an orphaned sensitive upload behind.
+            var returnedAssetError = await OffboardingStep1Support.MarkReturnedAssetsAsync(
+                _context,
+                existing,
+                command.ReturnedAssetIds,
+                cancellationToken);
+            if (returnedAssetError != null)
+            {
+                return await OffboardingStep1Support.FailureAsync(
+                    _context,
+                    returnedAssetError,
+                    command.Request,
+                    cancellationToken);
+            }
+
             var previousDamageFilePath = await OffboardingStep1Support.SaveDamageFileAsync(
                 _env, existing, command.Id, command.HardwareDamageImage, cancellationToken);
             var previousReturnFilePath = await OffboardingStep1Support.SaveReturnFileAsync(
                 _env, existing, command.Id, command.HardwareReturnImage, cancellationToken);
 
             existing.UpdatedAt = DateTime.UtcNow;
-
-            await OffboardingStep1Support.MarkReturnedAssetsAsync(_context, command.ReturnedAssetIds, cancellationToken);
 
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -131,3 +145,4 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         }
     }
 }
+

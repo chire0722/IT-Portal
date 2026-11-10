@@ -206,7 +206,7 @@ namespace IT_Form.Tests
 
             Assert.False(string.IsNullOrWhiteSpace(link));
             Assert.Equal("asset-only", assignmentMode);
-            Assert.Null(expiresAtUtc);
+            Assert.NotNull(expiresAtUtc);
             Assert.Contains("/verify/", link, StringComparison.OrdinalIgnoreCase);
 
             var storedToken = await context.DeviceVerificationTokens.SingleAsync();
@@ -217,7 +217,7 @@ namespace IT_Form.Tests
 
         [Fact]
         /// <summary>
-        /// Runs the Index_AllowsOldAssetOnlyToken_WithoutExpiry operation.
+        /// Runs the Index_RejectsExpiredAssetOnlyToken operation.
         /// </summary>
         public async Task Index_AllowsOldAssetOnlyToken_WithoutExpiry()
         {
@@ -243,12 +243,12 @@ namespace IT_Form.Tests
             var token = await context.DeviceVerificationTokens.FirstAsync();
             var result = await controller.Index(token.Token);
 
-            Assert.IsType<ViewResult>(result);
+            Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]
         /// <summary>
-        /// Runs the DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry operation.
+        /// Runs the DownloadTool_RejectsExpiredAssetOnlyToken operation.
         /// </summary>
         public async Task DownloadTool_AllowsOldAssetOnlyToken_WithoutExpiry()
         {
@@ -274,8 +274,7 @@ namespace IT_Form.Tests
             var token = await context.DeviceVerificationTokens.FirstAsync();
             var result = await controller.DownloadTool(token.Token);
 
-            var file = Assert.IsType<FileContentResult>(result);
-            Assert.Equal("application/zip", file.ContentType);
+            Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]

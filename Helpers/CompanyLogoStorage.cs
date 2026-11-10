@@ -38,7 +38,8 @@ public static class CompanyLogoStorage
         var logoDirectory = Path.GetFullPath(Path.Combine(webRoot, "uploads", "companies", "logos"));
         Directory.CreateDirectory(logoDirectory);
 
-        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var reencoded = await ImageReencodingHelper.ReencodeAsync(file, cancellationToken);
+        var extension = reencoded.Extension;
         var fileName = $"company-logo-{Guid.NewGuid():N}{extension}";
         var destination = Path.Combine(logoDirectory, fileName);
         var temporary = Path.Combine(logoDirectory, $".{Guid.NewGuid():N}.uploading");
@@ -53,30 +54,17 @@ public static class CompanyLogoStorage
                 64 * 1024,
                 FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
-                await using var source = file.OpenReadStream();
-                var buffer = new byte[64 * 1024];
-                long totalBytes = 0;
-                while (true)
-                {
-                    var read = await source.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
-                    if (read == 0)
-                    {
-                        break;
-                    }
-
-                    totalBytes += read;
-                    if (totalBytes > MaxLogoBytes)
-                    {
-                        throw new ValidationException("The company logo exceeds the permitted size.");
-                    }
-
-                    await stream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-                }
-
-                if (totalBytes == 0)
+                if (reencoded.Bytes.Length == 0)
                 {
                     throw new ValidationException("The company logo is empty.");
                 }
+
+                if (reencoded.Bytes.Length > MaxLogoBytes)
+                {
+                    throw new ValidationException("The company logo exceeds the permitted size.");
+                }
+
+                await stream.WriteAsync(reencoded.Bytes.AsMemory(), cancellationToken);
 
                 await stream.FlushAsync(cancellationToken);
                 stream.Flush(flushToDisk: true);
@@ -162,3 +150,4 @@ public static class CompanyLogoStorage
         }
     }
 }
+

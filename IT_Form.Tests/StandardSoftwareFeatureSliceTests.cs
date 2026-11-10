@@ -270,7 +270,7 @@ public class StandardSoftwareFeatureSliceTests
         context.SoftwareLicenses.Add(license);
         await context.SaveChangesAsync();
 
-        var handler = new DeleteSoftwareLicenseCommandHandler(context, CreateCurrentUserAccessor());
+        var handler = new DeleteSoftwareLicenseCommandHandler(context, new TestCurrentUserAccessor(userName: "it.user", titles: ["IT"], companies: []));
         var result = await handler.Handle(new DeleteSoftwareLicenseCommand(20), CancellationToken.None);
 
         Assert.Equal(DeleteSoftwareLicenseStatus.HasAssignedKeys, result.Status);

@@ -151,7 +151,7 @@ namespace IT_Form.Controllers
                 nameof(Index),
                 new { });
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the EditLicense operation.
         /// </summary>
@@ -235,7 +235,7 @@ namespace IT_Form.Controllers
                 nameof(Index),
                 new { });
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the AddKey operation.
         /// </summary>
@@ -253,7 +253,7 @@ namespace IT_Form.Controllers
                 },
                 async () => BadRequest("Key value is required."));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Deletes data for the DeleteKey operation.
         /// </summary>
@@ -282,7 +282,7 @@ namespace IT_Form.Controllers
         public async Task<IActionResult> GetKeys(int softwareId)
             => HandleJsonProcessResult(await _sender.Send(new GetStandardSoftwareKeysQuery(softwareId)));
 
-        [HttpPost]
+        [HttpPost, ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the QuickAllocateSeat operation.
         /// </summary>

@@ -114,17 +114,36 @@ jobs:
           sudo install -m 0755 "${RUNNER_TEMP}/gitleaks" /usr/local/bin/gitleaks
           gitleaks version
 
-      - name: Scan all reachable Git history for secrets
+      - name: Scan current tree and full Git history for secrets
         shell: bash
         run: |
           set -uo pipefail
-          report="${RUNNER_TEMP}/gitleaks-report.json"
-          scan_status=0
-          gitleaks git --redact=100 --exit-code 1 --log-opts="--all --no-merges" --report-format json --report-path "${report}" || scan_status=$?
-          if [[ -s "${report}" ]]; then
-            jq -r '.[] | "rule=\(.RuleID) file=\(.File) line=\(.StartLine) commit=\(.Commit) date=\(.Date)"' "${report}"
+
+          run_gitleaks_scan() {
+            local mode="$1"
+            shift
+            local report="${RUNNER_TEMP}/gitleaks-${mode}-report.json"
+            local status=0
+
+            "$@" --redact=100 --exit-code 1 --report-format json --report-path "${report}" || status=$?
+
+            if [[ -s "${report}" ]]; then
+              jq -r '.[] | "scan=${mode} rule=\(.RuleID) file=\(.File) line=\(.StartLine) commit=\(.Commit) date=\(.Date)"' "${report}"
+            fi
+
+            echo "${mode} scan exit code: ${status}"
+            return "${status}"
+          }
+
+          current_status=0
+          history_status=0
+
+          run_gitleaks_scan current gitleaks dir . || current_status=$?
+          run_gitleaks_scan history gitleaks git --log-opts="--all --no-merges" || history_status=$?
+
+          if [[ "${current_status}" -ne 0 || "${history_status}" -ne 0 ]]; then
+            exit 1
           fi
-          exit "${scan_status}"
 
   codeql:
     name: CodeQL - ${{ matrix.language }}

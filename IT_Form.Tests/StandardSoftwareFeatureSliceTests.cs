@@ -4,7 +4,10 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
+using ClosedXML.Excel;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Application.Common.Mapping;
 using IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense;
 using IT_Form.Application.Features.StandardSoftware.EditSoftwareLicense;
@@ -390,6 +393,122 @@ public class StandardSoftwareFeatureSliceTests
         var software = Assert.Single(result.Data!.SoftwareList);
         Assert.Equal([111, 112], software.Licenses.Select(license => license.Id).OrderBy(id => id).ToArray());
         Assert.Equal(1, result.Data.SelectedCompanyId);
+    }
+
+
+    [Fact]
+    public async Task ImportStandardSoftwareHandler_AssociatesNewLicenseWithScopedCompanies()
+    {
+        using var context = CreateContext();
+        context.Companies.Add(new Company { Id = 1, Name = "Alpha", IsActive = true });
+        await context.SaveChangesAsync();
+
+        var quota = new Mock<IQuotaControl>();
+        quota.Setup(service => service.EnsureAvailableAsync(
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<ClaimsPrincipal?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new ImportStandardSoftwareCommandHandler(
+            context,
+            quota.Object,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["Alpha"]));
+
+        var result = await handler.Handle(
+            new ImportStandardSoftwareCommand(CreateSoftwareImportFile(
+                ["Adobe Acrobat", "FALSE", "TRUE", "Acrobat Pro", "ALPHA-KEY", "Perpetual", "", "1", "FALSE"])),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        var license = await context.SoftwareLicenses
+            .Include(item => item.SoftwareLicenseCompanies)
+            .SingleAsync();
+        Assert.Equal([1], license.SoftwareLicenseCompanies.Select(link => link.CompanyId).ToArray());
+        Assert.Equal("ALPHA-KEY", (await context.SoftwareKeys.SingleAsync()).KeyValue);
+    }
+
+    [Fact]
+    public async Task ImportStandardSoftwareHandler_DoesNotAddKeyToAnotherCompanyLicense()
+    {
+        using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 1, Name = "Alpha", IsActive = true },
+            new Company { Id = 2, Name = "Beta", IsActive = true });
+        context.StandardSoftware.Add(new StandardSoftware
+        {
+            Id = 10,
+            SoftwareName = "Adobe Acrobat",
+            Licenses =
+            [
+                new SoftwareLicense
+                {
+                    Id = 20,
+                    SoftwareName = "Acrobat Pro",
+                    SoftwareLicenseCompanies =
+                    [
+                        new SoftwareLicenseCompany { CompanyId = 2 }
+                    ]
+                }
+            ]
+        });
+        await context.SaveChangesAsync();
+
+        var quota = new Mock<IQuotaControl>();
+        quota.Setup(service => service.EnsureAvailableAsync(
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<ClaimsPrincipal?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new ImportStandardSoftwareCommandHandler(
+            context,
+            quota.Object,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["Alpha"]));
+
+        var result = await handler.Handle(
+            new ImportStandardSoftwareCommand(CreateSoftwareImportFile(
+                ["Adobe Acrobat", "FALSE", "TRUE", "Acrobat Pro", "BETA-SECRET", "Perpetual", "", "1", "FALSE"])),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("outside your company scope", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(await context.SoftwareKeys.ToListAsync());
+    }
+
+    private static IFormFile CreateSoftwareImportFile(params string[][] rows)
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Software");
+        var headers = new[]
+        {
+            "SoftwareName", "IsMandatory", "IsActive", "VersionName", "LicenseKey",
+            "LicenseType", "ExpiryDate", "Quantity", "IsFree"
+        };
+
+        for (var column = 0; column < headers.Length; column++)
+        {
+            worksheet.Cell(1, column + 1).Value = headers[column];
+        }
+
+        for (var row = 0; row < rows.Length; row++)
+        {
+            for (var column = 0; column < rows[row].Length; column++)
+            {
+                worksheet.Cell(row + 2, column + 1).Value = rows[row][column];
+            }
+        }
+
+        using var buffer = new MemoryStream();
+        workbook.SaveAs(buffer);
+        var content = new MemoryStream(buffer.ToArray());
+        return new FormFile(content, 0, content.Length, "file", "software-import.xlsx")
+        {
+            ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Headers = new HeaderDictionary()
+        };
     }
 
     [Fact]

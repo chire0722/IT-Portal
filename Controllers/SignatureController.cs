@@ -80,6 +80,7 @@ namespace IT_Form.Controllers
             Response.Headers["Pragma"] = "no-cache";
             Response.Headers["Referrer-Policy"] = "no-referrer";
             Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
         }
 
         /// <summary>

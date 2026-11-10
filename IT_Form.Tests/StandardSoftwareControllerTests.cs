@@ -93,7 +93,7 @@ namespace IT_Form.Tests
             context.SoftwareLicenses.Add(license);
             await context.SaveChangesAsync();
 
-            var controller = GetController<StandardSoftwareController>(context, role: "IT");
+            var controller = GetController<StandardSoftwareController>(context, role: "SuperAdmin");
 
             var result = await controller.GetKeys(9);
 

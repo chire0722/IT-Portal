@@ -40,45 +40,63 @@ namespace IT_Form.Services
     /// </summary>
     public class SignatureIntegrityService : ISignatureIntegrityService
     {
-        private readonly byte[] _keyBytes;
+        private readonly IReadOnlyDictionary<string, byte[]> _keys;
+        private readonly string _currentVersion;
+        private readonly bool _usesVersionedKeyRing;
 
         public SignatureIntegrityService(IConfiguration configuration, IWebHostEnvironment environment)
         {
-            // Read HMAC key from configuration — must be at least 32 bytes.
-            // Add "SignatureHmac:Key" to appsettings.json or a "IT_FORM__SignatureHmac__Key" machine environment variable.
-            var keyStr = configuration["SignatureHmac:Key"];
+            // New deployments should configure SignatureHmac:CurrentVersion and one or more
+            // SignatureHmac:Keys:<version> values. The legacy single Key setting remains
+            // supported so an existing installation can migrate without invalidating records.
+            var configuredKeys = configuration.GetSection("SignatureHmac:Keys")
+                .GetChildren()
+                .ToDictionary(
+                    child => child.Key,
+                    child => DecodeKey(child.Value, $"SignatureHmac:Keys:{child.Key}"),
+                    StringComparer.OrdinalIgnoreCase);
 
-            if (string.IsNullOrWhiteSpace(keyStr) ||
-                keyStr.Contains("SET_VIA_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
-                keyStr.Contains("SET_VIA_USER_SECRETS", StringComparison.OrdinalIgnoreCase) ||
-                keyStr.Contains("ROTATE_AND_USE_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
-                (keyStr.StartsWith('<') && keyStr.EndsWith('>')))
+            if (configuredKeys.Count > 0)
+            {
+                foreach (var version in configuredKeys.Keys)
+                {
+                    ValidateVersion(version);
+                }
+
+                _currentVersion = configuration["SignatureHmac:CurrentVersion"] ?? string.Empty;
+                ValidateVersion(_currentVersion);
+                if (!configuredKeys.ContainsKey(_currentVersion))
+                {
+                    throw new InvalidOperationException(
+                        $"SignatureHmac:CurrentVersion '{_currentVersion}' has no configured key.");
+                }
+
+                _keys = configuredKeys;
+                _usesVersionedKeyRing = true;
+                return;
+            }
+
+            var legacyKey = configuration["SignatureHmac:Key"];
+            if (IsMissingOrPlaceholder(legacyKey))
             {
                 if (environment.IsDevelopment())
                 {
-                    _keyBytes = RandomNumberGenerator.GetBytes(32);
-                    return;
+                    legacyKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
                 }
-
-                throw new InvalidOperationException(
-                    "SignatureHmac:Key is not configured. " +
-                    "Please set the 'IT_FORM__SignatureHmac__Key' machine environment variable.");
+                else
+                {
+                    throw new InvalidOperationException(
+                        "SignatureHmac is not configured. Set SignatureHmac:CurrentVersion with " +
+                        "SignatureHmac:Keys:<version>, or the legacy IT_FORM__SignatureHmac__Key during migration.");
+                }
             }
 
-            try
+            _keys = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase)
             {
-                _keyBytes = Convert.FromBase64String(keyStr);
-            }
-            catch (FormatException ex)
-            {
-                throw new InvalidOperationException(
-                    "SignatureHmac:Key is not a valid Base64 string. Check your environment variables.", ex);
-            }
-
-            if (_keyBytes.Length < 32)
-            {
-                throw new InvalidOperationException("SignatureHmac:Key must decode to at least 32 bytes.");
-            }
+                ["legacy"] = DecodeKey(legacyKey, "SignatureHmac:Key")
+            };
+            _currentVersion = "legacy";
+            _usesVersionedKeyRing = false;
         }
 
         /// <summary>
@@ -93,9 +111,11 @@ namespace IT_Form.Services
             var message = $"{entityType}|{entityId}|{signerUserId ?? ""}|{normalizedDate:O}|{signatureBase64}";
             var messageBytes = Encoding.UTF8.GetBytes(message);
 
-            using var hmac = new HMACSHA256(_keyBytes);
-            var hashBytes = hmac.ComputeHash(messageBytes);
-            return Convert.ToHexString(hashBytes); // uppercase hex
+            var hash = ComputeHash(_keys[_currentVersion], messageBytes);
+            var encoded = Convert.ToHexString(hash); // uppercase hex
+            return _usesVersionedKeyRing
+                ? $"{_currentVersion}:{encoded}"
+                : encoded;
         }
 
         /// <summary>
@@ -108,17 +128,98 @@ namespace IT_Form.Services
             // Every non-empty signature HMAC must be a real cryptographic MAC.
             // Synthetic import markers are not proof of integrity and must never bypass verification.
 
+            var normalizedDate = DateTime.SpecifyKind(signedAtUtc, DateTimeKind.Utc);
+            var message = $"{entityType}|{entityId}|{signerUserId ?? ""}|{normalizedDate:O}|{signatureBase64}";
+            var messageBytes = Encoding.UTF8.GetBytes(message);
+
+            var separator = storedHmac.IndexOf(':');
+            var suppliedVersion = separator > 0 ? storedHmac[..separator] : null;
+            var suppliedHex = separator > 0 ? storedHmac[(separator + 1)..] : storedHmac;
+            if (separator == 0 || (separator > 0 && separator != storedHmac.LastIndexOf(':')))
+            {
+                return false;
+            }
+
+            if (!TryDecodeHex(suppliedHex, out var suppliedBytes))
+            {
+                return false;
+            }
+
+            IEnumerable<byte[]> candidateKeys = suppliedVersion != null
+                ? _keys.TryGetValue(suppliedVersion, out var versionedKey)
+                    ? [versionedKey]
+                    : []
+                : _keys.Values;
+
+            var matched = false;
+            foreach (var key in candidateKeys)
+            {
+                var computedBytes = ComputeHash(key, messageBytes);
+                // Evaluate every configured key for an unversioned record so key presence
+                // cannot be inferred from early-return timing during migration.
+                matched |= CryptographicOperations.FixedTimeEquals(computedBytes, suppliedBytes);
+            }
+
+            return matched;
+        }
+
+        private static byte[] ComputeHash(byte[] key, byte[] messageBytes)
+        {
+            using var hmac = new HMACSHA256(key);
+            return hmac.ComputeHash(messageBytes);
+        }
+
+        private static bool TryDecodeHex(string value, out byte[] bytes)
+        {
             try
             {
-                var computed = ComputeHmac(entityType, entityId, signerUserId, signedAtUtc, signatureBase64);
-                // Use constant-time comparison to prevent timing attacks
-                return CryptographicOperations.FixedTimeEquals(
-                    Convert.FromHexString(computed),
-                    Convert.FromHexString(storedHmac));
+                bytes = Convert.FromHexString(value);
+                return bytes.Length == 32;
             }
             catch (FormatException)
             {
-                return false; // Malformed non-hex string stored in HMAC
+                bytes = [];
+                return false;
+            }
+        }
+
+        private static byte[] DecodeKey(string? value, string settingName)
+        {
+            if (IsMissingOrPlaceholder(value))
+            {
+                throw new InvalidOperationException($"{settingName} is not configured.");
+            }
+
+            try
+            {
+                var bytes = Convert.FromBase64String(value!);
+                if (bytes.Length < 32)
+                {
+                    throw new InvalidOperationException($"{settingName} must decode to at least 32 bytes.");
+                }
+
+                return bytes;
+            }
+            catch (FormatException ex)
+            {
+                throw new InvalidOperationException($"{settingName} is not a valid Base64 string.", ex);
+            }
+        }
+
+        private static bool IsMissingOrPlaceholder(string? value) =>
+            string.IsNullOrWhiteSpace(value) ||
+            value.Contains("SET_VIA_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
+            value.Contains("SET_VIA_USER_SECRETS", StringComparison.OrdinalIgnoreCase) ||
+            value.Contains("ROTATE_AND_USE_ENV_VAR", StringComparison.OrdinalIgnoreCase) ||
+            (value.StartsWith('<') && value.EndsWith('>'));
+
+        private static void ValidateVersion(string version)
+        {
+            if (string.IsNullOrWhiteSpace(version) || version.Length > 32 ||
+                version.Any(character => !(char.IsLetterOrDigit(character) || character is '-' or '_' or '.')))
+            {
+                throw new InvalidOperationException(
+                    "SignatureHmac key versions must be 1-32 characters containing only letters, digits, '.', '_' or '-'.");
             }
         }
     }

@@ -13,11 +13,14 @@ namespace IT_Form.Application.Features.StandardSoftware.QuickAllocateSubscriptio
     public sealed class QuickAllocateSubscriptionSeatCommandHandler : IRequestHandler<QuickAllocateSubscriptionSeatCommand, QuickAllocateSubscriptionSeatResult>
     {
         private readonly ApplicationDbContext _context;
+        private readonly IT_Form.Application.Common.Abstractions.ICurrentUserAccessor _currentUserAccessor;
         public QuickAllocateSubscriptionSeatCommandHandler(
             ApplicationDbContext context,
-            ILicenseEncryptionService encryptionService)
+            ILicenseEncryptionService encryptionService,
+            IT_Form.Application.Common.Abstractions.ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -27,6 +30,12 @@ namespace IT_Form.Application.Features.StandardSoftware.QuickAllocateSubscriptio
         {
             var license = await _context.SoftwareLicenses.FindAsync(new object[] { request.SoftwareId }, cancellationToken);
             if (license == null)
+            {
+                return new QuickAllocateSubscriptionSeatResult(QuickAllocateSubscriptionSeatStatus.NotFound, "License not found.");
+            }
+
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, _currentUserAccessor.User, license.Id, cancellationToken))
             {
                 return new QuickAllocateSubscriptionSeatResult(QuickAllocateSubscriptionSeatStatus.NotFound, "License not found.");
             }

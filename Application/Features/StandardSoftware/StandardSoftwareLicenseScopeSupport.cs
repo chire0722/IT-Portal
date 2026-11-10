@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using IT_Form.Application.Common.Support;
+using IT_Form.Helpers;
 using IT_Form.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +16,7 @@ internal static class StandardSoftwareLicenseScopeSupport
         int softwareLicenseId,
         CancellationToken cancellationToken)
     {
-        if (ItAdminCompanyScopeSupport.HasGlobalAccess(user))
+        if (!CompanyScopeHelper.HasScopedCompanies(user))
         {
             return true;
         }
@@ -34,7 +34,7 @@ internal static class StandardSoftwareLicenseScopeSupport
             return false;
         }
 
-        var accessibleCompanyIds = await ItAdminCompanyScopeSupport.LoadAccessibleCompanyIdsAsync(
+        var accessibleCompanyIds = await CompanyScopeHelper.LoadAccessibleCompanyIdsAsync(
             context,
             user,
             cancellationToken);

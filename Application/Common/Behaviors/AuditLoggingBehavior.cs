@@ -110,7 +110,7 @@ namespace IT_Form.Application.Common.Behaviors
                         Payload = payload,
                         CreatedAt = DateTime.UtcNow,
                         IsSuccess = false,
-                        ErrorMessage = ex.Message,
+                        ErrorMessage = AuditPayloadSanitizer.SanitizeExceptionMessage(ex),
                         Timestamp = DateTime.UtcNow,
                         EntityName = "Command",
                         EntityId = "-",
@@ -229,12 +229,12 @@ namespace IT_Form.Application.Common.Behaviors
             {
                 return AuditPayloadSanitizer.SerializeSanitized(request, SerializerOptions);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return JsonSerializer.Serialize(new
                 {
                     Error = "Payload serialization failed.",
-                    Exception = ex.Message,
+                    Exception = "Payload serialization failed.",
                     RequestType = request.GetType().FullName
                 }, SerializerOptions);
             }

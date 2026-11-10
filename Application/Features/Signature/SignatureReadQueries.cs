@@ -110,6 +110,14 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                     item.EmployeeSignedAt,
                     item.EmployeeSignatureHmac,
                     item.EmployeeSignerName,
+                    item.RequesterSignature,
+                    item.RequesterSignedAt,
+                    item.RequesterSignatureHmac,
+                    item.RequesterSignerName,
+                    item.ITAdminSignature,
+                    item.ITAdminSignedAt,
+                    item.ITAdminSignatureHmac,
+                    item.ITAdminSignerName,
                     item.CreatedAt,
                     item.UpdatedAt,
                     item.CompletedAt
@@ -121,20 +129,15 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 return new(GetSignatureAcknowledgePageStatus.NotFound, Message: "Request not found or token invalid.");
             }
 
-            if (!SignatureIntegrityGuard.IsValid(
-                _integrityService,
-                "OnboardingRequest",
-                record.Id.ToString(),
-                record.EmployeeSignerName,
-                "Employee",
-                record.EmployeeSignedAt,
-                record.EmployeeSignature,
-                record.EmployeeSignatureHmac))
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", record.Id.ToString(), record.RequesterSignerName, "Unknown", record.RequesterSignedAt, record.RequesterSignature, record.RequesterSignatureHmac)
+                || !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", record.Id.ToString(), record.ITAdminSignerName, "Unknown", record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac)
+                || !SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", record.Id.ToString(), record.EmployeeSignerName, "Employee", record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac))
             {
                 return new(
                     GetSignatureAcknowledgePageStatus.IntegrityFailed,
                     Message: "Digital signature integrity check failed. The document may have been tampered with.");
             }
+
 
             var model = new SignatureAcknowledgePageViewModel
             {
@@ -171,6 +174,18 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                     item.EmployeeSignedAt,
                     item.EmployeeSignatureHmac,
                     item.EmployeeSignerName,
+                    item.HRSignature,
+                    item.HRSignedAt,
+                    item.HRSignatureHmac,
+                    item.HRSignerName,
+                    item.HODSignature,
+                    item.HODSignedAt,
+                    item.HODSignatureHmac,
+                    item.HODSignerName,
+                    item.ITAdminSignature,
+                    item.ITAdminSignedAt,
+                    item.ITAdminSignatureHmac,
+                    item.ITAdminSignerName,
                     item.CreatedAt,
                     item.UpdatedAt,
                     item.CompletedAt
@@ -182,20 +197,16 @@ public sealed class GetSignatureAcknowledgePageQueryHandler
                 return new(GetSignatureAcknowledgePageStatus.NotFound, Message: "Request not found or token invalid.");
             }
 
-            if (!SignatureIntegrityGuard.IsValid(
-                _integrityService,
-                "OffboardingRequest",
-                record.Id.ToString(),
-                record.EmployeeSignerName,
-                "Employee",
-                record.EmployeeSignedAt,
-                record.EmployeeSignature,
-                record.EmployeeSignatureHmac))
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", record.Id.ToString(), record.HRSignerName, "Unknown", record.HRSignedAt, record.HRSignature, record.HRSignatureHmac)
+                || !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", record.Id.ToString(), record.HODSignerName, "Unknown", record.HODSignedAt, record.HODSignature, record.HODSignatureHmac)
+                || !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", record.Id.ToString(), record.ITAdminSignerName, "Unknown", record.ITAdminSignedAt, record.ITAdminSignature, record.ITAdminSignatureHmac)
+                || !SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", record.Id.ToString(), record.EmployeeSignerName, "Employee", record.EmployeeSignedAt, record.EmployeeSignature, record.EmployeeSignatureHmac))
             {
                 return new(
                     GetSignatureAcknowledgePageStatus.IntegrityFailed,
                     Message: "Digital signature integrity check failed. The document may have been tampered with.");
             }
+
 
             var model = new SignatureAcknowledgePageViewModel
             {

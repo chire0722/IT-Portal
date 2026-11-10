@@ -34,7 +34,7 @@ A file must not become downloadable merely because extension/MIME/magic-byte val
 
 ## 3. Malware scanner integration
 
-The application now provides `IFileMalwareScanner` backed by `ClamAvMalwareScanner`. The offboarding resignation-letter workflow scans the uploaded stream before persisting the request. The integration uses ClamAV's NUL-terminated `zINSTREAM` protocol and maps `OK` to clean, `FOUND` to infected, and connection/configuration/timeout/unknown responses to unavailable. Unavailable is rejected, not allowed.
+The application now provides `IFileMalwareScanner` backed by `ClamAvMalwareScanner`. The offboarding resignation-letter workflow scans the uploaded stream before persisting the request, and company create/update workflows scan logo streams before writing them to the public web root. The integration uses ClamAV's NUL-terminated `zINSTREAM` protocol and maps `OK` to clean, `FOUND` to infected, and connection/configuration/timeout/unknown responses to unavailable. Unavailable is rejected, not allowed.
 
 Configuration:
 - `IT_FORM__MalwareScanning__ClamAvHost`

@@ -138,7 +138,8 @@ namespace IT_Form.Controllers
                     selectedCompanyId.HasValue ? [selectedCompanyId.Value] : []));
                 ArgumentNullException.ThrowIfNull(result);
 
-                if (result.Status == AddSoftwareLicenseStatus.InvalidSubscriptionExpiry)
+                if (result.Status == AddSoftwareLicenseStatus.InvalidSubscriptionExpiry ||
+                    result.Status == AddSoftwareLicenseStatus.InvalidSeatLimit)
                 {
                     TempData["ErrorMessage"] = result.Message;
                     return RedirectToAction(nameof(Index));
@@ -294,7 +295,8 @@ namespace IT_Form.Controllers
                 ArgumentNullException.ThrowIfNull(result);
 
                 if (result.Status == QuickAllocateSubscriptionSeatStatus.NotFound) return NotFound();
-                if (result.Status == QuickAllocateSubscriptionSeatStatus.NotSubscription) return BadRequest(result.Message);
+                if (result.Status == QuickAllocateSubscriptionSeatStatus.NotSubscription ||
+                    result.Status == QuickAllocateSubscriptionSeatStatus.SeatLimitReached) return BadRequest(result.Message);
 
                 return Json(new { success = true });
                 },

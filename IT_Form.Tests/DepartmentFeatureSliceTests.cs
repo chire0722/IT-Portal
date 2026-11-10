@@ -98,7 +98,7 @@ public class DepartmentFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Creates data for the CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies operation.
+    /// Creates data for the CreateDepartmentHandler_RejectsCrossCompanyAssignment operation.
     /// </summary>
     public async Task CreateDepartmentHandler_RejectsCrossCompanyAssignment()
     {

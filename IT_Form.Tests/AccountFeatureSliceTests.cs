@@ -448,6 +448,27 @@ public class AccountFeatureSliceTests
         Assert.False(result.IsValid);
     }
 
+
+    [Fact]
+    public async Task VerifyOtpHandler_RejectsProfilePasswordChangePurposeOnPublicEndpoint()
+    {
+        using var context = CreateContext();
+        var userManager = CreateUserManager();
+        var handler = new VerifyOtpCommandHandler(
+            userManager.Object,
+            context,
+            new KeyedLockProvider(),
+            Mock.Of<ILogger<VerifyOtpCommandHandler>>());
+
+        var result = await handler.Handle(
+            new VerifyOtpCommand("user@example.com", "ABC234", OtpPurposes.ProfilePasswordChange),
+            CancellationToken.None);
+
+        Assert.False(result.IsVerified);
+        Assert.Equal(VerifyOtpResult.GenericFailureMessage, result.Message);
+        userManager.Verify(service => service.FindByEmailAsync(It.IsAny<string>()), Times.Never);
+    }
+
     [Fact]
     /// <summary>
     /// Runs the VerifyOtpHandler_ThrowsValidationException_WhenOtpIsMissing operation.

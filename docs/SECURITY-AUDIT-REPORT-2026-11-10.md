@@ -4,23 +4,23 @@
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
 **Pull request:** #3 — CI/CD hardening: .NET 10 build, tests, CodeQL and Dependabot  
-**Audited code head:** `30fe9ffbfc3d65b3ca3ab2b766ffd77325b999fc`  
+**Audited code head:** `b68c9259d7f7045d5f732ddb52e6e3500d8a7ebf`  
 **Status:** Engineering remediation and source-level verification completed for this iteration. This is not a penetration-test attestation, legal opinion, certification, or declaration of GDPR, Malaysian PDPA, or NIST conformity.
 
 ## 1. Executive summary
 
 This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, audit privacy, HMAC key rotation, and a restricted DSAR case workflow.
 
-The final GitHub Actions run for the current code head passed 391 tests (336 application tests and 55 audit tests). GitHub is the authoritative current-head build and test evidence.
+The final GitHub Actions run for the current code head passed 395 tests (340 application tests and 55 audit tests). GitHub is the authoritative current-head build and test evidence.
 
 - .NET 10 application build on the current code head: passed in GitHub Actions; the previously reported nullable warning is fixed.
-- Current-head `IT_Form.Tests`: 336 passed, 0 failed.
+- Current-head `IT_Form.Tests`: 340 passed, 0 failed.
 - Current-head `IT_Form.AuditTests`: 55 passed, 0 failed.
-- Current-head GitHub CI run: `42802133045`, passed.
+- Current-head GitHub CI run: `42816302719`, passed.
 
-**Current-head total: 391 passed, 0 failed, 0 skipped.**
+**Current-head total: 395 passed, 0 failed, 0 skipped.**
 
-The report-only follow-up run `42803077210` also passed all executable checks on the final PR tree; Dependency Review was skipped because that follow-up changed documentation only.
+The latest push-triggered run skipped Dependency Review by workflow design; the last applicable Dependency Review run `42802133045` passed. The latest run passed CodeQL C#, CodeQL Actions, Gitleaks, application build, and both test projects.
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 
@@ -33,6 +33,11 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 - Bulk PDF export rejects mixed-scope selections instead of silently exporting only an accessible subset.
 - Offboarding bulk PDF export requires HR authorization and verifies signature integrity before rendering each document.
 - Existing route-level authorization and company-scope helpers remain in place; a complete negative-test matrix for every route is still outstanding.
+- Onboarding IT setup now rejects duplicate, missing, unavailable, and cross-company asset selections, atomically claims available assets, and requires the IT role, company scope, and pending-IT state at the handler boundary.
+- Offboarding asset returns now require the linked onboarding assignment, current issued state, and matching company; invalid reconciliation is rejected before sensitive replacement files are written.
+- Offboarding HR/checker/HOD/IT signatures now enforce the expected state, company scope, checklist completion, and one-time signature gates; completion is recorded only after employee acknowledgement.
+- IT asset create/edit writes now validate the target employee assignment and company, persist the asset and assignment together, and reject assignments on non-issued assets. Inventory verification no longer marks an asset issued when no employee assignment can be resolved.
+- IT asset deletion is now a soft-delete/disposal operation and refuses deletion while the asset is still issued, preserving assignment history.
 - Added malware scanning to the direct employee Excel import, IT asset Excel import, and offboarding hardware-damage/hardware-return attachment paths; those paths also use bounded request bodies and cancellation-aware copying.
 
 ### 2.2 Digital signature integrity
@@ -109,19 +114,19 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**Current GitHub Actions run:** `42802133045`  
-**Code head tested:** `30fe9ffbfc3d65b3ca3ab2b766ffd77325b999fc`  
+**Current GitHub Actions run:** `42816302719`  
+**Code head tested:** `b68c9259d7f7045d5f732ddb52e6e3500d8a7ebf`  
 **Run conclusion:** success
 
 | Check | Result |
 |---|---:|
 | .NET 10 build | Passed |
-| IT_Form.Tests | 336 passed / 0 failed |
+| IT_Form.Tests | 340 passed / 0 failed |
 | IT_Form.AuditTests | 55 passed / 0 failed |
 | CodeQL C# | Passed |
 | CodeQL Actions | Passed |
 | Gitleaks current tree | No leaks found |
-| Dependency Review | Passed |
+| Dependency Review | Skipped for this push; last applicable run `42802133045` passed |
 
 These are automated CI results. They do not replace dynamic testing against a deployed environment, a human security review, or an independent penetration test.
 
@@ -169,5 +174,5 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening is implemented, and current-head GitHub CI passed 391 tests with CodeQL C#, CodeQL Actions, Gitleaks, and Dependency Review successful. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented, and current-head GitHub CI passed 395 tests with CodeQL C#, CodeQL Actions, and Gitleaks successful. Dependency Review passed on the last applicable dependency-check run. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
 

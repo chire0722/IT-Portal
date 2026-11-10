@@ -9,7 +9,8 @@ namespace IT_Form.Application.Features.StandardSoftware.AddSoftwareLicense
     {
         Added,
         NotFound,
-        InvalidSubscriptionExpiry
+        InvalidSubscriptionExpiry,
+        InvalidSeatLimit
     }
 
     /// <summary>

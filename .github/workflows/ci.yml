@@ -128,7 +128,7 @@ jobs:
             "$@" --redact=100 --exit-code 1 --report-format json --report-path "${report}" || status=$?
 
             if [[ -s "${report}" ]]; then
-              jq -r '.[] | "scan=${mode} rule=\(.RuleID) file=\(.File) line=\(.StartLine) commit=\(.Commit) date=\(.Date)"' "${report}"
+              jq -r --arg scan "${mode}" '.[] | "scan=\($scan) rule=\(.RuleID) file=\(.File) line=\(.StartLine) commit=\(.Commit) date=\(.Date)"' "${report}"
             fi
 
             echo "${mode} scan exit code: ${status}"

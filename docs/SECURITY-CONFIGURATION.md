@@ -23,6 +23,7 @@ Configure these in the hosting platform's secret/configuration store, then resta
 | `IT_FORM__DatabaseBackup2__AdditionalBackupPath` | Optional second backup destination |
 | `IT_FORM__DataProtection__KeyRingPath` | Persistent directory for the ASP.NET Core Data Protection key ring |
 | `IT_FORM__DataProtection__CertificateThumbprint` | Thumbprint of a valid RSA certificate in `LocalMachine\My`; its private key must be readable by the application identity |
+| `IT_FORM__DataProtection__UnprotectCertificateThumbprints` | Optional comma/semicolon-separated prior certificate thumbprints retained only to decrypt historical key-ring entries during rollover |
 
 Do not place these values in GitHub workflow YAML, source files, issue comments, or build artifacts. If deployment later uses GitHub Actions, inject them from repository/environment secrets at deploy time; this repository intentionally has no deployment job yet.
 

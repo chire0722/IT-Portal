@@ -9,7 +9,8 @@ namespace IT_Form.Application.Features.StandardSoftware.QuickAllocateSubscriptio
     {
         Allocated,
         NotFound,
-        NotSubscription
+        NotSubscription,
+        SeatLimitReached
     }
 
     /// <summary>

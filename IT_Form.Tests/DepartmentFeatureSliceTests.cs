@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
 using ClosedXML.Excel;
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Application.Common.Mapping;
@@ -99,7 +100,7 @@ public class DepartmentFeatureSliceTests
     /// <summary>
     /// Creates data for the CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies operation.
     /// </summary>
-    public async Task CreateDepartmentHandler_AllowsItUserToAssignAcrossCompanies()
+    public async Task CreateDepartmentHandler_RejectsCrossCompanyAssignment()
     {
         using var context = CreateContext();
         context.Companies.AddRange(
@@ -111,16 +112,12 @@ public class DepartmentFeatureSliceTests
             context,
             new TestCurrentUserAccessor(titles: ["IT"]));
 
-        var id = await handler.Handle(
-            new CreateDepartmentCommand("Regional Ops", null, true, [2]),
-            CancellationToken.None);
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            handler.Handle(
+                new CreateDepartmentCommand("Regional Ops", null, true, [2]),
+                CancellationToken.None));
 
-        var entity = await context.Departments
-            .Include(department => department.DepartmentCompanies)
-            .SingleAsync(department => department.Id == id);
-
-        Assert.Equal("Regional Ops", entity.Name);
-        Assert.Equal([2], entity.DepartmentCompanies.Select(link => link.CompanyId).ToList());
+        Assert.Empty(await context.Departments.ToListAsync());
     }
 
     [Fact]

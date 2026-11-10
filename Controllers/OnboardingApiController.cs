@@ -44,6 +44,7 @@ namespace IT_Form.Controllers
         }
 
         [HttpPost("{id:int}/sign")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the Sign operation.
         /// </summary>
@@ -51,6 +52,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOnboardingSignatureCommand(id, request.SignatureType, request.SignatureData)));
 
         [HttpPost("{id:int}/reject")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the Reject operation.
         /// </summary>
@@ -58,6 +60,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOnboardingRejectionCommand(id, request.Reason)));
 
         [HttpPost("{id:int}/regenerate-token")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Runs the RegenerateToken operation.
         /// </summary>
@@ -65,6 +68,7 @@ namespace IT_Form.Controllers
             => HandleCommandResponse(await _sender.Send(new ProcessOnboardingTokenRegenerationCommand(id)));
 
         [HttpDelete("{id:int}"), Authorize(Policy = "RequireHROrIT")]
+        [ValidateAntiForgeryToken]
         /// <summary>
         /// Deletes data for the Delete operation.
         /// </summary>

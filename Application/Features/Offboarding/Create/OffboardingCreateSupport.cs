@@ -103,14 +103,24 @@ namespace IT_Form.Application.Features.Offboarding.Create
 
             var resignationExtension = Path.GetExtension(resignationLetter.FileName).ToLowerInvariant();
             var uniqueFileName = $"Offboarding_Resignation_{request.Id}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{resignationExtension}";
-            request.ResignationLetterPath = await SensitiveFileStorage.SaveAsync(
+            var storedPath = await SensitiveFileStorage.SaveAsync(
                 resignationLetter,
                 env,
                 "resignations",
                 uniqueFileName,
                 cancellationToken);
 
-            await context.SaveChangesAsync(cancellationToken);
+            request.ResignationLetterPath = storedPath;
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            catch
+            {
+                SensitiveFileStorage.DeleteStoredFile(env, storedPath);
+                request.ResignationLetterPath = null;
+                throw;
+            }
         }
 
         /// <summary>

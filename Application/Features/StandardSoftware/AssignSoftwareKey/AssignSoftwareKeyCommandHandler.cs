@@ -47,6 +47,12 @@ namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
             var previousOnboardingRequestId = key.OnboardingRequestId;
             var currentUser = _currentUserAccessor.User;
 
+            if (!await StandardSoftwareLicenseScopeSupport.CanAccessAsync(
+                    _context, currentUser, key.SoftwareLicenseId, cancellationToken))
+            {
+                return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.NotFound, "Key not found.");
+            }
+
             if (previousOnboardingRequestId.HasValue)
             {
                 var previousEmployee = await _context.OnboardingRequests

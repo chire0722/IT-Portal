@@ -23,7 +23,7 @@ namespace IT_Form.Helpers
         /// Validates the extension, declared MIME type, and actual OOXML ZIP package.
         /// The upload is not trusted merely because its client-supplied filename ends in .xlsx.
         /// </summary>
-        public static bool IsValidExcelFile(IFormFile file, out string errorMessage)
+        public static bool IsValidExcelFile(IFormFile file, out string errorMessage, long maxFileSize = MaxFileSize)
         {
             errorMessage = string.Empty;
 
@@ -33,9 +33,10 @@ namespace IT_Form.Helpers
                 return false;
             }
 
-            if (file.Length > MaxFileSize)
+            if (maxFileSize <= 0 || file.Length > maxFileSize)
             {
-                errorMessage = "The file size exceeds the 10MB limit.";
+                var maxSizeMb = Math.Max(1, (int)Math.Ceiling(maxFileSize / (1024d * 1024d)));
+                errorMessage = $"The file size exceeds the {maxSizeMb}MB limit.";
                 return false;
             }
 

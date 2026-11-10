@@ -88,8 +88,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
                 }
             }
 
-            var hasActiveRequest = await _context.OffboardingRequests
-                .AnyAsync(r => r.OnboardingRequestId == request.OnboardingRequestId && r.Status != RequestStatus.Rejected, cancellationToken);
+            var hasActiveRequest = request.OnboardingRequestId.HasValue &&
+                await _context.OffboardingRequests
+                    .AnyAsync(r => r.OnboardingRequestId == request.OnboardingRequestId && r.Status != RequestStatus.Rejected, cancellationToken);
 
             if (hasActiveRequest)
             {
@@ -113,3 +114,4 @@ namespace IT_Form.Application.Features.Offboarding.Create
         }
     }
 }
+

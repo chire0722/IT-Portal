@@ -112,10 +112,65 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
             return new SoftwareAssignmentResult(newAssignmentsLog, outOfStockLog);
         }
 
+        internal static async Task<string?> ValidateSelectedAssetsAsync(
+            ApplicationDbContext context,
+            OnboardingRequest onboardingRequest,
+            OnboardingViewModel session,
+            CancellationToken cancellationToken)
+        {
+            var selectedAssets = session.IssuedAssets?
+                .Where(asset => asset.ITAssetId.HasValue && asset.ITAssetId.Value > 0)
+                .ToList() ?? [];
+            var selectedIds = selectedAssets.Select(asset => asset.ITAssetId!.Value).ToList();
+            var distinctIds = selectedIds.Distinct().ToList();
+
+            if (selectedIds.Count != distinctIds.Count)
+            {
+                return "The same inventory asset cannot be assigned more than once.";
+            }
+
+            if (distinctIds.Count == 0)
+            {
+                return null;
+            }
+
+            var currentRequestAssetIds = onboardingRequest.IssuedAssets
+                .Where(asset => asset.ITAssetId.HasValue)
+                .Select(asset => asset.ITAssetId!.Value)
+                .ToHashSet();
+
+            var assets = await context.ITAssets
+                .Where(asset => distinctIds.Contains(asset.Id))
+                .ToListAsync(cancellationToken);
+
+            if (assets.Count != distinctIds.Count)
+            {
+                return "One or more selected inventory assets no longer exists or is unavailable.";
+            }
+
+            foreach (var asset in assets)
+            {
+                if (string.IsNullOrWhiteSpace(onboardingRequest.Branch) ||
+                    !string.Equals(asset.Company, onboardingRequest.Branch, StringComparison.OrdinalIgnoreCase))
+                {
+                    return "An inventory asset can only be assigned within the onboarding request company scope.";
+                }
+
+                var isAvailable = asset.Status == AssetStatus.Available;
+                var isAlreadyAssignedToThisRequest = asset.Status == AssetStatus.Issued && currentRequestAssetIds.Contains(asset.Id);
+                if (!isAvailable && !isAlreadyAssignedToThisRequest)
+                {
+                    return $"Inventory asset '{asset.AssetTag}' is not available for assignment.";
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Runs the SyncIssuedAssetsAsync operation.
         /// </summary>
-        internal static async Task SyncIssuedAssetsAsync(
+        internal static async Task<string?> SyncIssuedAssetsAsync(
             ApplicationDbContext context,
             OnboardingRequest onboardingRequest,
             OnboardingViewModel session,
@@ -156,6 +211,22 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
                             newAsset.SerialNumber = itAsset.SerialNumber ?? "N/A";
                             newAsset.Description = asset.Description ?? "Directly Assigned from Inventory";
 
+                            if (!oldItAssetIds.Contains(itAsset.Id))
+                            {
+                                var claimed = await context.ITAssets
+                                    .Where(candidate => candidate.Id == itAsset.Id &&
+                                                        candidate.Status == AssetStatus.Available &&
+                                                        candidate.Company == onboardingRequest.Branch)
+                                    .ExecuteUpdateAsync(
+                                        setters => setters.SetProperty(candidate => candidate.Status, AssetStatus.Issued),
+                                        cancellationToken);
+
+                                if (claimed != 1)
+                                {
+                                    return $"Inventory asset '{itAsset.AssetTag}' became unavailable while the assignment was being saved. Refresh and try again.";
+                                }
+                            }
+
                             itAsset.Status = AssetStatus.Issued;
                             newItAssetIds.Add(itAsset.Id);
                         }
@@ -174,7 +245,7 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
             var unassignedAssetIds = oldItAssetIds.Except(newItAssetIds).ToList();
             if (!unassignedAssetIds.Any())
             {
-                return;
+                return null;
             }
 
             var unassignedAssets = await context.ITAssets
@@ -184,6 +255,8 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
             {
                 asset.Status = AssetStatus.Available;
             }
+
+            return null;
         }
 
         /// <summary>
@@ -216,3 +289,4 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
         IReadOnlyCollection<string> AssignedSoftwareNames,
         IReadOnlyCollection<string> OutOfStockSoftwareNames);
 }
+

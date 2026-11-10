@@ -396,7 +396,6 @@ namespace IT_Form.Controllers
 
             var itAsset = await _context.ITAssets
                 .IgnoreQueryFilters()
-                .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == id);
 
             if (itAsset == null)
@@ -405,21 +404,21 @@ namespace IT_Form.Controllers
             }
             if (!CompanyScopeHelper.CanAccessCompany(User, itAsset.Company)) return Forbid();
 
-            // Hard delete IT asset row from database.
-            // Related maintenance logs are removed by FK cascade; issued history keeps record with ITAssetId set null.
-            var affectedRows = await _context.ITAssets
-                .IgnoreQueryFilters()
-                .Where(a => a.Id == id)
-                .ExecuteDeleteAsync();
-
-            if (affectedRows > 0)
+            if (itAsset.Status == AssetStatus.Issued)
             {
-                await _context.LogActionAsync(
-                    nameof(ITAsset),
-                    id.ToString(),
-                    "Delete",
-                    $"Permanently deleted IT Asset: {itAsset.AssetTag} ({itAsset.Model ?? "N/A"})");
+                return Conflict("Return or dispose of an issued asset before removing it from inventory.");
             }
+
+            itAsset.Status = AssetStatus.Disposed;
+            itAsset.IsDeleted = true;
+            itAsset.DeletedAt = DateTime.UtcNow;
+            itAsset.DeletedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name;
+            await _context.SaveChangesAsync();
+            await _context.LogActionAsync(
+                nameof(ITAsset),
+                id.ToString(),
+                "Delete",
+                $"Soft-deleted IT Asset: {itAsset.AssetTag} ({itAsset.Model ?? "N/A"})");
 
             return RedirectToAction(nameof(Index));
         }
@@ -745,3 +744,4 @@ namespace IT_Form.Controllers
         }
     }
 }
+

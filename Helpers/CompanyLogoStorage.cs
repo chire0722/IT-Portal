@@ -53,7 +53,31 @@ public static class CompanyLogoStorage
                 64 * 1024,
                 FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
-                await file.CopyToAsync(stream, cancellationToken);
+                await using var source = file.OpenReadStream();
+                var buffer = new byte[64 * 1024];
+                long totalBytes = 0;
+                while (true)
+                {
+                    var read = await source.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
+                    if (read == 0)
+                    {
+                        break;
+                    }
+
+                    totalBytes += read;
+                    if (totalBytes > MaxLogoBytes)
+                    {
+                        throw new ValidationException("The company logo exceeds the permitted size.");
+                    }
+
+                    await stream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                }
+
+                if (totalBytes == 0)
+                {
+                    throw new ValidationException("The company logo is empty.");
+                }
+
                 await stream.FlushAsync(cancellationToken);
                 stream.Flush(flushToDisk: true);
             }
@@ -63,9 +87,20 @@ public static class CompanyLogoStorage
         }
         finally
         {
-            if (File.Exists(temporary))
+            try
             {
-                File.Delete(temporary);
+                if (File.Exists(temporary))
+                {
+                    File.Delete(temporary);
+                }
+            }
+            catch (IOException)
+            {
+                // Orphaned temporary files are not published and can be removed by deployment cleanup.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Preserve the original operation result; the private upload directory needs operator cleanup.
             }
         }
     }
@@ -90,9 +125,20 @@ public static class CompanyLogoStorage
             return;
         }
 
-        if (File.Exists(candidate))
+        try
         {
-            File.Delete(candidate);
+            if (File.Exists(candidate))
+            {
+                File.Delete(candidate);
+            }
+        }
+        catch (IOException)
+        {
+            // A failed cleanup must not roll back a successfully committed database update.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // The deployment identity needs to remediate this orphaned managed file.
         }
     }
 }

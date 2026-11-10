@@ -38,7 +38,7 @@ namespace IT_Form.Tests
 
         [Fact]
         /// <summary>
-        /// Runs the Index_ShowsAssetsAcrossCompanies_ForCompanyScopedItUser operation.
+        /// Runs the Index_RestrictsAssetsToAssignedCompany_ForCompanyScopedItUser operation.
         /// </summary>
         public async Task Index_ShowsAssetsAcrossCompanies_ForCompanyScopedItUser()
         {

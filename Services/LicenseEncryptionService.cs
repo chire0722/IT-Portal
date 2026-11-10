@@ -74,9 +74,14 @@ namespace IT_Form.Services
                 {
                     return _protector.Unprotect(cipherText[DataProtectionPrefix.Length..]);
                 }
-                catch (CryptographicException)
+                catch (CryptographicException ex)
                 {
-                    return cipherText;
+                    // A value carrying our authenticated Data Protection prefix must never
+                    // be silently returned as if decryption had succeeded. This usually means
+                    // the key ring is missing, mismatched, or the stored payload was modified.
+                    throw new CryptographicException(
+                        "Protected software-license data could not be decrypted. Verify the Data Protection key ring and application name.",
+                        ex);
                 }
             }
 

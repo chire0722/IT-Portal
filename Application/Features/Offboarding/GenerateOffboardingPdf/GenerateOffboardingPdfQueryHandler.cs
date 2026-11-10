@@ -76,7 +76,7 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate PDF for offboarding request #{Id}", request.Id);
-                return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", request.Id);
+                return ProcessResult<BinaryFilePayload>.Failure("Unable to generate the PDF. Please retry or contact IT.", "Details", request.Id);
             }
         }
     }

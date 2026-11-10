@@ -313,7 +313,7 @@ public sealed class GetSignaturePdfQueryHandler
                 new SignaturePdfFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Onboarding_{onboardingRequest.FullName?.Replace(" ", "_")}.pdf"));
+                    $"Onboarding_{CreateSafeDownloadName(onboardingRequest.FullName)}.pdf"));
         }
 
         if (string.Equals(request.Type, "Offboarding", StringComparison.OrdinalIgnoreCase))
@@ -358,7 +358,7 @@ public sealed class GetSignaturePdfQueryHandler
                 new SignaturePdfFilePayload(
                     pdfBytes,
                     "application/pdf",
-                    $"Offboarding_{offboardingRequest.FullName?.Replace(" ", "_")}.pdf"));
+                    $"Offboarding_{CreateSafeDownloadName(offboardingRequest.FullName)}.pdf"));
         }
 
         return new(GetSignaturePdfStatus.Invalid, Message: "Unknown request type.");

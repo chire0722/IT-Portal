@@ -39,7 +39,7 @@ A source-code feature does not automatically satisfy a CSF outcome. Evidence mus
 |---|---|---|
 | PR.AA — Identity Management, Authentication and Access Control | ASP.NET Identity, Argon2id, lockout/rate-limit controls, role/claim checks and company-scope enforcement exist in source; onboarding deletion now checks HR/IT + company scope in controller and handler; secure downloads authorize before file-existence checks; bulk offboarding export rejects mixed-scope selections | MFA policy, full route-level authorization matrix execution, download/export/signed-link negative tests, privileged access review — IT/Security |
 | PR.AT — Awareness and Training | No training evidence in repository | Role-based privacy/security training and completion records — HR/Privacy |
-| PR.DS — Data Security | Marked-column Data Protection conversion; protected SQLite backups; private sensitive-upload directory; fail-closed ClamAV scans on resignation-letter and company-logo uploads | Full data classification, upload-scanner coverage for every file entry point, encryption scope, certificate-protected key ring, encrypted volumes, key custody/rotation/recovery and restore test — IT |
+| PR.DS — Data Security | Marked-column Data Protection conversion; protected SQLite backups; private sensitive-upload directory; fail-closed ClamAV scans on resignation-letter uploads, company logos, and supported Excel import workflows | Verify every remaining upload entry point, production scanner deployment/health/alerting and quarantine requirements; complete data classification, encryption scope, certificate-protected key ring, encrypted volumes, key custody/rotation/recovery and restore test — IT |
 | PR.PS — Platform Security | Production secure-cookie and HTTP header hardening; pinned CI actions; dependency checks | Staging/production hardening evidence, patch SLA, secure proxy/TLS, host ACLs, runtime/OS compatibility — IT |
 | PR.IR — Technology Infrastructure Resilience | Startup/daily protected backup and restore service exist | Off-host immutable backup, independent key recovery, RTO/RPO, monitored jobs and witnessed restore exercise — IT/Business Continuity |
 
@@ -75,7 +75,7 @@ A source-code feature does not automatically satisfy a CSF outcome. Evidence mus
 | P0 | Implement and test DSAR workflow | Case lifecycle, identity verification, export, correction, deletion approval and audit tests |
 | P0 | Approve and exercise incident response | Incident register, tabletop report, 72-hour/7-day decision timeline |
 | P1 | Complete encryption inventory and Data Protection key custody | Field inventory, encrypted-volume proof, protected key ring, rotation and restore test |
-| P1 | Add malware scanning and quarantine | Scanner integration, fail-closed tests, EICAR test evidence and alerting |
+| P1 | Complete malware scanning coverage and quarantine/alerting decisions | Route-by-route upload inventory, scanner integration for all required paths, fail-closed tests, isolated EICAR test evidence, scanner health alerts and approved quarantine procedure |
 | P1 | Complete authorization negative tests | Cross-company, download, API, export and signed-link test results |
 | P1 | Verify backup resilience | Off-host/immutable copy, RTO/RPO and restore report |
 | P1 | Configure branch protection and triage CodeQL alerts | Ruleset screenshot/API evidence, required checks, alert disposition |

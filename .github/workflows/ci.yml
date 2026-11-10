@@ -118,9 +118,17 @@ jobs:
         run: gitleaks git --redact --exit-code 1 --log-opts="--all --no-merges"
 
   codeql:
-    name: CodeQL security analysis
+    name: CodeQL - ${{ matrix.language }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build_mode: autobuild
+          - language: actions
+            build_mode: none
     permissions:
       actions: read
       contents: read
@@ -132,8 +140,8 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
-          languages: csharp, actions
-          build-mode: autobuild
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build_mode }}
           queries: security-extended
 
       - name: Perform CodeQL analysis

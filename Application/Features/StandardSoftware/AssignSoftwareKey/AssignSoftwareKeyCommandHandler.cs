@@ -58,7 +58,7 @@ namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
                 var previousEmployee = await _context.OnboardingRequests
                     .AsNoTracking()
                     .FirstOrDefaultAsync(employee => employee.Id == previousOnboardingRequestId.Value, cancellationToken);
-                if (previousEmployee != null && !CompanyScopeHelper.CanAccessCompany(currentUser, previousEmployee.Branch))
+                if (previousEmployee != null && !StandardSoftwareLicenseScopeSupport.CanAccessEmployee(currentUser, previousEmployee.Branch))
                 {
                     return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.EmployeeNotFound, "Employee not found.");
                 }
@@ -67,7 +67,7 @@ namespace IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey
             if (request.OnboardingRequestId.HasValue && request.OnboardingRequestId.Value > 0)
             {
                 var employee = await _context.OnboardingRequests.FindAsync(new object[] { request.OnboardingRequestId.Value }, cancellationToken);
-                if (employee == null || !CompanyScopeHelper.CanAccessCompany(currentUser, employee.Branch))
+                if (employee == null || !StandardSoftwareLicenseScopeSupport.CanAccessEmployee(currentUser, employee.Branch))
                 {
                     return new AssignSoftwareKeyResult(AssignSoftwareKeyStatus.EmployeeNotFound, "Employee not found.");
                 }

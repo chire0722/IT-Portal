@@ -103,6 +103,48 @@ namespace IT_Form.Tests
             };
         }
 
+
+        [Fact]
+        public void UploadFileSignatureValidator_AcceptsPdfWithMatchingMimeAndSignature()
+        {
+            var file = CreateFormFile(Encoding.ASCII.GetBytes("%PDF-1.7"), "resignation.pdf", "application/pdf");
+
+            Assert.True(UploadFileSignatureValidator.HasAllowedSignature(file, ".pdf"));
+        }
+
+        [Fact]
+        public void UploadFileSignatureValidator_RejectsTextRenamedAsPdf()
+        {
+            var file = CreateFormFile(Encoding.UTF8.GetBytes("<html>not a pdf</html>"), "resignation.pdf", "application/pdf");
+
+            Assert.False(UploadFileSignatureValidator.HasAllowedSignature(file, ".pdf"));
+        }
+
+        [Fact]
+        public void UploadFileSignatureValidator_AcceptsPngWithMatchingMimeAndSignature()
+        {
+            var signature = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00 };
+            var file = CreateFormFile(signature, "damage.png", "image/png");
+
+            Assert.True(UploadFileSignatureValidator.HasAllowedSignature(file, ".png"));
+        }
+
+        [Fact]
+        public void UploadFileSignatureValidator_RejectsMismatchedMimeType()
+        {
+            var file = CreateFormFile(Encoding.ASCII.GetBytes("%PDF-1.7"), "resignation.pdf", "text/html");
+
+            Assert.False(UploadFileSignatureValidator.HasAllowedSignature(file, ".pdf"));
+        }
+
+        [Fact]
+        public void UploadFileSignatureValidator_AcceptsWebmEbmlSignature()
+        {
+            var file = CreateFormFile(new byte[] { 0x1A, 0x45, 0xDF, 0xA3, 0x00 }, "proof.webm", "video/webm");
+
+            Assert.True(UploadFileSignatureValidator.HasAllowedSignature(file, ".webm"));
+        }
+
         private static byte[] CreateWorkbook(bool includeMacro = false)
         {
             using var stream = new MemoryStream();

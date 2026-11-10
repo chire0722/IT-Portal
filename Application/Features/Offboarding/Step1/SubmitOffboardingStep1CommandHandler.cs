@@ -86,14 +86,20 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 return await OffboardingStep1Support.FailureAsync(_context, returnValidation, command.Request, cancellationToken);
             }
 
-            await OffboardingStep1Support.SaveDamageFileAsync(_env, existing, command.Id, command.HardwareDamageImage, cancellationToken);
-            await OffboardingStep1Support.SaveReturnFileAsync(_env, existing, command.Id, command.HardwareReturnImage, cancellationToken);
+            var previousDamageFilePath = await OffboardingStep1Support.SaveDamageFileAsync(
+                _env, existing, command.Id, command.HardwareDamageImage, cancellationToken);
+            var previousReturnFilePath = await OffboardingStep1Support.SaveReturnFileAsync(
+                _env, existing, command.Id, command.HardwareReturnImage, cancellationToken);
 
             existing.UpdatedAt = DateTime.UtcNow;
 
             await OffboardingStep1Support.MarkReturnedAssetsAsync(_context, command.ReturnedAssetIds, cancellationToken);
 
             await _context.SaveChangesAsync(cancellationToken);
+
+            // Delete old files only after the new file references have been persisted.
+            SensitiveFileStorage.DeleteStoredFile(_env, previousDamageFilePath);
+            SensitiveFileStorage.DeleteStoredFile(_env, previousReturnFilePath);
 
             if (string.Equals(command.SaveAction, "draft", StringComparison.OrdinalIgnoreCase))
             {

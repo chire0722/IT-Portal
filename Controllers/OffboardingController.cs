@@ -76,7 +76,9 @@ public class OffboardingController : AppControllerBase
         return model != null ? Json(model) : NotFound();
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR"),
+     RequestSizeLimit(12 * 1024 * 1024),
+     RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
     /// <summary>
     /// Creates data for the Create operation.
     /// </summary>
@@ -96,7 +98,9 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> Step1(int? id)
         => id.HasValue ? HandleProcessResult(await _sender.Send(new GetOffboardingStep1Query(id.Value))) : NotFound();
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireIT")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireIT"),
+     RequestSizeLimit(62 * 1024 * 1024),
+     RequestFormLimits(MultipartBodyLengthLimit = 62 * 1024 * 1024)]
     /// <summary>
     /// Runs the Step1 operation.
     /// </summary>

@@ -80,12 +80,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 return "Invalid file type. Allowed: PDF, images (.jpg, .jpeg, .png), and videos (.mp4, .mov, .webm).";
             }
 
-            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
-            if (!contentType.StartsWith("image/") &&
-                !contentType.StartsWith("video/") &&
-                contentType != "application/pdf")
+            if (!UploadFileSignatureValidator.HasAllowedSignature(file, DamageExtensions))
             {
-                return "Invalid file content. Only image, video, or PDF files are allowed for hardware proof.";
+                return "Invalid file content. The file signature must match an allowed image, video, or PDF format.";
             }
 
             return null;
@@ -107,11 +104,10 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
             if (!ReturnExtensions.Contains(extension) ||
-                (!contentType.StartsWith("image/") && contentType != "application/pdf"))
+                !UploadFileSignatureValidator.HasAllowedSignature(file, ReturnExtensions))
             {
-                return "Invalid return file type. Only PDF and images (.jpg, .jpeg, .png) are allowed.";
+                return "Invalid return file type. Only valid PDF and JPEG/PNG files are allowed.";
             }
 
             return null;
@@ -120,7 +116,7 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         /// <summary>
         /// Saves data for the SaveDamageFileAsync operation.
         /// </summary>
-        internal static async Task SaveDamageFileAsync(
+        internal static async Task<string?> SaveDamageFileAsync(
             IWebHostEnvironment env,
             OffboardingRequest existing,
             int requestId,
@@ -129,24 +125,27 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         {
             if (hardwareDamageImage == null || hardwareDamageImage.Length <= 0)
             {
-                return;
+                return null;
             }
 
             var extension = Path.GetExtension(hardwareDamageImage.FileName).ToLowerInvariant();
             var fileName = $"Offboarding_Damage_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareDamageImagePath);
+            var previousPath = existing.HardwareDamageImagePath;
             existing.HardwareDamageImagePath = await SensitiveFileStorage.SaveAsync(
                 hardwareDamageImage,
                 env,
                 "offboarding",
                 fileName,
                 cancellationToken);
+
+            // The caller deletes the previous file only after the new path is committed.
+            return previousPath;
         }
 
         /// <summary>
         /// Saves data for the SaveReturnFileAsync operation.
         /// </summary>
-        internal static async Task SaveReturnFileAsync(
+        internal static async Task<string?> SaveReturnFileAsync(
             IWebHostEnvironment env,
             OffboardingRequest existing,
             int requestId,
@@ -155,25 +154,27 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         {
             if (hardwareReturnImage == null || hardwareReturnImage.Length <= 0)
             {
-                return;
+                return null;
             }
 
             var extension = Path.GetExtension(hardwareReturnImage.FileName).ToLowerInvariant();
-            var contentType = hardwareReturnImage.ContentType?.ToLowerInvariant() ?? string.Empty;
             if (!ReturnExtensions.Contains(extension) ||
-                (!contentType.StartsWith("image/") && contentType != "application/pdf"))
+                !UploadFileSignatureValidator.HasAllowedSignature(hardwareReturnImage, ReturnExtensions))
             {
-                return;
+                return null;
             }
 
             var fileName = $"Offboarding_Return_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareReturnImagePath);
+            var previousPath = existing.HardwareReturnImagePath;
             existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveAsync(
                 hardwareReturnImage,
                 env,
                 "offboarding",
                 fileName,
                 cancellationToken);
+
+            // The caller deletes the previous file only after the new path is committed.
+            return previousPath;
         }
 
         /// <summary>

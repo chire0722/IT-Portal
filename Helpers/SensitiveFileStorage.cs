@@ -87,7 +87,8 @@ namespace IT_Form.Helpers
             var safeFileName = Path.GetFileName(fileName);
             var physicalPath = Path.Combine(GetCategoryRoot(environment, category), safeFileName);
 
-            await using var stream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            // Refuse filename collisions instead of silently overwriting an existing sensitive file.
+            await using var stream = new FileStream(physicalPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             await file.CopyToAsync(stream, cancellationToken);
 
             return BuildStoredPath(category, safeFileName);

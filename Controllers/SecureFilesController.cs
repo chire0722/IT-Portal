@@ -69,6 +69,12 @@ namespace IT_Form.Controllers
                 contentType = "application/octet-stream";
             }
 
+            // PDFs are downloaded rather than rendered inline; verified images/videos remain previewable.
+            if (string.Equals(Path.GetExtension(fileName), ".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                return PhysicalFile(physicalPath, contentType, Path.GetFileName(fileName));
+            }
+
             return PhysicalFile(physicalPath, contentType);
         }
 

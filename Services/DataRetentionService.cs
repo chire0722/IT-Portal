@@ -11,8 +11,9 @@ using Microsoft.Extensions.Options;
 namespace IT_Form.Services
 {
     /// <summary>
-    /// Enforces retention by anonymising old HR/IT request records, deleting sensitive uploads,
-    /// purging expired security tokens, and redacting old audit payloads.
+    /// Enforces retention by redacting selected identifiers in old HR/IT request records,
+    /// deleting sensitive uploads, purging expired security tokens, and redacting old audit payloads.
+    /// Remaining business metadata means this is not a guarantee of irreversible anonymisation.
     /// </summary>
     public class DataRetentionService : BackgroundService
     {
@@ -81,21 +82,21 @@ namespace IT_Form.Services
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             var cutoff = DateTime.UtcNow - RecordRetentionPeriod;
-            var anonymized = await AnonymizeExpiredOffboardingAsync(db, cutoff, ct);
-            anonymized += await AnonymizeExpiredOnboardingAsync(db, cutoff, ct);
+            var redacted = await RedactExpiredOffboardingAsync(db, cutoff, ct);
+            redacted += await RedactExpiredOnboardingAsync(db, cutoff, ct);
 
-            if (anonymized > 0)
+            if (redacted > 0)
             {
                 await db.SaveChangesAsync(ct);
                 _logger.LogInformation(
-                    "DataRetentionService: anonymized {Count} records older than {Cutoff:yyyy-MM-dd}.",
-                    anonymized,
+                    "DataRetentionService: redacted {Count} records older than {Cutoff:yyyy-MM-dd}.",
+                    redacted,
                     cutoff);
             }
             else
             {
                 _logger.LogDebug(
-                    "DataRetentionService: no records require anonymization (cutoff: {Cutoff:yyyy-MM-dd}).",
+                    "DataRetentionService: no records require retention redaction (cutoff: {Cutoff:yyyy-MM-dd}).",
                     cutoff);
             }
 
@@ -104,9 +105,9 @@ namespace IT_Form.Services
         }
 
         /// <summary>
-        /// Runs the AnonymizeExpiredOffboardingAsync operation.
+        /// Runs the RedactExpiredOffboardingAsync operation.
         /// </summary>
-        private async Task<int> AnonymizeExpiredOffboardingAsync(
+        private async Task<int> RedactExpiredOffboardingAsync(
             ApplicationDbContext db,
             DateTime cutoff,
             CancellationToken ct)
@@ -128,6 +129,10 @@ namespace IT_Form.Services
                 req.EmployeeID = "[REDACTED]";
                 req.EmailAddress = "redacted@redacted.com";
                 req.HODEmail = "redacted@redacted.com";
+                req.CreatedByUserId = null;
+                req.ApprovedByUserId = null;
+                req.RejectedByUserId = null;
+                req.AssignedHodId = null;
                 req.ProjectCode = null;
                 req.ForwardToEmail = null;
                 req.EmailForwardName = null;
@@ -161,9 +166,9 @@ namespace IT_Form.Services
         }
 
         /// <summary>
-        /// Runs the AnonymizeExpiredOnboardingAsync operation.
+        /// Runs the RedactExpiredOnboardingAsync operation.
         /// </summary>
-        private async Task<int> AnonymizeExpiredOnboardingAsync(
+        private async Task<int> RedactExpiredOnboardingAsync(
             ApplicationDbContext db,
             DateTime cutoff,
             CancellationToken ct)
@@ -182,6 +187,8 @@ namespace IT_Form.Services
                 req.EmailAddress = "redacted@redacted.com";
                 req.ContactNumber = "[REDACTED]";
                 req.HODEmail = "redacted@redacted.com";
+                req.CreatedByUserId = null;
+                req.RejectedByUserId = null;
                 req.DeskNumber = null;
                 req.RequesterSignature = null;
                 req.RequesterSignatureHmac = null;

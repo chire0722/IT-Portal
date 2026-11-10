@@ -44,10 +44,10 @@ Use **NIST Cybersecurity Framework (CSF) 2.0, NIST CSWP 29 (26 February 2024)** 
 | Authentication | ASP.NET Identity, password policy, lockout controls, security-stamp validation | Implemented; operational review remains |
 | Authorization | Role/claim policies and company-scope filtering exist across application flows | Partially verified; needs route-by-route negative tests |
 | Sensitive fields | EF Core value converters encrypt fields marked with `EncryptColumn`; audit changes redact marked values | Implemented for marked fields only; inventory all personal-data fields |
-| Sensitive files | Resignation/offboarding files are stored under `App_Data/SecureUploads`, outside the static web root; download endpoint applies authenticated and company-scoped checks | Implemented; filesystem ACL and backup access require deployment verification |
+| Sensitive files | Resignation/offboarding files are stored under `App_Data/SecureUploads`, outside the static web root; downloads apply authenticated and company-scoped checks; PDF/image/video uploads require matching MIME and magic-byte signatures | Implemented for supported formats; filesystem ACL, image re-encoding, and backup access require deployment verification |
 | Upload validation | Excel uploads now validate extension, MIME declaration, OOXML package structure, ZIP entry limits, macro presence, and endpoint-specific size limits | Implemented for Excel path; other upload types need content-signature validation review |
 | Audit | Audit payload sanitizer redacts sensitive property names and long/data-URI values | Partially implemented; test for nested, renamed, and free-text personal data |
-| Retention | Background service anonymises completed/rejected onboarding/offboarding records, removes offboarding attachments, purges expired tokens, and redacts old audit payloads | Implemented but retention periods and deletion coverage need policy approval |
+| Retention | Background service redacts selected identifiers in completed/rejected onboarding/offboarding records, removes offboarding attachments, purges expired tokens, and redacts old audit payloads | Partially implemented; actor references are cleared, but remaining business metadata means irreversible anonymisation is not established |
 | Backups | SQLite snapshots are protected using ASP.NET Core Data Protection before writing backup files | Implemented; protection-key custody and restore testing remain critical |
 | CI security | Build, tests, Dependency Review, Gitleaks, and CodeQL are in the workflow | Implemented; alerts must still be reviewed and remediated |
 | HTTP security headers | CSP, frame denial, MIME sniffing protection, referrer policy, and permissions policy are present | Partial; CSP still contains unsafe directives and internal HTTP origins |
@@ -93,7 +93,7 @@ Do not infer a single universal notification clock for all Malaysian incidents f
 
 1. The current default record/audit retention is 2,555 days (approximately seven years); security-token retention is 30 days. These are application defaults, not proof that seven years is necessary or legally required for every record.
 2. Approve a record-class retention schedule with a documented purpose/legal basis and owner for each data category.
-3. Add deletion/anonymisation coverage for every personal-data store, attachments, generated PDFs, exports, temporary files, logs, backups, and downstream systems.
+3. Add deletion/redaction coverage for every personal-data store, attachments, generated PDFs, exports, temporary files, logs, backups, and downstream systems. The current job clears creator/approver/rejector/HOD references after the configured period, but still retains some dates and business metadata; do not describe the result as irreversible anonymisation without a re-identification assessment.
 4. Define backup expiry and deletion behaviour, including how restored backups are brought back under current deletion/retention rules.
 5. Test that retention jobs run, report failures, and do not silently leave orphaned files or personal data.
 
@@ -112,7 +112,7 @@ Create and maintain an approved vendor/sub-processor register covering hosting, 
 
 1. Reduce CSP use of `unsafe-eval` and `unsafe-inline`; move toward nonce/hash-based scripts after inventorying inline scripts and testing every view.
 2. Remove unused hard-coded private HTTP origins from CSP after verifying no supported deployment depends on them.
-3. Validate file signatures/content for PDF/image uploads, not just client-supplied extension and MIME type; consider safe re-encoding for images and attachment disposition for sensitive documents.
+3. PDF/image/video uploads now validate allowed extensions, MIME types, and magic-byte signatures; PDF downloads are forced to attachment. Add safe image re-encoding and deeper file-format parsing if the threat model requires it. Upload endpoints have explicit request-body limits aligned to per-file limits.
 4. Complete a route-by-route authorization matrix and negative tests for cross-company access, exports, downloads, APIs, and signature/token endpoints.
 5. Review request/audit/application logs for personal data, tokens, query strings, exception content, and retention.
 6. Review Data Protection key permissions and SQLite file permissions on every supported deployment platform.

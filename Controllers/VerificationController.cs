@@ -126,9 +126,7 @@ namespace IT_Form.Controllers
             {
                 token = newToken.Token,
                 link = link,
-                expiresAtUtc = HasExpiringEmployeeContext(newToken)
-                    ? newToken.CreatedAt.AddMinutes(GetTokenLifetimeMinutes())
-                    : (DateTime?)null,
+                expiresAtUtc = newToken.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()),
                 assignmentMode = user == null ? "asset-only" : "employee-specific",
                 employeeName = user?.FullName
             });
@@ -282,12 +280,6 @@ namespace IT_Form.Controllers
         }
 
         /// <summary>
-        /// Runs the HasExpiringEmployeeContext operation.
-        /// </summary>
-        private static bool HasExpiringEmployeeContext(DeviceVerificationToken token)
-            => !string.IsNullOrWhiteSpace(token.EmployeeId);
-
-        /// <summary>
         /// Runs the IsExpired operation.
         /// </summary>
         private void SetPrivateNoStoreHeaders()
@@ -299,8 +291,7 @@ namespace IT_Form.Controllers
         }
 
         private bool IsExpired(DeviceVerificationToken token)
-            => HasExpiringEmployeeContext(token) &&
-               token.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()) <= DateTime.UtcNow;
+            => token.CreatedAt.AddMinutes(GetTokenLifetimeMinutes()) <= DateTime.UtcNow;
 
         /// <summary>
         /// Builds the value returned by the BuildPowerShellAuditScript operation.

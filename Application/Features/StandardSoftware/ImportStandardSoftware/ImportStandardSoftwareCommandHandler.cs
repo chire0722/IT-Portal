@@ -52,6 +52,10 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
             {
                 return new ImportStandardSoftwareResult(false, null, "The Excel file appears to be empty.");
             }
+            if (usedRange.RowCount() > 5001 || usedRange.ColumnCount() > 20)
+            {
+                return new ImportStandardSoftwareResult(false, null, "Software import is limited to 5,000 data rows and 20 columns.");
+            }
 
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
             var rows = usedRange.RowsUsed().Skip(1);

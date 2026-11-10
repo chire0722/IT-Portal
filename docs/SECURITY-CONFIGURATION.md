@@ -45,3 +45,22 @@ Deleting a file from the current tree does not erase old Git commits. A complete
 ## Build outputs
 
 The `.codexbuild/` and `.build-verify/` directories are generated workspaces, not source. They are removed from the current branch and ignored to prevent binaries, copied configuration, and stale runtime files from being committed again.
+
+
+## Coordinated Git-history cleanup (manual maintenance window)
+
+The current Gitleaks gate intentionally scans reachable Git history and will remain red while the historical findings exist. Do not add broad allowlists just to make the check green.
+
+Before any history rewrite:
+
+1. Revoke/rotate the SMTP password and Inventory API key with their providers. Treat the previously committed HMAC key and Data Protection master key as compromised if they were used in a real environment.
+2. For HMAC, first plan the signature-record migration described above. Do not rotate blindly if existing signatures must remain verifiable.
+3. Freeze repository pushes, create and verify a mirror backup, and notify anyone with a clone or fork.
+4. In a separate mirror clone, use `git-filter-repo` (version 2.47 or later with `--sensitive-data-removal`) to remove the generated workspace paths, all historical `appsettings.Development.json` copies, and `App_Data/DataProtection-Keys/`.
+5. Use `git-filter-repo --replace-text` with a **private local replacement file outside the repository** to scrub any previously committed values from historical `appsettings.json` versions. Never commit that replacement file.
+6. Run the full-history Gitleaks scan again and inspect the changed refs before publishing the rewrite.
+7. Only after explicit maintainer approval, force-push the rewritten refs and coordinate fresh clones/rebases. Contact GitHub Support if cached views or pull-request references need removal.
+
+A history rewrite changes commit IDs and can affect pull requests, forks, tags, and existing clones. This PR deliberately does not perform a force-push or rewrite `main`.
+
+Reference: [GitHub Docs — Removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository).

@@ -57,10 +57,11 @@ public sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileC
                 "Email signature image",
                 cancellationToken);
 
-            using var memoryStream = new MemoryStream();
-            await request.SignatureImageFile.CopyToAsync(memoryStream, cancellationToken);
-            var base64 = Convert.ToBase64String(memoryStream.ToArray());
-            user.EmailSignatureImage = $"data:{request.SignatureImageFile.ContentType};base64,{base64}";
+            var reencoded = await ImageReencodingHelper.ReencodeAsync(
+                request.SignatureImageFile,
+                cancellationToken);
+            var base64 = Convert.ToBase64String(reencoded.Bytes);
+            user.EmailSignatureImage = $"data:{reencoded.ContentType};base64,{base64}";
         }
 
         (await _userManager.UpdateAsync(user)).EnsureSucceeded();
@@ -84,3 +85,4 @@ public sealed class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileC
         return Unit.Value;
     }
 }
+

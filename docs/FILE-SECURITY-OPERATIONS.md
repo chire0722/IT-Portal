@@ -14,7 +14,7 @@
 | Partial upload cleanup | `SaveAsync` now writes to a unique temporary file, cleans it on failure/cancellation, and publishes via same-volume move | Implemented in source; new regression tests added, CI result pending |
 | Excel parsing | PR #3 description records OOXML structure, required-entry, duplicate-entry, macro, ZIP-entry and size checks | Implemented in reviewed PR scope; verify each import call site |
 | Other upload validation | PR #3 description records extension, MIME and magic-byte checks for PDF/image/video uploads | Implemented in reviewed PR scope; call-site coverage still needs proof |
-| Malware scanning | No scanner integration or clean/quarantine state was evidenced in the source reviewed for this stage | **Not implemented / unverified — release blocker for sensitive production uploads** |
+| Malware scanning | ClamAV INSTREAM scanner is implemented and invoked before offboarding resignation-letter requests are persisted; scanner errors and missing configuration fail closed | **Partially implemented** — company logos, spreadsheet imports and other upload surfaces are not yet scanned; production daemon configuration/health still require verification |
 | Parser isolation | No isolated parser worker/container was evidenced | **Not verified** |
 
 ## 2. Required upload lifecycle
@@ -32,7 +32,20 @@
 
 A file must not become downloadable merely because extension/MIME/magic-byte validation passed. Those checks identify format inconsistencies; they do not establish that the content is benign.
 
-## 3. Malware scanner integration decision
+## 3. Malware scanner integration
+
+The application now provides `IFileMalwareScanner` backed by `ClamAvMalwareScanner`. The offboarding resignation-letter workflow scans the uploaded stream before persisting the request. The integration uses ClamAV's NUL-terminated `zINSTREAM` protocol and maps `OK` to clean, `FOUND` to infected, and connection/configuration/timeout/unknown responses to unavailable. Unavailable is rejected, not allowed.
+
+Configuration:
+- `IT_FORM__MalwareScanning__ClamAvHost`
+- `IT_FORM__MalwareScanning__ClamAvPort` (default 3310)
+- `IT_FORM__MalwareScanning__TimeoutSeconds` (default 30; bounded 1–120)
+
+The ClamAV daemon must be deployed on loopback or an isolated private network with firewall rules permitting only the application host. Do not expose clamd's unauthenticated TCP port publicly. Monitor signature freshness and daemon availability.
+
+**Coverage remains partial:** integrate the same scanner into company logo uploads, spreadsheet imports and every other upload/attachment entry point before claiming system-wide malware scanning. Do not silently bypass scanning for a scanner outage.
+
+
 
 The deployment owner must select and operate an approved scanner integration (for example, an internally managed ClamAV service or an enterprise ICAP-compatible service). Do not hard-code a scanner hostname or secret in the repository.
 

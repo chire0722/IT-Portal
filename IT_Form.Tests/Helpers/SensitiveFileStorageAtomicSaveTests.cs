@@ -8,6 +8,27 @@ namespace IT_Form.Tests.Helpers;
 
 public sealed class SensitiveFileStorageAtomicSaveTests
 {
+    [Theory]
+    [InlineData("/secure-files/resignations/..")]
+    [InlineData("/secure-files/resignations/.")]
+    [InlineData("/secure-files/resignations/sub/../document.pdf")]
+    public void TryExtractCategoryAndFileName_RejectsDotSegments(string storedPath)
+    {
+        Assert.False(SensitiveFileStorage.TryExtractCategoryAndFileName(
+            storedPath,
+            out _,
+            out _));
+    }
+
+    [Fact]
+    public void BuildStoredPath_RejectsDotFileName()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            SensitiveFileStorage.BuildStoredPath(
+                SensitiveFileStorage.ResignationsCategory,
+                ".."));
+    }
+
     [Fact]
     public async Task SaveAsync_RemovesPartialTemporaryFile_WhenCopyFails()
     {

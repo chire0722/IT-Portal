@@ -602,7 +602,7 @@ namespace IT_Form.Controllers
             {
                 string toStr = string.Join(";", model.To);
                 string ccStr = model.Cc != null ? string.Join(";", model.Cc) : "";
-                _outlookService.DisplayEmail(toStr, model.Subject, model.BodyHtml, pdfBytes, attachmentName, ccStr, model.SignatureImage);
+                _outlookService.DisplayEmail(toStr, model.Subject, model.BodyHtml ?? string.Empty, pdfBytes, attachmentName, ccStr, model.SignatureImage);
                 TempData["SuccessMessage"] = "Email sent successfully.";
             }
             catch (Exception ex)

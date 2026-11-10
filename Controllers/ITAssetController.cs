@@ -533,6 +533,8 @@ namespace IT_Form.Controllers
         // POST: ITAsset/BulkImport
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
         /// <summary>
         /// Runs the BulkImport operation.
         /// </summary>

@@ -495,6 +495,7 @@ public class OnboardingFeatureSliceTests
         {
             Id = 801,
             FullName = "IT Draft",
+            Branch = "HQ",
             Status = RequestStatus.PendingITApproval,
             FolderPermissions = new List<FolderPermission>(),
             RequestSoftware = new List<RequestSoftware>(),

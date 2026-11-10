@@ -51,6 +51,43 @@ public class CompanyScopeFeatureSliceTests
 
     [Fact]
     /// <summary>
+    /// Runs the CreateItAssetHandler_RejectsIssuedAssetAssignmentAcrossCompanies operation.
+    /// </summary>
+    public async Task CreateItAssetHandler_RejectsIssuedAssetAssignmentAcrossCompanies()
+    {
+        await using var context = CreateContext();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 901,
+            FullName = "Beta Employee",
+            Branch = "Beta",
+            Status = RequestStatus.Completed
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new CreateItAssetCommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
+
+        var result = await handler.Handle(
+            new CreateItAssetCommand(
+                new ITAsset
+                {
+                    AssetTag = "TAG-101",
+                    Company = "HQ",
+                    Status = AssetStatus.Issued
+                },
+                901,
+                null),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("same company", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(await context.ITAssets.ToListAsync());
+    }
+
+    [Fact]
+    /// <summary>
     /// Saves data for the SaveOnboardingStep1Handler_ReturnsForbidden_WhenHrUserHasNoCompanyAssignment operation.
     /// </summary>
     public async Task SaveOnboardingStep1Handler_ReturnsForbidden_WhenHrUserHasNoCompanyAssignment()
@@ -132,3 +169,4 @@ public class CompanyScopeFeatureSliceTests
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
     }
 }
+

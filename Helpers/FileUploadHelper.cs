@@ -75,11 +75,11 @@ namespace IT_Form.Helpers
 
                 foreach (var entry in archive.Entries)
                 {
-                    var normalizedEntryName = entry.FullName.Replace('\\\\', '/');
+                    var normalizedEntryName = entry.FullName.Replace('\\', '/');
                     var entrySegments = normalizedEntryName.Split('/', StringSplitOptions.RemoveEmptyEntries);
                     var unixFileType = (entry.ExternalAttributes >> 16) & 0xF000;
-                    var hasUnsafePath = normalizedEntryName.StartsWith('/', StringComparison.Ordinal)
-                        || normalizedEntryName.Contains(':', StringComparison.Ordinal)
+                    var hasUnsafePath = normalizedEntryName.StartsWith("/", StringComparison.Ordinal)
+                        || normalizedEntryName.Contains(':')
                         || entrySegments.Any(segment => segment is "." or "..");
 
                     if (string.IsNullOrWhiteSpace(entry.FullName) ||

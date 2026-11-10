@@ -4,21 +4,21 @@
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
 **Pull request:** #3 — CI/CD hardening: .NET 10 build, tests, CodeQL and Dependabot  
-**Audited code head before this report-only commit:** `2e16f8378af2f212fee5e675d75c693257ea1ba3`  
+**Audited code head:** `30fe9ffbfc3d65b3ca3ab2b766ffd77325b999fc`  
 **Status:** Engineering remediation and source-level verification completed for this iteration. This is not a penetration-test attestation, legal opinion, certification, or declaration of GDPR, Malaysian PDPA, or NIST conformity.
 
 ## 1. Executive summary
 
 This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, audit privacy, HMAC key rotation, and a restricted DSAR case workflow.
 
-The final GitHub Actions run for the current code head passed 389 tests (334 application tests and 55 audit tests). A local current-source build also passed. The local test host failed to connect during discovery after 90 seconds, so GitHub is the authoritative current-head test evidence.
+The final GitHub Actions run for the current code head passed 391 tests (336 application tests and 55 audit tests). GitHub is the authoritative current-head build and test evidence.
 
 - .NET 10 application build on current source: passed with a local NU1900 package-vulnerability-feed access warning; the previously reported nullable warning is fixed.
-- Current-head `IT_Form.Tests`: 334 passed, 0 failed.
+- Current-head `IT_Form.Tests`: 336 passed, 0 failed.
 - Current-head `IT_Form.AuditTests`: 55 passed, 0 failed.
-- Current-head GitHub CI run: `42787496931`, passed.
+- Current-head GitHub CI run: `42802133045`, passed.
 
-**Current-head total: 389 passed, 0 failed, 0 skipped.**
+**Current-head total: 391 passed, 0 failed, 0 skipped.**
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 
@@ -107,19 +107,19 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**Current GitHub Actions run:** `42787496931`  
-**Code head tested:** `2e16f8378af2f212fee5e675d75c693257ea1ba3`  
+**Current GitHub Actions run:** `42802133045`  
+**Code head tested:** `30fe9ffbfc3d65b3ca3ab2b766ffd77325b999fc`  
 **Run conclusion:** success
 
 | Check | Result |
 |---|---:|
 | .NET 10 build | Passed |
-| IT_Form.Tests | 334 passed / 0 failed |
+| IT_Form.Tests | 336 passed / 0 failed |
 | IT_Form.AuditTests | 55 passed / 0 failed |
 | CodeQL C# | Passed |
 | CodeQL Actions | Passed |
 | Gitleaks current tree | No leaks found |
-| Dependency Review | Skipped — no dependency manifest change in this run |
+| Dependency Review | Passed |
 
 These are automated CI results. They do not replace dynamic testing against a deployed environment, a human security review, or an independent penetration test.
 
@@ -137,7 +137,7 @@ These are automated CI results. They do not replace dynamic testing against a de
 ### P1 — Required engineering and operational follow-up
 
 1. **Encryption scope:** the exact marked-field inventory is documented. A field-by-field classification of remaining personal/business data, query/index impact, migration/backfill, and re-protection plan is still required; marked-column encryption is not whole-database encryption.
-2. **HMAC production migration:** versioned key-ring code and regression tests are present; provision real versioned secrets, retain previous keys through migration, and obtain passing current-head CI evidence before production rotation.
+2. **HMAC production migration:** versioned key-ring code and regression tests are present; provision real versioned secrets and retain previous keys through migration before production rotation.
 3. **Image processing:** source-level re-encoding and deep parsing are implemented for the reviewed image ingress paths; verify decoder limits and rendering behavior in the deployed runtime.
 4. **CSP:** source-level exceptions are removed (`script-src-attr 'none'` and no `unsafe-eval`); browser regression testing across all views remains required.
 5. **Authorization testing:** complete negative tests for every API, download, export, signed-link, and cross-company access route, including role changes and stale claims.
@@ -167,5 +167,5 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening is implemented, the current source builds, and current-head GitHub CI passed 389 tests with CodeQL, Gitleaks, and CodeQL Actions successful. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented, and current-head GitHub CI passed 391 tests with CodeQL C#, CodeQL Actions, Gitleaks, and Dependency Review successful. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
 

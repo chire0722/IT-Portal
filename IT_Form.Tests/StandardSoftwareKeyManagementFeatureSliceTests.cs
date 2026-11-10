@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Application.Features.StandardSoftware.AddSoftwareKey;
 using IT_Form.Application.Features.StandardSoftware.AssignSoftwareKey;
 using IT_Form.Application.Features.StandardSoftware.DeleteSoftwareKey;
@@ -314,6 +315,40 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         var persistedKey = await context.SoftwareKeys.SingleAsync(item => item.Id == 71);
         Assert.False(persistedKey.IsAssigned);
         Assert.Null(persistedKey.OnboardingRequestId);
+    }
+
+
+    [Fact]
+    public async Task GetSoftwareKeys_DeniesDecryptedKeysOutsideCurrentCompanyScope()
+    {
+        using var context = CreateContext();
+        context.Companies.AddRange(
+            new Company { Id = 101, Name = "Company A", IsActive = true },
+            new Company { Id = 102, Name = "Company B", IsActive = true });
+        var license = new SoftwareLicense
+        {
+            Id = 103,
+            StandardSoftwareId = 10,
+            SoftwareName = "Restricted Product",
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 102 }],
+            Keys = [new SoftwareKey { Id = 104, SoftwareLicenseId = 103, KeyValue = "encrypted-secret", IsAssigned = false }]
+        };
+        context.SoftwareLicenses.Add(license);
+        await context.SaveChangesAsync();
+
+        var encryption = new Mock<ILicenseEncryptionService>();
+        encryption.Setup(service => service.DecryptKey("encrypted-secret")).Returns("REAL-SECRET-KEY");
+        var currentUser = new TestCurrentUserAccessor(
+            userName: "it.user",
+            titles: ["IT"],
+            companies: ["Company A"]);
+        var handler = new GetStandardSoftwareKeysQueryHandler(context, encryption.Object, currentUser);
+
+        var result = await handler.Handle(new GetStandardSoftwareKeysQuery(103), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        Assert.Null(result.Data);
+        encryption.Verify(service => service.DecryptKey(It.IsAny<string>()), Times.Never);
     }
 
 }

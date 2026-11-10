@@ -88,7 +88,7 @@ namespace IT_Form.Tests
 
         [Fact]
         /// <summary>
-        /// Runs the Edit_AllowsCompanyScopedItUser_ToOpenAssetFromAnotherCompany operation.
+        /// Runs the Edit_ForbidsCompanyScopedItUser_FromOpeningAnotherCompanyAsset operation.
         /// </summary>
         public async Task Edit_AllowsCompanyScopedItUser_ToOpenAssetFromAnotherCompany()
         {

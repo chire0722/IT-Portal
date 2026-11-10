@@ -42,20 +42,32 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Failure("No requests selected.", "Index");
             }
 
+            if (user?.HasClaim("UserTitle", "HR") != true)
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
+            var requestedIds = ids.Where(id => id > 0).Distinct().ToArray();
+            if (requestedIds.Length == 0 || requestedIds.Length != ids.Length)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure("Select valid requests before exporting.", "Index");
+            }
+
             var requests = await _context.OnboardingRequests
                 .AsNoTracking()
                 .AsSplitQuery()
                 .IncludeOnboardingPdfData()
-                .Where(r => ids.Contains(r.Id))
+                .Where(r => requestedIds.Contains(r.Id))
                 .ToListAsync(cancellationToken);
 
             requests = requests
                 .Where(request => HrRecordReadCompanyScopeSupport.CanAccessCompany(user, request.Branch))
                 .ToList();
 
-            if (!requests.Any())
+            // Never silently export an in-scope subset of a mixed-company selection.
+            if (requests.Count != requestedIds.Length)
             {
-                return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
+                return ProcessResult<BinaryFilePayload>.NotFound();
             }
 
             using var memoryStream = new MemoryStream();
@@ -65,6 +77,13 @@ namespace IT_Form.Services
                 {
                     try
                     {
+                        if (!AreSignaturesValid(request))
+                        {
+                            return ProcessResult<BinaryFilePayload>.Failure(
+                                "One or more digital signatures failed integrity validation. The export was cancelled.",
+                                "Index");
+                        }
+
                         var pdfBytes = _pdfService.GeneratePdf(request);
                         var safeName = string.Join("_", (request.FullName ?? "Unknown").Split(Path.GetInvalidFileNameChars()));
                         var entry = archive.CreateEntry($"Onboarding_{safeName}_ID{request.Id}.pdf", CompressionLevel.Fastest);
@@ -84,6 +103,11 @@ namespace IT_Form.Services
                 "application/zip",
                 $"Onboarding_PDFs_{DateTime.Now:yyyyMMdd}.zip"));
         }
+
+        private bool AreSignaturesValid(IT_Form.Models.OnboardingRequest request)
+            => SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.RequesterSignerName, "Unknown", request.RequesterSignedAt, request.RequesterSignature, request.RequesterSignatureHmac)
+               && SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName, "Unknown", request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac)
+               && SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName, "Employee", request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac);
 
         /// <summary>
         /// Runs the GeneratePdfAsync operation.
@@ -115,28 +139,12 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Forbidden();
             }
 
-            if (request.RequesterSignedAt.HasValue && !string.IsNullOrEmpty(request.RequesterSignatureHmac))
+            if (!AreSignaturesValid(request))
             {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.RequesterSignerName ?? "Unknown", request.RequesterSignedAt.Value, request.RequesterSignature ?? "", request.RequesterSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Requester). The document may have been tampered with.", "Details", id);
-                }
-            }
-
-            if (request.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(request.ITAdminSignatureHmac))
-            {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt.Value, request.ITAdminSignature ?? "", request.ITAdminSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (IT Admin). The document may have been tampered with.", "Details", id);
-                }
-            }
-
-            if (request.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(request.EmployeeSignatureHmac))
-            {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt.Value, request.EmployeeSignature ?? "", request.EmployeeSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Employee). The document may have been tampered with.", "Details", id);
-                }
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    "Digital signature integrity check failed. The document may have been tampered with.",
+                    "Details",
+                    id);
             }
 
             try

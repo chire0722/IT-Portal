@@ -198,7 +198,18 @@ public class OffboardingController : AppControllerBase
     /// Runs the DownloadResignation operation.
     /// </summary>
     public async Task<IActionResult> DownloadResignation(int id)
-        => HandleProcessResult(await _sender.Send(new DownloadOffboardingResignationQuery(id)));
+    {
+        var result = await _sender.Send(new DownloadOffboardingResignationQuery(id));
+        if (result.IsSuccess)
+        {
+            Response.Headers["Cache-Control"] = "no-store, private";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+        }
+
+        return HandleProcessResult(result);
+    }
 
     [HttpPost, ValidateAntiForgeryToken]
     /// <summary>

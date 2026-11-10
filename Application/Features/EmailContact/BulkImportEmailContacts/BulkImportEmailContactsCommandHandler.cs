@@ -2,6 +2,8 @@
 
 using ClosedXML.Excel;
 using IT_Form.Data;
+using IT_Form.Helpers;
+using IT_Form.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,7 +33,7 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
                 return new BulkImportEmailContactsResult(false, null, null, "Please select a valid Excel file.");
             }
 
-                await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Email contact import", cancellationToken);
+            await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Email contact import", cancellationToken);
 
             try
             {

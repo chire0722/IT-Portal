@@ -157,6 +157,8 @@ namespace IT_Form.Controllers
         // POST: ServerFolder/BulkImport
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
         /// <summary>
         /// Runs the BulkImport operation.
         /// </summary>

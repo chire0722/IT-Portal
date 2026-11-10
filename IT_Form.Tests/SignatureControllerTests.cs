@@ -109,5 +109,24 @@ namespace IT_Form.Tests
                 error => error.ErrorMessage == "Please confirm the PDPA privacy notice before submitting.");
             Assert.Equal("Acknowledge", viewResult.ViewName);
         }
+
+        [Fact]
+        public async Task TokenizedSignatureRoutes_SetNoStoreAndNoReferrerHeaders()
+        {
+            using var context = CreateContext();
+            var controller = GetController<SignatureController>(context);
+
+            await controller.Acknowledge(Guid.NewGuid(), "Onboarding");
+
+            Assert.Equal("no-store", controller.Response.Headers["Cache-Control"].ToString());
+            Assert.Equal("no-cache", controller.Response.Headers["Pragma"].ToString());
+            Assert.Equal("no-referrer", controller.Response.Headers["Referrer-Policy"].ToString());
+            Assert.Equal("noindex, nofollow", controller.Response.Headers["X-Robots-Tag"].ToString());
+
+            await controller.ViewPdf(Guid.NewGuid(), "Onboarding");
+
+            Assert.Equal("no-store", controller.Response.Headers["Cache-Control"].ToString());
+            Assert.Equal("no-referrer", controller.Response.Headers["Referrer-Policy"].ToString());
+        }
     }
 }

@@ -53,9 +53,13 @@ namespace IT_Form.Services
 
             if (company != null && !string.IsNullOrEmpty(company.LogoPath))
             {
-                var logoPath = Path.Combine(_env.WebRootPath, company.LogoPath.TrimStart('/'));
-                if (File.Exists(logoPath))
+                var logoPath = CompanyLogoStorage.ResolveManagedPath(_env, company.LogoPath);
+                if (!string.IsNullOrWhiteSpace(logoPath)
+                    && File.Exists(logoPath)
+                    && (File.GetAttributes(logoPath) & FileAttributes.ReparsePoint) == 0)
+                {
                     return File.ReadAllBytes(logoPath);
+                }
             }
 
             return GetDefaultLogo(branch);

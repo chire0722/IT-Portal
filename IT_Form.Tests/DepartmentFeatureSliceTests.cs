@@ -109,7 +109,7 @@ public class DepartmentFeatureSliceTests
 
         var handler = new CreateDepartmentCommandHandler(
             context,
-            new TestCurrentUserAccessor(titles: ["IT"], companies: ["Alpha"]));
+            new TestCurrentUserAccessor(titles: ["IT"]));
 
         var id = await handler.Handle(
             new CreateDepartmentCommand("Regional Ops", null, true, [2]),

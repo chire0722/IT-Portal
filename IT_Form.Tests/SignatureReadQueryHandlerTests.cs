@@ -270,7 +270,7 @@ public class SignatureReadQueryHandlerTests
         {
             Id = 8,
             AccessToken = token,
-            FullName = "Regenerated Pdf User",
+            FullName = "../../evil\\r\\nname",
             Status = RequestStatus.PendingEmployeeSign,
             RequesterSignerName = "HR User",
             RequesterSignedAt = DateTime.UtcNow.AddDays(-2),
@@ -297,6 +297,11 @@ public class SignatureReadQueryHandlerTests
 
         Assert.Equal(GetSignaturePdfStatus.Ready, result.Status);
         Assert.NotNull(result.File);
+        Assert.Equal("Onboarding_evil_name.pdf", result.File!.FileDownloadName);
+        Assert.DoesNotContain("/", result.File.FileDownloadName);
+        Assert.DoesNotContain("\\", result.File.FileDownloadName);
+        Assert.DoesNotContain("\r", result.File.FileDownloadName);
+        Assert.DoesNotContain("\n", result.File.FileDownloadName);
         pdfService.Verify(service => service.GeneratePdf(It.IsAny<OnboardingRequest>()), Times.Once);
     }
 

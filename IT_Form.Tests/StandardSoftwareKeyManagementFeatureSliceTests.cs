@@ -188,8 +188,10 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
             Id = 20,
             StandardSoftwareId = 1,
             SoftwareName = "Office E3",
-            IsSubscription = false
+            IsSubscription = false,
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 1 }]
         });
+        context.Companies.Add(new Company { Id = 1, Name = "HQ", IsActive = true });
         context.SoftwareKeys.Add(new SoftwareKey
         {
             Id = 21,
@@ -274,8 +276,10 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
             Id = 70,
             StandardSoftwareId = 1,
             SoftwareName = "Office E3",
-            IsSubscription = false
+            IsSubscription = false,
+            SoftwareLicenseCompanies = [new SoftwareLicenseCompany { CompanyId = 1 }]
         };
+        context.Companies.Add(new Company { Id = 1, Name = "Company A", IsActive = true });
         context.SoftwareLicenses.Add(license);
         var key = new SoftwareKey
         {

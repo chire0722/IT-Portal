@@ -659,32 +659,36 @@ app.Run();
 static CookieSecurePolicy ResolveCookieSecurePolicy(IHostEnvironment environment, IConfiguration configuration)
 {
     var configuredPolicy = configuration["SecuritySettings:CookieSecurePolicy"];
-    if (!string.IsNullOrWhiteSpace(configuredPolicy))
+
+    // Production authentication/session cookies must never be sent over plain HTTP.
+    // Reverse-proxy scheme detection is deployment-dependent, so do not weaken this
+    // control based on AppDomain or an untrusted/misconfigured forwarded header.
+    if (!environment.IsDevelopment())
     {
-        if (string.Equals(configuredPolicy, "Never", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(configuredPolicy) &&
+            !string.Equals(configuredPolicy, nameof(CookieSecurePolicy.Always), StringComparison.OrdinalIgnoreCase))
         {
-            return CookieSecurePolicy.None;
+            throw new InvalidOperationException(
+                "Production deployments require SecuritySettings:CookieSecurePolicy=Always.");
         }
 
-        if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var parsedPolicy))
-        {
-            return parsedPolicy;
-        }
-
-        throw new InvalidOperationException(
-            "SecuritySettings:CookieSecurePolicy must be one of SameAsRequest, Always, or None.");
+        return CookieSecurePolicy.Always;
     }
 
-    if (environment.IsDevelopment())
+    // Local HTTP development remains possible. Production cannot inherit this setting.
+    if (string.IsNullOrWhiteSpace(configuredPolicy))
     {
         return CookieSecurePolicy.SameAsRequest;
     }
 
-    var appDomain = configuration["AppDomain"];
-    return Uri.TryCreate(appDomain, UriKind.Absolute, out var appUri) &&
-        string.Equals(appUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+    if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var parsedPolicy) &&
+        parsedPolicy != CookieSecurePolicy.None)
+    {
+        return parsedPolicy;
+    }
+
+    throw new InvalidOperationException(
+        "Development SecuritySettings:CookieSecurePolicy must be SameAsRequest or Always; None is not allowed.");
 }
 
 static string ResolveSqliteConnectionString(string? connectionString, string contentRootPath, string dataDirectory)

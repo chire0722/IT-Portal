@@ -368,7 +368,7 @@ public sealed class GetSignaturePdfQueryHandler
     {
         var safeName = System.Text.RegularExpressions.Regex.Replace(
             fullName ?? "Employee",
-            @"[^\\p{L}\\p{N}._-]+",
+            @"[^\p{L}\p{N}._-]+",
             "_").Trim('.', '_', '-');
 
         if (string.IsNullOrWhiteSpace(safeName))

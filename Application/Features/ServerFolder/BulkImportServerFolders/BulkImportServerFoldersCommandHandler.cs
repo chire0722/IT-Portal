@@ -47,7 +47,15 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
 
                 var worksheet = workbook.Worksheet(1);
                 var rangeUsed = worksheet.RangeUsed();
-                var rows = rangeUsed != null ? rangeUsed.RowsUsed().Skip(1) : Enumerable.Empty<IXLRangeRow>();
+                if (rangeUsed == null)
+                {
+                    return new BulkImportServerFoldersResult(false, null, null, "The uploaded workbook contains no data.");
+                }
+                if (rangeUsed.RowCount() > 5001 || rangeUsed.ColumnCount() > 20)
+                {
+                    return new BulkImportServerFoldersResult(false, null, null, "Server folder import is limited to 5,000 data rows and 20 columns.");
+                }
+                var rows = rangeUsed.RowsUsed().Skip(1);
                 var rowList = rows.ToList();
                 var candidateFolderNames = rowList
                     .Select(row => row.Cell(1).GetValue<string>()?.Trim())

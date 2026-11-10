@@ -9,7 +9,7 @@
 | Asset | Current use | Protection boundary | Owner / requirement |
 |---|---|---|---|
 | ASP.NET Core Data Protection key ring | Cookies, marked sensitive fields, software-license key values and protected SQLite backups | Shared application name `IT_Form`; purpose isolation for `IT_Form.SoftwareLicenseKeys.v2` and `IT_Form.DatabaseBackups.v1` | IT owns durable storage, certificate private key, access, backup and recovery |
-| Data Protection certificate | Encrypts newly persisted key-ring XML in Production | Valid RSA certificate (minimum 2048-bit private key) in Windows `LocalMachine\\My` | Platform/IT owns issuance, renewal, private-key ACL and recovery |
+| Data Protection certificate | Encrypts newly persisted key-ring XML in Production | Valid RSA certificate (minimum 2048-bit private key) in Windows `LocalMachine\My` | Platform/IT owns issuance, renewal, private-key ACL and recovery |
 | Signature HMAC key | Integrity validation for signed workflow records/documents | Separate configuration secret `IT_FORM__SignatureHmac__Key`; at least 32 random bytes | Security/IT owns generation, custody and versioned migration |
 | SMTP credential | Outbound notification authentication | Secret/configuration store only | IT owns rotation and provider revocation |
 | Inventory API key | Optional legacy inventory integration | Secret/configuration store only | Integration owner; disable if no longer required |
@@ -23,7 +23,7 @@ Never reuse one key for HMAC, Data Protection, SMTP or unrelated application pur
 
 Production startup now:
 - requires `DataProtection:CertificateThumbprint`;
-- searches the Windows `LocalMachine\\My` certificate store;
+- searches the Windows `LocalMachine\My` certificate store;
 - requires a valid certificate with an accessible RSA private key of at least 2048 bits;
 - configures `ProtectKeysWithCertificate` for newly persisted Data Protection keys;
 - supports an explicit persistent directory through `DataProtection:KeyRingPath`;

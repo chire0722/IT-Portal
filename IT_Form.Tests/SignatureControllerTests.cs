@@ -59,7 +59,9 @@ namespace IT_Form.Tests
             // Call GET Acknowledge which performs integrity check
             var result = await controller.Acknowledge(req.AccessToken, "Onboarding");
 
-            Assert.IsType<BadRequestObjectResult>(result); 
+            Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("no-store, no-cache, must-revalidate", controller.Response.Headers["Cache-Control"].ToString());
+            Assert.Equal("no-referrer", controller.Response.Headers["Referrer-Policy"].ToString());
         }
 
         [Fact]

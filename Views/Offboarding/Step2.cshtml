@@ -67,7 +67,7 @@
 
                     <div class="d-flex justify-content-end mb-2">
                         <button type="button" class="btn btn-sm btn-outline-secondary"
-                            onclick="document.querySelectorAll('.it-checklist-cb').forEach(cb => cb.checked = true)">
+                            data-csp-click="select-all" data-csp-selector=".it-checklist-cb">
                             <i class="bi bi-check2-square me-1" aria-hidden="true"></i> Select All
                         </button>
                     </div>
@@ -85,15 +85,14 @@
                                 @for (int i = 0; i < checklistItems.Length; i++)
 
                                 {
-                                    <tr style="cursor:pointer;"
-                                        onclick="var cb=this.querySelector('input[type=checkbox]'); cb.checked=!cb.checked;">
+                                    <tr style="cursor:pointer;" data-csp-click="toggle-row-checkbox">
                                         <td>@(i + 1)</td>
                                         <td>@checklistItems[i].Name</td>
                                         <td class="text-center">
                                             <div class="form-check d-flex justify-content-center m-0">
                                                 <input type="checkbox" name="@checklistItems[i].Field" value="true"
                                                     class="form-check-input it-checklist-cb" @(checklistItems[i].Value ?
-                                                "checked" : "") onclick="event.stopPropagation();" />
+                                                "checked" : "") data-csp-click="stop-propagation" />
                                             </div>
                                         </td>
                                     </tr>
@@ -240,3 +239,4 @@
         });
     </script>
 }
+

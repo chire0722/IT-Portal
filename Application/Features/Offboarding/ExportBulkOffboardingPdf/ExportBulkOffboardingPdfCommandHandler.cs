@@ -22,13 +22,20 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
         private readonly ICurrentUserAccessor _currentUserAccessor;
         private readonly IPdfService _pdfService;
         private readonly ILogger<ExportBulkOffboardingPdfCommandHandler> _logger;
+        private readonly ISignatureIntegrityService _integrityService;
 
-        public ExportBulkOffboardingPdfCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IPdfService pdfService, ILogger<ExportBulkOffboardingPdfCommandHandler> logger)
+        public ExportBulkOffboardingPdfCommandHandler(
+            ApplicationDbContext context,
+            ICurrentUserAccessor currentUserAccessor,
+            IPdfService pdfService,
+            ILogger<ExportBulkOffboardingPdfCommandHandler> logger,
+            ISignatureIntegrityService integrityService)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
             _pdfService = pdfService;
             _logger = logger;
+            _integrityService = integrityService;
         }
 
         /// <summary>
@@ -87,6 +94,19 @@ namespace IT_Form.Application.Features.Offboarding.ExportBulkOffboardingPdf
                     long totalPdfBytes = 0;
                     foreach (var requestItem in requests)
                     {
+                        var signaturesValid =
+                            SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", requestItem.Id.ToString(), requestItem.HRSignerName, "Unknown", requestItem.HRSignedAt, requestItem.HRSignature, requestItem.HRSignatureHmac)
+                            && SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", requestItem.Id.ToString(), requestItem.HODSignerName, "Unknown", requestItem.HODSignedAt, requestItem.HODSignature, requestItem.HODSignatureHmac)
+                            && SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", requestItem.Id.ToString(), requestItem.ITAdminSignerName, "Unknown", requestItem.ITAdminSignedAt, requestItem.ITAdminSignature, requestItem.ITAdminSignatureHmac)
+                            && SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", requestItem.Id.ToString(), requestItem.EmployeeSignerName, "Employee", requestItem.EmployeeSignedAt, requestItem.EmployeeSignature, requestItem.EmployeeSignatureHmac);
+
+                        if (!signaturesValid)
+                        {
+                            return ProcessResult<BinaryFilePayload>.Failure(
+                                "One or more digital signatures failed integrity validation. The export was cancelled.",
+                                "Index");
+                        }
+
                         var pdfBytes = _pdfService.GenerateOffboardingPdf(requestItem);
                         totalPdfBytes += pdfBytes.LongLength;
                         if (totalPdfBytes > MaxTotalPdfBytes)

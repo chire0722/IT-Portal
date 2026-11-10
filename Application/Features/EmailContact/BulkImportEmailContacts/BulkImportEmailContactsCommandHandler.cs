@@ -16,11 +16,16 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
     {
         private readonly ApplicationDbContext _context;
         private readonly IFileMalwareScanner? _malwareScanner;
+        private readonly ILogger<BulkImportEmailContactsCommandHandler>? _logger;
 
-        public BulkImportEmailContactsCommandHandler(ApplicationDbContext context, IFileMalwareScanner? malwareScanner = null)
+        public BulkImportEmailContactsCommandHandler(
+            ApplicationDbContext context,
+            IFileMalwareScanner? malwareScanner = null,
+            ILogger<BulkImportEmailContactsCommandHandler>? logger = null)
         {
             _context = context;
             _malwareScanner = malwareScanner;
+            _logger = logger;
         }
 
         /// <summary>
@@ -95,9 +100,14 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
 
                 return new BulkImportEmailContactsResult(true, successMessage, infoMessage, errorMessage);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
-                return new BulkImportEmailContactsResult(false, null, null, "Error processing file: " + ex.Message);
+                _logger?.LogError(ex, "Failed to process an email contact import workbook.");
+                return new BulkImportEmailContactsResult(false, null, null, "The workbook could not be processed. Verify the template and try again.");
             }
         }
     }

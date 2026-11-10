@@ -124,7 +124,7 @@ public class EmailGroupFeatureSliceTests
 
     [Fact]
     /// <summary>
-    /// Runs the AddCurrentEmployeeHandler_AllowsItUserAcrossCompanies operation.
+    /// Runs the AddCurrentEmployeeHandler_RejectsCrossCompanyGroupAndEmployee operation.
     /// </summary>
     public async Task AddCurrentEmployeeHandler_RejectsCrossCompanyGroupAndEmployee()
     {

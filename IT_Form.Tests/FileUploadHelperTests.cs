@@ -77,6 +77,22 @@ namespace IT_Form.Tests
             Assert.Contains("valid .xlsx", error);
         }
 
+        [Fact]
+        public void IsValidExcelFile_EnforcesEndpointSpecificSizeLimit()
+        {
+            var stream = new MemoryStream(new byte[] { 0x50 });
+            var file = new FormFile(stream, 0, 5 * 1024 * 1024 + 1, "file", "folders.xlsx")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = XlsxMimeType
+            };
+
+            var result = FileUploadHelper.IsValidExcelFile(file, out var error, 5 * 1024 * 1024);
+
+            Assert.False(result);
+            Assert.Contains("5MB", error);
+        }
+
         private static FormFile CreateFormFile(byte[] bytes, string fileName, string contentType)
         {
             var stream = new MemoryStream(bytes);

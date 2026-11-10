@@ -163,7 +163,10 @@ public class StandardSoftwareKeyManagementFeatureSliceTests
         var encryption = new Mock<ILicenseEncryptionService>();
         encryption.Setup(x => x.EncryptKey(It.IsAny<string>())).Returns((string s) => s);
 
-        var handler = new UpdateSoftwareKeyCommandHandler(context, encryption.Object);
+        var handler = new UpdateSoftwareKeyCommandHandler(
+            context,
+            encryption.Object,
+            new TestCurrentUserAccessor("it.user", "it-id", ["IT"], ["HQ"]));
         var result = await handler.Handle(new UpdateSoftwareKeyCommand(999, "new-key"), CancellationToken.None);
 
         Assert.Equal(UpdateSoftwareKeyStatus.NotFound, result.Status);

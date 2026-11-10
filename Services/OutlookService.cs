@@ -33,13 +33,28 @@ namespace IT_Form.Services
         {
             try
             {
-                _logger.LogInformation("Attempting to send email. Original To: {To}, CC: {Cc}, BypassActiveCheck: {Bypass}", to, cc, bypassActiveCheck);
+                _logger.LogInformation(
+                    "Attempting to send email to {RecipientCount} recipients and {CcCount} CC recipients. BypassActiveCheck: {Bypass}",
+                    CountRecipients(to),
+                    CountRecipients(cc),
+                    bypassActiveCheck);
 
                 if (string.IsNullOrWhiteSpace(_smtpSettings.Username) || 
                     string.IsNullOrWhiteSpace(_smtpSettings.Password) || 
                     _smtpSettings.Password.Contains("SET_VIA_ENV_VAR"))
                 {
                     throw new InvalidOperationException("SMTP Credentials are not fully configured. Please set the 'IT_FORM__SmtpSettings__Password' machine environment variable.");
+                }
+
+                if (string.IsNullOrWhiteSpace(_smtpSettings.Host) ||
+                    _smtpSettings.Port is < 1 or > 65535)
+                {
+                    throw new InvalidOperationException("SMTP host and port are not valid.");
+                }
+
+                if (!_smtpSettings.EnableSsl)
+                {
+                    throw new InvalidOperationException("SMTP TLS is required for outbound email.");
                 }
 
                 // Retrieve deactivated user emails from the database ONLY if NOT bypassing the check
@@ -76,7 +91,7 @@ namespace IT_Form.Services
                         {
                             if (!bypassActiveCheck && deactivatedEmails.Contains(addr.ToLower()))
                             {
-                                _logger.LogInformation("Dropped deactivated user from TO list: {Email}", addr);
+                                _logger.LogInformation("Dropped a deactivated user from the TO list.");
                             }
                             else
                             {
@@ -86,11 +101,10 @@ namespace IT_Form.Services
                     }
                 }
 
-                // If To address list ended up empty, fallback to IT department to avoid crashes
+                // Never fall back to a fixed recipient: that can disclose a message to the wrong party.
                 if (message.To.Count == 0)
                 {
-                    message.To.Add("itdept@ytcprecast.com");
-                    _logger.LogInformation("All TO addresses were dropped or empty. Falling back to IT Dept.");
+                    throw new InvalidOperationException("At least one valid active TO recipient is required.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(cc))
@@ -103,7 +117,7 @@ namespace IT_Form.Services
                         {
                             if (!bypassActiveCheck && deactivatedEmails.Contains(addr.ToLower()))
                             {
-                                _logger.LogInformation("Dropped deactivated user from CC list: {Email}", addr);
+                                _logger.LogInformation("Dropped a deactivated user from the CC list.");
                             }
                             else
                             {
@@ -162,12 +176,13 @@ namespace IT_Form.Services
                 using var client = new System.Net.Mail.SmtpClient(_smtpSettings.Host, _smtpSettings.Port)
                 {
                     Credentials = new System.Net.NetworkCredential(_smtpSettings.Username, _smtpSettings.Password),
-                    EnableSsl = _smtpSettings.EnableSsl
+                    EnableSsl = true,
+                    Timeout = checked(Math.Clamp(_smtpSettings.TimeoutSeconds, 1, 120) * 1000)
                 };
 
                 // Send email synchronously to replace the previous Display() COM behavior
                 client.Send(message);
-                _logger.LogInformation("Email sent successfully to {To}", to);
+                _logger.LogInformation("Email sent successfully to {RecipientCount} recipients.", message.To.Count);
             }
             catch (System.Exception ex)
             {
@@ -175,5 +190,11 @@ namespace IT_Form.Services
                 throw; // Preserve the throw to match previous behaviour
             }
         }
+
+        private static int CountRecipients(string? recipients)
+            => string.IsNullOrWhiteSpace(recipients)
+                ? 0
+                : recipients.Split(new[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
     }
 }
+

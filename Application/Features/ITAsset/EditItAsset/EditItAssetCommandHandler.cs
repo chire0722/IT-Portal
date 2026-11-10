@@ -53,6 +53,32 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
                 };
             }
 
+            if (request.Asset.Status == AssetStatus.Issued)
+            {
+                if (!request.AssignedEmployeeId.HasValue)
+                {
+                    return new CommandResponse { Message = "An issued asset must have a directory employee assignment." };
+                }
+
+                var assignment = await _context.OnboardingRequests
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(item => item.Id == request.AssignedEmployeeId.Value, cancellationToken);
+                if (assignment == null ||
+                    (assignment.Status != RequestStatus.Completed &&
+                     assignment.Status != RequestStatus.PendingEmployeeSign &&
+                     assignment.Status != RequestStatus.Approved) ||
+                    !string.Equals(assignment.Branch, request.Asset.Company, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new CommandResponse { Message = "The asset assignment must target an active employee in the same company." };
+                }
+            }
+
+            if (request.Asset.Status != AssetStatus.Issued &&
+                (request.AssignedEmployeeId.HasValue || !string.IsNullOrWhiteSpace(request.CustomEmployeeName)))
+            {
+                return new CommandResponse { Message = "Only issued assets may have an employee assignment." };
+            }
+
             if (existingAsset.WarrantyExpiry != request.Asset.WarrantyExpiry)
             {
                 request.Asset.WarrantyNotifyStatus = ExpiryNotifyStatus.Pending;
@@ -75,9 +101,6 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
             request.Asset.IsDeleted = existingAsset.IsDeleted;
             request.Asset.DeletedAt = existingAsset.DeletedAt;
             request.Asset.DeletedByUserId = existingAsset.DeletedByUserId;
-
-            _context.ITAssets.Update(request.Asset);
-            await _context.SaveChangesAsync(cancellationToken);
 
             if (request.Asset.Status == AssetStatus.Issued &&
                 (request.AssignedEmployeeId.HasValue || !string.IsNullOrWhiteSpace(request.CustomEmployeeName)))
@@ -116,9 +139,11 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
                         BrandModel = request.Asset.Model
                     });
 
-                    await _context.SaveChangesAsync(cancellationToken);
                 }
             }
+
+            _context.ITAssets.Update(request.Asset);
+            await _context.SaveChangesAsync(cancellationToken);
 
             return new CommandResponse
             {
@@ -128,3 +153,4 @@ namespace IT_Form.Application.Features.ITAsset.EditItAsset
         }
     }
 }
+

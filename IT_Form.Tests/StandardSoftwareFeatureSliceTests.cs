@@ -316,6 +316,13 @@ public class StandardSoftwareFeatureSliceTests
                         new SoftwareLicenseCompany { CompanyId = 2 }
                     ]
                 }
+,
+                new SoftwareLicense
+                {
+                    Id = 103,
+                    SoftwareName = "Legacy Global License",
+                    StandardSoftwareId = 100
+                }
             ]
         });
         await context.SaveChangesAsync();

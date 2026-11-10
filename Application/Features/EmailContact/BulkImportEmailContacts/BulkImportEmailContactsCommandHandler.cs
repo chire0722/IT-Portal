@@ -28,9 +28,9 @@ namespace IT_Form.Application.Features.EmailContact.BulkImportEmailContacts
         /// </summary>
         public async Task<BulkImportEmailContactsResult> Handle(BulkImportEmailContactsCommand request, CancellationToken cancellationToken)
         {
-            if (request.File == null || request.File.Length == 0)
+            if (!FileUploadHelper.IsValidExcelFile(request.File, out var validationError))
             {
-                return new BulkImportEmailContactsResult(false, null, null, "Please select a valid Excel file.");
+                return new BulkImportEmailContactsResult(false, null, null, validationError);
             }
 
             await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Email contact import", cancellationToken);

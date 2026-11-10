@@ -113,23 +113,14 @@ namespace IT_Form.Application.Features.Onboarding.GetOnboardingDetails
         {
             try
             {
-                if (request.RequesterSignedAt.HasValue && !string.IsNullOrEmpty(request.RequesterSignatureHmac) &&
-                    !_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.RequesterSignerName ?? "Unknown", request.RequesterSignedAt.Value, request.RequesterSignature ?? string.Empty, request.RequesterSignatureHmac))
-                {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.RequesterSignerName, "Unknown", request.RequesterSignedAt, request.RequesterSignature, request.RequesterSignatureHmac))
                     return "Requester (HR) Signature Integrity Violation Detected.";
-                }
 
-                if (request.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(request.ITAdminSignatureHmac) &&
-                    !_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt.Value, request.ITAdminSignature ?? string.Empty, request.ITAdminSignatureHmac))
-                {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName, "Unknown", request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac))
                     return "IT Admin Signature Integrity Violation Detected.";
-                }
 
-                if (request.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(request.EmployeeSignatureHmac) &&
-                    !_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt.Value, request.EmployeeSignature ?? string.Empty, request.EmployeeSignatureHmac))
-                {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName, "Employee", request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac))
                     return "Employee Signature Integrity Violation Detected.";
-                }
             }
             catch
             {

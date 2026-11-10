@@ -71,14 +71,12 @@ namespace IT_Form.Application.Features.StandardSoftware
             if (accessibleCompanyIds != null)
             {
                 scopedLicenseQuery = scopedLicenseQuery.Where(license =>
-                    !license.SoftwareLicenseCompanies.Any() ||
                     license.SoftwareLicenseCompanies.Any(link => accessibleCompanyIds.Contains(link.CompanyId)));
             }
 
             if (request.CompanyId.HasValue)
             {
                 scopedLicenseQuery = scopedLicenseQuery.Where(license =>
-                    !license.SoftwareLicenseCompanies.Any() ||
                     license.SoftwareLicenseCompanies.Any(link => link.CompanyId == request.CompanyId.Value));
             }
 
@@ -99,10 +97,8 @@ namespace IT_Form.Application.Features.StandardSoftware
                         key.SoftwareLicense != null &&
                         !key.SoftwareLicense.IsFree &&
                         (!request.CompanyId.HasValue ||
-                         !key.SoftwareLicense.SoftwareLicenseCompanies.Any() ||
                          key.SoftwareLicense.SoftwareLicenseCompanies.Any(link => link.CompanyId == request.CompanyId.Value)) &&
                         (accessibleCompanyIds == null ||
-                         !key.SoftwareLicense.SoftwareLicenseCompanies.Any() ||
                          key.SoftwareLicense.SoftwareLicenseCompanies.Any(link => accessibleCompanyIds.Contains(link.CompanyId))),
                         cancellationToken),
                 ExpiredCount = await scopedLicenseQuery
@@ -126,8 +122,8 @@ namespace IT_Form.Application.Features.StandardSoftware
                 {
                     software.Licenses = software.Licenses
                         .Where(license =>
-                            (accessibleCompanyIds == null || license.CompanyIds.Count == 0 || license.CompanyIds.Any(accessibleCompanyIds.Contains)) &&
-                            (!request.CompanyId.HasValue || license.CompanyIds.Count == 0 || license.CompanyIds.Contains(request.CompanyId.Value)))
+                            (accessibleCompanyIds == null || license.CompanyIds.Any(accessibleCompanyIds.Contains)) &&
+                            (!request.CompanyId.HasValue || license.CompanyIds.Contains(request.CompanyId.Value)))
                         .ToList();
                 }
 

@@ -50,7 +50,17 @@ namespace IT_Form.Helpers
                 throw new ArgumentOutOfRangeException(nameof(category), $"Unknown sensitive file category '{category}'.");
             }
 
-            return $"{RoutePrefix}/{category}/{Path.GetFileName(fileName)}";
+            var normalizedFileName = (fileName ?? string.Empty).Replace('\\', '/');
+            var safeFileName = Path.GetFileName(normalizedFileName);
+            if (string.IsNullOrWhiteSpace(safeFileName)
+                || safeFileName is "." or ".."
+                || safeFileName.Contains(':')
+                || safeFileName.Any(char.IsControl))
+            {
+                throw new ArgumentException("A safe file name is required.", nameof(fileName));
+            }
+
+            return $"{RoutePrefix}/{category}/{safeFileName}";
         }
 
         /// <summary>
@@ -230,7 +240,7 @@ namespace IT_Form.Helpers
                 .Trim('/')
                 .Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            if (parts.Length < 3)
+            if (parts.Length < 3 || parts.Any(part => part is "." or ".."))
             {
                 return false;
             }

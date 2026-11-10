@@ -196,7 +196,8 @@ public class AuditLoggingBehaviorTests
         var log = Assert.Single(context.AuditLogs);
         Assert.Equal("Command", log.EntityName);
         Assert.False(log.IsSuccess);
-        Assert.Equal("boom", log.ErrorMessage);
+        Assert.Equal("Operation failed (InvalidOperationException).", log.ErrorMessage);
+        Assert.DoesNotContain("boom", log.ErrorMessage, StringComparison.Ordinal);
         Assert.True(log.CorrelationId.HasValue);
     }
 
@@ -228,7 +229,8 @@ public class AuditLoggingBehaviorTests
         var log = Assert.Single(context.AuditLogs);
         Assert.Equal("Command", log.EntityName);
         Assert.False(log.IsSuccess);
-        Assert.Contains("Incorrect password.", log.ErrorMessage, StringComparison.Ordinal);
+        Assert.Equal("Operation failed (ValidationException).", log.ErrorMessage);
+        Assert.DoesNotContain("Incorrect password.", log.ErrorMessage, StringComparison.Ordinal);
 
         logger.Verify(
             x => x.Log(
@@ -249,3 +251,4 @@ public class AuditLoggingBehaviorTests
             Times.Once);
     }
 }
+

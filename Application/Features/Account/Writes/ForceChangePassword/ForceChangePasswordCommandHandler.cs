@@ -12,6 +12,7 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using System.Text.Encodings.Web;
 
 namespace IT_Form.Application.Features.Account.Writes.ForceChangePassword;
 
@@ -115,7 +116,7 @@ public sealed class ForceChangePasswordCommandHandler : IRequestHandler<ForceCha
         string body = $@"
                 <div style='font-family: sans-serif; padding: 20px; border: 1px solid #f87171; border-radius: 8px; background: #fffafb;'>
                     <h2 style='color: #dc2626;'>Security Alert</h2>
-                    <p>Hello <b>{user.FullName}</b>,</p>
+                    <p>Hello <b>{HtmlEncoder.Default.Encode(user.FullName ?? "there")}</b>,</p>
                     <p>This is an automated notification to inform you that your password for the IT Asset Management System was recently updated via <b>{method}</b>.</p>
                     <p><b>Time:</b> {DateTime.UtcNow.AddHours(8):dd/MM/yyyy HH:mm:ss} (SGT)</p>
                     <div style='background: #fee2e2; padding: 15px; border-radius: 4px; border: 1px solid #fecaca; margin: 20px 0;'>

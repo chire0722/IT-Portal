@@ -526,6 +526,38 @@ public class StandardSoftwareFeatureSliceTests
         };
     }
 
+
+    [Fact]
+    public async Task ImportStandardSoftwareHandler_RejectsExcessiveGeneratedSubscriptionSeats()
+    {
+        using var context = CreateContext();
+        context.Companies.Add(new Company { Id = 1, Name = "Alpha", IsActive = true });
+        await context.SaveChangesAsync();
+
+        var quota = new Mock<IQuotaControl>();
+        quota.Setup(service => service.EnsureAvailableAsync(
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<ClaimsPrincipal?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new ImportStandardSoftwareCommandHandler(
+            context,
+            quota.Object,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["Alpha"]));
+
+        var result = await handler.Handle(
+            new ImportStandardSoftwareCommand(CreateSoftwareImportFile(
+                ["Adobe Acrobat", "FALSE", "TRUE", "Acrobat Pro", "KEY-TOO-MANY-SEATS", "Subscription", "31/12/2027", "5001", "FALSE"])),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("limited to 5,000 seats per import", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(await context.SoftwareLicenses.ToListAsync());
+        Assert.Empty(await context.SoftwareKeys.ToListAsync());
+    }
+
     [Fact]
     /// <summary>
     /// Runs the ImportStandardSoftwareValidator_Fails_WhenFileMissing operation.

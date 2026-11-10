@@ -6,6 +6,7 @@ using IT_Form.Application.Common.Support;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Services;
 using IT_Form.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,12 +21,14 @@ namespace IT_Form.Application.Features.Department.ImportDepartments
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
         private readonly IQuotaControl _quotaControl;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
-        public ImportDepartmentsCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
+        public ImportDepartmentsCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null, IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
             _quotaControl = quotaControl ?? new QuotaControl(context);
+            _malwareScanner = malwareScanner;
         }
 
         /// <summary>
@@ -37,6 +40,8 @@ namespace IT_Form.Application.Features.Department.ImportDepartments
             {
                 return new ImportDepartmentsResult(false, string.Empty, errorMessage);
             }
+
+            await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Department import", cancellationToken);
 
             int added = 0;
             int skipped = 0;

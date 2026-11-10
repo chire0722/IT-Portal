@@ -29,6 +29,53 @@ public class OffboardingFeatureSliceTests
 {
     [Fact]
     /// <summary>
+    /// Runs the OffboardingRequest_RequiresCompleteChecklistBeforeItSignature operation.
+    /// </summary>
+    public void OffboardingRequest_RequiresCompleteChecklistBeforeItSignature()
+    {
+        var request = new OffboardingRequest();
+
+        Assert.False(request.HasCompleteItChecklist());
+
+        request.CheckPhysicalClean = true;
+        request.CheckO365Deactivate = true;
+        request.CheckWindowsDisable = true;
+        request.CheckEmailSignOut = true;
+        request.CheckSpecificSoftwareDeactivate = true;
+        request.CheckGeneralSoftwareDeactivate = true;
+        request.CheckAbcGroupRemove = true;
+        request.CheckEmailMailGroupRemove = true;
+        request.CheckDomainDisjoin = true;
+        request.CheckSharedDriveRemove = true;
+        request.CheckWiFiDisable = true;
+        request.CheckPrinterRemove = true;
+        request.CheckScanFolderRemove = true;
+        request.CheckVPNDisable = true;
+
+        Assert.True(request.HasCompleteItChecklist());
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the OffboardingRequest_DoesNotMarkCompletedUntilEmployeeSigns operation.
+    /// </summary>
+    public void OffboardingRequest_DoesNotMarkCompletedUntilEmployeeSigns()
+    {
+        var request = new OffboardingRequest
+        {
+            Status = RequestStatus.Draft,
+            ApprovedByUserId = "hod-user"
+        };
+
+        request.SignByHr("hr-signature", "HR User", "hr-hmac", DateTime.UtcNow);
+        request.SignByManager("hod-signature", "HOD User", "hod-hmac", DateTime.UtcNow);
+        request.SignByIt("it-signature", "IT User", "it-hmac", DateTime.UtcNow);
+
+        Assert.Equal(RequestStatus.PendingEmployeeSign, request.Status);
+        Assert.Null(request.CompletedAt);
+    }
+    [Fact]
+    /// <summary>
     /// Runs the RejectValidator_Fails_WhenReasonMissing operation.
     /// </summary>
     public void RejectValidator_Fails_WhenReasonMissing()
@@ -201,3 +248,4 @@ public class OffboardingFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 }
+

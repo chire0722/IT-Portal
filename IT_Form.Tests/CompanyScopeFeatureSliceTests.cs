@@ -55,7 +55,7 @@ public class CompanyScopeFeatureSliceTests
             Designation = "-1+1",
             Department = "@SUM(A1:A2)",
             Branch = "HQ",
-            HODEmail = "\\t@cmd"
+            HODEmail = "\t@cmd"
         });
         await context.SaveChangesAsync();
 
@@ -73,7 +73,7 @@ public class CompanyScopeFeatureSliceTests
         Assert.Contains("'+SUM(1,2)", csv);
         Assert.Contains("'-1+1", csv);
         Assert.Contains("'@SUM(A1:A2)", csv);
-        Assert.Contains("'\\\\t@cmd", csv);
+        Assert.Contains("'\\\t@cmd", csv);
     }
 
     [Fact]

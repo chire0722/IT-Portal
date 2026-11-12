@@ -4,24 +4,24 @@
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
 **Pull request:** #3 — CI/CD hardening: .NET 10 build, tests, CodeQL and Dependabot  
-**Audited code head:** `c5ef739351022fa8b036b038feca1fa2d07887b6`  
+**Audited code head:** `1ae16168143d3835c2be118ca18bdf32ff0d7647`  
 **Status:** Engineering remediation and source-level verification completed for this iteration. This is not a penetration-test attestation, legal opinion, certification, or declaration of GDPR, Malaysian PDPA, or NIST conformity.
 
 ## 1. Executive summary
 
 This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, audit privacy, HMAC key rotation, and a restricted DSAR case workflow.
 
-The latest GitHub Actions run for the reviewed code head passed 409 tests (354 application tests and 55 audit tests). GitHub is the authoritative build and test evidence for that code head.
+The latest GitHub Actions run for the reviewed code head passed 412 tests (357 application tests and 55 audit tests). GitHub is the authoritative build and test evidence for that code head.
 
 - .NET 10 application build on the current code head: passed in GitHub Actions; the previously reported nullable warning is fixed.
-- `IT_Form.Tests`: 354 passed, 0 failed, 0 skipped.
+- `IT_Form.Tests`: 357 passed, 0 failed, 0 skipped.
 - `IT_Form.AuditTests`: 55 passed, 0 failed, 0 skipped.
-- Combined test total: **409 passed, 0 failed, 0 skipped**.
-- GitHub pull-request validation run: `43240677417` ([view run](https://github.com/chire0722/IT-Portal/actions/runs/43240677417)).
+- Combined test total: **412 passed, 0 failed, 0 skipped**.
+- GitHub pull-request validation run: `43241686506` ([view run](https://github.com/chire0722/IT-Portal/actions/runs/43241686506)).
 - .NET 10 application build: passed.
 - Gitleaks: passed.
 - CodeQL Actions: passed.
-- CodeQL C#: still in progress at the time this report revision was prepared; do not treat it as passed until GitHub records a successful conclusion.
+- CodeQL C#: passed.
 - Dependency Review: passed on the pull-request validation run.
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
@@ -92,7 +92,7 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 
 - Onboarding, IT Asset, Audit Log, and reviewed Offboarding CSV exports use formula-injection sanitization for spreadsheet-active values.
 - The shared `CsvExportSanitizer` checks the first non-whitespace, non-BOM character for `=`, `+`, `-`, and `@`; it also handles leading tab, carriage return, and line feed. It prefixes formula-like values with an apostrophe and doubles embedded double quotes.
-- The helper deliberately does not add outer CSV quotes. The reviewed Onboarding, IT Asset, and Audit Log writers wrap each exported field in outer quotes. Regression tests cover formula prefixes, leading whitespace/control characters, BOM, quote doubling, commas, multiline content, and an Onboarding export field's outer quoting.
+- The helper deliberately does not add outer CSV quotes. The reviewed Onboarding, IT Asset, Audit Log, and Offboarding writers wrap each exported field in outer quotes. Regression tests cover formula prefixes, leading whitespace/control characters, BOM, quote doubling, commas, multiline content, and outer quoting in the Onboarding, IT Asset, and Audit Log export paths; Offboarding export tests cover formula-like values across representative fields.
 - Apostrophe prefixing is a spreadsheet-safety trade-off: the apostrophe remains in the raw CSV data and may be visible to non-spreadsheet consumers. The affected fields are metadata and identifiers, not intended calculation fields.
 - PDF generation no longer exposes raw internal exception messages to end users in the reviewed paths. Bulk onboarding and offboarding PDF exports are capped at 100 requests and 100 MB of generated PDF data, bounded at the HTTP request, validator, and service layers, and fail rather than returning a partial archive.
 - Existing audit payload and request-log sanitization remains in place.
@@ -119,16 +119,16 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**Current GitHub pull-request validation run:** `43240677417`  
-**Code head tested:** `c5ef739351022fa8b036b038feca1fa2d07887b6`  
-**Run conclusion:** in progress when this report was revised (CodeQL C# analysis pending).
+**Current GitHub pull-request validation run:** `43241686506`  
+**Code head tested:** `1ae16168143d3835c2be118ca18bdf32ff0d7647`  
+**Run conclusion:** success; all seven jobs completed successfully.
 
 | Check | Result |
 |---|---:|
 | .NET 10 build | Passed |
-| IT_Form.Tests | 354 passed / 0 failed |
+| IT_Form.Tests | 357 passed / 0 failed |
 | IT_Form.AuditTests | 55 passed / 0 failed |
-| CodeQL C# | In progress; not yet counted as passed |
+| CodeQL C# | Passed |
 | CodeQL Actions | Passed |
 | Gitleaks current tree | Passed |
 | Dependency Review | Passed |
@@ -180,5 +180,5 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening is implemented. The reviewed code head passed the .NET 10 build, 409 automated tests, Gitleaks, CodeQL Actions, and Dependency Review. CodeQL C# was still running when this revision was prepared. Do not describe the entire pipeline as green until that remaining check has a successful GitHub conclusion. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented. The reviewed code head passed the .NET 10 build, 412 automated tests, Gitleaks, CodeQL Actions, CodeQL C#, and Dependency Review. All seven jobs in GitHub Actions run `43241686506` completed successfully. Production security and legal/compliance readiness remain conditional on the outstanding release gates above. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
 

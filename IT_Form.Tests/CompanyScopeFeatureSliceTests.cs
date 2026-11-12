@@ -42,6 +42,42 @@ public class CompanyScopeFeatureSliceTests
 
     [Fact]
     /// <summary>
+    /// Ensures onboarding CSV exports neutralize spreadsheet formula-like employee data.
+    /// </summary>
+    public async Task ExportOnboardingCsvHandler_SanitizesFormulaLikeValues()
+    {
+        await using var context = CreateContext();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 902,
+            FullName = "=HYPERLINK(\"https://example.invalid\")",
+            EmployeeID = "+SUM(1,2)",
+            Designation = "-1+1",
+            Department = "@SUM(A1:A2)",
+            Branch = "HQ",
+            HODEmail = "\\t@cmd"
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new ExportOnboardingCsvQueryHandler(
+            context,
+            new TestCurrentUserAccessor("hr-user", titles: ["HR"]));
+
+        var result = await handler.Handle(
+            new ExportOnboardingCsvQuery(null, null),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var csv = Encoding.UTF8.GetString(result.Data!.Content);
+        Assert.Contains("'=HYPERLINK(", csv);
+        Assert.Contains("'+SUM(1,2)", csv);
+        Assert.Contains("'-1+1", csv);
+        Assert.Contains("'@SUM(A1:A2)", csv);
+        Assert.Contains("'\\\\t@cmd", csv);
+    }
+
+    [Fact]
+    /// <summary>
     /// Creates data for the CreateItAssetHandler_AllowsItUserWithoutCompanyAssignment operation.
     /// </summary>
     public async Task CreateItAssetHandler_AllowsItUserWithoutCompanyAssignment()

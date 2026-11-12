@@ -17,12 +17,12 @@ The latest GitHub Actions run for the reviewed code head passed 409 tests (354 a
 - `IT_Form.Tests`: 354 passed, 0 failed, 0 skipped.
 - `IT_Form.AuditTests`: 55 passed, 0 failed, 0 skipped.
 - Combined test total: **409 passed, 0 failed, 0 skipped**.
-- GitHub Actions run: `43239699591` ([view run](https://github.com/chire0722/IT-Portal/actions/runs/43239699591)).
+- GitHub pull-request validation run: `43239728256` ([view run](https://github.com/chire0722/IT-Portal/actions/runs/43239728256)).
 - .NET 10 application build: passed.
 - Gitleaks: passed.
 - CodeQL Actions: passed.
 - CodeQL C#: still in progress at the time this report revision was prepared; do not treat it as passed until GitHub records a successful conclusion.
-- Dependency Review: skipped for this push-triggered run; no pass is claimed for this run.
+- Dependency Review: passed on the pull-request validation run.
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 
@@ -119,19 +119,19 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**Current GitHub Actions run:** `42816302719`  
-**Code head tested:** `b68c9259d7f7045d5f732ddb52e6e3500d8a7ebf`  
-**Run conclusion:** success
+**Current GitHub pull-request validation run:** `43239728256`  
+**Code head tested:** `c5ef739351022fa8b036b038feca1fa2d07887b6`  
+**Run conclusion:** in progress when this report was revised (CodeQL C# analysis pending).
 
 | Check | Result |
 |---|---:|
 | .NET 10 build | Passed |
-| IT_Form.Tests | 340 passed / 0 failed |
+| IT_Form.Tests | 354 passed / 0 failed |
 | IT_Form.AuditTests | 55 passed / 0 failed |
-| CodeQL C# | Passed |
+| CodeQL C# | In progress; not yet counted as passed |
 | CodeQL Actions | Passed |
-| Gitleaks current tree | No leaks found |
-| Dependency Review | Skipped for this push; last applicable run `42802133045` passed |
+| Gitleaks current tree | Passed |
+| Dependency Review | Passed |
 
 These are automated CI results. They do not replace dynamic testing against a deployed environment, a human security review, or an independent penetration test.
 
@@ -180,5 +180,5 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening is implemented. The reviewed code head passed the .NET 10 build, 409 automated tests, Gitleaks, and CodeQL Actions. CodeQL C# was still running when this revision was prepared, and Dependency Review was skipped in the referenced push run. Do not describe the entire pipeline as green until the remaining check has a successful GitHub conclusion. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented. The reviewed code head passed the .NET 10 build, 409 automated tests, Gitleaks, CodeQL Actions, and Dependency Review. CodeQL C# was still running when this revision was prepared. Do not describe the entire pipeline as green until that remaining check has a successful GitHub conclusion. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
 

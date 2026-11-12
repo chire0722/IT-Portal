@@ -55,14 +55,14 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
             {
                 builder.AppendLine(
                     $"\"{item.Id}\"," +
-                    $"\"{Escape(item.FullName)}\"," +
-                    $"\"{Escape(item.EmployeeID)}\"," +
-                    $"\"{Escape(item.Designation)}\"," +
-                    $"\"{Escape(item.Department)}\"," +
-                    $"\"{Escape(item.Branch)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.FullName)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.EmployeeID)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.Designation)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.Department)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.Branch)}\"," +
                     $"\"{item.Status}\"," +
                     $"\"{item.RequestDate:yyyy-MM-dd}\"," +
-                    $"\"{Escape(item.HODEmail)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.HODEmail)}\"," +
                     $"\"{item.RequesterSignedAt:yyyy-MM-dd}\"," +
                     $"\"{item.ITAdminSignedAt:yyyy-MM-dd}\"," +
                     $"\"{item.EmployeeSignedAt:yyyy-MM-dd}\"");
@@ -80,13 +80,7 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
                 $"onboarding_export_{DateTime.Now:yyyyMMdd}.csv"));
         }
 
-        /// <summary>
-        /// Runs the Escape operation.
-        /// </summary>
-        private static string Escape(string? value)
-        {
-            return value?.Replace("\"", "\"\"") ?? string.Empty;
-        }
+
     }
 }
 

@@ -71,6 +71,7 @@ public class CompanyScopeFeatureSliceTests
         Assert.True(result.IsSuccess);
         var csv = Encoding.UTF8.GetString(result.Data!.Content);
         Assert.Contains("'=HYPERLINK(", csv);
+        Assert.Contains("\\\"\'=HYPERLINK(\\\"\\\"https://example.invalid\\\"\\\")\\\"", csv);
         Assert.Contains("'+SUM(1,2)", csv);
         Assert.Contains("'-1+1", csv);
         Assert.Contains("'@SUM(A1:A2)", csv);

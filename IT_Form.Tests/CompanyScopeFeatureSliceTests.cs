@@ -2,6 +2,7 @@
 
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.Onboarding.ExportOnboardingCsv;
+using IT_Form.Application.Features.Offboarding.ExportOffboardingCsv;
 using IT_Form.Application.Features.Onboarding.SaveOnboardingStep1;
 using System.Text;
 using IT_Form.Data;
@@ -207,6 +208,41 @@ public class CompanyScopeFeatureSliceTests
         Assert.Equal("You can only create onboarding requests for your assigned company scope.", result.Message);
         Assert.Equal(0, await context.OnboardingRequests.CountAsync());
     }
+
+
+    [Fact]
+    public async Task ExportOffboardingCsvHandler_SanitizesFormulaLikeValues()
+    {
+        await using var context = CreateContext();
+        context.OffboardingRequests.Add(new OffboardingRequest
+        {
+            Id = 903,
+            FullName = "=HYPERLINK(\"https://example.invalid\")",
+            EmployeeID = "+SUM(1,2)",
+            Department = "-1+1",
+            Branch = "@SUM(A1:A2)",
+            HODEmail = "\t@cmd",
+            LastDayOfWork = DateTime.Today
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new ExportOffboardingCsvQueryHandler(
+            context,
+            new TestCurrentUserAccessor("hr-user", titles: ["HR"]));
+
+        var result = await handler.Handle(
+            new ExportOffboardingCsvQuery(null, null),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var csv = Encoding.UTF8.GetString(result.Data!.Content);
+        Assert.Contains("\"'=HYPERLINK(\"\"https://example.invalid\"\")\"", csv);
+        Assert.Contains("\"'+SUM(1,2)\"", csv);
+        Assert.Contains("\"'-1+1\"", csv);
+        Assert.Contains("\"'@SUM(A1:A2)\"", csv);
+        Assert.Contains("\"'\t@cmd\"", csv);
+    }
+
 
     /// <summary>
     /// Creates data for the CreateContext operation.

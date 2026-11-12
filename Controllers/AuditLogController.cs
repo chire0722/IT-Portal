@@ -254,13 +254,8 @@ namespace IT_Form.Controllers
         /// </summary>
         private static string CsvCell(string? value)
         {
-            value ??= string.Empty;
-            if (value.Length > 0 && value[0] is '=' or '+' or '-' or '@')
-            {
-                value = "'" + value;
-            }
+            return "\"" + CsvExportSanitizer.EscapeCell(value) + "\"";
 
-            return "\"" + value.Replace("\"", "\"\"") + "\"";
         }
     }
 }

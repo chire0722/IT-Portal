@@ -150,5 +150,30 @@ namespace IT_Form.Tests
 
             Assert.IsType<NotFoundResult>(result);
         }
+
+        [Fact]
+        public async Task ExportCsv_NeutralizesFormulaLikeAssetFields_AndQuotesCsvCells()
+        {
+            using var context = CreateContext();
+            context.ITAssets.Add(new ITAsset
+            {
+                AssetTag = "=HYPERLINK(\"https://example.invalid\")",
+                Company = "HQ",
+                Model = "Model, \"Quoted\"",
+                SerialNumber = "+SUM(1,2)",
+                Status = AssetStatus.Available
+            });
+            await context.SaveChangesAsync();
+
+            var controller = GetController<ITAssetController>(context, role: "IT", branch: "HQ");
+            var result = await controller.ExportCsv(string.Empty, null, null);
+
+            var file = Assert.IsType<FileContentResult>(result);
+            var csv = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("\"'=HYPERLINK(\"\"https://example.invalid\"\")\"", csv);
+            Assert.Contains("\"Model, \"\"Quoted\"\"\"", csv);
+            Assert.Contains("\"'+SUM(1,2)\"", csv);
+        }
+
     }
 }

@@ -17,7 +17,7 @@ The latest GitHub Actions run for the reviewed code head passed 409 tests (354 a
 - `IT_Form.Tests`: 354 passed, 0 failed, 0 skipped.
 - `IT_Form.AuditTests`: 55 passed, 0 failed, 0 skipped.
 - Combined test total: **409 passed, 0 failed, 0 skipped**.
-- GitHub pull-request validation run: `43239728256` ([view run](https://github.com/chire0722/IT-Portal/actions/runs/43239728256)).
+- GitHub pull-request validation run: `43240677417` ([view run](https://github.com/chire0722/IT-Portal/actions/runs/43240677417)).
 - .NET 10 application build: passed.
 - Gitleaks: passed.
 - CodeQL Actions: passed.
@@ -119,7 +119,7 @@ The documents explicitly distinguish source-code evidence from organisation-owne
 
 ## 3. CI verification evidence
 
-**Current GitHub pull-request validation run:** `43239728256`  
+**Current GitHub pull-request validation run:** `43240677417`  
 **Code head tested:** `c5ef739351022fa8b036b038feca1fa2d07887b6`  
 **Run conclusion:** in progress when this report was revised (CodeQL C# analysis pending).
 

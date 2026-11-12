@@ -180,5 +180,5 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening is implemented. The reviewed code head passed the .NET 10 build, 412 automated tests, Gitleaks, CodeQL Actions, CodeQL C#, and Dependency Review. All seven jobs in GitHub Actions run `43241686506` completed successfully. Production security and legal/compliance readiness remain conditional on the outstanding release gates above. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented. The reviewed code head passed the .NET 10 build, 412 automated tests, Gitleaks, CodeQL Actions, CodeQL C#, and Dependency Review. All seven jobs in GitHub Actions run `43241686506` completed successfully. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
 

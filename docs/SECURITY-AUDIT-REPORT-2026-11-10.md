@@ -1,26 +1,28 @@
 # IT-Portal Security Audit and Hardening Report
 
-**Assessment date:** 10 November 2026  
+**Assessment date:** 12 November 2026  
 **Repository:** `chire0722/IT-Portal`  
 **Assessment branch:** `ci-cd/hardening`  
 **Pull request:** #3 — CI/CD hardening: .NET 10 build, tests, CodeQL and Dependabot  
-**Audited code head:** `b68c9259d7f7045d5f732ddb52e6e3500d8a7ebf`  
+**Audited code head:** `c5ef739351022fa8b036b038feca1fa2d07887b6`  
 **Status:** Engineering remediation and source-level verification completed for this iteration. This is not a penetration-test attestation, legal opinion, certification, or declaration of GDPR, Malaysian PDPA, or NIST conformity.
 
 ## 1. Executive summary
 
 This iteration hardened authentication/authorization-sensitive workflows, signature integrity, file uploads and storage, export safety, audit privacy, HMAC key rotation, and a restricted DSAR case workflow.
 
-The final GitHub Actions run for the current code head passed 395 tests (340 application tests and 55 audit tests). GitHub is the authoritative current-head build and test evidence.
+The latest GitHub Actions run for the reviewed code head passed 409 tests (354 application tests and 55 audit tests). GitHub is the authoritative build and test evidence for that code head.
 
 - .NET 10 application build on the current code head: passed in GitHub Actions; the previously reported nullable warning is fixed.
-- Current-head `IT_Form.Tests`: 340 passed, 0 failed.
-- Current-head `IT_Form.AuditTests`: 55 passed, 0 failed.
-- Current-head GitHub CI run: `42816302719`, passed.
-
-**Current-head total: 395 passed, 0 failed, 0 skipped.**
-
-The latest push-triggered run skipped Dependency Review by workflow design; the last applicable Dependency Review run `42802133045` passed. The latest run passed CodeQL C#, CodeQL Actions, Gitleaks, application build, and both test projects.
+- `IT_Form.Tests`: 354 passed, 0 failed, 0 skipped.
+- `IT_Form.AuditTests`: 55 passed, 0 failed, 0 skipped.
+- Combined test total: **409 passed, 0 failed, 0 skipped**.
+- GitHub Actions run: `43239699591` ([view run](https://github.com/chire0722/IT-Portal/actions/runs/43239699591)).
+- .NET 10 application build: passed.
+- Gitleaks: passed.
+- CodeQL Actions: passed.
+- CodeQL C#: still in progress at the time this report revision was prepared; do not treat it as passed until GitHub records a successful conclusion.
+- Dependency Review: skipped for this push-triggered run; no pass is claimed for this run.
 
 The hardening branch remains separate from `main`. Pull request #3 is open and has not been merged. These results prove the recorded source/build/test checks only; they do not prove production configuration, deployment controls, or organisational compliance.
 
@@ -88,7 +90,10 @@ The hardening branch remains separate from `main`. Pull request #3 is open and h
 
 ### 2.6 Export and audit hardening
 
-- Offboarding CSV export uses formula-injection sanitization for spreadsheet-active values.
+- Onboarding, IT Asset, Audit Log, and reviewed Offboarding CSV exports use formula-injection sanitization for spreadsheet-active values.
+- The shared `CsvExportSanitizer` checks the first non-whitespace, non-BOM character for `=`, `+`, `-`, and `@`; it also handles leading tab, carriage return, and line feed. It prefixes formula-like values with an apostrophe and doubles embedded double quotes.
+- The helper deliberately does not add outer CSV quotes. The reviewed Onboarding, IT Asset, and Audit Log writers wrap each exported field in outer quotes. Regression tests cover formula prefixes, leading whitespace/control characters, BOM, quote doubling, commas, multiline content, and an Onboarding export field's outer quoting.
+- Apostrophe prefixing is a spreadsheet-safety trade-off: the apostrophe remains in the raw CSV data and may be visible to non-spreadsheet consumers. The affected fields are metadata and identifiers, not intended calculation fields.
 - PDF generation no longer exposes raw internal exception messages to end users in the reviewed paths. Bulk onboarding and offboarding PDF exports are capped at 100 requests and 100 MB of generated PDF data, bounded at the HTTP request, validator, and service layers, and fail rather than returning a partial archive.
 - Existing audit payload and request-log sanitization remains in place.
 - Audit failure records no longer persist raw exception messages; free-text redaction covers common secret/email patterns; audit notification emails sanitize JSON and HTML-encode user-controlled values.
@@ -157,6 +162,7 @@ These are automated CI results. They do not replace dynamic testing against a de
 
 - Add recurring independent security reviews and penetration testing.
 - Establish patch SLAs, vulnerability triage ownership, and measurable remediation targets.
+- Replace remaining hand-built CSV output with a shared CSV serializer and explicitly test RFC 4180 record delimiters (CRLF), quoted commas, embedded quotes, and embedded line breaks across all export routes. The current manual writers quote fields, but `AppendLine()` uses the platform newline; strict RFC 4180 conformance is not claimed.
 - Maintain a control evidence register with owner, environment, test date, result, exception, and review date.
 
 ## 5. Compliance position
@@ -174,5 +180,5 @@ Compliance depends on the actual controller/processor roles, data flows, legal a
 5. Deploy to staging, run the approved EICAR test, validate certificate/key permissions, and perform a witnessed backup restore.
 6. Re-run CI and an independent security review after those actions.
 
-**Final assessment:** substantial source-level hardening is implemented, and current-head GitHub CI passed 395 tests with CodeQL C#, CodeQL Actions, and Gitleaks successful. Dependency Review passed on the last applicable dependency-check run. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
+**Final assessment:** substantial source-level hardening is implemented. The reviewed code head passed the .NET 10 build, 409 automated tests, Gitleaks, and CodeQL Actions. CodeQL C# was still running when this revision was prepared, and Dependency Review was skipped in the referenced push run. Do not describe the entire pipeline as green until the remaining check has a successful GitHub conclusion. Production security and legal/compliance readiness remain conditional on the outstanding release gates above.
 

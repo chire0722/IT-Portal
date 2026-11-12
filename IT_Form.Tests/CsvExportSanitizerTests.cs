@@ -30,9 +30,9 @@ public sealed class CsvExportSanitizerTests
         const string input = "Employee, \"A\"\r\nSecond line";
 
         var escaped = CsvExportSanitizer.EscapeCell(input);
-        var csvCell = $"\\\"{escaped}\\\"";
+        var csvCell = $"\"{escaped}\"";
 
         Assert.Equal("Employee, \"\"A\"\"\r\nSecond line", escaped);
-        Assert.Equal("\\\"Employee, \"\"A\"\"\r\nSecond line\\\"", csvCell);
+        Assert.Equal("\"Employee, \"\"A\"\"\r\nSecond line\"", csvCell);
     }
 }

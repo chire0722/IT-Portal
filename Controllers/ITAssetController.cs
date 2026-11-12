@@ -177,10 +177,10 @@ namespace IT_Form.Controllers
 
             foreach (var a in list)
             {
-                var tag = a.AssetTag?.Replace("\"", "\"\"") ?? "";
+                var tag = CsvExportSanitizer.EscapeCell(a.AssetTag);
                 var typeStr = a.AssetType.ToString();
-                var model = a.Model?.Replace("\"", "\"\"") ?? "";
-                var sn = a.SerialNumber?.Replace("\"", "\"\"") ?? "";
+                var model = CsvExportSanitizer.EscapeCell(a.Model);
+                var sn = CsvExportSanitizer.EscapeCell(a.SerialNumber);
                 var statusStr = a.Status.ToString();
 
                 var assignedTo = "";
@@ -191,11 +191,11 @@ namespace IT_Form.Controllers
                     {
                         if (latest.OnboardingRequest != null)
                         {
-                            assignedTo = latest.OnboardingRequest.FullName?.Replace("\"", "\"\"") ?? "";
+                            assignedTo = CsvExportSanitizer.EscapeCell(latest.OnboardingRequest.FullName);
                         }
                         else if (!string.IsNullOrEmpty(latest.CustomEmployeeName))
                         {
-                            assignedTo = latest.CustomEmployeeName.Replace("\"", "\"\"") + " (Manual)";
+                            assignedTo = CsvExportSanitizer.EscapeCell(latest.CustomEmployeeName + " (Manual)");
                         }
                     }
                 }

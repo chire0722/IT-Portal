@@ -48,5 +48,34 @@ namespace IT_Form.Tests
 
             Assert.Equal("RequireIT", attribute.Policy);
         }
+
+        [Fact]
+        public async Task ExportCsv_NeutralizesFormulaLikeAuditFields_AndQuotesCsvCells()
+        {
+            using var context = CreateContext();
+            context.AuditLogs.Add(new AuditLog
+            {
+                UserId = "user-1",
+                PerformedBy = "auditor@example.com",
+                Action = "Read",
+                EntityName = "ITAsset",
+                EntityId = "42",
+                Details = "=HYPERLINK(\"https://example.invalid\")",
+                ErrorMessage = "+SUM(1,2)",
+                Timestamp = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                IsSuccess = true
+            });
+            await context.SaveChangesAsync();
+
+            var controller = GetController<AuditLogController>(context, role: "IT");
+            var result = await controller.ExportCsv(null, null, null, null, null, null);
+
+            var file = Assert.IsType<FileContentResult>(result);
+            var csv = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("\"'=HYPERLINK(\"\"https://example.invalid\"\")\"", csv);
+            Assert.Contains("\"'+SUM(1,2)\"", csv);
+        }
+
     }
 }

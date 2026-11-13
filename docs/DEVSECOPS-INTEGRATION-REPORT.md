@@ -31,7 +31,7 @@
 
 - NuGet vulnerability scanning: enforced on `restore` (fails on NU1901–NU1904).
 - Secret scanning: Gitleaks CLI with SHA256-pinned release download; blocks new secrets in the current tree, surfaces historical findings for remediation.
-- SBOM: now generated per-run from the verified precompiled SBOM CLI (v4.1.5). **Awaiting a real GitHub Actions run to confirm success** — not yet verified in CI (see residual risks).
+- SBOM: now generated per-run from the verified precompiled SBOM CLI (v4.1.5). **Verified in CI**: run `43467631782` (head `4bf510b`) completed `Generate SBOM (SPDX)` successfully and uploaded the `sbom-spdx` artifact (50,618 bytes), confirming the SPDX 2.2 manifest was generated and validated (`spdxVersion == "SPDX-2.2"`).
 - Artifact integrity: SHA256 checksums now published (new); note these are tamper-evidence-in-retrospect and are not cryptographically signed (see residual risks).
 
 ## 5. Least-privilege and safety

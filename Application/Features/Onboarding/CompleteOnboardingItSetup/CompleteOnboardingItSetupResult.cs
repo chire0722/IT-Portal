@@ -25,7 +25,22 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
         /// <summary>
         /// The request was submitted for completion before all required checklist items were checked.
         /// </summary>
-        ChecklistIncomplete
+        ChecklistIncomplete,
+
+        /// <summary>
+        /// The selected inventory assets are missing, unavailable, duplicated, or outside the request company scope.
+        /// </summary>
+        InvalidAssetSelection,
+
+        /// <summary>
+        /// The request is not in the IT setup state required for this operation.
+        /// </summary>
+        InvalidState,
+
+        /// <summary>
+        /// The current user is not allowed to perform this operation for the request company.
+        /// </summary>
+        Forbidden
     }
 
     /// <summary>
@@ -41,3 +56,4 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
         string Message,
         string? WarningMessage = null);
 }
+

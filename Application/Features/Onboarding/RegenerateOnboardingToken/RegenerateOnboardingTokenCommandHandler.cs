@@ -30,19 +30,17 @@ namespace IT_Form.Application.Features.Onboarding.RegenerateOnboardingToken
         /// </summary>
         public async Task<ProcessResult<object>> Handle(RegenerateOnboardingTokenCommand request, CancellationToken cancellationToken)
         {
+            var user = _currentUserAccessor.User;
+            if (!user.HasClaim("UserTitle", "HR"))
+            {
+                return ProcessResult<object>.Forbidden();
+            }
+
             var onboardingRequest = await _context.OnboardingRequests
                 .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
             if (onboardingRequest == null)
             {
                 return ProcessResult<object>.NotFound();
-            }
-
-            var user = _currentUserAccessor.User;
-            var currentUsername = _currentUserAccessor.UserName;
-
-            if (user.HasClaim("UserTitle", "IT"))
-            {
-                return ProcessResult<object>.Forbidden();
             }
 
             if (!CompanyScopeHelper.CanAccessCompany(user, onboardingRequest.Branch))
@@ -69,3 +67,4 @@ namespace IT_Form.Application.Features.Onboarding.RegenerateOnboardingToken
         }
     }
 }
+

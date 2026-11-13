@@ -17,5 +17,9 @@ public sealed class ResendOtpCommandValidator : AbstractValidator<ResendOtpComma
 
         RuleFor(x => x.ClientIp)
             .NotEmpty();
+
+        RuleFor(x => x.Purpose)
+            .Must(purpose => purpose == OtpPurposes.PasswordReset)
+            .WithMessage("Unsupported OTP purpose for resend.");
     }
 }

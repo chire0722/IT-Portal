@@ -1,5 +1,7 @@
 // Project comment: SecurityHeadersMiddleware.cs is part of the IT Form application source code.
 
+using System.Security.Cryptography;
+
 namespace IT_Form.Security
 {
     /// <summary>
@@ -7,6 +9,8 @@ namespace IT_Form.Security
     /// </summary>
     public class SecurityHeadersMiddleware
     {
+        public const string CspNonceItemKey = "IT_Form.Security.CspNonce";
+
         private readonly RequestDelegate _next;
 
         public SecurityHeadersMiddleware(RequestDelegate next) => _next = next;
@@ -17,13 +21,26 @@ namespace IT_Form.Security
         public async Task InvokeAsync(HttpContext context)
         {
             // 1. Content Security Policy (CSP)
-            // Relaxed for local network IP access
+            // Inline script blocks receive a per-response nonce through CspNonceTagHelper.
+            // Event handlers are delegated through the local csp-events.js module so that
+            // script-src-attr can remain disabled.
+            var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
+            context.Items[CspNonceItemKey] = nonce;
+            var scriptSources = $"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; ";
+
             context.Response.Headers.Append("Content-Security-Policy",
-                "default-src 'self' http://172.16.3.142:5063 http://172.16.1.137:5063; " +
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " +
-                "style-src 'self' 'unsafe-inline' http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
-                "font-src 'self' data: http://172.16.3.142:5063 http://172.16.1.137:5063 https://cdnjs.cloudflare.com https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
-                "img-src 'self' data: blob: http://172.16.3.142:5063 http://172.16.1.137:5063; " +
+                "default-src 'self'; " +
+                scriptSources +
+                "script-src-attr 'none'; " +
+                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
+                "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
+                "img-src 'self' data: blob:; " +
+                "connect-src 'self'; " +
+                "media-src 'self' blob:; " +
+                "worker-src 'self' blob:; " +
+                "object-src 'none'; " +
+                "base-uri 'self'; " +
+                "form-action 'self'; " +
                 "frame-ancestors 'none';");
 
             // 2. Anti-Clickjacking: X-Frame-Options
@@ -48,3 +65,4 @@ namespace IT_Form.Security
         }
     }
 }
+

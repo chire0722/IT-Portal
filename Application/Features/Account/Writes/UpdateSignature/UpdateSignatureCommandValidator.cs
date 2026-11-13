@@ -1,6 +1,7 @@
 // Project comment: UpdateSignatureCommandValidator.cs is part of the IT Form application source code.
 
 using FluentValidation;
+using IT_Form.Helpers;
 
 namespace IT_Form.Application.Features.Account.Writes.UpdateSignature;
 
@@ -15,8 +16,8 @@ public sealed class UpdateSignatureCommandValidator : AbstractValidator<UpdateSi
             .NotEmpty();
 
         RuleFor(x => x.SignatureData)
-            .Must(signature => string.IsNullOrWhiteSpace(signature) || signature.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
-            .WithMessage("Signature must be a valid image data URL.");
+            .Must(signature => string.IsNullOrWhiteSpace(signature) || SignatureDataUriValidator.IsValid(signature))
+            .WithMessage("Signature must be a valid PNG image data URL within the allowed size and dimensions.");
 
         RuleFor(x => x.SignatureData)
             .MaximumLength(5_000_000)

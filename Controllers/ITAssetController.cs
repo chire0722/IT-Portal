@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
 using IT_Form.Data;
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
 using IT_Form.Application.Features.ITAsset.EditItAsset;
@@ -16,6 +17,7 @@ using System.Threading.Tasks;
 using IT_Form.Models.ViewModels;
 using ClosedXML.Excel;
 using IT_Form.Helpers;
+using IT_Form.Services;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using MediatR;
 using System.Security.Claims;
@@ -31,12 +33,18 @@ namespace IT_Form.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISender _sender;
         private readonly IQuotaControl _quotaControl;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
-        public ITAssetController(ApplicationDbContext context, ISender sender, IQuotaControl quotaControl)
+        public ITAssetController(
+            ApplicationDbContext context,
+            ISender sender,
+            IQuotaControl quotaControl,
+            IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _sender = sender;
             _quotaControl = quotaControl;
+            _malwareScanner = malwareScanner;
         }
 
         // GET: ITAsset
@@ -169,10 +177,10 @@ namespace IT_Form.Controllers
 
             foreach (var a in list)
             {
-                var tag = a.AssetTag?.Replace("\"", "\"\"") ?? "";
+                var tag = CsvExportSanitizer.EscapeCell(a.AssetTag);
                 var typeStr = a.AssetType.ToString();
-                var model = a.Model?.Replace("\"", "\"\"") ?? "";
-                var sn = a.SerialNumber?.Replace("\"", "\"\"") ?? "";
+                var model = CsvExportSanitizer.EscapeCell(a.Model);
+                var sn = CsvExportSanitizer.EscapeCell(a.SerialNumber);
                 var statusStr = a.Status.ToString();
 
                 var assignedTo = "";
@@ -183,11 +191,11 @@ namespace IT_Form.Controllers
                     {
                         if (latest.OnboardingRequest != null)
                         {
-                            assignedTo = latest.OnboardingRequest.FullName?.Replace("\"", "\"\"") ?? "";
+                            assignedTo = CsvExportSanitizer.EscapeCell(latest.OnboardingRequest.FullName);
                         }
                         else if (!string.IsNullOrEmpty(latest.CustomEmployeeName))
                         {
-                            assignedTo = latest.CustomEmployeeName.Replace("\"", "\"\"") + " (Manual)";
+                            assignedTo = CsvExportSanitizer.EscapeCell(latest.CustomEmployeeName + " (Manual)");
                         }
                     }
                 }
@@ -388,7 +396,6 @@ namespace IT_Form.Controllers
 
             var itAsset = await _context.ITAssets
                 .IgnoreQueryFilters()
-                .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == id);
 
             if (itAsset == null)
@@ -397,21 +404,21 @@ namespace IT_Form.Controllers
             }
             if (!CompanyScopeHelper.CanAccessCompany(User, itAsset.Company)) return Forbid();
 
-            // Hard delete IT asset row from database.
-            // Related maintenance logs are removed by FK cascade; issued history keeps record with ITAssetId set null.
-            var affectedRows = await _context.ITAssets
-                .IgnoreQueryFilters()
-                .Where(a => a.Id == id)
-                .ExecuteDeleteAsync();
-
-            if (affectedRows > 0)
+            if (itAsset.Status == AssetStatus.Issued)
             {
-                await _context.LogActionAsync(
-                    nameof(ITAsset),
-                    id.ToString(),
-                    "Delete",
-                    $"Permanently deleted IT Asset: {itAsset.AssetTag} ({itAsset.Model ?? "N/A"})");
+                return Conflict("Return or dispose of an issued asset before removing it from inventory.");
             }
+
+            itAsset.Status = AssetStatus.Disposed;
+            itAsset.IsDeleted = true;
+            itAsset.DeletedAt = DateTime.UtcNow;
+            itAsset.DeletedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name;
+            await _context.SaveChangesAsync();
+            await _context.LogActionAsync(
+                nameof(ITAsset),
+                id.ToString(),
+                "Delete",
+                $"Soft-deleted IT Asset: {itAsset.AssetTag} ({itAsset.Model ?? "N/A"})");
 
             return RedirectToAction(nameof(Index));
         }
@@ -533,6 +540,8 @@ namespace IT_Form.Controllers
         // POST: ITAsset/BulkImport
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
         /// <summary>
         /// Runs the BulkImport operation.
         /// </summary>
@@ -552,9 +561,23 @@ namespace IT_Form.Controllers
 
             try
             {
+                await MalwareScanHelper.EnsureCleanAsync(
+                    file,
+                    _malwareScanner,
+                    "IT asset import",
+                    HttpContext.RequestAborted);
+            }
+            catch (ValidationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
                 using (var stream = new MemoryStream())
                 {
-                    await file.CopyToAsync(stream);
+                    await file.CopyToAsync(stream, HttpContext.RequestAborted);
                     stream.Position = 0;
                     using (var workbook = new ClosedXML.Excel.XLWorkbook(stream))
                     {
@@ -637,10 +660,10 @@ namespace IT_Form.Controllers
                                 _context.ITAssets.Add(asset);
                                 successCount++;
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
                                 errorCount++;
-                                errorMessages.Add($"Row {row.RowNumber()}: {ex.Message}");
+                                errorMessages.Add($"Row {row.RowNumber()}: The row could not be imported because its data is invalid or conflicts with an existing record.");
                             }
                         }
 
@@ -657,9 +680,10 @@ namespace IT_Form.Controllers
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                TempData["ErrorMessage"] = "Error processing file: " + ex.Message;
+                // Do not disclose parser, filesystem, or database exception details to the caller.
+                TempData["ErrorMessage"] = "Unable to process the uploaded workbook. Verify that it is a valid .xlsx file and try again.";
             }
 
             return RedirectToAction(nameof(Index));
@@ -720,3 +744,4 @@ namespace IT_Form.Controllers
         }
     }
 }
+

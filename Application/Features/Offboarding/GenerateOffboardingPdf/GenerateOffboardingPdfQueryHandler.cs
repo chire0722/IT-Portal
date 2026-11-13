@@ -53,20 +53,16 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
             if (!await OffboardingReadAccessSupport.IsUserAuthorizedForRequest(_context, _currentUserAccessor.User, _userManager, offboardingRequest, _currentUserAccessor.UserName))
                 return ProcessResult<BinaryFilePayload>.Forbidden();
 
-            if (offboardingRequest.HRSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.HRSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.HRSignerName ?? "Unknown", offboardingRequest.HRSignedAt.Value, offboardingRequest.HRSignature ?? "", offboardingRequest.HRSignatureHmac))
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.HRSignerName, "Unknown", offboardingRequest.HRSignedAt, offboardingRequest.HRSignature, offboardingRequest.HRSignatureHmac))
                 return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (HR). The document may have been tampered with.", "Details", request.Id);
 
-            if (offboardingRequest.HODSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.HODSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.HODSignerName ?? "Unknown", offboardingRequest.HODSignedAt.Value, offboardingRequest.HODSignature ?? "", offboardingRequest.HODSignatureHmac))
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.HODSignerName, "Unknown", offboardingRequest.HODSignedAt, offboardingRequest.HODSignature, offboardingRequest.HODSignatureHmac))
                 return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (HOD). The document may have been tampered with.", "Details", request.Id);
 
-            if (offboardingRequest.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.ITAdminSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.ITAdminSignerName ?? "Unknown", offboardingRequest.ITAdminSignedAt.Value, offboardingRequest.ITAdminSignature ?? "", offboardingRequest.ITAdminSignatureHmac))
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.ITAdminSignerName, "Unknown", offboardingRequest.ITAdminSignedAt, offboardingRequest.ITAdminSignature, offboardingRequest.ITAdminSignatureHmac))
                 return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (IT Admin). The document may have been tampered with.", "Details", request.Id);
 
-            if (offboardingRequest.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(offboardingRequest.EmployeeSignatureHmac) &&
-                !_integrityService.Verify("OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.EmployeeSignerName ?? "Employee", offboardingRequest.EmployeeSignedAt.Value, offboardingRequest.EmployeeSignature ?? "", offboardingRequest.EmployeeSignatureHmac))
+            if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", offboardingRequest.Id.ToString(), offboardingRequest.EmployeeSignerName, "Employee", offboardingRequest.EmployeeSignedAt, offboardingRequest.EmployeeSignature, offboardingRequest.EmployeeSignatureHmac))
                 return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Employee). The document may have been tampered with.", "Details", request.Id);
 
             try
@@ -80,7 +76,7 @@ namespace IT_Form.Application.Features.Offboarding.GenerateOffboardingPdf
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate PDF for offboarding request #{Id}", request.Id);
-                return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", request.Id);
+                return ProcessResult<BinaryFilePayload>.Failure("Unable to generate the PDF. Please retry or contact IT.", "Details", request.Id);
             }
         }
     }

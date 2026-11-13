@@ -15,6 +15,9 @@ namespace IT_Form.Services
     /// </summary>
     public sealed class OnboardingDocumentService : IOnboardingDocumentService
     {
+        private const int MaxSelectedRequests = 100;
+        private const long MaxTotalPdfBytes = 100L * 1024 * 1024;
+
         private readonly ApplicationDbContext _context;
         private readonly IPdfService _pdfService;
         private readonly ISignatureIntegrityService _integrityService;
@@ -42,31 +45,78 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Failure("No requests selected.", "Index");
             }
 
+            if (user?.HasClaim("UserTitle", "HR") != true)
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
+            var requestedIds = ids.Where(id => id > 0).Distinct().ToArray();
+            if (requestedIds.Length == 0 || requestedIds.Length != ids.Length)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure("Select valid requests before exporting.", "Index");
+            }
+
+            if (requestedIds.Length > MaxSelectedRequests)
+            {
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    $"Select no more than {MaxSelectedRequests} requests per export.",
+                    "Index");
+            }
+
             var requests = await _context.OnboardingRequests
                 .AsNoTracking()
                 .AsSplitQuery()
                 .IncludeOnboardingPdfData()
-                .Where(r => ids.Contains(r.Id))
+                .Where(r => requestedIds.Contains(r.Id))
                 .ToListAsync(cancellationToken);
 
             requests = requests
                 .Where(request => HrRecordReadCompanyScopeSupport.CanAccessCompany(user, request.Branch))
                 .ToList();
 
-            if (!requests.Any())
+            // Never silently export an in-scope subset of a mixed-company selection.
+            if (requests.Count != requestedIds.Length)
             {
-                return ProcessResult<BinaryFilePayload>.Failure("No valid requests found.", "Index");
+                return ProcessResult<BinaryFilePayload>.NotFound();
             }
 
             using var memoryStream = new MemoryStream();
             using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
             {
+                long totalPdfBytes = 0;
                 foreach (var request in requests)
                 {
                     try
                     {
+                        if (!AreSignaturesValid(request))
+                        {
+                            return ProcessResult<BinaryFilePayload>.Failure(
+                                "One or more digital signatures failed integrity validation. The export was cancelled.",
+                                "Index");
+                        }
+
                         var pdfBytes = _pdfService.GeneratePdf(request);
-                        var safeName = string.Join("_", (request.FullName ?? "Unknown").Split(Path.GetInvalidFileNameChars()));
+                        totalPdfBytes += pdfBytes.LongLength;
+                        if (totalPdfBytes > MaxTotalPdfBytes)
+                        {
+                            return ProcessResult<BinaryFilePayload>.Failure(
+                                "The selected export exceeds the permitted size. Reduce the number of requests and retry.",
+                                "Index");
+                        }
+
+                        var invalidFileNameCharacters = Path.GetInvalidFileNameChars()
+                            .Concat(new[] { '/', '\\' })
+                            .ToHashSet();
+                        var safeName = new string((request.FullName ?? "Unknown")
+                            .Select(character => char.IsControl(character) || invalidFileNameCharacters.Contains(character)
+                                ? '_'
+                                : character)
+                            .ToArray())
+                            .Trim(' ', '.', '_');
+                        if (string.IsNullOrWhiteSpace(safeName))
+                        {
+                            safeName = "Employee";
+                        }
                         var entry = archive.CreateEntry($"Onboarding_{safeName}_ID{request.Id}.pdf", CompressionLevel.Fastest);
                         using var entryStream = entry.Open();
                         entryStream.Write(pdfBytes, 0, pdfBytes.Length);
@@ -74,6 +124,9 @@ namespace IT_Form.Services
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to generate PDF for Onboarding Request {Id}", request.Id);
+                        return ProcessResult<BinaryFilePayload>.Failure(
+                            "Unable to generate the requested export. Please retry or contact IT.",
+                            "Index");
                     }
                 }
             }
@@ -84,6 +137,11 @@ namespace IT_Form.Services
                 "application/zip",
                 $"Onboarding_PDFs_{DateTime.Now:yyyyMMdd}.zip"));
         }
+
+        private bool AreSignaturesValid(IT_Form.Models.OnboardingRequest request)
+            => SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.RequesterSignerName, "Unknown", request.RequesterSignedAt, request.RequesterSignature, request.RequesterSignatureHmac)
+               && SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName, "Unknown", request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac)
+               && SignatureIntegrityGuard.IsValid(_integrityService, "OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName, "Employee", request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac);
 
         /// <summary>
         /// Runs the GeneratePdfAsync operation.
@@ -115,28 +173,12 @@ namespace IT_Form.Services
                 return ProcessResult<BinaryFilePayload>.Forbidden();
             }
 
-            if (request.RequesterSignedAt.HasValue && !string.IsNullOrEmpty(request.RequesterSignatureHmac))
+            if (!AreSignaturesValid(request))
             {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.RequesterSignerName ?? "Unknown", request.RequesterSignedAt.Value, request.RequesterSignature ?? "", request.RequesterSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Requester). The document may have been tampered with.", "Details", id);
-                }
-            }
-
-            if (request.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(request.ITAdminSignatureHmac))
-            {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt.Value, request.ITAdminSignature ?? "", request.ITAdminSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (IT Admin). The document may have been tampered with.", "Details", id);
-                }
-            }
-
-            if (request.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(request.EmployeeSignatureHmac))
-            {
-                if (!_integrityService.Verify("OnboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt.Value, request.EmployeeSignature ?? "", request.EmployeeSignatureHmac))
-                {
-                    return ProcessResult<BinaryFilePayload>.Failure("Digital signature integrity check failed (Employee). The document may have been tampered with.", "Details", id);
-                }
+                return ProcessResult<BinaryFilePayload>.Failure(
+                    "Digital signature integrity check failed. The document may have been tampered with.",
+                    "Details",
+                    id);
             }
 
             try
@@ -150,8 +192,9 @@ namespace IT_Form.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate PDF for request #{Id}", id);
-                return ProcessResult<BinaryFilePayload>.Failure($"Failed to generate PDF: {ex.Message}", "Details", id);
+                return ProcessResult<BinaryFilePayload>.Failure("Unable to generate the PDF. Please retry or contact IT.", "Details", id);
             }
         }
     }
 }
+

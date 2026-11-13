@@ -1,0 +1,255 @@
+name: CI - Build, Test & Security
+
+on:
+  push:
+    branches:
+      - main
+      - "security/**"
+      - "ci-cd/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build application (.NET 10)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore local .NET tools
+        run: dotnet tool restore
+
+      - name: Restore application (fail on NuGet audit findings)
+        run: dotnet restore "IT Form.csproj" "-warnaserror:NU1901;NU1902;NU1903;NU1904"
+
+      - name: Build application
+        run: dotnet build "IT Form.csproj" --configuration Release --no-restore
+
+      - name: Publish application artifact
+        run: dotnet publish "IT Form.csproj" --configuration Release --no-restore --output "${{ runner.temp }}/publish"
+
+      - name: Generate SHA256 checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${{ runner.temp }}/publish"
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > "${{ runner.temp }}/publish/SHA256SUMS"
+          cat "${{ runner.temp }}/publish/SHA256SUMS"
+
+      - name: Upload published artifact with checksums
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: it-portal-publish
+          path: ${{ runner.temp }}/publish
+          retention-days: 14
+
+  test:
+    name: Test - ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - IT_Form.Tests/IT_Form.Tests.csproj
+          - IT_Form.AuditTests/IT_Form.AuditTests.csproj
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore test project (fail on NuGet audit findings)
+        run: dotnet restore "${{ matrix.project }}" "-warnaserror:NU1901;NU1902;NU1903;NU1904"
+
+      - name: Run tests
+        run: dotnet test "${{ matrix.project }}" --configuration Release --no-restore --logger "trx;LogFileName=test-results.trx" --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: test-results-${{ strategy.job-index }}
+          path: TestResults/**/*.trx
+          if-no-files-found: ignore
+          retention-days: 14
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+          fail-on-scopes: runtime, development
+          show-patched-versions: true
+
+  secret-scan:
+    name: Secret scanning (Gitleaks CLI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Gitleaks from verified release
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}" \
+            --output "${RUNNER_TEMP}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${RUNNER_TEMP}/${archive}" | sha256sum --check --status
+          tar -xzf "${RUNNER_TEMP}/${archive}" -C "${RUNNER_TEMP}" gitleaks
+          sudo install -m 0755 "${RUNNER_TEMP}/gitleaks" /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Scan current tree and full Git history for secrets
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          run_gitleaks_scan() {
+            local mode="$1"
+            local fail_code="$2"
+            shift 2
+            local report="${RUNNER_TEMP}/gitleaks-${mode}-report.json"
+            local status=0
+
+            "$@" --redact=100 --exit-code "${fail_code}" --report-format json --report-path "${report}" || status=$?
+
+            if [[ -s "${report}" ]]; then
+              jq -r --arg scan "${mode}" '.[] | "scan=\($scan) rule=\(.RuleID) file=\(.File) line=\(.StartLine) commit=\(.Commit) date=\(.Date)"' "${report}"
+            fi
+
+            echo "${mode} scan exit code: ${status}"
+            return "${status}"
+          }
+
+          # Block new secrets in the current checked-out tree.
+          run_gitleaks_scan current 1 gitleaks dir .
+
+          # Historical findings remain visible for remediation, but do not
+          # block unrelated PRs. Previously exposed credentials must still
+          # be revoked/rotated and the Git history purge handled separately.
+          run_gitleaks_scan history 0 gitleaks git --log-opts="--all --no-merges"
+
+  sbom:
+    name: Generate SBOM (SPDX)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source (build-components path)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Download published artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: it-portal-publish
+          path: ${{ runner.temp }}/publish
+
+      - name: Install SBOM tool (v4.1.5) from verified release
+        env:
+          SBOM_TOOL_VERSION: 4.1.5
+          SBOM_TOOL_SHA256: bf5d4f99bc98c119d549d08fc02ae92598a7a42772f17317c01031a92632e05b
+        run: |
+          set -euo pipefail
+          binary="${RUNNER_TEMP}/sbom-tool"
+          curl --fail --silent --show-error --location \
+            "https://github.com/microsoft/sbom-tool/releases/download/v${SBOM_TOOL_VERSION}/sbom-tool-linux-x64" \
+            --output "${binary}"
+          echo "${SBOM_TOOL_SHA256}  ${binary}" | sha256sum --check --status
+          chmod +x "${binary}"
+          "${binary}" version
+
+      - name: Generate SPDX 2.2 SBOM
+        run: |
+          set -euo pipefail
+          binary="${RUNNER_TEMP}/sbom-tool"
+          "${binary}" generate \
+            -b "${RUNNER_TEMP}/publish" \
+            -bc "${GITHUB_WORKSPACE}" \
+            -nsb "https://github.com/chire0722/IT-Portal" \
+            -pn "IT-Portal" \
+            -pv "${GITHUB_SHA}" \
+            -ps "chire0722"
+
+      - name: Validate SPDX manifest
+        run: |
+          set -euo pipefail
+          manifest="${RUNNER_TEMP}/publish/_manifest/spdx_2.2/manifest.spdx.json"
+          test -f "${manifest}" || { echo "SBOM manifest not found: ${manifest}"; exit 1; }
+          jq -e '.spdxVersion == "SPDX-2.2"' "${manifest}" > /dev/null
+          echo "SPDX manifest valid: $(jq -r '.spdxVersion' "${manifest}")"
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: sbom-spdx
+          path: ${{ runner.temp }}/publish/_manifest
+          if-no-files-found: error
+          retention-days: 90
+
+  codeql:
+    name: CodeQL - ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build_mode: autobuild
+          - language: actions
+            build_mode: none
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build_mode }}
+          queries: security-extended
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4

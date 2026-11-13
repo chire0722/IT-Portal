@@ -206,7 +206,7 @@
                                                 @if (req.Status == RequestStatus.Draft || req.Status == RequestStatus.Rejected)
                                                 {
                                                     <form asp-action="Delete" asp-route-id="@req.Id" method="post" class="d-inline"
-                                                          onsubmit="return confirm('Are you sure you want to delete this offboarding request for @req.FullName?');">
+                                                          data-csp-confirm="Are you sure you want to delete this offboarding request for @req.FullName?">
                                                         @Html.AntiForgeryToken()
                                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete request for @req.FullName">
                                                             <i class="bi bi-trash" aria-hidden="true"></i>
@@ -347,6 +347,7 @@
         });
     </script>
 }
+
 
 
 

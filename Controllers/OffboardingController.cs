@@ -46,7 +46,7 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> ExportCsv(string searchString, RequestStatus? status)
         => HandleProcessResult(await _sender.Send(new ExportOffboardingCsvQuery(searchString, status)));
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")]
+    [HttpPost, RequestSizeLimit(128 * 1024), ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")]
     /// <summary>
     /// Runs the ExportBulkPdf operation.
     /// </summary>
@@ -66,7 +66,7 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> Create(int? onboardingRequestId = null)
         => HandleProcessResult(await _sender.Send(new GetOffboardingCreatePageQuery(onboardingRequestId)));
 
-    [HttpGet]
+    [HttpGet, Authorize(Policy = "RequireHR")]
     /// <summary>
     /// Gets the data required by the GetEmployeeDetails operation.
     /// </summary>
@@ -76,7 +76,9 @@ public class OffboardingController : AppControllerBase
         return model != null ? Json(model) : NotFound();
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR"),
+     RequestSizeLimit(12 * 1024 * 1024),
+     RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
     /// <summary>
     /// Creates data for the Create operation.
     /// </summary>
@@ -96,7 +98,9 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> Step1(int? id)
         => id.HasValue ? HandleProcessResult(await _sender.Send(new GetOffboardingStep1Query(id.Value))) : NotFound();
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireIT")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireIT"),
+     RequestSizeLimit(62 * 1024 * 1024),
+     RequestFormLimits(MultipartBodyLengthLimit = 62 * 1024 * 1024)]
     /// <summary>
     /// Runs the Step1 operation.
     /// </summary>
@@ -194,7 +198,18 @@ public class OffboardingController : AppControllerBase
     /// Runs the DownloadResignation operation.
     /// </summary>
     public async Task<IActionResult> DownloadResignation(int id)
-        => HandleProcessResult(await _sender.Send(new DownloadOffboardingResignationQuery(id)));
+    {
+        var result = await _sender.Send(new DownloadOffboardingResignationQuery(id));
+        if (result.IsSuccess)
+        {
+            Response.Headers["Cache-Control"] = "no-store, private";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+        }
+
+        return HandleProcessResult(result);
+    }
 
     [HttpPost, ValidateAntiForgeryToken]
     /// <summary>
@@ -203,3 +218,4 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> RegenerateToken(int id)
         => ProcessResponse(await _sender.Send(new ProcessOffboardingTokenRegenerationCommand(id)), "Details", id);
 }
+

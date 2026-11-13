@@ -47,11 +47,8 @@ namespace IT_Form.Controllers
             var storedPath = SensitiveFileStorage.BuildStoredPath(category, fileName);
             var physicalPath = SensitiveFileStorage.ResolvePhysicalPath(_environment, storedPath);
 
-            if (string.IsNullOrWhiteSpace(physicalPath) || !System.IO.File.Exists(physicalPath))
-            {
-                return NotFound();
-            }
-
+            // Authorize against the owning workflow record before checking the physical file.
+            // Return the same not-found response for out-of-scope records to avoid file-existence oracles.
             var canAccess = category switch
             {
                 SensitiveFileStorage.ResignationsCategory => await CanAccessOffboardingFileAsync(storedPath, isResignation: true),
@@ -59,14 +56,30 @@ namespace IT_Form.Controllers
                 _ => false
             };
 
-            if (!canAccess)
+            if (!canAccess || string.IsNullOrWhiteSpace(physicalPath))
             {
-                return Forbid();
+                return NotFound();
             }
+
+            if (!System.IO.File.Exists(physicalPath))
+            {
+                return NotFound();
+            }
+
+            Response.Headers["Cache-Control"] = "no-store, private";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
 
             if (!ContentTypeProvider.TryGetContentType(fileName, out var contentType))
             {
                 contentType = "application/octet-stream";
+            }
+
+            // PDFs are downloaded rather than rendered inline; verified images/videos remain previewable.
+            if (string.Equals(Path.GetExtension(fileName), ".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                return PhysicalFile(physicalPath, contentType, Path.GetFileName(fileName));
             }
 
             return PhysicalFile(physicalPath, contentType);

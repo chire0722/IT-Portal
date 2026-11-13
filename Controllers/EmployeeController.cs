@@ -29,10 +29,16 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> Index(string searchString, string department, string branch, int page = 1)
         {
+            // Restrict the roster to companies the current user is scoped to, preventing
+            // cross-company employee directory disclosure.
+            var scopedCompanies = CompanyScopeHelper.GetScopedCompanies(User);
+
             // Only pull Onboarding requests that are Fully Completed (Approved)
             var employees = _context.OnboardingRequests
                 .Where(o => o.Status == RequestStatus.Completed || o.Status == RequestStatus.Approved)
                 .AsQueryable();
+
+            employees = CompanyScopeHelper.ApplyOnboardingCompanyScope(employees, scopedCompanies);
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -55,15 +61,22 @@ namespace IT_Form.Controllers
             ViewData["DeptFilter"] = department;
             ViewData["BranchFilter"] = branch;
 
-            // Optional: get distinct departments and branches for dropdown filters
-            ViewData["Departments"] = await _context.OnboardingRequests
+            // Optional: get distinct departments and branches for dropdown filters.
+            // These must be company-scoped too, otherwise the filter dropdowns leak
+            // department/branch names belonging to other companies.
+            var scopedRoster = _context.OnboardingRequests
                 .Where(o => o.Status == RequestStatus.Completed || o.Status == RequestStatus.Approved)
+                .AsQueryable();
+
+            scopedRoster = CompanyScopeHelper.ApplyOnboardingCompanyScope(scopedRoster, scopedCompanies);
+
+            ViewData["Departments"] = await scopedRoster
                 .Select(o => o.Department)
                 .Distinct()
                 .ToListAsync();
 
-            ViewData["Branches"] = await _context.OnboardingRequests
-                .Where(o => (o.Status == RequestStatus.Completed || o.Status == RequestStatus.Approved) && o.Branch != null)
+            ViewData["Branches"] = await scopedRoster
+                .Where(o => o.Branch != null)
                 .Select(o => o.Branch)
                 .Distinct()
                 .ToListAsync();

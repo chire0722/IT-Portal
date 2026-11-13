@@ -1,8 +1,10 @@
 // Project comment: ExportOnboardingCsvQueryHandler.cs is part of the IT Form application source code.
 
 using System.Text;
+using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Models;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,10 +17,14 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
         : IRequestHandler<ExportOnboardingCsvQuery, ProcessResult<BinaryFilePayload>>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public ExportOnboardingCsvQueryHandler(ApplicationDbContext context)
+        public ExportOnboardingCsvQueryHandler(
+            ApplicationDbContext context,
+            ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -28,6 +34,12 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
             ExportOnboardingCsvQuery request,
             CancellationToken cancellationToken)
         {
+            var user = _currentUserAccessor.User;
+            if (user?.HasClaim("UserTitle", "HR") != true)
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
             var requests = _context.OnboardingRequests
                 .AsNoTracking()
                 .AsQueryable()
@@ -44,14 +56,14 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
             {
                 builder.AppendLine(
                     $"\"{item.Id}\"," +
-                    $"\"{Escape(item.FullName)}\"," +
-                    $"\"{Escape(item.EmployeeID)}\"," +
-                    $"\"{Escape(item.Designation)}\"," +
-                    $"\"{Escape(item.Department)}\"," +
-                    $"\"{Escape(item.Branch)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.FullName)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.EmployeeID)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.Designation)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.Department)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.Branch)}\"," +
                     $"\"{item.Status}\"," +
                     $"\"{item.RequestDate:yyyy-MM-dd}\"," +
-                    $"\"{Escape(item.HODEmail)}\"," +
+                    $"\"{CsvExportSanitizer.EscapeCell(item.HODEmail)}\"," +
                     $"\"{item.RequesterSignedAt:yyyy-MM-dd}\"," +
                     $"\"{item.ITAdminSignedAt:yyyy-MM-dd}\"," +
                     $"\"{item.EmployeeSignedAt:yyyy-MM-dd}\"");
@@ -69,12 +81,7 @@ namespace IT_Form.Application.Features.Onboarding.ExportOnboardingCsv
                 $"onboarding_export_{DateTime.Now:yyyyMMdd}.csv"));
         }
 
-        /// <summary>
-        /// Runs the Escape operation.
-        /// </summary>
-        private static string Escape(string? value)
-        {
-            return value?.Replace("\"", "\"\"") ?? string.Empty;
-        }
+
     }
 }
+

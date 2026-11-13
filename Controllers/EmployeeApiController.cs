@@ -27,15 +27,18 @@ namespace IT_Form.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISignatureIntegrityService _integrityService;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
         public EmployeeApiController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISignatureIntegrityService integrityService)
+            ISignatureIntegrityService integrityService,
+            IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _userManager = userManager;
             _integrityService = integrityService;
+            _malwareScanner = malwareScanner;
         }
 
         [Authorize(Policy = "RequireHR")]
@@ -145,6 +148,8 @@ namespace IT_Form.Controllers
         [Authorize(Policy = "RequireHR")]
         [HttpPost("import")]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(10 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
         /// <summary>
         /// Runs the Import operation.
         /// </summary>
@@ -152,6 +157,12 @@ namespace IT_Form.Controllers
         {
             if (!FileUploadHelper.IsValidExcelFile(file, out string errorMessage))
                 return BadRequest(errorMessage);
+
+            await MalwareScanHelper.EnsureCleanAsync(
+                file,
+                _malwareScanner,
+                "employee import",
+                HttpContext.RequestAborted);
 
             var currentUser = await _userManager.GetUserAsync(User);
             var currentUserName = currentUser?.UserName ?? currentUser?.Email ?? HttpContext?.User?.Identity?.Name ?? "System Migration";
@@ -183,7 +194,7 @@ namespace IT_Form.Controllers
 
             using (var stream = new MemoryStream())
             {
-                await file.CopyToAsync(stream);
+                await file.CopyToAsync(stream, HttpContext?.RequestAborted ?? CancellationToken.None);
                 stream.Position = 0;
                 using (var workbook = new XLWorkbook(stream))
                 {
@@ -370,6 +381,13 @@ namespace IT_Form.Controllers
                 return Ok(Array.Empty<object>());
             }
 
+            // Enforce company scope: an HR user must not enumerate HOD records
+            // belonging to a company they are not assigned to.
+            if (!CompanyScopeHelper.CanAccessCompany(User, company))
+            {
+                return Forbid("You are not authorized to view HODs for this company.");
+            }
+
             var normalizedCompany = CompanyHelper.Normalize(company).ToLower();
             var hods = await _context.Users
                 .Where(u => u.IsActive && u.UserTitles.Any(t => t.Title == "HOD"))
@@ -502,3 +520,4 @@ namespace IT_Form.Controllers
         }
     }
 }
+

@@ -102,7 +102,7 @@
                             <small class="text-muted d-block mb-3">Start typing to search existing employees from the directory.</small>
                             <div class="input-group mb-2">
                                 <span class="input-group-text"><i class="fas fa-search" aria-hidden="true"></i></span>
-                                <input type="text" id="EmployeeSearchInput" name="CustomEmployeeName" class="form-control" placeholder="Search directory..." list="employeeDatalist" autocomplete="off" oninput="populateHiddenId()" />
+                                <input type="text" id="EmployeeSearchInput" name="CustomEmployeeName" class="form-control" placeholder="Search directory..." list="employeeDatalist" autocomplete="off" data-csp-input="populateHiddenId" />
                             </div>
                             <span class="text-danger field-validation-valid" data-valmsg-for="CustomEmployeeName" data-valmsg-replace="true">
                                 @Html.ValidationMessage("CustomEmployeeName")
@@ -260,5 +260,6 @@
         }
     </script>
 }
+
 
 

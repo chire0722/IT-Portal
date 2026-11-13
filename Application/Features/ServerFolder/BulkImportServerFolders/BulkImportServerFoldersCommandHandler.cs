@@ -6,6 +6,7 @@ using IT_Form.Application.Common.Support;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Data;
 using IT_Form.Helpers;
+using IT_Form.Services;
 using IT_Form.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,12 +21,14 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
         private readonly ApplicationDbContext _context;
         private readonly ICurrentUserAccessor _currentUserAccessor;
         private readonly IQuotaControl _quotaControl;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
-        public BulkImportServerFoldersCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null)
+        public BulkImportServerFoldersCommandHandler(ApplicationDbContext context, ICurrentUserAccessor currentUserAccessor, IQuotaControl? quotaControl = null, IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _currentUserAccessor = currentUserAccessor;
             _quotaControl = quotaControl ?? new QuotaControl(context);
+            _malwareScanner = malwareScanner;
         }
 
         /// <summary>
@@ -33,13 +36,15 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
         /// </summary>
         public async Task<BulkImportServerFoldersResult> Handle(BulkImportServerFoldersCommand request, CancellationToken cancellationToken)
         {
-            if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage))
+            if (!FileUploadHelper.IsValidExcelFile(request.File, out string errorMessage, 5 * 1024 * 1024))
             {
                 return new BulkImportServerFoldersResult(false, null, null, errorMessage);
             }
 
             try
             {
+                await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Server folder import", cancellationToken);
+
                 using var stream = new MemoryStream();
                 await request.File.CopyToAsync(stream, cancellationToken);
                 stream.Position = 0;
@@ -179,9 +184,10 @@ namespace IT_Form.Application.Features.ServerFolder.BulkImportServerFolders
 
                 return new BulkImportServerFoldersResult(true, successMessage, infoMessage, importErrorMessage);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return new BulkImportServerFoldersResult(false, null, null, "Error processing file: " + ex.Message);
+                // Keep parser, filesystem, and database exception details out of user-facing responses.
+                return new BulkImportServerFoldersResult(false, null, null, "Unable to process the uploaded workbook. Verify that it is a valid .xlsx file and try again.");
             }
         }
     }

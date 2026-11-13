@@ -50,7 +50,17 @@ namespace IT_Form.Helpers
                 throw new ArgumentOutOfRangeException(nameof(category), $"Unknown sensitive file category '{category}'.");
             }
 
-            return $"{RoutePrefix}/{category}/{Path.GetFileName(fileName)}";
+            var normalizedFileName = (fileName ?? string.Empty).Replace('\\', '/');
+            var safeFileName = Path.GetFileName(normalizedFileName);
+            if (string.IsNullOrWhiteSpace(safeFileName)
+                || safeFileName is "." or ".."
+                || safeFileName.Contains(':')
+                || safeFileName.Any(char.IsControl))
+            {
+                throw new ArgumentException("A safe file name is required.", nameof(fileName));
+            }
+
+            return $"{RoutePrefix}/{category}/{safeFileName}";
         }
 
         /// <summary>
@@ -75,7 +85,8 @@ namespace IT_Form.Helpers
         }
 
         /// <summary>
-        /// Saves data for the SaveAsync operation.
+        /// Saves a sensitive upload using a temporary file and an atomic same-volume move.
+        /// A failed or cancelled copy is cleaned up and is never exposed under its final name.
         /// </summary>
         public static async Task<string> SaveAsync(
             IFormFile file,
@@ -84,13 +95,101 @@ namespace IT_Form.Helpers
             string fileName,
             CancellationToken cancellationToken = default)
         {
-            var safeFileName = Path.GetFileName(fileName);
-            var physicalPath = Path.Combine(GetCategoryRoot(environment, category), safeFileName);
+            ArgumentNullException.ThrowIfNull(file);
+            var safeFileName = Path.GetFileName((fileName ?? string.Empty).Replace('\\', '/'));
+            if (string.IsNullOrWhiteSpace(safeFileName) || safeFileName is "." or "..")
+            {
+                throw new ArgumentException("A valid file name is required.", nameof(fileName));
+            }
 
-            await using var stream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            await file.CopyToAsync(stream, cancellationToken);
+            var targetDirectory = GetCategoryRoot(environment, category);
+            var physicalPath = Path.Combine(targetDirectory, safeFileName);
+            var temporaryPath = Path.Combine(targetDirectory, $".upload-{Guid.NewGuid():N}.tmp");
 
-            return BuildStoredPath(category, safeFileName);
+            try
+            {
+                await using (var stream = new FileStream(
+                    temporaryPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81920,
+                    options: FileOptions.Asynchronous | FileOptions.SequentialScan))
+                {
+                    await file.CopyToAsync(stream, cancellationToken);
+                    await stream.FlushAsync(cancellationToken);
+                }
+
+                // File.Move without overwrite is atomic on the same volume and preserves collision protection.
+                File.Move(temporaryPath, physicalPath);
+                return BuildStoredPath(category, safeFileName);
+            }
+            catch
+            {
+                // Preserve the original copy/move/cancellation exception; cleanup must not mask it.
+                try
+                {
+                    if (File.Exists(temporaryPath))
+                    {
+                        File.Delete(temporaryPath);
+                    }
+                }
+                catch
+                {
+                    // A failed cleanup is detectable as a .upload-*.tmp orphan for operational cleanup.
+                }
+
+                throw;
+            }
+        }
+
+        public static async Task<string> SaveBytesAsync(
+            ReadOnlyMemory<byte> contents,
+            IWebHostEnvironment environment,
+            string category,
+            string fileName,
+            CancellationToken cancellationToken = default)
+        {
+            if (contents.Length <= 0)
+            {
+                throw new ArgumentException("File contents are required.", nameof(contents));
+            }
+
+            var safeFileName = Path.GetFileName((fileName ?? string.Empty).Replace('\\', '/'));
+            if (string.IsNullOrWhiteSpace(safeFileName) || safeFileName is "." or "..")
+            {
+                throw new ArgumentException("A valid file name is required.", nameof(fileName));
+            }
+
+            var targetDirectory = GetCategoryRoot(environment, category);
+            var physicalPath = Path.Combine(targetDirectory, safeFileName);
+            var temporaryPath = Path.Combine(targetDirectory, $".upload-{Guid.NewGuid():N}.tmp");
+            try
+            {
+                await using (var stream = new FileStream(
+                    temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    81920, FileOptions.Asynchronous | FileOptions.SequentialScan))
+                {
+                    await stream.WriteAsync(contents, cancellationToken);
+                    await stream.FlushAsync(cancellationToken);
+                }
+
+                File.Move(temporaryPath, physicalPath);
+                return BuildStoredPath(category, safeFileName);
+            }
+            catch
+            {
+                try
+                {
+                    if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+                }
+                catch
+                {
+                    // Orphaned temporary files are not published and remain detectable for cleanup.
+                }
+
+                throw;
+            }
         }
 
         /// <summary>
@@ -190,7 +289,7 @@ namespace IT_Form.Helpers
                 .Trim('/')
                 .Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            if (parts.Length < 3)
+            if (parts.Length < 3 || parts.Any(part => part is "." or ".."))
             {
                 return false;
             }
@@ -219,3 +318,4 @@ namespace IT_Form.Helpers
             => storedPath.Trim().Replace('\\', '/');
     }
 }
+

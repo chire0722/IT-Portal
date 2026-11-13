@@ -19,20 +19,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YTC Device Verification</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="~/css/verification.css" asp-append-version="true" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        ytcBlue: '#0047AB',
-                        ytcGreen: '#10B981'
-                    }
-                }
-            }
-        }
-    </script>
 </head>
 
 <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
@@ -80,7 +68,7 @@
                             It will securely fingerprint your hardware.</p>
 
                         <div id="download-section">
-                            <a href="/api/inventory/download/@Model.Token" onclick="startPolling()"
+                            <a href="/api/inventory/download/@Model.Token" data-csp-click="startPolling"
                                 class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-ytcBlue hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ytcBlue transition-all w-full justify-center">
                                 <i class="fas fa-cloud-download-alt mr-2" aria-hidden="true"></i> Download Tool (.zip)
                             </a>
@@ -130,6 +118,7 @@
         </div>
     </div>
 
+    <script src="~/js/csp-events.js" asp-append-version="true"></script>
     <script>
         let pollInterval;
         const token = '@Model.Token';
@@ -214,5 +203,6 @@
 </body>
 
 </html>
+
 
 

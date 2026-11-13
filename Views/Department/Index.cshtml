@@ -76,7 +76,7 @@
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-action-circle btn-outline-primary me-1" aria-label="Edit department @item.Name" title="Edit">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                 </a>
-                                 <button type="button" class="btn btn-action-circle btn-outline-danger" aria-label="Delete department @item.Name" title="Delete" onclick="openDeleteModal(@item.Id, \'@item.Name.Replace("\'", "\\\'")\')">
+                                 <button type="button" class="btn btn-action-circle btn-outline-danger" aria-label="Delete department @item.Name" title="Delete" data-csp-click="openDeleteModal" data-csp-arg0="@item.Id" data-csp-arg1="@item.Name">
                                      <i class="bi bi-trash" aria-hidden="true"></i>
                                  </button>
                             </td>
@@ -189,3 +189,4 @@
         });
     </script>
 }
+

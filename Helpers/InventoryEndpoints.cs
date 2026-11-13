@@ -57,7 +57,13 @@ namespace IT_Form.Helpers
                     }
                 }
 
-                var shouldAssignVerifiedAsset = dbToken == null || !string.IsNullOrWhiteSpace(dbToken.EmployeeId);
+                InventoryVerificationAssignment? verificationAssignment = null;
+                if (dbToken != null)
+                {
+                    verificationAssignment = await ResolveVerificationAssignmentAsync(dbContext, dbToken.EmployeeId);
+                }
+
+                var shouldAssignVerifiedAsset = verificationAssignment != null;
 
                 if (string.IsNullOrWhiteSpace(report.SN))
                 {
@@ -149,7 +155,7 @@ namespace IT_Form.Helpers
                     dbToken.HardwareFingerprintWarning = fingerprintSync.WarningMessage;
                     if (shouldAssignVerifiedAsset)
                     {
-                        await ApplyVerificationAssignmentAsync(dbContext, asset, dbToken);
+                        await ApplyVerificationAssignmentAsync(dbContext, asset, dbToken, verificationAssignment);
                     }
                 }
 
@@ -182,9 +188,10 @@ namespace IT_Form.Helpers
         public static async Task ApplyVerificationAssignmentAsync(
             ApplicationDbContext dbContext,
             ITAsset asset,
-            DeviceVerificationToken token)
+            DeviceVerificationToken token,
+            InventoryVerificationAssignment? assignment = null)
         {
-            var assignment = await ResolveVerificationAssignmentAsync(dbContext, token.EmployeeId);
+            assignment ??= await ResolveVerificationAssignmentAsync(dbContext, token.EmployeeId);
             if (assignment == null)
             {
                 return;
@@ -391,3 +398,4 @@ namespace IT_Form.Helpers
         bool IsMismatch,
         string? WarningMessage);
 }
+

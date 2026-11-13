@@ -2,9 +2,11 @@
 
 using IT_Form.Application.Common.Support;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Models.Enums;
 using IT_Form.Services;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Encodings.Web;
 
 namespace IT_Form.Infrastructure.Notifications
 {
@@ -133,11 +135,15 @@ namespace IT_Form.Infrastructure.Notifications
             var outboxMessage = await claimContext.EmailOutboxMessages
                 .AsNoTracking()
                 .SingleAsync(message => message.Id == messageId, cancellationToken);
+            var encryptionService = claimScope.ServiceProvider.GetRequiredService<ILicenseEncryptionService>();
 
             try
             {
                 await DispatchMessageAsync(
-                    EmailOutboxMessageSerializer.Deserialize(outboxMessage.MessageType, outboxMessage.PayloadJson),
+                    EmailOutboxMessageSerializer.Deserialize(
+                        outboxMessage.MessageType,
+                        outboxMessage.PayloadJson,
+                        encryptionService),
                     cancellationToken);
 
                 await MarkMessageSentAsync(messageId, cancellationToken);
@@ -178,9 +184,7 @@ namespace IT_Form.Infrastructure.Notifications
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var now = DateTime.UtcNow;
             var isDeadLetter = attemptCount >= MaxAttemptCount;
-            var lastError = exception.Message.Length > 2000
-                ? exception.Message[..2000]
-                : exception.Message;
+            var lastError = AuditPayloadSanitizer.SanitizeExceptionMessage(exception);
 
             await context.EmailOutboxMessages
                 .Where(message => message.Id == messageId)
@@ -213,7 +217,7 @@ namespace IT_Form.Infrastructure.Notifications
                         welcomeEmail.Email,
                         "Welcome to the company",
                         BuildWelcomeEmailBody(welcomeEmail.EmployeeName));
-                    _logger.LogInformation("SMTP welcome email sent to {Email}.", welcomeEmail.Email);
+                    _logger.LogInformation("SMTP welcome email sent.");
                     break;
 
                 case OtpEmailMessage otpEmail:
@@ -221,7 +225,7 @@ namespace IT_Form.Infrastructure.Notifications
                         otpEmail.Email,
                         otpEmail.Subject,
                         otpEmail.HtmlBody);
-                    _logger.LogInformation("SMTP OTP email sent to {Email}.", otpEmail.Email);
+                    _logger.LogInformation("SMTP OTP email sent.");
                     break;
 
                 case RenderedEmailMessage renderedEmail:
@@ -234,7 +238,7 @@ namespace IT_Form.Infrastructure.Notifications
                         renderedEmail.Cc,
                         renderedEmail.SignatureBase64,
                         renderedEmail.BypassActiveCheck);
-                    _logger.LogInformation("SMTP rendered email sent to {Email}.", renderedEmail.Email);
+                    _logger.LogInformation("SMTP rendered email sent.");
                     break;
 
                 case ItLockoutAlertMessage lockoutAlert:
@@ -261,7 +265,7 @@ namespace IT_Form.Infrastructure.Notifications
                         break;
                     }
 
-                    var subject = $"IT Form Security Alert: Account Lockout - {lockoutAlert.UserId}";
+                    var subject = "IT Form Security Alert: Account Lockout";
                     var body = BuildLockoutAlertBody(
                         lockoutAlert.Email,
                         lockoutAlert.UserId,
@@ -270,9 +274,7 @@ namespace IT_Form.Infrastructure.Notifications
                     foreach (var targetEmail in targetEmails)
                     {
                         outlookService.DisplayEmail(targetEmail, subject, body);
-                        _logger.LogInformation(
-                            "SMTP lockout alert email sent to {TargetEmail}.",
-                            targetEmail);
+                        _logger.LogInformation("SMTP lockout alert email sent.");
                     }
 
                     break;
@@ -298,7 +300,7 @@ namespace IT_Form.Infrastructure.Notifications
         private static string BuildWelcomeEmailBody(string employeeName) => $@"
             <div style='font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;'>
                 <h2 style='color: #2563eb;'>Welcome to the company</h2>
-                <p>Hello <b>{employeeName}</b>,</p>
+                <p>Hello <b>{HtmlEncoder.Default.Encode(employeeName)}</b>,</p>
                 <p>Welcome aboard. Your onboarding request has been created successfully.</p>
                 <p>Please follow the onboarding instructions from the IT and HR teams.</p>
                 <hr style='border: 0; border-top: 1px solid #eee; margin: 20px 0;' />
@@ -313,8 +315,8 @@ namespace IT_Form.Infrastructure.Notifications
                 <h2 style='color: #dc3545;'>Security Alert: Account Lockout</h2>
                 <p>An account has been locked after repeated failed sign-in attempts.</p>
                 <table style='border-collapse: collapse; margin-top: 16px;'>
-                    <tr><td style='padding: 4px 12px 4px 0;'><b>User ID</b></td><td>{userId}</td></tr>
-                    <tr><td style='padding: 4px 12px 4px 0;'><b>Email</b></td><td>{lockedUserEmail}</td></tr>
+                    <tr><td style='padding: 4px 12px 4px 0;'><b>User ID</b></td><td>{HtmlEncoder.Default.Encode(userId)}</td></tr>
+                    <tr><td style='padding: 4px 12px 4px 0;'><b>Email</b></td><td>{HtmlEncoder.Default.Encode(lockedUserEmail)}</td></tr>
                     <tr><td style='padding: 4px 12px 4px 0;'><b>Timestamp</b></td><td>{timestamp:yyyy-MM-dd HH:mm:ss} UTC</td></tr>
                 </table>
                 <p style='margin-top: 16px;'>Review the account activity and assist the user if necessary.</p>
@@ -323,3 +325,4 @@ namespace IT_Form.Infrastructure.Notifications
             </div>";
     }
 }
+

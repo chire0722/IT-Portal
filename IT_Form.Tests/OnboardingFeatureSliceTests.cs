@@ -207,6 +207,53 @@ public class OnboardingFeatureSliceTests
 
     [Fact]
     /// <summary>
+    /// Runs the RegenerateTokenHandler_RejectsNonHrDirectInvocation operation.
+    /// </summary>
+    public async Task RegenerateTokenHandler_RejectsNonHrDirectInvocation()
+    {
+        using var context = CreateContext();
+        var oldToken = Guid.NewGuid();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 302,
+            Status = RequestStatus.PendingEmployeeSign,
+            AccessToken = oldToken,
+            Branch = "HQ",
+            CreatedByUserId = "manager-user"
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new RegenerateOnboardingTokenCommandHandler(
+            context,
+            new TestCurrentUserAccessor("manager-user", titles: ["Manager"], companies: ["HQ"]));
+
+        var result = await handler.Handle(new RegenerateOnboardingTokenCommand(302), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        var saved = await context.OnboardingRequests.FindAsync(302);
+        Assert.NotNull(saved);
+        Assert.Equal(oldToken, saved!.AccessToken);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the RegenerateTokenHandler_HidesMissingRecordFromNonHr operation.
+    /// </summary>
+    public async Task RegenerateTokenHandler_HidesMissingRecordFromNonHr()
+    {
+        using var context = CreateContext();
+        var handler = new RegenerateOnboardingTokenCommandHandler(
+            context,
+            new TestCurrentUserAccessor("manager-user", titles: ["Manager"], companies: ["HQ"]));
+
+        var result = await handler.Handle(new RegenerateOnboardingTokenCommand(999), CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+        Assert.False(result.IsNotFound);
+    }
+
+    [Fact]
+    /// <summary>
     /// Runs the RejectValidator_Fails_WhenReasonMissing operation.
     /// </summary>
     public void RejectValidator_Fails_WhenReasonMissing()
@@ -495,6 +542,7 @@ public class OnboardingFeatureSliceTests
         {
             Id = 801,
             FullName = "IT Draft",
+            Branch = "HQ",
             Status = RequestStatus.PendingITApproval,
             FolderPermissions = new List<FolderPermission>(),
             RequestSoftware = new List<RequestSoftware>(),
@@ -544,6 +592,79 @@ public class OnboardingFeatureSliceTests
         Assert.NotNull(saved);
         Assert.Equal("draft remarks", saved!.ChecklistRemarks);
         Assert.True(saved.CheckPhysicalClean);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the CompleteOnboardingItSetupHandler_RejectsAssetFromDifferentCompany operation.
+    /// </summary>
+    public async Task CompleteOnboardingItSetupHandler_RejectsAssetFromDifferentCompany()
+    {
+        using var context = CreateContext();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 802,
+            FullName = "Cross Company User",
+            Branch = "HQ",
+            Status = RequestStatus.PendingITApproval,
+            FolderPermissions = new List<FolderPermission>(),
+            RequestSoftware = new List<RequestSoftware>(),
+            RequestEmailGroups = new List<RequestEmailGroup>(),
+            RequestSharedMailboxes = new List<RequestSharedMailbox>(),
+            IssuedAssets = new List<IssuedAsset>()
+        });
+        context.ITAssets.Add(new ITAsset
+        {
+            Id = 1,
+            AssetTag = "OTHER-001",
+            SerialNumber = "OTHER-SN-001",
+            AssetType = AssetType.Laptop,
+            Status = AssetStatus.Available,
+            Company = "Other Company"
+        });
+        await context.SaveChangesAsync();
+
+        var logger = Mock.Of<ILogger<CompleteOnboardingItSetupCommandHandler>>();
+        var currentUser = new Mock<ICurrentUserAccessor>();
+        currentUser.SetupGet(x => x.User).Returns(BuildUser("it-user", "IT", "HQ"));
+        var userManager = CreateUserManager();
+        userManager.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync(new ApplicationUser { Signature = "it-signature" });
+        var integrity = new Mock<ISignatureIntegrityService>();
+        integrity.Setup(x => x.ComputeHmac(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>()))
+            .Returns("HMAC");
+        var handler = new CompleteOnboardingItSetupCommandHandler(context, logger, userManager.Object, currentUser.Object, integrity.Object);
+
+        var result = await handler.Handle(new CompleteOnboardingItSetupCommand
+        {
+            Session = new OnboardingViewModel
+            {
+                Id = 802,
+                IssuedAssets = new List<AssetItemViewModel>
+                {
+                    new() { ITAssetId = 1, AssetType = AssetType.Laptop, IsChecked = true }
+                }
+            },
+            IsDraft = false,
+            CheckPhysicalClean = true,
+            CheckO365Setup = true,
+            CheckWindowsLogin = true,
+            CheckEmailSetup = true,
+            CheckSpecificSoftware = true,
+            CheckGeneralSoftware = true,
+            CheckAbcGroup = true,
+            CheckEmailMailGroup = true,
+            CheckDomainJoin = true,
+            CheckSharedDrive = true,
+            CheckWiFiSetup = true,
+            CheckPrinterSetup = true,
+            CheckScanFolder = true,
+            CheckVPNSetup = true
+        }, CancellationToken.None);
+
+        Assert.Equal(CompleteOnboardingItSetupStatus.InvalidAssetSelection, result.Status);
+        Assert.Equal(AssetStatus.Available, (await context.ITAssets.FindAsync(1))!.Status);
+        Assert.Equal(RequestStatus.PendingITApproval, (await context.OnboardingRequests.FindAsync(802))!.Status);
     }
 
     [Fact]
@@ -1058,3 +1179,4 @@ public class OnboardingFeatureSliceTests
         return new ApplicationDbContext(options, http.Object, logger.Object, encryption.Object);
     }
 }
+

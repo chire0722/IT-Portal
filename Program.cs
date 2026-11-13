@@ -39,6 +39,8 @@ using MediatR;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 
 
@@ -127,17 +129,109 @@ if (!Directory.Exists(dataDirectory))
 AppDomain.CurrentDomain.SetData("DataDirectory", dataDirectory);
 
 // --- Data Protection ---
-// Persist keys outside the publish folder so cookies remain valid across republishes on the same machine.
+// Keep the key ring outside the publish folder and allow production to use a durable mounted volume.
 var localAppDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-var dataProtectionRoot = string.IsNullOrWhiteSpace(localAppDataRoot)
-    ? dataDirectory
-    : Path.Combine(localAppDataRoot, "IT_Form");
-var dataProtectionPath = Path.Combine(dataProtectionRoot, "DataProtection-Keys");
+var configuredKeyRingPath = builder.Configuration["DataProtection:KeyRingPath"];
+var dataProtectionPath = !string.IsNullOrWhiteSpace(configuredKeyRingPath)
+    ? (Path.IsPathRooted(configuredKeyRingPath)
+        ? configuredKeyRingPath
+        : Path.GetFullPath(configuredKeyRingPath, builder.Environment.ContentRootPath))
+    : (string.IsNullOrWhiteSpace(localAppDataRoot)
+        ? Path.Combine(dataDirectory, "DataProtection-Keys")
+        : Path.Combine(localAppDataRoot, "IT_Form", "DataProtection-Keys"));
 Directory.CreateDirectory(dataProtectionPath);
 var dataProtectionBuilder = builder.Services
     .AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
     .SetApplicationName("IT_Form");
+
+// Production key-ring XML must be encrypted with a certificate whose private key is
+// accessible only to the application identity. Fail startup rather than silently
+// persisting new master keys in plaintext when the production certificate is absent.
+if (!builder.Environment.IsDevelopment())
+{
+    var configuredThumbprint = builder.Configuration["DataProtection:CertificateThumbprint"];
+    var normalizedThumbprint = configuredThumbprint?
+        .Replace(" ", string.Empty, StringComparison.Ordinal)
+        .Trim();
+
+    if (string.IsNullOrWhiteSpace(normalizedThumbprint))
+    {
+        throw new InvalidOperationException(
+            "Production requires DataProtection:CertificateThumbprint to protect the ASP.NET Core Data Protection key ring.");
+    }
+
+    using var certificateStore = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+    certificateStore.Open(OpenFlags.ReadOnly);
+
+    var matchingCertificates = certificateStore.Certificates.Find(
+        X509FindType.FindByThumbprint,
+        normalizedThumbprint,
+        validOnly: true);
+
+    var keyRingCertificate = matchingCertificates
+        .OfType<X509Certificate2>()
+        .FirstOrDefault(certificate =>
+        {
+            if (!certificate.HasPrivateKey)
+            {
+                return false;
+            }
+
+            using var rsa = certificate.GetRSAPrivateKey();
+            return rsa is not null && rsa.KeySize >= 2048;
+        });
+
+    if (keyRingCertificate is null)
+    {
+        throw new InvalidOperationException(
+            "The configured Data Protection certificate was not found as a valid LocalMachine/My certificate with an accessible RSA private key of at least 2048 bits.");
+    }
+
+    var unprotectCertificates = new List<X509Certificate2> { keyRingCertificate };
+    var previousThumbprints = (builder.Configuration["DataProtection:UnprotectCertificateThumbprints"] ?? string.Empty)
+        .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    foreach (var previousThumbprint in previousThumbprints)
+    {
+        var normalizedPreviousThumbprint = previousThumbprint.Replace(" ", string.Empty, StringComparison.Ordinal);
+        if (string.Equals(normalizedPreviousThumbprint, normalizedThumbprint, StringComparison.OrdinalIgnoreCase))
+        {
+            continue;
+        }
+
+        // Expired certificates may still be required to decrypt historical key-ring entries.
+        var previousCertificates = certificateStore.Certificates.Find(
+            X509FindType.FindByThumbprint,
+            normalizedPreviousThumbprint,
+            validOnly: false);
+
+        var previousCertificate = previousCertificates
+            .OfType<X509Certificate2>()
+            .FirstOrDefault(certificate =>
+            {
+                if (!certificate.HasPrivateKey)
+                {
+                    return false;
+                }
+
+                using var rsa = certificate.GetRSAPrivateKey();
+                return rsa is not null && rsa.KeySize >= 2048;
+            });
+
+        if (previousCertificate is null)
+        {
+            throw new InvalidOperationException(
+                "A configured Data Protection unprotect certificate was not found with an accessible RSA private key of at least 2048 bits.");
+        }
+
+        unprotectCertificates.Add(previousCertificate);
+    }
+
+    dataProtectionBuilder
+        .ProtectKeysWithCertificate(keyRingCertificate)
+        .UnprotectKeysWithAnyCertificate(unprotectCertificates.ToArray());
+}
 
 
 
@@ -343,6 +437,7 @@ builder.Services.AddHostedService<DatabaseBackupService>();
 // --- Security Services ---
 builder.Services.AddSingleton<ISignatureIntegrityService, SignatureIntegrityService>(); // HMAC signing (H-03)
 builder.Services.AddSingleton<ILicenseEncryptionService, LicenseEncryptionService>();
+builder.Services.AddSingleton<IFileMalwareScanner, ClamAvMalwareScanner>();
 builder.Services.AddScoped<ILicenseService, LicenseService>();
 builder.Services.AddHostedService<DataRetentionService>();                               // PDPA retention (M-06)
 
@@ -559,7 +654,15 @@ app.Use(async (context, next) =>
 });
 app.UseStaticFiles();
 // Use Serilog to log every HTTP request
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set(
+            "RequestPath",
+            IT_Form.Security.RequestLogPathSanitizer.Sanitize(httpContext.Request.Path));
+    };
+});
 
 app.UseRateLimiter();
 
@@ -636,7 +739,12 @@ using (var scope = app.Services.CreateScope())
 
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var configuration = services.GetRequiredService<IConfiguration>();
-        await DbInitializer.SeedUsersAsync(userManager, context, configuration);
+        await DbInitializer.SeedUsersAsync(
+            userManager,
+            context,
+            configuration,
+            app.Environment,
+            services.GetRequiredService<ILogger<Program>>());
 
         var sensitiveUploadMigrationService = services.GetRequiredService<LegacySensitiveUploadMigrationService>();
         await sensitiveUploadMigrationService.MigrateAsync();
@@ -659,32 +767,36 @@ app.Run();
 static CookieSecurePolicy ResolveCookieSecurePolicy(IHostEnvironment environment, IConfiguration configuration)
 {
     var configuredPolicy = configuration["SecuritySettings:CookieSecurePolicy"];
-    if (!string.IsNullOrWhiteSpace(configuredPolicy))
+
+    // Production authentication/session cookies must never be sent over plain HTTP.
+    // Reverse-proxy scheme detection is deployment-dependent, so do not weaken this
+    // control based on AppDomain or an untrusted/misconfigured forwarded header.
+    if (!environment.IsDevelopment())
     {
-        if (string.Equals(configuredPolicy, "Never", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(configuredPolicy) &&
+            !string.Equals(configuredPolicy, nameof(CookieSecurePolicy.Always), StringComparison.OrdinalIgnoreCase))
         {
-            return CookieSecurePolicy.None;
+            throw new InvalidOperationException(
+                "Production deployments require SecuritySettings:CookieSecurePolicy=Always.");
         }
 
-        if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var parsedPolicy))
-        {
-            return parsedPolicy;
-        }
-
-        throw new InvalidOperationException(
-            "SecuritySettings:CookieSecurePolicy must be one of SameAsRequest, Always, or None.");
+        return CookieSecurePolicy.Always;
     }
 
-    if (environment.IsDevelopment())
+    // Local HTTP development remains possible. Production cannot inherit this setting.
+    if (string.IsNullOrWhiteSpace(configuredPolicy))
     {
         return CookieSecurePolicy.SameAsRequest;
     }
 
-    var appDomain = configuration["AppDomain"];
-    return Uri.TryCreate(appDomain, UriKind.Absolute, out var appUri) &&
-        string.Equals(appUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+    if (Enum.TryParse<CookieSecurePolicy>(configuredPolicy, ignoreCase: true, out var parsedPolicy) &&
+        parsedPolicy != CookieSecurePolicy.None)
+    {
+        return parsedPolicy;
+    }
+
+    throw new InvalidOperationException(
+        "Development SecuritySettings:CookieSecurePolicy must be SameAsRequest or Always; None is not allowed.");
 }
 
 static string ResolveSqliteConnectionString(string? connectionString, string contentRootPath, string dataDirectory)

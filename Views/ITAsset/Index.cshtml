@@ -16,7 +16,7 @@
         @if (User.HasClaim("UserTitle", "IT"))
         {
             <button type="button" class="btn btn-info text-white shadow-sm rounded-pill px-4 py-2 fw-bold"
-                onclick="openVerificationModal()">
+                data-csp-click="openVerificationModal">
                 <i class="fas fa-shield-alt me-1" aria-hidden="true"></i> Generate Verification Link
             </button>
         }
@@ -381,14 +381,14 @@
 
                     <div class="input-group mb-2 mt-3">
                         <input type="text" id="verifyLinkOutput" class="form-control bg-light" readonly placeholder="Generated verification link will appear here">
-                        <button class="btn btn-outline-secondary" type="button" id="verifyLinkCopyBtn" onclick="copyVerificationLink()" disabled>
+                        <button class="btn btn-outline-secondary" type="button" id="verifyLinkCopyBtn" data-csp-click="copyVerificationLink" disabled>
                             <i class="fas fa-copy" aria-hidden="true"></i> Copy
                         </button>
                     </div>
                     <div id="verifyLinkExpiry" class="small text-muted"></div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-info text-white" id="generateVerificationLinkBtn" onclick="generateVerificationLink()">
+                    <button type="button" class="btn btn-info text-white" id="generateVerificationLinkBtn" data-csp-click="generateVerificationLink">
                         <i class="fas fa-link me-1" aria-hidden="true"></i> Generate Link
                     </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -550,5 +550,6 @@
         </div>
     </div>
 </div>
+
 
 

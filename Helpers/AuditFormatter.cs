@@ -20,8 +20,8 @@ namespace IT_Form.Helpers
             
             // If it doesn't look like JSON, it's already plain text
             var trimmed = changesJson.TrimStart();
-            if (!trimmed.StartsWith("{") && !trimmed.StartsWith("[")) 
-                return changesJson;
+            if (!trimmed.StartsWith("{") && !trimmed.StartsWith("["))
+                return AuditPayloadSanitizer.RedactFreeText(changesJson);
 
             try
             {
@@ -119,7 +119,7 @@ namespace IT_Form.Helpers
             }
             catch
             {
-                return changesJson;
+                return AuditPayloadSanitizer.RedactFreeText(changesJson);
             }
         }
 

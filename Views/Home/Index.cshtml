@@ -77,7 +77,7 @@
                 <i class="bi bi-calendar-event text-primary me-2" aria-hidden="true"></i>
                 <label class="small fw-bold text-muted me-2 mb-0">Year:</label>
                 <select class="form-select form-select-sm border-0 fw-bold" style="width: auto; background: transparent; cursor: pointer;" 
-                        onchange="window.location.href='/Home/Index?year=' + this.value">
+                        data-csp-change="navigate-template" data-csp-url-template="/Home/Index?year={value}">
                     @foreach (var year in Model.AvailableYears)
                     {
                         if (year == Model.SelectedYear)
@@ -779,6 +779,7 @@
         });
     </script>
 }
+
 
 
 

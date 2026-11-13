@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 using IT_Form.Attributes;
 using IT_Form.Services;
 using IT_Form.Application.Common.Abstractions;
@@ -79,6 +80,8 @@ namespace IT_Form.Data
         public DbSet<UserCompany> UserCompanies { get; set; } = null!;
         public DbSet<SigningToken> SigningTokens { get; set; } = null!;
         public DbSet<DeviceVerificationToken> DeviceVerificationTokens { get; set; } = null!;
+        public DbSet<DataSubjectRequest> DataSubjectRequests { get; set; } = null!;
+        public DbSet<DataSubjectRequestEvent> DataSubjectRequestEvents { get; set; } = null!;
 
         public DbSet<SlaSetting> SlaSettings { get; set; } = null!;
         public DbSet<SystemSetting> SystemSettings { get; set; } = null!;
@@ -246,6 +249,17 @@ namespace IT_Form.Data
                 .HasIndex(audit => new { audit.CreatedAt, audit.Timestamp });
             builder.Entity<AuditLog>()
                 .HasIndex(audit => new { audit.EntityName, audit.IsSuccess, audit.CreatedAt });
+
+            builder.Entity<DataSubjectRequest>()
+                .HasIndex(request => new { request.SubmittedByUserId, request.IdempotencyKey })
+                .IsUnique();
+            builder.Entity<DataSubjectRequest>()
+                .HasIndex(request => new { request.Status, request.UpdatedAtUtc });
+            builder.Entity<DataSubjectRequest>()
+                .HasMany(request => request.Events)
+                .WithOne(@event => @event.DataSubjectRequest)
+                .HasForeignKey(@event => @event.DataSubjectRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<ITAsset>()
                 .HasIndex(asset => asset.WarrantyExpiry);
@@ -537,7 +551,14 @@ namespace IT_Form.Data
             "EmailSignatureImage",
             "ResignationLetterPath",
             "HardwareDamageImagePath",
-            "HardwareReturnImagePath"
+            "HardwareReturnImagePath",
+            "SubjectUserId",
+            "SubmittedByUserId",
+            "AssignedToUserId",
+            "CompanyScope",
+            "DecisionReason",
+            "IdempotencyKey",
+            "CompletionEvidenceReference"
         };
 
         private static readonly string[] SecretAuditFieldFragments =
@@ -966,23 +987,31 @@ namespace IT_Form.Data
                     var subject = $"AUDIT ALERT: {log.Action} - {log.EntityName} (#{log.EntityId})";
                     var greeting = "Hello,";
                     
-                    // Format the raw JSON back into human-friendly text for the email
+                    // Sanitize before formatting and HTML-encode every value inserted into the email.
+                    // Audit records can contain user-controlled text and must not become email HTML.
+                    var sanitizedChanges = AuditPayloadSanitizer.SanitizeJson(log.Changes);
                     var formattedChanges = !string.IsNullOrEmpty(log.Changes) 
-                        ? IT_Form.Helpers.AuditFormatter.FormatChanges(log.Changes) 
+                        ? IT_Form.Helpers.AuditFormatter.FormatChanges(sanitizedChanges)
                         : "No data changes recorded.";
+                    var encodedAction = HtmlEncoder.Default.Encode(log.Action ?? string.Empty);
+                    var encodedEntity = HtmlEncoder.Default.Encode(log.EntityName ?? string.Empty);
+                    var encodedEntityId = HtmlEncoder.Default.Encode(log.EntityId ?? string.Empty);
+                    var encodedPerformedBy = HtmlEncoder.Default.Encode(log.PerformedBy ?? string.Empty);
+                    var encodedDetails = HtmlEncoder.Default.Encode(log.Details ?? string.Empty);
+                    var encodedChanges = HtmlEncoder.Default.Encode(formattedChanges);
 
                     var paramsRows = $@"
                         <tr>
                             <td style='padding: 14px 15px; font-size: 14px; color: #1E293B; border-bottom: 1px solid #F1F5F9; font-weight: 600;'>Action</td>
-                            <td style='padding: 14px 15px; font-size: 14px; color: {(log.Action == "Created" ? "#10B981" : "#F59E0B")}; border-bottom: 1px solid #F1F5F9; font-weight: 700;'>{log.Action.ToUpper()}</td>
+                            <td style='padding: 14px 15px; font-size: 14px; color: {(log.Action == "Created" ? "#10B981" : "#F59E0B")}; border-bottom: 1px solid #F1F5F9; font-weight: 700;'>{encodedAction.ToUpperInvariant()}</td>
                         </tr>
                         <tr style='background-color: #F8FAFC;'>
                             <td style='padding: 14px 15px; font-size: 14px; color: #1E293B; border-bottom: 1px solid #F1F5F9; font-weight: 600;'>Entity</td>
-                            <td style='padding: 14px 15px; font-size: 14px; color: #475569; border-bottom: 1px solid #F1F5F9;'>{log.EntityName} (#{log.EntityId})</td>
+                            <td style='padding: 14px 15px; font-size: 14px; color: #475569; border-bottom: 1px solid #F1F5F9;'>{encodedEntity} (#{encodedEntityId})</td>
                         </tr>
                         <tr>
                             <td style='padding: 14px 15px; font-size: 14px; color: #1E293B; border-bottom: 1px solid #F1F5F9; font-weight: 600;'>Performed By</td>
-                            <td style='padding: 14px 15px; font-size: 14px; color: #475569; border-bottom: 1px solid #F1F5F9;'>{log.PerformedBy}</td>
+                            <td style='padding: 14px 15px; font-size: 14px; color: #475569; border-bottom: 1px solid #F1F5F9;'>{encodedPerformedBy}</td>
                         </tr>
                         <tr style='background-color: #F8FAFC;'>
                             <td style='padding: 14px 15px; font-size: 14px; color: #1E293B; border-bottom: 1px solid #F1F5F9; font-weight: 600;'>Timestamp</td>
@@ -990,12 +1019,12 @@ namespace IT_Form.Data
                         </tr>
                         <tr>
                             <td style='padding: 14px 15px; font-size: 14px; color: #1E293B; border-bottom: 1px solid #F1F5F9; font-weight: 600;'>Details</td>
-                            <td style='padding: 14px 15px; font-size: 14px; color: #475569; border-bottom: 1px solid #F1F5F9;'>{log.Details}</td>
+                            <td style='padding: 14px 15px; font-size: 14px; color: #475569; border-bottom: 1px solid #F1F5F9;'>{encodedDetails}</td>
                         </tr>
                         <tr style='background-color: #F8FAFC;'>
                             <td colspan='2' style='padding: 15px; font-size: 13px; color: #475569;'>
                                 <div style='font-weight: 700; color: #64748B; text-transform: uppercase; font-size: 11px; margin-bottom: 8px;'>Changes:</div>
-                                <div style='white-space: pre-wrap; font-family: monospace; background: #FFF; padding: 10px; border: 1px solid #E2E8F0; border-radius: 4px;'>{formattedChanges}</div>
+                                <div style='white-space: pre-wrap; font-family: monospace; background: #FFF; padding: 10px; border: 1px solid #E2E8F0; border-radius: 4px;'>{encodedChanges}</div>
                             </td>
                         </tr>";
                     
@@ -1029,7 +1058,8 @@ namespace IT_Form.Data
                             auditEmail,
                             subject,
                             htmlBody,
-                            BypassActiveCheck: true)));
+                            BypassActiveCheck: true),
+                        _encryptionService));
                 }
 
                 if (queuedMessages.Count > 0)
@@ -1087,4 +1117,5 @@ namespace IT_Form.Data
         }
     }
 }
+
 

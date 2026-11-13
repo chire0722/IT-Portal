@@ -45,7 +45,7 @@
                                         <div class="row">
                                             <div class="col-md-6 border-end border-light-subtle">
                                                 <div class="form-check form-switch py-1">
-                                                    <input asp-for="IsFree" class="form-check-input" id="isFreeCheckbox" onchange="toggleVersionOption()" />
+                                                    <input asp-for="IsFree" class="form-check-input" id="isFreeCheckbox" data-csp-change="toggleVersionOption" />
                                                     <label asp-for="IsFree" class="form-check-label fw-semibold text-success">Free / Open Source</label>
                                                     <div class="form-text mt-0" style="font-size: 0.75rem;">No license tracking required</div>
                                                 </div>
@@ -96,4 +96,5 @@
         document.addEventListener('DOMContentLoaded', toggleVersionOption);
     </script>
 }
+
 

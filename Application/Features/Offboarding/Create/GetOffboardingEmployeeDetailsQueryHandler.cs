@@ -1,5 +1,6 @@
 // Project comment: GetOffboardingEmployeeDetailsQueryHandler.cs is part of the IT Form application source code.
 
+using IT_Form.Application.Common.Abstractions;
 using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.ViewModels;
@@ -15,10 +16,14 @@ namespace IT_Form.Application.Features.Offboarding.Create
     public sealed class GetOffboardingEmployeeDetailsQueryHandler : IRequestHandler<GetOffboardingEmployeeDetailsQuery, OffboardingEmployeeDetailsViewModel?>
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserAccessor _currentUserAccessor;
 
-        public GetOffboardingEmployeeDetailsQueryHandler(ApplicationDbContext context)
+        public GetOffboardingEmployeeDetailsQueryHandler(
+            ApplicationDbContext context,
+            ICurrentUserAccessor currentUserAccessor)
         {
             _context = context;
+            _currentUserAccessor = currentUserAccessor;
         }
 
         /// <summary>
@@ -33,6 +38,12 @@ namespace IT_Form.Application.Features.Offboarding.Create
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (onboarding == null)
+            {
+                return null;
+            }
+
+            // Enforce company-scope isolation before disclosing employee PII.
+            if (!CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, onboarding.Branch))
             {
                 return null;
             }

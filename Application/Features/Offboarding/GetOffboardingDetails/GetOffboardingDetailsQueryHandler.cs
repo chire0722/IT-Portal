@@ -172,29 +172,17 @@ namespace IT_Form.Application.Features.Offboarding.GetOffboardingDetails
         {
             try
             {
-                if (request.HRSignedAt.HasValue && !string.IsNullOrEmpty(request.HRSignatureHmac) &&
-                    !_integrityService.Verify("OffboardingRequest", request.Id.ToString(), request.HRSignerName ?? "Unknown", request.HRSignedAt.Value, request.HRSignature ?? string.Empty, request.HRSignatureHmac))
-                {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", request.Id.ToString(), request.HRSignerName, "Unknown", request.HRSignedAt, request.HRSignature, request.HRSignatureHmac))
                     return "HR Signature Integrity Violation Detected.";
-                }
 
-                if (request.HODSignedAt.HasValue && !string.IsNullOrEmpty(request.HODSignatureHmac) &&
-                    !_integrityService.Verify("OffboardingRequest", request.Id.ToString(), request.HODSignerName ?? "Unknown", request.HODSignedAt.Value, request.HODSignature ?? string.Empty, request.HODSignatureHmac))
-                {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", request.Id.ToString(), request.HODSignerName, "Unknown", request.HODSignedAt, request.HODSignature, request.HODSignatureHmac))
                     return "HOD Signature Integrity Violation Detected.";
-                }
 
-                if (request.ITAdminSignedAt.HasValue && !string.IsNullOrEmpty(request.ITAdminSignatureHmac) &&
-                    !_integrityService.Verify("OffboardingRequest", request.Id.ToString(), request.ITAdminSignerName ?? "Unknown", request.ITAdminSignedAt.Value, request.ITAdminSignature ?? string.Empty, request.ITAdminSignatureHmac))
-                {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", request.Id.ToString(), request.ITAdminSignerName, "Unknown", request.ITAdminSignedAt, request.ITAdminSignature, request.ITAdminSignatureHmac))
                     return "IT Admin Signature Integrity Violation Detected.";
-                }
 
-                if (request.EmployeeSignedAt.HasValue && !string.IsNullOrEmpty(request.EmployeeSignatureHmac) &&
-                    !_integrityService.Verify("OffboardingRequest", request.Id.ToString(), request.EmployeeSignerName ?? "Employee", request.EmployeeSignedAt.Value, request.EmployeeSignature ?? string.Empty, request.EmployeeSignatureHmac))
-                {
+                if (!SignatureIntegrityGuard.IsValid(_integrityService, "OffboardingRequest", request.Id.ToString(), request.EmployeeSignerName, "Employee", request.EmployeeSignedAt, request.EmployeeSignature, request.EmployeeSignatureHmac))
                     return "Employee Signature Integrity Violation Detected.";
-                }
             }
             catch
             {

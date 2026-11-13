@@ -3,13 +3,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
 using IT_Form.Security;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace IT_Form.Data
 {
@@ -18,8 +21,6 @@ namespace IT_Form.Data
     /// </summary>
     public static class DbInitializer
     {
-        private const string DefaultBootstrapPassword = "Abc123!xyz";
-
         private static readonly string[] SeedAdminTitles = [PortalTitles.IT, PortalTitles.HR, PortalTitles.SuperAdmin];
 
         private static readonly SeedUserDefinition[] SeedUsers =
@@ -369,14 +370,14 @@ namespace IT_Form.Data
         /// <summary>
         /// Runs the SeedUsersAsync operation.
         /// </summary>
-        public static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration)
+        public static async Task SeedUsersAsync(
+            UserManager<ApplicationUser> userManager,
+            ApplicationDbContext context,
+            IConfiguration configuration,
+            IHostEnvironment? environment = null,
+            ILogger? logger = null)
         {
-            var seedPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"])
-                ?? DefaultBootstrapPassword;
-            if (string.IsNullOrWhiteSpace(seedPassword))
-            {
-                return;
-            }
+            var configuredPassword = NormalizeSeedPassword(configuration["SeedAdmin:Password"]);
 
             var users = await context.Users
                 .AsNoTracking()
@@ -388,8 +389,41 @@ namespace IT_Form.Data
                 })
                 .ToListAsync();
 
+            // The seed password is only ever used to CREATE a brand-new bootstrap account.
+            // It must never silently reset an existing account's password.
+            string? seedPassword = configuredPassword;
+            if (string.IsNullOrWhiteSpace(seedPassword))
+            {
+                if (users.Count > 0)
+                {
+                    // Existing deployment without an explicit seed password: do not create
+                    // or reset any account password. Titles/emails are still reconciled below.
+                    seedPassword = null;
+                }
+                else if (environment != null && !environment.IsDevelopment())
+                {
+                    throw new InvalidOperationException(
+                        "SeedAdmin:Password must be configured before first startup so the bootstrap administrator is not created with a known or random password.");
+                }
+                else
+                {
+                    seedPassword = GenerateOneTimeBootstrapPassword();
+                    // Development-only: surface the one-time password so a local developer
+                    // can complete the first login (seed accounts force a password change).
+                    logger?.LogWarning(
+                        "No SeedAdmin:Password configured. Generated a one-time bootstrap password for seed users: {BootstrapPassword}. Change it on first login.",
+                        seedPassword);
+                }
+            }
+
             if (users.Count == 0)
             {
+                if (string.IsNullOrWhiteSpace(seedPassword))
+                {
+                    throw new InvalidOperationException(
+                        "Unable to bootstrap the initial administrator: SeedAdmin:Password is not configured.");
+                }
+
                 foreach (var seedUser in SeedUsers)
                 {
                     await SeedUserAsync(
@@ -480,7 +514,7 @@ namespace IT_Form.Data
             }
         }
 
-        private static async Task SeedConfiguredSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration, string seedPassword)
+        private static async Task SeedConfiguredSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration, string? seedPassword)
         {
             var configuredEmail = NormalizeEmail(configuration["SeedSuperAdmin:Email"]);
             if (!string.IsNullOrWhiteSpace(configuredEmail))
@@ -518,13 +552,19 @@ namespace IT_Form.Data
             await PromoteUserToSuperAdminAsync(userManager, context, user, seedPassword, resetExistingPassword: true);
         }
 
-        private static async Task EnsureConfiguredSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration, string configuredEmail, string seedPassword)
+        private static async Task EnsureConfiguredSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IConfiguration configuration, string configuredEmail, string? seedPassword)
         {
             var user = await FindUserByEmailAsync(context, configuredEmail);
             var userCreated = false;
 
             if (user == null)
             {
+                if (string.IsNullOrWhiteSpace(seedPassword))
+                {
+                    throw new InvalidOperationException(
+                        $"Unable to create configured Super Admin '{configuredEmail}': SeedAdmin:Password is not configured.");
+                }
+
                 user = new ApplicationUser
                 {
                     UserName = configuredEmail,
@@ -578,7 +618,7 @@ namespace IT_Form.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task PromoteUserToSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, ApplicationUser user, string seedPassword, bool resetExistingPassword)
+        private static async Task PromoteUserToSuperAdminAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, ApplicationUser user, string? seedPassword, bool resetExistingPassword)
         {
             await EnsureUserTitleAsync(context, user.Id, PortalTitles.SuperAdmin);
             await EnsureUserTitleAsync(context, user.Id, PortalTitles.IT);
@@ -591,8 +631,16 @@ namespace IT_Form.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task EnsureExistingConfiguredSuperAdminCanBootstrapAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, string seedPassword, bool resetExistingPassword)
+        private static async Task EnsureExistingConfiguredSuperAdminCanBootstrapAsync(UserManager<ApplicationUser> userManager, ApplicationUser user, string? seedPassword, bool resetExistingPassword)
         {
+            if (string.IsNullOrWhiteSpace(seedPassword))
+            {
+                // No explicit bootstrap password configured: do not set or reset any
+                // password on an existing account.
+                await userManager.UpdateAsync(user);
+                return;
+            }
+
             IdentityResult? passwordResult = null;
             if (string.IsNullOrWhiteSpace(user.PasswordHash))
             {
@@ -670,11 +718,17 @@ namespace IT_Form.Data
         /// <summary>
         /// Runs the SeedUserAsync operation.
         /// </summary>
-        private static async Task SeedUserAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, string username, string email, string fullName, string department, string title, string password)
+        private static async Task SeedUserAsync(UserManager<ApplicationUser> userManager, ApplicationDbContext context, string username, string email, string fullName, string department, string title, string? password)
         {
             var existingUser = await userManager.FindByEmailAsync(email);
             if (existingUser == null)
             {
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    throw new InvalidOperationException(
+                        $"Unable to create seed user '{email}': SeedAdmin:Password is not configured.");
+                }
+
                 var user = new ApplicationUser
                 {
                     UserName = username,
@@ -738,6 +792,45 @@ namespace IT_Form.Data
 
             return trimmed;
         }
+
+        /// <summary>
+        /// Generates a cryptographically random bootstrap password that satisfies the
+        /// configured Identity password policy (length, digit, uppercase, lowercase,
+        /// non-alphanumeric, and unique characters).
+        /// </summary>
+        private static string GenerateOneTimeBootstrapPassword()
+        {
+            const string lower = "abcdefghijkmnopqrstuvwxyz";
+            const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+            const string digits = "23456789";
+            const string symbols = "!@#$%^&*()-_=+";
+            const string all = lower + upper + digits + symbols;
+
+            var chars = new List<char>(20)
+            {
+                Pick(digits),
+                Pick(upper),
+                Pick(lower),
+                Pick(symbols)
+            };
+
+            while (chars.Count < 16)
+            {
+                chars.Add(Pick(all));
+            }
+
+            // Fisher-Yates shuffle with a CSPRNG so no category is positionally predictable.
+            for (var i = chars.Count - 1; i > 0; i--)
+            {
+                var j = RandomNumberGenerator.GetInt32(i + 1);
+                (chars[i], chars[j]) = (chars[j], chars[i]);
+            }
+
+            return new string(chars.ToArray());
+        }
+
+        private static char Pick(string alphabet)
+            => alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
 
         /// <summary>
         /// Runs the NormalizeEmail operation.

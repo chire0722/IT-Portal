@@ -29,7 +29,7 @@ namespace IT_Form.Controllers
         /// </summary>
         public async Task<IActionResult> Index(string searchString, RequestStatus? status, int page = 1) => HandleResult(await _sender.Send(new GetOnboardingIndexPageQuery(searchString, status, page)));
         [Authorize(Policy = "RequireHR")] public async Task<IActionResult> ExportCsv(string searchString, RequestStatus? status) => HandleResult(await _sender.Send(new ExportOnboardingCsvFileQuery(searchString, status)));
-        [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")] public async Task<IActionResult> ExportBulkPdf([FromBody] int[] ids) => HandleResult(await _sender.Send(new ExportBulkOnboardingPdfFileCommand(ids)));
+        [HttpPost, RequestSizeLimit(128 * 1024), ValidateAntiForgeryToken, Authorize(Policy = "RequireHR")] public async Task<IActionResult> ExportBulkPdf([FromBody] int[] ids) => HandleResult(await _sender.Send(new ExportBulkOnboardingPdfFileCommand(ids)));
         /// <summary>
         /// Runs the GeneratePdf operation.
         /// </summary>
@@ -114,3 +114,4 @@ namespace IT_Form.Controllers
         }
     }
 }
+

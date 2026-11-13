@@ -1,6 +1,7 @@
 // Project comment: OffboardingActionWriteValidators.cs is part of the IT Form application source code.
 
 using FluentValidation;
+using IT_Form.Helpers;
 
 namespace IT_Form.Application.Features.Offboarding.ActionWrites
 {
@@ -12,7 +13,7 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         public ProcessOffboardingHrSignatureCommandValidator()
         {
             RuleFor(x => x.Id).GreaterThan(0);
-            RuleFor(x => x.SignatureBase64).NotEmpty().MaximumLength(500000).WithMessage("Signature data is invalid or too large.");
+            RuleFor(x => x.SignatureBase64).NotEmpty().WithMessage("Signature data is invalid or too large.").Must(SignatureDataUriValidator.IsValid).When(x => !string.IsNullOrWhiteSpace(x.SignatureBase64), ApplyConditionTo.CurrentValidator).WithMessage("Signature must be a valid PNG image within the allowed size and dimensions.");
         }
     }
 
@@ -24,7 +25,7 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         public ProcessOffboardingCheckerApprovalCommandValidator()
         {
             RuleFor(x => x.Id).GreaterThan(0);
-            RuleFor(x => x.SignatureBase64).NotEmpty().MaximumLength(500000).WithMessage("Signature data is invalid or too large.");
+            RuleFor(x => x.SignatureBase64).Must(SignatureDataUriValidator.IsValid).WithMessage("Signature must be a valid PNG image within the allowed size and dimensions.");
         }
     }
 
@@ -36,7 +37,7 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         public ProcessOffboardingManagerSignatureCommandValidator()
         {
             RuleFor(x => x.Id).GreaterThan(0);
-            RuleFor(x => x.SignatureBase64).NotEmpty().MaximumLength(500000).WithMessage("Signature data is invalid or too large.");
+            RuleFor(x => x.SignatureBase64).Must(SignatureDataUriValidator.IsValid).WithMessage("Signature must be a valid PNG image within the allowed size and dimensions.");
         }
     }
 
@@ -48,7 +49,7 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         public ProcessOffboardingItSignatureCommandValidator()
         {
             RuleFor(x => x.Id).GreaterThan(0);
-            RuleFor(x => x.SignatureBase64).NotEmpty().MaximumLength(500000).WithMessage("Signature data is invalid or too large.");
+            RuleFor(x => x.SignatureBase64).Must(SignatureDataUriValidator.IsValid).WithMessage("Signature must be a valid PNG image within the allowed size and dimensions.");
         }
     }
 
@@ -60,7 +61,7 @@ namespace IT_Form.Application.Features.Offboarding.ActionWrites
         public ProcessOffboardingEmployeeManualSignatureCommandValidator()
         {
             RuleFor(x => x.Id).GreaterThan(0);
-            RuleFor(x => x.SignatureBase64).NotEmpty().MaximumLength(500000).WithMessage("Signature data is invalid or too large.");
+            RuleFor(x => x.SignatureBase64).Must(SignatureDataUriValidator.IsValid).WithMessage("Signature must be a valid PNG image within the allowed size and dimensions.");
         }
     }
 

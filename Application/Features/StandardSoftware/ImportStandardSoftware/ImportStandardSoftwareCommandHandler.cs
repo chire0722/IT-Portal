@@ -6,6 +6,7 @@ using IT_Form.Application.Features.StandardSoftware;
 using IT_Form.Application.Common.Abstractions;
 using IT_Form.Application.Common.Support.Internal.Runtime.ControlPlane.Policies;
 using IT_Form.Helpers;
+using IT_Form.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,12 +20,14 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
         private readonly ApplicationDbContext _context;
         private readonly IQuotaControl _quotaControl;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
-        public ImportStandardSoftwareCommandHandler(ApplicationDbContext context, IQuotaControl quotaControl, ICurrentUserAccessor currentUserAccessor)
+        public ImportStandardSoftwareCommandHandler(ApplicationDbContext context, IQuotaControl quotaControl, ICurrentUserAccessor currentUserAccessor, IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _quotaControl = quotaControl;
             _currentUserAccessor = currentUserAccessor;
+            _malwareScanner = malwareScanner;
         }
 
         /// <summary>
@@ -36,6 +39,8 @@ namespace IT_Form.Application.Features.StandardSoftware.ImportStandardSoftware
             {
                 return new ImportStandardSoftwareResult(false, null, errorMessage);
             }
+
+            await MalwareScanHelper.EnsureCleanAsync(request.File, _malwareScanner, "Standard software import", cancellationToken);
 
             int softwareAdded = 0;
             int softwareSkipped = 0;

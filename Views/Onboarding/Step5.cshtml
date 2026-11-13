@@ -44,7 +44,7 @@
                     };
                 }
                 <div class="d-flex justify-content-end mb-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('#submitForm input[type=checkbox]').forEach(cb => cb.checked = true)">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-csp-click="select-all" data-csp-selector="#submitForm input[type=checkbox]">
                         <i class="fas fa-check-square me-1" aria-hidden="true"></i> Select All
                     </button>
                 </div>
@@ -53,11 +53,11 @@
                         <tbody>
                             @for (int i = 0; i < checklistItems.Length; i++)
                             {
-                                <tr style="cursor:pointer;" onclick="var cb=this.querySelector('input[type=checkbox]'); cb.checked=!cb.checked;">
+                                <tr style="cursor:pointer;" data-csp-click="toggle-row-checkbox">
                                     <td style="width: 5%;">@(i + 1)</td>
                                     <td>@checklistItems[i].Name</td>
                                     <td class="text-center" style="width: 15%;">
-                                        <input type="checkbox" name="@checklistItems[i].Field" value="true" class="form-check-input" @(checklistItems[i].Value ? "checked" : "") onclick="event.stopPropagation();" />
+                                        <input type="checkbox" name="@checklistItems[i].Field" value="true" class="form-check-input" @(checklistItems[i].Value ? "checked" : "") data-csp-click="stop-propagation" />
                                     </td>
                                 </tr>
                             }
@@ -148,3 +148,4 @@
         });
     </script>
 }
+

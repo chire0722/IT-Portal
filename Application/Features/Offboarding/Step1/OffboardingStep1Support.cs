@@ -80,12 +80,9 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 return "Invalid file type. Allowed: PDF, images (.jpg, .jpeg, .png), and videos (.mp4, .mov, .webm).";
             }
 
-            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
-            if (!contentType.StartsWith("image/") &&
-                !contentType.StartsWith("video/") &&
-                contentType != "application/pdf")
+            if (!UploadFileSignatureValidator.HasAllowedSignature(file, DamageExtensions))
             {
-                return "Invalid file content. Only image, video, or PDF files are allowed for hardware proof.";
+                return "Invalid file content. The file signature must match an allowed image, video, or PDF format.";
             }
 
             return null;
@@ -107,11 +104,10 @@ namespace IT_Form.Application.Features.Offboarding.Step1
             }
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var contentType = file.ContentType?.ToLowerInvariant() ?? string.Empty;
             if (!ReturnExtensions.Contains(extension) ||
-                (!contentType.StartsWith("image/") && contentType != "application/pdf"))
+                !UploadFileSignatureValidator.HasAllowedSignature(file, ReturnExtensions))
             {
-                return "Invalid return file type. Only PDF and images (.jpg, .jpeg, .png) are allowed.";
+                return "Invalid return file type. Only valid PDF and JPEG/PNG files are allowed.";
             }
 
             return null;
@@ -120,7 +116,7 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         /// <summary>
         /// Saves data for the SaveDamageFileAsync operation.
         /// </summary>
-        internal static async Task SaveDamageFileAsync(
+        internal static async Task<string?> SaveDamageFileAsync(
             IWebHostEnvironment env,
             OffboardingRequest existing,
             int requestId,
@@ -129,24 +125,33 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         {
             if (hardwareDamageImage == null || hardwareDamageImage.Length <= 0)
             {
-                return;
+                return null;
             }
 
             var extension = Path.GetExtension(hardwareDamageImage.FileName).ToLowerInvariant();
             var fileName = $"Offboarding_Damage_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareDamageImagePath);
-            existing.HardwareDamageImagePath = await SensitiveFileStorage.SaveAsync(
-                hardwareDamageImage,
-                env,
-                "offboarding",
-                fileName,
-                cancellationToken);
+            var previousPath = existing.HardwareDamageImagePath;
+            if (extension is ".jpg" or ".jpeg" or ".png")
+            {
+                var reencoded = await ImageReencodingHelper.ReencodeAsync(hardwareDamageImage, cancellationToken);
+                fileName = Path.ChangeExtension(fileName, reencoded.Extension);
+                existing.HardwareDamageImagePath = await SensitiveFileStorage.SaveBytesAsync(
+                    reencoded.Bytes, env, "offboarding", fileName, cancellationToken);
+            }
+            else
+            {
+                existing.HardwareDamageImagePath = await SensitiveFileStorage.SaveAsync(
+                    hardwareDamageImage, env, "offboarding", fileName, cancellationToken);
+            }
+
+            // The caller deletes the previous file only after the new path is committed.
+            return previousPath;
         }
 
         /// <summary>
         /// Saves data for the SaveReturnFileAsync operation.
         /// </summary>
-        internal static async Task SaveReturnFileAsync(
+        internal static async Task<string?> SaveReturnFileAsync(
             IWebHostEnvironment env,
             OffboardingRequest existing,
             int requestId,
@@ -155,48 +160,90 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         {
             if (hardwareReturnImage == null || hardwareReturnImage.Length <= 0)
             {
-                return;
+                return null;
             }
 
             var extension = Path.GetExtension(hardwareReturnImage.FileName).ToLowerInvariant();
-            var contentType = hardwareReturnImage.ContentType?.ToLowerInvariant() ?? string.Empty;
             if (!ReturnExtensions.Contains(extension) ||
-                (!contentType.StartsWith("image/") && contentType != "application/pdf"))
+                !UploadFileSignatureValidator.HasAllowedSignature(hardwareReturnImage, ReturnExtensions))
             {
-                return;
+                return null;
             }
 
             var fileName = $"Offboarding_Return_{requestId}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{extension}";
-            SensitiveFileStorage.DeleteStoredFile(env, existing.HardwareReturnImagePath);
-            existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveAsync(
-                hardwareReturnImage,
-                env,
-                "offboarding",
-                fileName,
-                cancellationToken);
+            var previousPath = existing.HardwareReturnImagePath;
+            if (extension is ".jpg" or ".jpeg" or ".png")
+            {
+                var reencoded = await ImageReencodingHelper.ReencodeAsync(hardwareReturnImage, cancellationToken);
+                fileName = Path.ChangeExtension(fileName, reencoded.Extension);
+                existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveBytesAsync(
+                    reencoded.Bytes, env, "offboarding", fileName, cancellationToken);
+            }
+            else
+            {
+                existing.HardwareReturnImagePath = await SensitiveFileStorage.SaveAsync(
+                    hardwareReturnImage, env, "offboarding", fileName, cancellationToken);
+            }
+
+            // The caller deletes the previous file only after the new path is committed.
+            return previousPath;
         }
 
         /// <summary>
         /// Runs the MarkReturnedAssetsAsync operation.
         /// </summary>
-        internal static async Task MarkReturnedAssetsAsync(
+        internal static async Task<string?> MarkReturnedAssetsAsync(
             ApplicationDbContext context,
+            OffboardingRequest offboardingRequest,
             IReadOnlyCollection<int>? returnedAssetIds,
             CancellationToken cancellationToken)
         {
             if (returnedAssetIds == null || returnedAssetIds.Count == 0)
             {
-                return;
+                return null;
+            }
+
+            if (!offboardingRequest.OnboardingRequestId.HasValue)
+            {
+                return "Returned inventory assets must be linked to the employee's onboarding assignment before they can be reconciled.";
+            }
+
+            var requestedAssetIds = returnedAssetIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            if (requestedAssetIds.Count != returnedAssetIds.Count)
+            {
+                return "The returned asset list contains an invalid or duplicated asset id.";
+            }
+
+            var assignedAssetIds = await context.IssuedAssets
+                .Where(issue => issue.OnboardingRequestId == offboardingRequest.OnboardingRequestId &&
+                                issue.ITAssetId.HasValue &&
+                                requestedAssetIds.Contains(issue.ITAssetId.Value) &&
+                                issue.ITAsset!.Status == AssetStatus.Issued &&
+                                issue.ITAsset.Company == offboardingRequest.Branch)
+                .Select(issue => issue.ITAssetId!.Value)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            if (assignedAssetIds.Count != requestedAssetIds.Count)
+            {
+                return "Every returned inventory asset must be currently assigned to this employee and company.";
             }
 
             var returnedAssets = await context.ITAssets
-                .Where(a => returnedAssetIds.Contains(a.Id) && a.Status == AssetStatus.Issued)
+                .Where(a => requestedAssetIds.Contains(a.Id) &&
+                            a.Status == AssetStatus.Issued &&
+                            a.Company == offboardingRequest.Branch)
                 .ToListAsync(cancellationToken);
 
             foreach (var asset in returnedAssets)
             {
                 asset.Status = AssetStatus.Available;
             }
+
+            return null;
         }
 
         /// <summary>
@@ -234,3 +281,4 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         }
     }
 }
+

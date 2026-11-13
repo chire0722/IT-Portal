@@ -11,8 +11,9 @@ using Microsoft.Extensions.Options;
 namespace IT_Form.Services
 {
     /// <summary>
-    /// Enforces retention by anonymising old HR/IT request records, deleting sensitive uploads,
-    /// purging expired security tokens, and redacting old audit payloads.
+    /// Enforces retention by redacting selected identifiers in old HR/IT request records,
+    /// deleting sensitive uploads, purging expired security tokens, and redacting old audit payloads.
+    /// Remaining business metadata means this is not a guarantee of irreversible anonymisation.
     /// </summary>
     public class DataRetentionService : BackgroundService
     {
@@ -81,34 +82,41 @@ namespace IT_Form.Services
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             var cutoff = DateTime.UtcNow - RecordRetentionPeriod;
-            var anonymized = await AnonymizeExpiredOffboardingAsync(db, cutoff, ct);
-            anonymized += await AnonymizeExpiredOnboardingAsync(db, cutoff, ct);
+            var expiredSensitiveFiles = new List<string?>();
+            var redacted = await RedactExpiredOffboardingAsync(db, cutoff, expiredSensitiveFiles, ct);
+            redacted += await RedactExpiredOnboardingAsync(db, cutoff, ct);
 
-            if (anonymized > 0)
+            if (redacted > 0)
             {
+                // Persist the redacted references first. Never delete a file while the database
+                // may still retain a live reference to it if SaveChanges fails.
                 await db.SaveChangesAsync(ct);
                 _logger.LogInformation(
-                    "DataRetentionService: anonymized {Count} records older than {Cutoff:yyyy-MM-dd}.",
-                    anonymized,
+                    "DataRetentionService: redacted {Count} records older than {Cutoff:yyyy-MM-dd}.",
+                    redacted,
                     cutoff);
+
+                DeleteExpiredSensitiveFiles(expiredSensitiveFiles);
             }
             else
             {
                 _logger.LogDebug(
-                    "DataRetentionService: no records require anonymization (cutoff: {Cutoff:yyyy-MM-dd}).",
+                    "DataRetentionService: no records require retention redaction (cutoff: {Cutoff:yyyy-MM-dd}).",
                     cutoff);
             }
 
             await PurgeExpiredTokensAsync(db, ct);
             await RedactExpiredAuditLogsAsync(db, ct);
+            await PurgeExpiredEmailOutboxAsync(db, cutoff, ct);
         }
 
         /// <summary>
-        /// Runs the AnonymizeExpiredOffboardingAsync operation.
+        /// Runs the RedactExpiredOffboardingAsync operation.
         /// </summary>
-        private async Task<int> AnonymizeExpiredOffboardingAsync(
+        private async Task<int> RedactExpiredOffboardingAsync(
             ApplicationDbContext db,
             DateTime cutoff,
+            ICollection<string?> expiredSensitiveFiles,
             CancellationToken ct)
         {
             var staleOffboarding = await db.OffboardingRequests
@@ -120,14 +128,18 @@ namespace IT_Form.Services
 
             foreach (var req in staleOffboarding)
             {
-                SensitiveFileStorage.DeleteStoredFile(_environment, req.ResignationLetterPath);
-                SensitiveFileStorage.DeleteStoredFile(_environment, req.HardwareDamageImagePath);
-                SensitiveFileStorage.DeleteStoredFile(_environment, req.HardwareReturnImagePath);
+                expiredSensitiveFiles.Add(req.ResignationLetterPath);
+                expiredSensitiveFiles.Add(req.HardwareDamageImagePath);
+                expiredSensitiveFiles.Add(req.HardwareReturnImagePath);
 
                 req.FullName = "[REDACTED]";
                 req.EmployeeID = "[REDACTED]";
                 req.EmailAddress = "redacted@redacted.com";
                 req.HODEmail = "redacted@redacted.com";
+                req.CreatedByUserId = null;
+                req.ApprovedByUserId = null;
+                req.RejectedByUserId = null;
+                req.AssignedHodId = null;
                 req.ProjectCode = null;
                 req.ForwardToEmail = null;
                 req.EmailForwardName = null;
@@ -161,9 +173,30 @@ namespace IT_Form.Services
         }
 
         /// <summary>
-        /// Runs the AnonymizeExpiredOnboardingAsync operation.
+        /// Deletes sensitive files only after their database references have been redacted.
+        /// Failed deletions are logged for operational follow-up; the record is not restored.
         /// </summary>
-        private async Task<int> AnonymizeExpiredOnboardingAsync(
+        private void DeleteExpiredSensitiveFiles(IEnumerable<string?> storedPaths)
+        {
+            foreach (var storedPath in storedPaths.Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.Ordinal))
+            {
+                try
+                {
+                    SensitiveFileStorage.DeleteStoredFile(_environment, storedPath);
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                {
+                    _logger.LogError(
+                        ex,
+                        "DataRetentionService could not delete an expired sensitive upload. Manual cleanup is required.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Runs the RedactExpiredOnboardingAsync operation.
+        /// </summary>
+        private async Task<int> RedactExpiredOnboardingAsync(
             ApplicationDbContext db,
             DateTime cutoff,
             CancellationToken ct)
@@ -182,6 +215,8 @@ namespace IT_Form.Services
                 req.EmailAddress = "redacted@redacted.com";
                 req.ContactNumber = "[REDACTED]";
                 req.HODEmail = "redacted@redacted.com";
+                req.CreatedByUserId = null;
+                req.RejectedByUserId = null;
                 req.DeskNumber = null;
                 req.RequesterSignature = null;
                 req.RequesterSignatureHmac = null;
@@ -287,6 +322,34 @@ namespace IT_Form.Services
             }
         }
 
+        /// <summary>
+        /// Permanently removes terminal email outbox records after their retention period.
+        /// Pending and processing messages remain durable so an interrupted delivery is not
+        /// silently lost; terminal records no longer need to retain recipient or message data.
+        /// </summary>
+        private async Task PurgeExpiredEmailOutboxAsync(ApplicationDbContext db, DateTime cutoff, CancellationToken ct)
+        {
+            var staleMessages = await db.EmailOutboxMessages
+                .Where(message =>
+                    message.CreatedAtUtc < cutoff &&
+                    (message.Status == Models.Enums.EmailOutboxStatus.Sent ||
+                     message.Status == Models.Enums.EmailOutboxStatus.Failed ||
+                     message.Status == Models.Enums.EmailOutboxStatus.DeadLetter))
+                .ToListAsync(ct);
+
+            if (staleMessages.Count == 0)
+            {
+                return;
+            }
+
+            db.EmailOutboxMessages.RemoveRange(staleMessages);
+            await db.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "DataRetentionService: permanently removed {Count} terminal email outbox records older than {Cutoff:yyyy-MM-dd}.",
+                staleMessages.Count,
+                cutoff);
+        }
+
         private TimeSpan RecordRetentionPeriod =>
             TimeSpan.FromDays(Math.Max(1, _options.RecordRetentionDays));
 
@@ -297,3 +360,4 @@ namespace IT_Form.Services
             TimeSpan.FromDays(Math.Max(1, _options.AuditLogRetentionDays));
     }
 }
+

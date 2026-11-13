@@ -32,8 +32,13 @@ namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
         /// </summary>
         public async Task<ProcessResult<BinaryFilePayload>> Handle(ExportOffboardingCsvQuery request, CancellationToken cancellationToken)
         {
-            var query = _context.OffboardingRequests.AsNoTracking().AsQueryable();
             var user = _currentUserAccessor.User;
+            if (user?.HasClaim("UserTitle", "HR") != true)
+            {
+                return ProcessResult<BinaryFilePayload>.Forbidden();
+            }
+
+            var query = _context.OffboardingRequests.AsNoTracking().AsQueryable();
             var scopedCompanies = HrRecordReadCompanyScopeSupport.GetScopedCompanies(user);
 
             if (scopedCompanies.Count > 0)
@@ -48,7 +53,7 @@ namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
             builder.AppendLine("ID,Full Name,Employee ID,Department,Company,Status,Last Day,Manager Email,HR Signed,Manager Signed,IT Signed,Employee Signed");
             foreach (var r in list)
             {
-                builder.AppendLine($"\"{Escape(r.Id.ToString())}\",\"{Escape(r.FullName)}\",\"{Escape(r.EmployeeID)}\",\"{Escape(r.Department)}\",\"{Escape(r.Branch)}\",\"{r.Status}\",\"{r.LastDayOfWork:yyyy-MM-dd}\",\"{Escape(r.HODEmail)}\",\"{r.HRSignedAt:yyyy-MM-dd}\",\"{r.HODSignedAt:yyyy-MM-dd}\",\"{r.ITAdminSignedAt:yyyy-MM-dd}\",\"{r.EmployeeSignedAt:yyyy-MM-dd}\"");
+                builder.AppendLine($"\"{CsvExportSanitizer.EscapeCell(r.Id.ToString())}\",\"{CsvExportSanitizer.EscapeCell(r.FullName)}\",\"{CsvExportSanitizer.EscapeCell(r.EmployeeID)}\",\"{CsvExportSanitizer.EscapeCell(r.Department)}\",\"{CsvExportSanitizer.EscapeCell(r.Branch)}\",\"{r.Status}\",\"{r.LastDayOfWork:yyyy-MM-dd}\",\"{CsvExportSanitizer.EscapeCell(r.HODEmail)}\",\"{r.HRSignedAt:yyyy-MM-dd}\",\"{r.HODSignedAt:yyyy-MM-dd}\",\"{r.ITAdminSignedAt:yyyy-MM-dd}\",\"{r.EmployeeSignedAt:yyyy-MM-dd}\"");
             }
 
             var bytes = Encoding.UTF8.GetBytes(builder.ToString());
@@ -81,9 +86,5 @@ namespace IT_Form.Application.Features.Offboarding.ExportOffboardingCsv
             return query;
         }
 
-        /// <summary>
-        /// Runs the Escape operation.
-        /// </summary>
-        private static string Escape(string? value) => value?.Replace("\"", "\"\"") ?? string.Empty;
     }
 }

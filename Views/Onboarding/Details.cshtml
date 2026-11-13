@@ -553,13 +553,13 @@
                     {
                         <div class="mt-2">
                             <div id="sigLinkSection-onboarding" class="bg-white p-3 border rounded shadow-sm">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill w-100 mb-2 shadow-sm fw-bold" onclick="generateSignatureLink('onboarding', '@Model.AccessToken', 'Onboarding')">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill w-100 mb-2 shadow-sm fw-bold" data-csp-click="generateSignatureLink" data-csp-arg0="onboarding" data-csp-arg1="@Model.AccessToken" data-csp-arg2="Onboarding">
                                     <i class="bi bi-link-45deg me-1" aria-hidden="true"></i> Generate Link
                                 </button>
                                 <div id="sigLinkBox-onboarding" style="display: none;">
                                     <div class="input-group shadow-sm mb-2">
                                         <input type="text" class="form-control form-control-sm border-primary" id="sigLinkInput-onboarding" readonly style="font-size: 0.7rem;" />
-                                        <button class="btn btn-sm btn-primary px-2" type="button" onclick="copySigLink('onboarding')">
+                                        <button class="btn btn-sm btn-primary px-2" type="button" data-csp-click="copySigLink" data-csp-arg0="onboarding">
                                             <i class="bi bi-clipboard" aria-hidden="true"></i>
                                         </button>
                                     </div>
@@ -570,7 +570,7 @@
                                 </div>
                                 <form asp-action="RegenerateToken" asp-route-id="@Model.Id" method="post" class="mt-2 text-center">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-link p-0 text-muted" style="font-size: 0.7rem; text-decoration: none;" onclick="return confirm('This will invalidate the old signature link. Continue?');">
+                                    <button type="submit" class="btn btn-link p-0 text-muted" style="font-size: 0.7rem; text-decoration: none;" data-csp-click="confirm" data-csp-confirm="This will invalidate the old signature link. Continue?">
                                         <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Regenerate Token
                                     </button>
                                 </form>
@@ -657,3 +657,4 @@
         });
     </script>
 }
+

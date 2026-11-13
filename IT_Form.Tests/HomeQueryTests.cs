@@ -588,6 +588,7 @@ public class HomeQueryTests
             FullName = "HR Importer",
             IsActive = true
         });
+        var currentMonthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 8, 0, 0, DateTimeKind.Utc);
         context.OnboardingRequests.AddRange(
             new OnboardingRequest
             {
@@ -596,8 +597,8 @@ public class HomeQueryTests
                 FullName = "Imported Employee",
                 Department = "Finance",
                 Status = RequestStatus.Completed,
-                RequestDate = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc),
-                CompletedAt = new DateTime(2026, 5, 3, 8, 0, 0, DateTimeKind.Utc)
+                RequestDate = currentMonthStart.AddDays(1),
+                CompletedAt = currentMonthStart.AddDays(2)
             },
             new OnboardingRequest
             {
@@ -606,9 +607,9 @@ public class HomeQueryTests
                 FullName = "Signed Employee",
                 Department = "IT",
                 Status = RequestStatus.Completed,
-                RequestDate = new DateTime(2026, 5, 1, 8, 0, 0, DateTimeKind.Utc),
-                EmployeeSignedAt = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc),
-                CompletedAt = new DateTime(2026, 5, 2, 8, 0, 0, DateTimeKind.Utc)
+                RequestDate = currentMonthStart,
+                EmployeeSignedAt = currentMonthStart.AddDays(1),
+                CompletedAt = currentMonthStart.AddDays(1)
             });
         await context.SaveChangesAsync();
 
@@ -618,11 +619,11 @@ public class HomeQueryTests
             new TestCurrentUserAccessor("hr.user", "hr-id", "HR"),
             cache);
 
-        var result = await handler.Handle(new GetHomeDashboardQuery(2026), CancellationToken.None);
+        var result = await handler.Handle(new GetHomeDashboardQuery(DateTime.UtcNow.Year), CancellationToken.None);
 
         var recent = result.ViewModel.RecentCompletedOnboarding.ToList();
         Assert.Equal("Imported Employee", recent[0].FullName);
-        Assert.Equal(new DateTime(2026, 5, 3, 8, 0, 0, DateTimeKind.Utc), recent[0].CompletedAt);
+        Assert.Equal(currentMonthStart.AddDays(2), recent[0].CompletedAt);
         Assert.Equal("HR Importer", recent[0].SubmittedByName);
         Assert.Equal(2, result.ViewModel.CompletedThisMonthCount);
     }

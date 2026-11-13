@@ -218,7 +218,7 @@
 
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" asp-for="EmailForwarded" id="chkFwd"
-                                        onchange="toggleForwardEmail()">
+                                        data-csp-change="toggleForwardEmail">
                                     <label class="form-check-label fw-bold" for="chkFwd">Setup Email Forwarding?</label>
                                 </div>
                                 <div class="ps-4" id="fwdEmailDiv"
@@ -289,7 +289,7 @@
                                 </div>
 
                                 <div class="form-check form-switch mb-4 mt-4 p-3 bg-light rounded-3 border">
-                                    <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="IsHardwareDamaged" id="chkDamage" onchange="toggleDamageInfo()">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="IsHardwareDamaged" id="chkDamage" data-csp-change="toggleDamageInfo">
                                     <label class="form-check-label fw-bold text-danger" for="chkDamage">
                                         <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i> Is Hardware Damage / Missing?
                                     </label>
@@ -372,5 +372,6 @@
             }
         </script>
 }
+
 
 

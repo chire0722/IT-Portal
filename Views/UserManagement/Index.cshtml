@@ -120,7 +120,7 @@
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-danger" title="Deactivate"
                                         aria-label="Deactivate user @user.Username"
-                                        onclick="openToggleModal('@user.Id', '@user.Username', 'deactivate')">
+                                        data-csp-click="openToggleModal" data-csp-arg0="@user.Id" data-csp-arg1="@user.Username" data-csp-arg2="deactivate">
                                         <i class="fas fa-user-slash" aria-hidden="true"></i>
                                     </button>
                                 }
@@ -128,13 +128,13 @@
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-success" title="Activate"
                                         aria-label="Activate user @user.Username"
-                                        onclick="openToggleModal('@user.Id', '@user.Username', 'activate')">
+                                        data-csp-click="openToggleModal" data-csp-arg0="@user.Id" data-csp-arg1="@user.Username" data-csp-arg2="activate">
                                         <i class="fas fa-user-check" aria-hidden="true"></i>
                                     </button>
                                 }
                                 <button type="button" class="btn btn-sm btn-outline-danger ms-1" title="Delete User"
                                     aria-label="Delete user @user.FullName"
-                                    onclick="openDeleteModal('@user.Id', '@user.FullName')">
+                                    data-csp-click="openDeleteModal" data-csp-arg0="@user.Id" data-csp-arg1="@user.FullName">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </button>
                             </td>
@@ -258,3 +258,4 @@
         });
     </script>
 }
+

@@ -2,6 +2,7 @@
 
 using IT_Form.Application.Common.Exceptions;
 using IT_Form.Data;
+using IT_Form.Helpers;
 using IT_Form.Services;
 using Mapster;
 using MediatR;
@@ -18,15 +19,18 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _hostEnvironment;
     private readonly ICompanyReferenceSyncService _companyReferenceSyncService;
+    private readonly IFileMalwareScanner? _malwareScanner;
 
     public UpdateCompanyCommandHandler(
         ApplicationDbContext context,
         IWebHostEnvironment hostEnvironment,
-        ICompanyReferenceSyncService companyReferenceSyncService)
+        ICompanyReferenceSyncService companyReferenceSyncService,
+        IFileMalwareScanner? malwareScanner = null)
     {
         _context = context;
         _hostEnvironment = hostEnvironment;
         _companyReferenceSyncService = companyReferenceSyncService;
+        _malwareScanner = malwareScanner;
     }
 
     /// <summary>
@@ -37,6 +41,9 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
         var entity = await _context.Companies
             .FirstOrDefaultAsync(company => company.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(CompanyEntity), request.Id);
+
+        await MalwareScanHelper.EnsureCleanAsync(request.Logo, _malwareScanner, "Company logo", cancellationToken);
+
 
         var originalCompany = new CompanyEntity
         {
@@ -59,32 +66,11 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
         };
 
         request.Adapt(entity);
+        var newLogoPath = await CompanyLogoStorage.SaveAsync(_hostEnvironment, request.Logo, cancellationToken);
 
-        if (request.Logo != null && request.Logo.Length > 0)
+        if (!string.IsNullOrWhiteSpace(newLogoPath))
         {
-            var extension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
-            var fileName = $"{entity.Id}_Logo_{Guid.NewGuid():N}{extension}";
-            var directoryPath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "companies", "logos");
-
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-
-            if (!string.IsNullOrEmpty(originalCompany.LogoPath))
-            {
-                var oldPath = Path.Combine(_hostEnvironment.WebRootPath, originalCompany.LogoPath.TrimStart('/'));
-                if (File.Exists(oldPath))
-                {
-                    File.Delete(oldPath);
-                }
-            }
-
-            var fullPath = Path.Combine(directoryPath, fileName);
-            await using var fileStream = new FileStream(fullPath, FileMode.Create);
-            await request.Logo.CopyToAsync(fileStream, cancellationToken);
-
-            entity.LogoPath = Path.Combine("uploads", "companies", "logos", fileName).Replace("\\", "/");
+            entity.LogoPath = newLogoPath;
         }
 
         if (entity.IsLoginPageLogo)
@@ -99,8 +85,23 @@ public sealed class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyC
             }
         }
 
-        var syncedCount = await _companyReferenceSyncService.ApplyUpdatedCompanySyncAsync(originalCompany, entity);
-        await _context.SaveChangesAsync(cancellationToken);
+        int syncedCount;
+        try
+        {
+            syncedCount = await _companyReferenceSyncService.ApplyUpdatedCompanySyncAsync(originalCompany, entity);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            CompanyLogoStorage.DeleteIfManaged(_hostEnvironment, newLogoPath);
+            throw;
+        }
+
+        if (!string.IsNullOrWhiteSpace(newLogoPath)
+            && !string.Equals(originalCompany.LogoPath, newLogoPath, StringComparison.Ordinal))
+        {
+            CompanyLogoStorage.DeleteIfManaged(_hostEnvironment, originalCompany.LogoPath);
+        }
 
         return syncedCount;
     }

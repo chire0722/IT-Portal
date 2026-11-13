@@ -20,7 +20,6 @@ namespace IT_Form.Application.Features.Offboarding.Create
     internal static class OffboardingCreateSupport
     {
         private static readonly string[] AllowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
-        private static readonly string[] ValidMimeTypes = ["application/pdf", "image/jpeg", "image/png"];
 
         /// <summary>
         /// Validates data for the ValidateAssignedHodAsync operation.
@@ -79,10 +78,9 @@ namespace IT_Form.Application.Features.Offboarding.Create
                 return "Invalid file type. Only PDF and images (.jpg, .jpeg, .png) are allowed.";
             }
 
-            var contentType = resignationLetter.ContentType?.ToLowerInvariant() ?? string.Empty;
-            if (!ValidMimeTypes.Contains(contentType))
+            if (!UploadFileSignatureValidator.HasAllowedSignature(resignationLetter, AllowedExtensions))
             {
-                return "Invalid file content. Real image or PDF files only.";
+                return "Invalid file content. The file signature must match an allowed PDF or image format.";
             }
 
             return null;
@@ -105,14 +103,24 @@ namespace IT_Form.Application.Features.Offboarding.Create
 
             var resignationExtension = Path.GetExtension(resignationLetter.FileName).ToLowerInvariant();
             var uniqueFileName = $"Offboarding_Resignation_{request.Id}_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}{resignationExtension}";
-            request.ResignationLetterPath = await SensitiveFileStorage.SaveAsync(
+            var storedPath = await SensitiveFileStorage.SaveAsync(
                 resignationLetter,
                 env,
                 "resignations",
                 uniqueFileName,
                 cancellationToken);
 
-            await context.SaveChangesAsync(cancellationToken);
+            request.ResignationLetterPath = storedPath;
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            catch
+            {
+                SensitiveFileStorage.DeleteStoredFile(env, storedPath);
+                request.ResignationLetterPath = null;
+                throw;
+            }
         }
 
         /// <summary>

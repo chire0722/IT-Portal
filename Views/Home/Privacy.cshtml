@@ -6,6 +6,8 @@
     var controllerName = Configuration["PdpaCompliance:DataControllerName"] ?? "YTC / PYT Group";
     var privacyEmail = Configuration["PdpaCompliance:PrivacyContactEmail"] ?? "itdept@ytcprecast.com";
     var breachEmail = Configuration["PdpaCompliance:BreachResponseEmail"] ?? privacyEmail;
+    var dpoName = Configuration["PdpaCompliance:DpoName"];
+    var dpoEmail = Configuration["PdpaCompliance:DpoContactEmail"];
     var recordRetentionDays = Configuration.GetValue<int?>("PdpaCompliance:RecordRetentionDays") ?? 2555;
     var tokenRetentionDays = Configuration.GetValue<int?>("PdpaCompliance:SecurityTokenRetentionDays") ?? 30;
     var retentionYears = Math.Round(recordRetentionDays / 365.0, 1);
@@ -39,6 +41,19 @@
                 <a href="mailto:@breachEmail">@breachEmail</a>
             </div>
         </div>
+        @if (!string.IsNullOrWhiteSpace(dpoEmail))
+        {
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100 bg-white">
+                    <div class="fw-semibold mb-1">Data Protection Officer</div>
+                    @if (!string.IsNullOrWhiteSpace(dpoName))
+                    {
+                        <div class="text-muted">@dpoName</div>
+                    }
+                    <a href="mailto:@dpoEmail">@dpoEmail</a>
+                </div>
+            </div>
+        }
     </div>
 
     <section class="mb-4">
@@ -82,19 +97,28 @@
     <section class="mb-4">
         <h2 class="h5 fw-bold">Retention</h2>
         <p>
-            Completed or rejected onboarding and offboarding records are anonymised after about @retentionYears years
-            (@recordRetentionDays days), unless a longer period is required for legal, employment, audit, or dispute
-            reasons. Expired security tokens are purged after @tokenRetentionDays days. Supporting documents and
-            sensitive uploaded files are deleted when the related record is anonymised.
+            Completed or rejected onboarding and offboarding records are configured for selected-field redaction after
+            about @retentionYears years (@recordRetentionDays days), unless a longer period is required for legal,
+            employment, audit, or dispute reasons. Linked sensitive uploads are deleted during that process and expired
+            security tokens are purged after @tokenRetentionDays days. Some business metadata may remain for audit or
+            operational purposes, so this process should not be interpreted as a guarantee of irreversible anonymisation.
         </p>
     </section>
 
     <section class="mb-4">
-        <h2 class="h5 fw-bold">Access And Correction</h2>
+        <h2 class="h5 fw-bold">Data Subject Rights</h2>
         <p>
             Employees may request access to, or correction of, their personal data by contacting
-            <a href="mailto:@privacyEmail">@privacyEmail</a>. The request should include enough information to identify
-            the relevant employee and IT request record.
+            <a href="mailto:@privacyEmail">@privacyEmail</a>. You may also ask which information is required for a
+            workflow and the consequences of not providing it. Under the Malaysian PDPA, you may withdraw consent where
+            processing relies on consent and may submit a written data portability request; portability is subject to
+            technical feasibility and compatible data formats. The Act also provides rights relating to preventing
+            processing that may cause damage or distress and preventing direct-marketing processing.
+        </p>
+        <p>
+            Where the GDPR applies, additional rights may include erasure, restriction, objection, and data portability,
+            subject to the conditions and exemptions in that Regulation. Requests are assessed individually and may
+            require identity verification.
         </p>
     </section>
 

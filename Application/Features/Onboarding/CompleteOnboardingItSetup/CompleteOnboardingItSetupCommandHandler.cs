@@ -2,7 +2,9 @@
 
 using IT_Form.Data;
 using IT_Form.Application.Common.Abstractions;
+using IT_Form.Helpers;
 using IT_Form.Models;
+using IT_Form.Models.Enums;
 using IT_Form.Services;
 using IT_Form.ViewModels;
 using MediatR;
@@ -68,6 +70,23 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
                     "Request not found.");
             }
 
+            if (!_currentUserAccessor.User.HasClaim("UserTitle", "IT") ||
+                !CompanyScopeHelper.CanAccessCompany(_currentUserAccessor.User, onboardingRequest.Branch))
+            {
+                return new CompleteOnboardingItSetupResult(
+                    CompleteOnboardingItSetupStatus.Forbidden,
+                    session.Id,
+                    "You are not authorized to complete IT setup for this company.");
+            }
+
+            if (onboardingRequest.Status != RequestStatus.PendingITApproval)
+            {
+                return new CompleteOnboardingItSetupResult(
+                    CompleteOnboardingItSetupStatus.InvalidState,
+                    session.Id,
+                    "IT setup can only be changed while the request is pending IT approval.");
+            }
+
             // Copy the submitted checklist state onto the tracked onboarding request entity.
             onboardingRequest.ApplyItChecklist(
                 request.CheckPhysicalClean,
@@ -106,6 +125,21 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
                     "Draft saved successfully.");
             }
 
+            var assetValidationMessage = await OnboardingItSetupSupport.ValidateSelectedAssetsAsync(
+                _context,
+                onboardingRequest,
+                session,
+                cancellationToken);
+            if (assetValidationMessage != null)
+            {
+                return new CompleteOnboardingItSetupResult(
+                    CompleteOnboardingItSetupStatus.InvalidAssetSelection,
+                    onboardingRequest.Id,
+                    assetValidationMessage);
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
             // Rebuild final software assignments from the current session selections.
             var softwareAssignments = await OnboardingItSetupSupport.RebuildSoftwareAssignmentsAsync(
                 _context,
@@ -114,11 +148,19 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
                 cancellationToken);
 
             // Align issued asset records with the final hardware selections.
-            await OnboardingItSetupSupport.SyncIssuedAssetsAsync(
+            var assetSyncError = await OnboardingItSetupSupport.SyncIssuedAssetsAsync(
                 _context,
                 onboardingRequest,
                 session,
                 cancellationToken);
+
+            if (assetSyncError != null)
+            {
+                return new CompleteOnboardingItSetupResult(
+                    CompleteOnboardingItSetupStatus.InvalidAssetSelection,
+                    onboardingRequest.Id,
+                    assetSyncError);
+            }
 
             var signedAt = DateTime.UtcNow;
 
@@ -139,6 +181,7 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
 
             onboardingRequest.CompleteItSetup(currentUser?.Signature, signerName, signatureHmac, signedAt);
             await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation("IT Admin completed onboarding setup for request #{Id} ({Name})", onboardingRequest.Id, onboardingRequest.FullName);
 
@@ -159,3 +202,4 @@ namespace IT_Form.Application.Features.Onboarding.CompleteOnboardingItSetup
 
     }
 }
+

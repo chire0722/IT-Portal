@@ -26,17 +26,20 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         private readonly IWebHostEnvironment _env;
         private readonly ICurrentUserAccessor _currentUserAccessor;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IFileMalwareScanner? _malwareScanner;
 
         public SubmitOffboardingStep1CommandHandler(
             ApplicationDbContext context,
             IWebHostEnvironment env,
             ICurrentUserAccessor currentUserAccessor,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IFileMalwareScanner? malwareScanner = null)
         {
             _context = context;
             _env = env;
             _currentUserAccessor = currentUserAccessor;
             _userManager = userManager;
+            _malwareScanner = malwareScanner;
         }
 
         /// <summary>
@@ -86,14 +89,47 @@ namespace IT_Form.Application.Features.Offboarding.Step1
                 return await OffboardingStep1Support.FailureAsync(_context, returnValidation, command.Request, cancellationToken);
             }
 
-            await OffboardingStep1Support.SaveDamageFileAsync(_env, existing, command.Id, command.HardwareDamageImage, cancellationToken);
-            await OffboardingStep1Support.SaveReturnFileAsync(_env, existing, command.Id, command.HardwareReturnImage, cancellationToken);
+            // Validate every binary ingress before it reaches managed storage. The signature
+            // and extension checks above are not malware detection and must not be treated as such.
+            await MalwareScanHelper.EnsureCleanAsync(
+                command.HardwareDamageImage,
+                _malwareScanner,
+                "offboarding hardware-damage image",
+                cancellationToken);
+            await MalwareScanHelper.EnsureCleanAsync(
+                command.HardwareReturnImage,
+                _malwareScanner,
+                "offboarding hardware-return image",
+                cancellationToken);
+
+            // Reconcile the employee/company assignment before writing new files. This keeps
+            // a rejected asset selection from leaving an orphaned sensitive upload behind.
+            var returnedAssetError = await OffboardingStep1Support.MarkReturnedAssetsAsync(
+                _context,
+                existing,
+                command.ReturnedAssetIds,
+                cancellationToken);
+            if (returnedAssetError != null)
+            {
+                return await OffboardingStep1Support.FailureAsync(
+                    _context,
+                    returnedAssetError,
+                    command.Request,
+                    cancellationToken);
+            }
+
+            var previousDamageFilePath = await OffboardingStep1Support.SaveDamageFileAsync(
+                _env, existing, command.Id, command.HardwareDamageImage, cancellationToken);
+            var previousReturnFilePath = await OffboardingStep1Support.SaveReturnFileAsync(
+                _env, existing, command.Id, command.HardwareReturnImage, cancellationToken);
 
             existing.UpdatedAt = DateTime.UtcNow;
 
-            await OffboardingStep1Support.MarkReturnedAssetsAsync(_context, command.ReturnedAssetIds, cancellationToken);
-
             await _context.SaveChangesAsync(cancellationToken);
+
+            // Delete old files only after the new file references have been persisted.
+            SensitiveFileStorage.DeleteStoredFile(_env, previousDamageFilePath);
+            SensitiveFileStorage.DeleteStoredFile(_env, previousReturnFilePath);
 
             if (string.Equals(command.SaveAction, "draft", StringComparison.OrdinalIgnoreCase))
             {
@@ -109,3 +145,4 @@ namespace IT_Form.Application.Features.Offboarding.Step1
         }
     }
 }
+

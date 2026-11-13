@@ -1,7 +1,10 @@
 // Project comment: CompanyScopeFeatureSliceTests.cs is part of the IT Form application source code.
 
 using IT_Form.Application.Features.ITAsset.CreateItAsset;
+using IT_Form.Application.Features.Onboarding.ExportOnboardingCsv;
+using IT_Form.Application.Features.Offboarding.ExportOffboardingCsv;
 using IT_Form.Application.Features.Onboarding.SaveOnboardingStep1;
+using System.Text;
 using IT_Form.Data;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
@@ -21,6 +24,62 @@ namespace IT_Form.Tests;
 /// </summary>
 public class CompanyScopeFeatureSliceTests
 {
+    [Fact]
+    /// <summary>
+    /// Runs the ExportOnboardingCsvHandler_RequiresHrRole operation.
+    /// </summary>
+    public async Task ExportOnboardingCsvHandler_RequiresHrRole()
+    {
+        await using var context = CreateContext();
+        var handler = new ExportOnboardingCsvQueryHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["Alpha"]));
+
+        var result = await handler.Handle(
+            new ExportOnboardingCsvQuery(null, null),
+            CancellationToken.None);
+
+        Assert.True(result.IsForbidden);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Ensures onboarding CSV exports neutralize spreadsheet formula-like employee data.
+    /// </summary>
+    public async Task ExportOnboardingCsvHandler_SanitizesFormulaLikeValues()
+    {
+        await using var context = CreateContext();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 902,
+            FullName = "=HYPERLINK(\"https://example.invalid\")",
+            EmployeeID = "+SUM(1,2)",
+            Designation = "-1+1",
+            Department = "@SUM(A1:A2)",
+            Branch = "HQ",
+            HODEmail = "\t@cmd"
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new ExportOnboardingCsvQueryHandler(
+            context,
+            new TestCurrentUserAccessor("hr-user", titles: ["HR"]));
+
+        var result = await handler.Handle(
+            new ExportOnboardingCsvQuery(null, null),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var csv = Encoding.UTF8.GetString(result.Data!.Content);
+        Assert.Contains("'=HYPERLINK(", csv);
+        var expectedQuotedField = "\"" + "'=HYPERLINK(\"\"https://example.invalid\"\")" + "\"";
+        Assert.Contains(expectedQuotedField, csv);
+        Assert.Contains("'+SUM(1,2)", csv);
+        Assert.Contains("'-1+1", csv);
+        Assert.Contains("'@SUM(A1:A2)", csv);
+        Assert.Contains("'\t@cmd", csv);
+    }
+
     [Fact]
     /// <summary>
     /// Creates data for the CreateItAssetHandler_AllowsItUserWithoutCompanyAssignment operation.
@@ -47,6 +106,43 @@ public class CompanyScopeFeatureSliceTests
         Assert.True(result.IsSuccess);
         Assert.Equal("IT asset created.", result.Message);
         Assert.Single(await context.ITAssets.ToListAsync());
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the CreateItAssetHandler_RejectsIssuedAssetAssignmentAcrossCompanies operation.
+    /// </summary>
+    public async Task CreateItAssetHandler_RejectsIssuedAssetAssignmentAcrossCompanies()
+    {
+        await using var context = CreateContext();
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 901,
+            FullName = "Beta Employee",
+            Branch = "Beta",
+            Status = RequestStatus.Completed
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new CreateItAssetCommandHandler(
+            context,
+            new TestCurrentUserAccessor("it-user", titles: ["IT"], companies: ["HQ"]));
+
+        var result = await handler.Handle(
+            new CreateItAssetCommand(
+                new ITAsset
+                {
+                    AssetTag = "TAG-101",
+                    Company = "HQ",
+                    Status = AssetStatus.Issued
+                },
+                901,
+                null),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("same company", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(await context.ITAssets.ToListAsync());
     }
 
     [Fact]
@@ -113,6 +209,41 @@ public class CompanyScopeFeatureSliceTests
         Assert.Equal(0, await context.OnboardingRequests.CountAsync());
     }
 
+
+    [Fact]
+    public async Task ExportOffboardingCsvHandler_SanitizesFormulaLikeValues()
+    {
+        await using var context = CreateContext();
+        context.OffboardingRequests.Add(new OffboardingRequest
+        {
+            Id = 903,
+            FullName = "=HYPERLINK(\"https://example.invalid\")",
+            EmployeeID = "+SUM(1,2)",
+            Department = "-1+1",
+            Branch = "@SUM(A1:A2)",
+            HODEmail = "\t@cmd",
+            LastDayOfWork = DateTime.Today
+        });
+        await context.SaveChangesAsync();
+
+        var handler = new ExportOffboardingCsvQueryHandler(
+            context,
+            new TestCurrentUserAccessor("hr-user", titles: ["HR"]));
+
+        var result = await handler.Handle(
+            new ExportOffboardingCsvQuery(null, null),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var csv = Encoding.UTF8.GetString(result.Data!.Content);
+        Assert.Contains("\"'=HYPERLINK(\"\"https://example.invalid\"\")\"", csv);
+        Assert.Contains("\"'+SUM(1,2)\"", csv);
+        Assert.Contains("\"'-1+1\"", csv);
+        Assert.Contains("\"'@SUM(A1:A2)\"", csv);
+        Assert.Contains("\"'\t@cmd\"", csv);
+    }
+
+
     /// <summary>
     /// Creates data for the CreateContext operation.
     /// </summary>
@@ -132,3 +263,4 @@ public class CompanyScopeFeatureSliceTests
         return new ApplicationDbContext(options, httpContextAccessor.Object, logger.Object, encryption.Object);
     }
 }
+

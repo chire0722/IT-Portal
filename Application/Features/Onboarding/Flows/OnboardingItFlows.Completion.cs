@@ -74,6 +74,11 @@ namespace IT_Form.Application.Features.Onboarding.Flows
                 return ProcessResult<object>.NotFound();
             if (result.Status == CompleteOnboardingItSetupStatus.ChecklistIncomplete)
                 return ProcessResult<object>.Failure(result.Message, "Step5");
+            if (result.Status is CompleteOnboardingItSetupStatus.InvalidAssetSelection or
+                CompleteOnboardingItSetupStatus.InvalidState)
+                return ProcessResult<object>.Failure(result.Message, "Step5");
+            if (result.Status == CompleteOnboardingItSetupStatus.Forbidden)
+                return ProcessResult<object>.Forbidden();
 
             _sessionAccessor.Save(session);
             if (result.Status == CompleteOnboardingItSetupStatus.DraftSaved)
@@ -100,3 +105,4 @@ namespace IT_Form.Application.Features.Onboarding.Flows
         public SubmitOnboardingStep5FlowCommandValidator() => RuleFor(x => x.Command).NotNull();
     }
 }
+

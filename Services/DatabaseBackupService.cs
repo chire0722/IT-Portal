@@ -121,12 +121,13 @@ namespace IT_Form.Services
             }
 
             // Create one clean SQLite snapshot and reuse the same encrypted payload for each destination.
-            var backupBytes = CreateSqliteBackupBytes(resolvedConnectionString, backupDir);
+            CleanupStaleBackupStagingDirectories();
+            var backupBytes = CreateSqliteBackupBytes(resolvedConnectionString);
 
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff");
             var fileName = Path.GetFileNameWithoutExtension(dbPath);
             var extension = Path.GetExtension(dbPath);
-            var backupFileName = $"{fileName}_{timestamp}{extension}.protected";
+            var backupFileName = $"{fileName}_{timestamp}_{Guid.NewGuid():N}{extension}.protected";
 
             CopyBackupToDirectory(backupBytes, backupDir, backupFileName, fileName, extension);
 
@@ -166,9 +167,42 @@ namespace IT_Form.Services
             Directory.CreateDirectory(backupDir);
 
             var backupPath = Path.Combine(backupDir, backupFileName);
+            var temporaryProtectedPath = backupPath + $".tmp-{Guid.NewGuid():N}";
             var encryptedBackup = _backupProtector.Protect(backupBytes);
-            File.WriteAllBytes(backupPath, encryptedBackup);
-            _logger.LogInformation("Encrypted database backup created successfully: {Path}", backupPath);
+
+            try
+            {
+                // Write only ciphertext to the destination and publish it atomically.
+                using (var stream = new FileStream(
+                    temporaryProtectedPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81920,
+                    options: FileOptions.SequentialScan))
+                {
+                    stream.Write(encryptedBackup, 0, encryptedBackup.Length);
+                    stream.Flush(flushToDisk: true);
+                }
+
+                // No overwrite: a collision is treated as a failed backup, never silent replacement.
+                File.Move(temporaryProtectedPath, backupPath);
+                _logger.LogInformation("Encrypted database backup created successfully: {Path}", backupPath);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(temporaryProtectedPath))
+                    {
+                        File.Delete(temporaryProtectedPath);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    _logger.LogWarning(ex, "Could not remove a temporary protected backup file.");
+                }
+            }
 
             RotateBackups(backupDir, fileName, extension);
         }
@@ -176,10 +210,18 @@ namespace IT_Form.Services
         /// <summary>
         /// Uses SQLite's backup API to create a consistent database snapshot in a temporary file.
         /// </summary>
-        private byte[] CreateSqliteBackupBytes(string sourceConnectionString, string backupDir)
+        private byte[] CreateSqliteBackupBytes(string sourceConnectionString)
         {
-            var tempBackupDir = Path.Combine(backupDir, "temp");
+            // Keep the plaintext SQLite snapshot on the local private application volume.
+            // Never stage plaintext snapshots inside a configured secondary/off-host backup destination.
+            var tempBackupDir = Path.Combine(
+                _environment.ContentRootPath,
+                "App_Data",
+                "BackupStaging",
+                Environment.MachineName,
+                Environment.ProcessId.ToString());
             Directory.CreateDirectory(tempBackupDir);
+            Directory.SetLastWriteTimeUtc(tempBackupDir, DateTime.UtcNow);
 
             var tempBackupPath = Path.Combine(
                 tempBackupDir,
@@ -217,6 +259,60 @@ namespace IT_Form.Services
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to delete temporary SQLite backup snapshot {Path}.", tempBackupPath);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes abandoned staging directories from prior application processes.
+        /// Only the dedicated backup-staging root is inspected.
+        /// </summary>
+        private void CleanupStaleBackupStagingDirectories()
+        {
+            var stagingRoot = Path.Combine(_environment.ContentRootPath, "App_Data", "BackupStaging");
+            if (!Directory.Exists(stagingRoot))
+            {
+                return;
+            }
+
+            var currentProcessDirectory = Path.GetFullPath(Path.Combine(
+                stagingRoot,
+                Environment.MachineName,
+                Environment.ProcessId.ToString()));
+            var staleBeforeUtc = DateTime.UtcNow.AddHours(-24);
+
+            foreach (var machineDirectory in Directory.EnumerateDirectories(stagingRoot))
+            {
+                foreach (var processDirectory in Directory.EnumerateDirectories(machineDirectory))
+                {
+                    var fullProcessDirectory = Path.GetFullPath(processDirectory);
+                    if (fullProcessDirectory.Equals(currentProcessDirectory, StringComparison.OrdinalIgnoreCase)
+                        || Directory.GetLastWriteTimeUtc(processDirectory) >= staleBeforeUtc)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        Directory.Delete(processDirectory, recursive: true);
+                        _logger.LogInformation("Removed stale plaintext backup staging directory for a stopped process.");
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        _logger.LogWarning(ex, "Could not remove a stale backup staging directory.");
+                    }
+                }
+
+                try
+                {
+                    if (!Directory.EnumerateFileSystemEntries(machineDirectory).Any())
+                    {
+                        Directory.Delete(machineDirectory);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    _logger.LogWarning(ex, "Could not remove an empty backup staging directory.");
                 }
             }
         }

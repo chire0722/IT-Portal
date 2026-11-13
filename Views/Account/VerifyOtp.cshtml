@@ -50,7 +50,7 @@
                     <div class="mb-4">
                         <input asp-for="Code" class="form-control otp-input" placeholder="ABC234" maxlength="6"
                             inputmode="text" pattern="[A-HJ-NP-Za-hj-np-z2-9]{6}" autofocus
-                            oninput="this.value = this.value.toUpperCase();" autocomplete="one-time-code" />
+                            data-csp-input="uppercase" autocomplete="one-time-code" />
                         <span asp-validation-for="Code" class="text-danger" aria-live="polite" aria-atomic="true"></span>
                     </div>
 
@@ -122,5 +122,6 @@
 </body>
 
 </html>
+
 
 

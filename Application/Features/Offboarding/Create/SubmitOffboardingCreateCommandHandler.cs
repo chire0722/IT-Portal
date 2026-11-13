@@ -6,6 +6,7 @@ using IT_Form.Data;
 using IT_Form.Helpers;
 using IT_Form.Models;
 using IT_Form.Models.Enums;
+using IT_Form.Services;
 using IT_Form.ViewModels;
 using MediatR;
 using Microsoft.AspNetCore.Hosting;
@@ -22,15 +23,18 @@ namespace IT_Form.Application.Features.Offboarding.Create
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
         private readonly ICurrentUserAccessor _currentUserAccessor;
+        private readonly IFileMalwareScanner _malwareScanner;
 
         public SubmitOffboardingCreateCommandHandler(
             ApplicationDbContext context,
             IWebHostEnvironment env,
-            ICurrentUserAccessor currentUserAccessor)
+            ICurrentUserAccessor currentUserAccessor,
+            IFileMalwareScanner malwareScanner)
         {
             _context = context;
             _env = env;
             _currentUserAccessor = currentUserAccessor;
+            _malwareScanner = malwareScanner;
         }
 
         /// <summary>
@@ -59,8 +63,34 @@ namespace IT_Form.Application.Features.Offboarding.Create
                 return await OffboardingCreateSupport.FailureAsync(_context, _currentUserAccessor, fileValidation, request, cancellationToken);
             }
 
-            var hasActiveRequest = await _context.OffboardingRequests
-                .AnyAsync(r => r.OnboardingRequestId == request.OnboardingRequestId && r.Status != RequestStatus.Rejected, cancellationToken);
+            if (command.ResignationLetter is { Length: > 0 })
+            {
+                await using var uploadStream = command.ResignationLetter.OpenReadStream();
+                var scanVerdict = await _malwareScanner.ScanAsync(uploadStream, cancellationToken);
+                if (scanVerdict == MalwareScanVerdict.Infected)
+                {
+                    return await OffboardingCreateSupport.FailureAsync(
+                        _context,
+                        _currentUserAccessor,
+                        "The uploaded file failed security scanning.",
+                        request,
+                        cancellationToken);
+                }
+
+                if (scanVerdict != MalwareScanVerdict.Clean)
+                {
+                    return await OffboardingCreateSupport.FailureAsync(
+                        _context,
+                        _currentUserAccessor,
+                        "Upload scanning is temporarily unavailable. Please try again later.",
+                        request,
+                        cancellationToken);
+                }
+            }
+
+            var hasActiveRequest = request.OnboardingRequestId.HasValue &&
+                await _context.OffboardingRequests
+                    .AnyAsync(r => r.OnboardingRequestId == request.OnboardingRequestId && r.Status != RequestStatus.Rejected, cancellationToken);
 
             if (hasActiveRequest)
             {
@@ -84,3 +114,4 @@ namespace IT_Form.Application.Features.Offboarding.Create
         }
     }
 }
+

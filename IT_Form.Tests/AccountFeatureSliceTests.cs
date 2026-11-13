@@ -373,7 +373,79 @@ public class AccountFeatureSliceTests
         var result = await handler.Handle(new ForgotPasswordCommand("missing", "127.0.0.1"), CancellationToken.None);
 
         Assert.False(result.OtpSent);
-        Assert.Equal("Invalid username or email address.", result.Message);
+        Assert.Equal(
+            "If an account matching that username or email exists and is active, a verification code has been sent to its registered email address.",
+            result.Message);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the ForgotPasswordHandler_ReturnsIdenticalMessage_ForInactiveUser operation.
+    /// </summary>
+    public async Task ForgotPasswordHandler_ReturnsIdenticalMessage_ForInactiveUser()
+    {
+        using var context = CreateContext();
+        context.Users.Add(new ApplicationUser
+        {
+            Id = "inactive-user",
+            UserName = "inactive.user",
+            Email = "inactive.user@example.com",
+            IsActive = false
+        });
+        await context.SaveChangesAsync();
+
+        var queue = new Mock<IEmailBackgroundQueue>();
+        var logger = Mock.Of<ILogger<ForgotPasswordCommandHandler>>();
+        var keyedLockProvider = new KeyedLockProvider();
+
+        var handler = new ForgotPasswordCommandHandler(
+            context,
+            new SecureOtpGenerator(),
+            queue.Object,
+            keyedLockProvider,
+            logger);
+
+        var result = await handler.Handle(new ForgotPasswordCommand("inactive.user", "127.0.0.1"), CancellationToken.None);
+
+        Assert.False(result.OtpSent);
+        Assert.Equal(
+            "If an account matching that username or email exists and is active, a verification code has been sent to its registered email address.",
+            result.Message);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the ForgotPasswordHandler_ReturnsIdenticalMessage_ForUserWithoutEmail operation.
+    /// </summary>
+    public async Task ForgotPasswordHandler_ReturnsIdenticalMessage_ForUserWithoutEmail()
+    {
+        using var context = CreateContext();
+        context.Users.Add(new ApplicationUser
+        {
+            Id = "no-email-user",
+            UserName = "no.email.user",
+            Email = null,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var queue = new Mock<IEmailBackgroundQueue>();
+        var logger = Mock.Of<ILogger<ForgotPasswordCommandHandler>>();
+        var keyedLockProvider = new KeyedLockProvider();
+
+        var handler = new ForgotPasswordCommandHandler(
+            context,
+            new SecureOtpGenerator(),
+            queue.Object,
+            keyedLockProvider,
+            logger);
+
+        var result = await handler.Handle(new ForgotPasswordCommand("no.email.user", "127.0.0.1"), CancellationToken.None);
+
+        Assert.False(result.OtpSent);
+        Assert.Equal(
+            "If an account matching that username or email exists and is active, a verification code has been sent to its registered email address.",
+            result.Message);
     }
 
     [Fact]
@@ -443,6 +515,34 @@ public class AccountFeatureSliceTests
         var result = validator.Validate(new VerifyOtpCommand("user@example.com", string.Empty));
 
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the VerifyOtpValidator_Fails_WhenPurposeIsNotWhitelisted operation.
+    /// </summary>
+    public void VerifyOtpValidator_Fails_WhenPurposeIsNotWhitelisted()
+    {
+        var validator = new VerifyOtpCommandValidator();
+
+        var result = validator.Validate(new VerifyOtpCommand("user@example.com", "ABC234", "ArbitraryPurpose"));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.ErrorMessage == "Unsupported OTP purpose.");
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the ResendOtpValidator_Fails_WhenPurposeIsNotPasswordReset operation.
+    /// </summary>
+    public void ResendOtpValidator_Fails_WhenPurposeIsNotPasswordReset()
+    {
+        var validator = new ResendOtpCommandValidator();
+
+        var result = validator.Validate(new ResendOtpCommand("user@example.com", "127.0.0.1", OtpPurposes.PrivilegedLogin));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.ErrorMessage == "Unsupported OTP purpose for resend.");
     }
 
     [Fact]

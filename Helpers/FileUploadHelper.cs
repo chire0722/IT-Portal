@@ -2,66 +2,137 @@
 
 using Microsoft.AspNetCore.Http;
 using System.IO;
-using System.Linq;
+using System.Collections.Generic;
+using System.IO.Compression;
 
 namespace IT_Form.Helpers
 {
     /// <summary>
-    /// Defines the FileUploadHelper class used by the IT Form application.
+    /// Validates Excel workbooks accepted by bulk-import endpoints.
     /// </summary>
     public static class FileUploadHelper
     {
-        private static readonly string[] AllowedExtensions = { ".xlsx", ".xls" };
-        private static readonly string[] AllowedMimeTypes = { 
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-            "application/vnd.ms-excel" 
-        };
-        private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
+        private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB compressed upload
+        private const long MaxExpandedSize = 50 * 1024 * 1024; // 50 MB across ZIP entries
+        private const long MaxEntrySize = 25 * 1024 * 1024; // 25 MB per ZIP entry
+        private const int MaxEntryCount = 2000;
+        private const string XlsxMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        private const string OctetStreamMimeType = "application/octet-stream";
 
         /// <summary>
-        /// Runs the IsValidExcelFile operation.
+        /// Validates the extension, declared MIME type, and actual OOXML ZIP package.
+        /// The upload is not trusted merely because its client-supplied filename ends in .xlsx.
         /// </summary>
-        public static bool IsValidExcelFile(IFormFile file, out string errorMessage)
+        public static bool IsValidExcelFile(IFormFile file, out string errorMessage, long maxFileSize = MaxFileSize)
         {
             errorMessage = string.Empty;
 
-            if (file == null || file.Length == 0)
+            if (file == null || file.Length <= 0)
             {
                 errorMessage = "The file is empty or missing.";
                 return false;
             }
 
-            if (file.Length > MaxFileSize)
+            if (maxFileSize <= 0 || file.Length > maxFileSize)
             {
-                errorMessage = "The file size exceeds the 10MB limit.";
+                var maxSizeMb = Math.Max(1, (int)Math.Ceiling(maxFileSize / (1024d * 1024d)));
+                errorMessage = $"The file size exceeds the {maxSizeMb}MB limit.";
                 return false;
             }
 
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!AllowedExtensions.Contains(extension))
+            var safeClientFileName = (file.FileName ?? string.Empty).Replace('\\', '/');
+            var extension = Path.GetExtension(safeClientFileName).ToLowerInvariant();
+            if (!string.Equals(extension, ".xlsx", StringComparison.Ordinal))
             {
-                errorMessage = "Invalid file extension. Only .xlsx and .xls files are allowed.";
+                errorMessage = "Invalid file type. Only .xlsx workbooks are supported.";
                 return false;
             }
 
-            string contentType;
+            var contentType = (file.ContentType ?? string.Empty).Trim();
+            if (!string.IsNullOrEmpty(contentType) &&
+                !string.Equals(contentType, XlsxMimeType, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(contentType, OctetStreamMimeType, StringComparison.OrdinalIgnoreCase))
+            {
+                errorMessage = "The uploaded file has an unsupported content type.";
+                return false;
+            }
+
             try
             {
-                contentType = file.ContentType ?? string.Empty;
-            }
-            catch (NullReferenceException)
-            {
-                contentType = string.Empty;
-            }
+                using var stream = file.OpenReadStream();
+                using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false);
 
-            if (!string.IsNullOrWhiteSpace(contentType) && !AllowedMimeTypes.Contains(contentType))
-            {
-                // Some browsers might send different MIME types for Excel files, 
-                // so we prioritize the extension but keep a basic check.
+                if (archive.Entries.Count == 0 || archive.Entries.Count > MaxEntryCount)
+                {
+                    errorMessage = "The workbook package contains an invalid number of entries.";
+                    return false;
+                }
+
+                long expandedSize = 0;
+                var entryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var hasContentTypes = false;
+                var hasWorkbook = false;
+
+                foreach (var entry in archive.Entries)
+                {
+                    var normalizedEntryName = entry.FullName.Replace('\\', '/');
+                    var entrySegments = normalizedEntryName.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                    var unixFileType = (entry.ExternalAttributes >> 16) & 0xF000;
+                    var hasUnsafePath = normalizedEntryName.StartsWith("/", StringComparison.Ordinal)
+                        || normalizedEntryName.Contains(':')
+                        || entrySegments.Any(segment => segment is "." or "..");
+
+                    if (string.IsNullOrWhiteSpace(entry.FullName) ||
+                        hasUnsafePath ||
+                        unixFileType == 0xA000 ||
+                        !entryNames.Add(entry.FullName) ||
+                        entry.Length < 0 ||
+                        entry.Length > MaxEntrySize)
+                    {
+                        errorMessage = "The workbook package contains invalid, unsafe, or duplicate entries.";
+                        return false;
+                    }
+
+                    expandedSize = checked(expandedSize + entry.Length);
+                    if (expandedSize > MaxExpandedSize)
+                    {
+                        errorMessage = "The expanded workbook exceeds the 50MB safety limit.";
+                        return false;
+                    }
+
+                    if (string.Equals(entry.FullName, "[Content_Types].xml", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasContentTypes = true;
+                    }
+                    else if (string.Equals(entry.FullName, "xl/workbook.xml", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasWorkbook = true;
+                    }
+                    else if (string.Equals(entry.FullName, "xl/vbaProject.bin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        errorMessage = "Macro-enabled workbooks are not accepted.";
+                        return false;
+                    }
+                }
+
+                if (!hasContentTypes || !hasWorkbook)
+                {
+                    errorMessage = "The uploaded file is not a valid .xlsx workbook.";
+                    return false;
+                }
+
                 return true;
             }
-
-            return true;
+            catch (Exception ex) when (
+                ex is InvalidDataException ||
+                ex is IOException ||
+                ex is ArgumentException ||
+                ex is NotSupportedException ||
+                ex is OverflowException)
+            {
+                errorMessage = "The uploaded file is not a valid .xlsx workbook.";
+                return false;
+            }
         }
     }
 }

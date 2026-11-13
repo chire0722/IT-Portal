@@ -1,6 +1,7 @@
 // Project comment: EmailBackgroundQueue.cs is part of the IT Form application source code.
 
 using IT_Form.Data;
+using IT_Form.Services;
 
 namespace IT_Form.Infrastructure.Notifications
 {
@@ -10,10 +11,14 @@ namespace IT_Form.Infrastructure.Notifications
     public sealed class EmailBackgroundQueue : IEmailBackgroundQueue
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILicenseEncryptionService _encryptionService;
 
-        public EmailBackgroundQueue(ApplicationDbContext context)
+        public EmailBackgroundQueue(
+            ApplicationDbContext context,
+            ILicenseEncryptionService encryptionService)
         {
             _context = context;
+            _encryptionService = encryptionService;
         }
 
         /// <summary>
@@ -22,8 +27,9 @@ namespace IT_Form.Infrastructure.Notifications
         public ValueTask QueueEmailAsync(IEmailBackgroundMessage message, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(message);
-            _context.EmailOutboxMessages.Add(EmailOutboxMessageSerializer.Serialize(message));
+            _context.EmailOutboxMessages.Add(EmailOutboxMessageSerializer.Serialize(message, _encryptionService));
             return ValueTask.CompletedTask;
         }
     }
 }
+

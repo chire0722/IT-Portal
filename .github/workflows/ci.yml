@@ -169,24 +169,58 @@ jobs:
     name: Generate SBOM (SPDX)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: build
     permissions:
       contents: read
     steps:
-      - name: Checkout
+      - name: Checkout source (build-components path)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Generate SPDX SBOM
-        uses: microsoft/sbom-tool@c83b43dee2dd70b4d6ba16a97cde6b43f971d9c3 # v4.1.5
+      - name: Download published artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          build-drop-path: ${{ github.workspace }}
+          name: it-portal-publish
+          path: ${{ runner.temp }}/publish
+
+      - name: Install SBOM tool (v4.1.5) from verified release
+        env:
+          SBOM_TOOL_VERSION: 4.1.5
+          SBOM_TOOL_SHA256: bf5d4f99bc98c119d549d08fc02ae92598a7a42772f17317c01031a92632e05b
+        run: |
+          set -euo pipefail
+          binary="${RUNNER_TEMP}/sbom-tool"
+          curl --fail --silent --show-error --location \
+            "https://github.com/microsoft/sbom-tool/releases/download/v${SBOM_TOOL_VERSION}/sbom-tool-linux-x64" \
+            --output "${binary}"
+          echo "${SBOM_TOOL_SHA256}  ${binary}" | sha256sum --check --status
+          chmod +x "${binary}"
+          "${binary}" version
+
+      - name: Generate SPDX 2.2 SBOM
+        run: |
+          set -euo pipefail
+          binary="${RUNNER_TEMP}/sbom-tool"
+          "${binary}" generate \
+            -b "${RUNNER_TEMP}/publish" \
+            -bc "${GITHUB_WORKSPACE}" \
+            -nsb "https://github.com/chire0722/IT-Portal" \
+            -pn "IT-Portal" \
+            -pv "${GITHUB_SHA}" \
+            -ps "chire0722"
+
+      - name: Validate SPDX manifest
+        run: |
+          set -euo pipefail
+          manifest="${RUNNER_TEMP}/publish/_manifest/spdx_2.2/manifest.spdx.json"
+          test -f "${manifest}" || { echo "SBOM manifest not found: ${manifest}"; exit 1; }
+          jq -e '.spdxVersion == "SPDX-2.2"' "${manifest}" > /dev/null
+          echo "SPDX manifest valid: $(jq -r '.spdxVersion' "${manifest}")"
 
       - name: Upload SBOM
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: sbom-spdx
-          path: |
-            _manifest/spdx_2.2/manifest.spdx.json
-            _manifest/**/manifest.spdx.json
+          path: ${{ runner.temp }}/publish/_manifest
           if-no-files-found: error
           retention-days: 90
 

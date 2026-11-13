@@ -17,7 +17,8 @@
 
 ## 2. Changes implemented in this iteration
 
-- **SBOM generation** — added an `sbom` job using `microsoft/sbom-tool` pinned to commit `c83b43dee2dd70b4d6ba16a97cde6b43f971d9c3` (v4.1.5), `contents: read`, uploading the SPDX manifest (`_manifest/spdx_2.2/manifest.spdx.json`) as a 90-day-retained artifact.
+- **SBOM generation** — added an `sbom` job that generates an SPDX 2.2 manifest for the published artifact using Microsoft's precompiled SBOM CLI (`sbom-tool-linux-x64`, v4.1.5) downloaded from the versioned GitHub Release URL and verified against SHA256 `bf5d4f99bc98c119d549d08fc02ae92598a7a42772f17317c01031a92632e05b`. The `build-components` path is the repository source directory. The manifest is validated (`spdxVersion == "SPDX-2.2"`) and uploaded as a 90-day-retained artifact.
+  - **Reason for change:** the prior `microsoft/sbom-tool@c83b43de…` Docker action failed building its image (transitive AutoMapper 10.1.1 NU1903 / GHSA-rvv3-g6hj-g44x treated as error). Replaced with the official precompiled CLI to avoid the vulnerable Docker-image build without suppressing NuGet audit.
 - **Artifact checksums** — added `dotnet publish` + a deterministic sorted `SHA256SUMS` step to the `build` job, uploading the published output + checksums as a 14-day-retained artifact.
 
 ## 3. Checks NOT added (deliberately, to avoid duplication or false automation)
@@ -30,7 +31,7 @@
 
 - NuGet vulnerability scanning: enforced on `restore` (fails on NU1901–NU1904).
 - Secret scanning: Gitleaks CLI with SHA256-pinned release download; blocks new secrets in the current tree, surfaces historical findings for remediation.
-- SBOM: now generated per-run (new).
+- SBOM: now generated per-run from the verified precompiled SBOM CLI (v4.1.5). **Awaiting a real GitHub Actions run to confirm success** — not yet verified in CI (see residual risks).
 - Artifact integrity: SHA256 checksums now published (new); note these are tamper-evidence-in-retrospect and are not cryptographically signed (see residual risks).
 
 ## 5. Least-privilege and safety

@@ -109,13 +109,43 @@ public sealed class EncryptedEmployeeIdProjectionTests
         Assert.NotNull(rawStoredEmployeeId);
         Assert.NotEqual("E-42", rawStoredEmployeeId);
 
-        var handler = new GetOffboardingEmployeeDetailsQueryHandler(context);
+        var handler = new GetOffboardingEmployeeDetailsQueryHandler(context, new TestCurrentUserAccessor());
         var model = await handler.Handle(new GetOffboardingEmployeeDetailsQuery(42), CancellationToken.None);
 
         Assert.NotNull(model);
         Assert.Equal("Brian Lee", model!.FullName);
         Assert.Equal("E-42", model.EmployeeID);
         Assert.Equal("Finance", model.Department);
+    }
+
+    [Fact]
+    /// <summary>
+    /// Runs the OffboardingEmployeeDetailsQuery_ReturnsNull_ForCrossCompanyAccess operation.
+    /// </summary>
+    public async Task OffboardingEmployeeDetailsQuery_ReturnsNull_ForCrossCompanyAccess()
+    {
+        await using var harness = await CreateSqliteHarnessAsync();
+        var context = harness.Context;
+
+        context.OnboardingRequests.Add(new OnboardingRequest
+        {
+            Id = 43,
+            FullName = "Other Tenant",
+            EmployeeID = "E-43",
+            Department = "Finance",
+            Branch = "HQ",
+            HODEmail = "hod@test.local",
+            EmailAddress = "other@test.local",
+            Status = RequestStatus.Completed,
+            RequestDate = new DateTime(2026, 4, 2, 8, 0, 0, DateTimeKind.Utc)
+        });
+        await context.SaveChangesAsync();
+
+        var scopedUser = new TestCurrentUserAccessor(companies: ["OtherCompany"]);
+        var handler = new GetOffboardingEmployeeDetailsQueryHandler(context, scopedUser);
+        var model = await handler.Handle(new GetOffboardingEmployeeDetailsQuery(43), CancellationToken.None);
+
+        Assert.Null(model);
     }
 
     /// <summary>

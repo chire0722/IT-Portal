@@ -175,13 +175,40 @@ namespace IT_Form.Tests
             );
             await context.SaveChangesAsync();
 
-            var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "YTC PRECAST SDN BHD");
+            var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "Alpha");
             var result = await controller.GetHodsByCompany("Alpha (Lot 1)");
 
             var ok = Assert.IsType<OkObjectResult>(result);
             var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
             Assert.Contains("hoda@test.com", json);
             Assert.DoesNotContain("hodb@test.com", json);
+        }
+
+        [Fact]
+        /// <summary>
+        /// Runs the GetHodsByCompany_ForbidsCrossCompanyLookup operation.
+        /// </summary>
+        public async Task GetHodsByCompany_ForbidsCrossCompanyLookup()
+        {
+            using var context = CreateContext();
+
+            var hodA = new ApplicationUser { Id = "hod-a", UserName = "hoda", Email = "hoda@test.com", FullName = "HOD A", IsActive = true };
+            var hodB = new ApplicationUser { Id = "hod-b", UserName = "hodb", Email = "hodb@test.com", FullName = "HOD B", IsActive = true };
+            context.Users.AddRange(hodA, hodB);
+            context.UserTitles.AddRange(
+                new UserTitle { UserId = hodA.Id, Title = "HOD" },
+                new UserTitle { UserId = hodB.Id, Title = "HOD" }
+            );
+            context.UserCompanies.AddRange(
+                new UserCompany { UserId = hodA.Id, CompanyName = "Alpha" },
+                new UserCompany { UserId = hodB.Id, CompanyName = "Beta" }
+            );
+            await context.SaveChangesAsync();
+
+            var controller = GetController<EmployeeApiController>(context, role: "HR", branch: "Alpha");
+            var result = await controller.GetHodsByCompany("Beta (Lot 2)");
+
+            Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]

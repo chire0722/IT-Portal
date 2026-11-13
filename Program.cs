@@ -739,7 +739,12 @@ using (var scope = app.Services.CreateScope())
 
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var configuration = services.GetRequiredService<IConfiguration>();
-        await DbInitializer.SeedUsersAsync(userManager, context, configuration);
+        await DbInitializer.SeedUsersAsync(
+            userManager,
+            context,
+            configuration,
+            app.Environment,
+            services.GetRequiredService<ILogger<Program>>());
 
         var sensitiveUploadMigrationService = services.GetRequiredService<LegacySensitiveUploadMigrationService>();
         await sensitiveUploadMigrationService.MigrateAsync();

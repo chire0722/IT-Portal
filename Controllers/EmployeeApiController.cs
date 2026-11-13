@@ -381,6 +381,13 @@ namespace IT_Form.Controllers
                 return Ok(Array.Empty<object>());
             }
 
+            // Enforce company scope: an HR user must not enumerate HOD records
+            // belonging to a company they are not assigned to.
+            if (!CompanyScopeHelper.CanAccessCompany(User, company))
+            {
+                return Forbid("You are not authorized to view HODs for this company.");
+            }
+
             var normalizedCompany = CompanyHelper.Normalize(company).ToLower();
             var hods = await _context.Users
                 .Where(u => u.IsActive && u.UserTitles.Any(t => t.Title == "HOD"))

@@ -66,7 +66,7 @@ public class OffboardingController : AppControllerBase
     public async Task<IActionResult> Create(int? onboardingRequestId = null)
         => HandleProcessResult(await _sender.Send(new GetOffboardingCreatePageQuery(onboardingRequestId)));
 
-    [HttpGet]
+    [HttpGet, Authorize(Policy = "RequireHR")]
     /// <summary>
     /// Gets the data required by the GetEmployeeDetails operation.
     /// </summary>

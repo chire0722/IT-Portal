@@ -41,6 +41,24 @@ jobs:
       - name: Build application
         run: dotnet build "IT Form.csproj" --configuration Release --no-restore
 
+      - name: Publish application artifact
+        run: dotnet publish "IT Form.csproj" --configuration Release --no-restore --output "${{ runner.temp }}/publish"
+
+      - name: Generate SHA256 checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${{ runner.temp }}/publish"
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > "${{ runner.temp }}/publish/SHA256SUMS"
+          cat "${{ runner.temp }}/publish/SHA256SUMS"
+
+      - name: Upload published artifact with checksums
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: it-portal-publish
+          path: ${{ runner.temp }}/publish
+          retention-days: 14
+
   test:
     name: Test - ${{ matrix.project }}
     runs-on: ubuntu-latest
@@ -146,6 +164,31 @@ jobs:
           # block unrelated PRs. Previously exposed credentials must still
           # be revoked/rotated and the Git history purge handled separately.
           run_gitleaks_scan history 0 gitleaks git --log-opts="--all --no-merges"
+
+  sbom:
+    name: Generate SBOM (SPDX)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Generate SPDX SBOM
+        uses: microsoft/sbom-tool@c83b43dee2dd70b4d6ba16a97cde6b43f971d9c3 # v4.1.5
+        with:
+          build-drop-path: ${{ github.workspace }}
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: sbom-spdx
+          path: |
+            _manifest/spdx_2.2/manifest.spdx.json
+            _manifest/**/manifest.spdx.json
+          if-no-files-found: error
+          retention-days: 90
 
   codeql:
     name: CodeQL - ${{ matrix.language }}

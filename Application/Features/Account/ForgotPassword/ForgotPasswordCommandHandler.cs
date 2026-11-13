@@ -43,25 +43,18 @@ namespace IT_Form.Application.Features.Account.ForgotPassword
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.UserName == request.Username || u.Email == request.Username, cancellationToken);
 
-            if (user == null)
+            // Prevent account enumeration: return an identical, neutral message whether the
+            // username/email is unknown, inactive, or lacks a registered email address. Do not
+            // disclose which of these conditions applied.
+            if (user == null || !user.IsActive || string.IsNullOrWhiteSpace(user.Email))
             {
-                return new ForgotPasswordResult(
-                    false,
-                    "Invalid username or email address.");
-            }
+                // Equalize the observable cost with the successful OTP path (which performs a
+                // hashing step) so the not-found branch is not measurably faster.
+                AccountOtpSupport.HashCode(_otpGenerator.GenerateCode(AccountOtpSupport.OtpLength));
 
-            if (!user.IsActive)
-            {
                 return new ForgotPasswordResult(
                     false,
-                    "Your account is inactive. Please contact IT.");
-            }
-
-            if (string.IsNullOrWhiteSpace(user.Email))
-            {
-                return new ForgotPasswordResult(
-                    false,
-                    "This account does not have a registered email address. Please contact IT.");
+                    "If an account matching that username or email exists and is active, a verification code has been sent to its registered email address.");
             }
 
             return await _keyedLockProvider.ExecuteAsync(

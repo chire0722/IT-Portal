@@ -235,17 +235,24 @@ h6,
 }
 
 /* Custom Scrollbar for Sidebar */
-.sidebar-nav::-webkit-scrollbar {
-    width: 6px;
+.sidebar-nav {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-.sidebar-nav::-webkit-scrollbar-track {
-    background: transparent;
-}
+@supports not (scrollbar-color: auto) {
+    .sidebar-nav::-webkit-scrollbar {
+        width: 6px;
+    }
 
-.sidebar-nav::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
+    .sidebar-nav::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }
 }
 
 .nav-item-header {
@@ -2259,22 +2266,34 @@ main .stat-card:nth-child(4) {
 }
 
 /* ============ SCROLLBAR ============ */
-::-webkit-scrollbar {
-    width: 8px;
+:root {
+    --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+    --scrollbar-track: var(--bg-primary);
 }
 
-::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
-    transition: background 0.2s;
-}
+@supports not (scrollbar-color: auto) {
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
 
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(var(--primary-rgb), 0.4);
+    ::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(var(--primary-rgb), 0.4);
+    }
 }
 
 /* ============ RESPONSIVE ============ */

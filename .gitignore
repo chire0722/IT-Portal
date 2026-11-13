@@ -4,6 +4,9 @@
 .dotnet/
 .dotnet_home/
 
+# Locally installed agent skills (vendored tool installs; provenance tracked in skills-lock.json)
+.agents/
+
 .build-obj/
 .build-out/
 .test-out/
